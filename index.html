@@ -19,12 +19,12 @@
 
     .logo {
       text-align: center;
-      padding: 10px;
+      padding: 5px;
       flex-shrink: 0;
     }
 
     .logo img {
-      max-width: 300px;
+      max-width: 260px;
       height: auto;
     }
 
@@ -59,15 +59,16 @@
       color: #ffd700;
     }
 
-    .toolbar {
-      text-align: center;
-      margin: 10px 0;
+    .toolbar, .bottom-button {
+      display: flex;
+      justify-content: center;
+      gap: 16px;
+      margin: 6px 0;
       flex-shrink: 0;
     }
 
     .btn {
       padding: 8px 14px;
-      margin: 4px;
       font-size: 1em;
       font-weight: bold;
       border: none;
@@ -84,12 +85,6 @@
       font-size: 1.1em;
       font-weight: bold;
       margin-bottom: 4px;
-    }
-
-    .bottom-button {
-      text-align: center;
-      margin-bottom: 12px;
-      flex-shrink: 0;
     }
 
     .bottom-button a {
