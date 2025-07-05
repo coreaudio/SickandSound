@@ -19,7 +19,7 @@
 
     .logo {
       text-align: center;
-      padding: 5px;
+      padding: 10px;
       flex-shrink: 0;
     }
 
@@ -79,17 +79,16 @@
       margin-bottom: 4px;
     }
 
-    .bottom-button,
-    .toolbar {
+    .button-area {
       display: flex;
-      justify-content: center;
-      gap: 16px;
-      margin: 6px 0;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+      padding: 12px 0;
       flex-shrink: 0;
     }
 
-    .bottom-button a {
-      display: inline-block;
+    .button-area a {
       padding: 12px 24px;
       background-color: #00c9a7;
       color: black;
@@ -117,6 +116,12 @@
       border: 8px solid #fff;
       border-radius: 12px;
     }
+
+    .button-row {
+      display: flex;
+      justify-content: center;
+      gap: 16px;
+    }
   </style>
 </head>
 <body>
@@ -127,14 +132,12 @@
 
   <div id="tableContainer"></div>
 
-  <!-- 🔼 BESORGUNGEN BUTTON OBERHALB DER TOOLBAR -->
-  <div class="bottom-button">
+  <div class="button-area">
     <a href="besorgungen.html">🛒 Besorgungen öffnen</a>
-  </div>
-
-  <div class="toolbar">
-    <button class="btn undo" onclick="undoLast()">↩ Rückgängig</button>
-    <button class="btn paypal" onclick="togglePayPal()">💸 PayPal</button>
+    <div class="button-row">
+      <button class="btn undo" onclick="undoLast()">↩ Rückgängig</button>
+      <button class="btn paypal" onclick="togglePayPal()">💸 PayPal</button>
+    </div>
   </div>
 
   <div id="paypalModal">
