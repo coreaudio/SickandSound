@@ -1,0 +1,394 @@
+
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <title>Sick & Sound Strichliste</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;800&display=swap" rel="stylesheet">
+    <style>
+        html, body {
+            height: 100%;
+            overflow: hidden;
+            background-color: #0f1117;
+            font-family: 'Orbitron', sans-serif;
+            color: #f1f1f1;
+            margin: 0;
+            padding: 20px;
+        }
+        .toolbar {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .btn {
+            padding: 8px 14px;
+            margin: 4px;
+            font-size: 1em;
+            font-weight: bold;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+        }
+        .plus { background-color: #00c9a7; color: #000; }
+        .reset { background-color: #555; color: #fff; }
+        .undo {
+        background-color: #ffa500; color: #000;
+    }
+    .paypal {
+        background-color: #0070ba;
+        color: #fff;
+        font-weight: bold;
+    } background-color: #ffa500; color: #000; }
+        .counter { font-size: 1.2em; margin-bottom: 5px; font-weight: bold; }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background-color: #1a1d24;
+            table-layout: fixed;
+            font-size: 0.9em;
+        }
+        th, td {
+            padding: 6px;
+            text-align: center;
+            border-bottom: 1px solid #2a2d34;
+        }
+        th {
+            font-size: 1em;
+            font-weight: 600;
+            color: #ffffff;
+        }
+        td:last-child {
+            font-weight: bold;
+            color: #ffd700;
+        }
+    </style>
+</head>
+<body>
+    <div style="text-align:center; margin-bottom: 20px;">
+        <img src="02_SICK _ SOUND_WHITE_TYPE.png" alt="Sick & Sound Logo" style="max-width: 300px; height: auto;">
+    </div>
+    
+    <table>
+        <thead>
+            <tr>
+                <th>Person</th>
+                <th>Cola Zero</th><th>Monster</th><th>Wasser</th><th>Kaffee</th><th>Mittagessen</th>
+                <th>Gesamt (€)</th>
+                <th>Reset</th>
+            </tr>
+        </thead>
+        <tbody><tr><th style='font-size: 1em; font-weight: 500; color: #ffffff;'>Chris</th>
+        <td>
+            <div id="Chris_Cola_Zero" class="counter">0</div>
+            <button class="btn plus" onclick="changeValue('Chris_Cola_Zero', 1)">+1</button>
+        </td>
+        <td>
+            <div id="Chris_Monster" class="counter">0</div>
+            <button class="btn plus" onclick="changeValue('Chris_Monster', 1)">+1</button>
+        </td>
+        <td>
+            <div id="Chris_Wasser" class="counter">0</div>
+            <button class="btn plus" onclick="changeValue('Chris_Wasser', 1)">+1</button>
+        </td>
+        <td>
+            <div id="Chris_Kaffee" class="counter">0</div>
+            <button class="btn plus" onclick="changeValue('Chris_Kaffee', 1)">+1</button>
+        </td>
+        <td>
+            <div id="Chris_Mittagessen" class="counter">0</div>
+            <button class="btn plus" onclick="changeValue('Chris_Mittagessen', 1)">+1</button>
+        </td><td id="Chris_Total">0.00</td><td><button class="btn reset" onclick="resetPerson('Chris')">Reset</button></td></tr><tr><th style='font-size: 1em; font-weight: 500; color: #ffffff;'>Daniel</th>
+        <td>
+            <div id="Daniel_Cola_Zero" class="counter">0</div>
+            <button class="btn plus" onclick="changeValue('Daniel_Cola_Zero', 1)">+1</button>
+        </td>
+        <td>
+            <div id="Daniel_Monster" class="counter">0</div>
+            <button class="btn plus" onclick="changeValue('Daniel_Monster', 1)">+1</button>
+        </td>
+        <td>
+            <div id="Daniel_Wasser" class="counter">0</div>
+            <button class="btn plus" onclick="changeValue('Daniel_Wasser', 1)">+1</button>
+        </td>
+        <td>
+            <div id="Daniel_Kaffee" class="counter">0</div>
+            <button class="btn plus" onclick="changeValue('Daniel_Kaffee', 1)">+1</button>
+        </td>
+        <td>
+            <div id="Daniel_Mittagessen" class="counter">0</div>
+            <button class="btn plus" onclick="changeValue('Daniel_Mittagessen', 1)">+1</button>
+        </td><td id="Daniel_Total">0.00</td><td><button class="btn reset" onclick="resetPerson('Daniel')">Reset</button></td></tr><tr><th style='font-size: 1em; font-weight: 500; color: #ffffff;'>Elmi</th>
+        <td>
+            <div id="Elmi_Cola_Zero" class="counter">0</div>
+            <button class="btn plus" onclick="changeValue('Elmi_Cola_Zero', 1)">+1</button>
+        </td>
+        <td>
+            <div id="Elmi_Monster" class="counter">0</div>
+            <button class="btn plus" onclick="changeValue('Elmi_Monster', 1)">+1</button>
+        </td>
+        <td>
+            <div id="Elmi_Wasser" class="counter">0</div>
+            <button class="btn plus" onclick="changeValue('Elmi_Wasser', 1)">+1</button>
+        </td>
+        <td>
+            <div id="Elmi_Kaffee" class="counter">0</div>
+            <button class="btn plus" onclick="changeValue('Elmi_Kaffee', 1)">+1</button>
+        </td>
+        <td>
+            <div id="Elmi_Mittagessen" class="counter">0</div>
+            <button class="btn plus" onclick="changeValue('Elmi_Mittagessen', 1)">+1</button>
+        </td><td id="Elmi_Total">0.00</td><td><button class="btn reset" onclick="resetPerson('Elmi')">Reset</button></td></tr><tr><th style='font-size: 1em; font-weight: 500; color: #ffffff;'>Florian</th>
+        <td>
+            <div id="Florian_Cola_Zero" class="counter">0</div>
+            <button class="btn plus" onclick="changeValue('Florian_Cola_Zero', 1)">+1</button>
+        </td>
+        <td>
+            <div id="Florian_Monster" class="counter">0</div>
+            <button class="btn plus" onclick="changeValue('Florian_Monster', 1)">+1</button>
+        </td>
+        <td>
+            <div id="Florian_Wasser" class="counter">0</div>
+            <button class="btn plus" onclick="changeValue('Florian_Wasser', 1)">+1</button>
+        </td>
+        <td>
+            <div id="Florian_Kaffee" class="counter">0</div>
+            <button class="btn plus" onclick="changeValue('Florian_Kaffee', 1)">+1</button>
+        </td>
+        <td>
+            <div id="Florian_Mittagessen" class="counter">0</div>
+            <button class="btn plus" onclick="changeValue('Florian_Mittagessen', 1)">+1</button>
+        </td><td id="Florian_Total">0.00</td><td><button class="btn reset" onclick="resetPerson('Florian')">Reset</button></td></tr><tr><th style='font-size: 1em; font-weight: 500; color: #ffffff;'>Joel</th>
+        <td>
+            <div id="Joel_Cola_Zero" class="counter">0</div>
+            <button class="btn plus" onclick="changeValue('Joel_Cola_Zero', 1)">+1</button>
+        </td>
+        <td>
+            <div id="Joel_Monster" class="counter">0</div>
+            <button class="btn plus" onclick="changeValue('Joel_Monster', 1)">+1</button>
+        </td>
+        <td>
+            <div id="Joel_Wasser" class="counter">0</div>
+            <button class="btn plus" onclick="changeValue('Joel_Wasser', 1)">+1</button>
+        </td>
+        <td>
+            <div id="Joel_Kaffee" class="counter">0</div>
+            <button class="btn plus" onclick="changeValue('Joel_Kaffee', 1)">+1</button>
+        </td>
+        <td>
+            <div id="Joel_Mittagessen" class="counter">0</div>
+            <button class="btn plus" onclick="changeValue('Joel_Mittagessen', 1)">+1</button>
+        </td><td id="Joel_Total">0.00</td><td><button class="btn reset" onclick="resetPerson('Joel')">Reset</button></td></tr><tr><th style='font-size: 1em; font-weight: 500; color: #ffffff;'>Kevin</th>
+        <td>
+            <div id="Kevin_Cola_Zero" class="counter">0</div>
+            <button class="btn plus" onclick="changeValue('Kevin_Cola_Zero', 1)">+1</button>
+        </td>
+        <td>
+            <div id="Kevin_Monster" class="counter">0</div>
+            <button class="btn plus" onclick="changeValue('Kevin_Monster', 1)">+1</button>
+        </td>
+        <td>
+            <div id="Kevin_Wasser" class="counter">0</div>
+            <button class="btn plus" onclick="changeValue('Kevin_Wasser', 1)">+1</button>
+        </td>
+        <td>
+            <div id="Kevin_Kaffee" class="counter">0</div>
+            <button class="btn plus" onclick="changeValue('Kevin_Kaffee', 1)">+1</button>
+        </td>
+        <td>
+            <div id="Kevin_Mittagessen" class="counter">0</div>
+            <button class="btn plus" onclick="changeValue('Kevin_Mittagessen', 1)">+1</button>
+        </td><td id="Kevin_Total">0.00</td><td><button class="btn reset" onclick="resetPerson('Kevin')">Reset</button></td></tr><tr><th style='font-size: 1em; font-weight: 500; color: #ffffff;'>Kiste</th>
+        <td>
+            <div id="Kiste_Cola_Zero" class="counter">0</div>
+            <button class="btn plus" onclick="changeValue('Kiste_Cola_Zero', 1)">+1</button>
+        </td>
+        <td>
+            <div id="Kiste_Monster" class="counter">0</div>
+            <button class="btn plus" onclick="changeValue('Kiste_Monster', 1)">+1</button>
+        </td>
+        <td>
+            <div id="Kiste_Wasser" class="counter">0</div>
+            <button class="btn plus" onclick="changeValue('Kiste_Wasser', 1)">+1</button>
+        </td>
+        <td>
+            <div id="Kiste_Kaffee" class="counter">0</div>
+            <button class="btn plus" onclick="changeValue('Kiste_Kaffee', 1)">+1</button>
+        </td>
+        <td>
+            <div id="Kiste_Mittagessen" class="counter">0</div>
+            <button class="btn plus" onclick="changeValue('Kiste_Mittagessen', 1)">+1</button>
+        </td><td id="Kiste_Total">0.00</td><td><button class="btn reset" onclick="resetPerson('Kiste')">Reset</button></td></tr><tr><th style='font-size: 1em; font-weight: 500; color: #ffffff;'>Marco</th>
+        <td>
+            <div id="Marco_Cola_Zero" class="counter">0</div>
+            <button class="btn plus" onclick="changeValue('Marco_Cola_Zero', 1)">+1</button>
+        </td>
+        <td>
+            <div id="Marco_Monster" class="counter">0</div>
+            <button class="btn plus" onclick="changeValue('Marco_Monster', 1)">+1</button>
+        </td>
+        <td>
+            <div id="Marco_Wasser" class="counter">0</div>
+            <button class="btn plus" onclick="changeValue('Marco_Wasser', 1)">+1</button>
+        </td>
+        <td>
+            <div id="Marco_Kaffee" class="counter">0</div>
+            <button class="btn plus" onclick="changeValue('Marco_Kaffee', 1)">+1</button>
+        </td>
+        <td>
+            <div id="Marco_Mittagessen" class="counter">0</div>
+            <button class="btn plus" onclick="changeValue('Marco_Mittagessen', 1)">+1</button>
+        </td><td id="Marco_Total">0.00</td><td><button class="btn reset" onclick="resetPerson('Marco')">Reset</button></td></tr><tr><th style='font-size: 1em; font-weight: 500; color: #ffffff;'>Meli</th>
+        <td>
+            <div id="Meli_Cola_Zero" class="counter">0</div>
+            <button class="btn plus" onclick="changeValue('Meli_Cola_Zero', 1)">+1</button>
+        </td>
+        <td>
+            <div id="Meli_Monster" class="counter">0</div>
+            <button class="btn plus" onclick="changeValue('Meli_Monster', 1)">+1</button>
+        </td>
+        <td>
+            <div id="Meli_Wasser" class="counter">0</div>
+            <button class="btn plus" onclick="changeValue('Meli_Wasser', 1)">+1</button>
+        </td>
+        <td>
+            <div id="Meli_Kaffee" class="counter">0</div>
+            <button class="btn plus" onclick="changeValue('Meli_Kaffee', 1)">+1</button>
+        </td>
+        <td>
+            <div id="Meli_Mittagessen" class="counter">0</div>
+            <button class="btn plus" onclick="changeValue('Meli_Mittagessen', 1)">+1</button>
+        </td><td id="Meli_Total">0.00</td><td><button class="btn reset" onclick="resetPerson('Meli')">Reset</button></td></tr><tr><th style='font-size: 1em; font-weight: 500; color: #ffffff;'>Simon</th>
+        <td>
+            <div id="Simon_Cola_Zero" class="counter">0</div>
+            <button class="btn plus" onclick="changeValue('Simon_Cola_Zero', 1)">+1</button>
+        </td>
+        <td>
+            <div id="Simon_Monster" class="counter">0</div>
+            <button class="btn plus" onclick="changeValue('Simon_Monster', 1)">+1</button>
+        </td>
+        <td>
+            <div id="Simon_Wasser" class="counter">0</div>
+            <button class="btn plus" onclick="changeValue('Simon_Wasser', 1)">+1</button>
+        </td>
+        <td>
+            <div id="Simon_Kaffee" class="counter">0</div>
+            <button class="btn plus" onclick="changeValue('Simon_Kaffee', 1)">+1</button>
+        </td>
+        <td>
+            <div id="Simon_Mittagessen" class="counter">0</div>
+            <button class="btn plus" onclick="changeValue('Simon_Mittagessen', 1)">+1</button>
+        </td><td id="Simon_Total">0.00</td><td><button class="btn reset" onclick="resetPerson('Simon')">Reset</button></td></tr></tbody>
+    </table>
+    <script>
+        const prices = {"Cola_Zero": 1.0, "Monster": 1.5, "Wasser": 0.5, "Kaffee": 1.0, "Mittagessen": 6.0};
+        const people = ["Chris", "Daniel", "Elmi", "Florian", "Joel", "Kevin", "Kiste", "Marco", "Meli", "Simon"];
+        const storageKey = 'sick_sound_data';
+        const historyKey = 'sick_sound_history';
+        let data = {};
+        let history = [];
+
+        function loadData() {
+            const saved = localStorage.getItem(storageKey);
+            const hist = localStorage.getItem(historyKey);
+            if (saved) {
+                data = JSON.parse(saved);
+                for (const id in data) {
+                    const el = document.getElementById(id);
+                    if (el) el.textContent = data[id];
+                }
+            }
+            if (hist) history = JSON.parse(hist);
+            updateAllTotals();
+        }
+
+        function saveData() {
+            localStorage.setItem(storageKey, JSON.stringify(data));
+            localStorage.setItem(historyKey, JSON.stringify(history));
+        }
+
+        function changeValue(id, delta) {
+            const el = document.getElementById(id);
+            const current = parseInt(el.textContent || '0');
+            const next = Math.max(0, current + delta);
+            history.push({ id: id, prev: current });
+            el.textContent = next;
+            data[id] = next;
+            saveData();
+            updateTotal(id.split('_')[0]);
+        }
+
+        function updateTotal(person) {
+            let total = 0;
+            for (const drink in prices) {
+                const id = person + "_" + drink;
+                const el = document.getElementById(id);
+                if (el) total += parseInt(el.textContent || '0') * prices[drink];
+            }
+            const totalEl = document.getElementById(person + "_Total");
+            if (totalEl) totalEl.textContent = total.toFixed(2);
+        }
+
+        function updateAllTotals() {
+            for (const person of people) updateTotal(person);
+        }
+
+        function resetPerson(person) {
+            if (!confirm("Willst du wirklich alle Striche von " + person + " zurücksetzen?")) return;
+            for (const drink in prices) {
+                const id = person + "_" + drink;
+                const el = document.getElementById(id);
+                const current = parseInt(el.textContent || '0');
+                history.push({ id: id, prev: current });
+                el.textContent = "0";
+                data[id] = 0;
+            }
+            history.push({ id: person + "_Total", prev: parseFloat(document.getElementById(person + "_Total").textContent) });
+            document.getElementById(person + "_Total").textContent = "0.00";
+            saveData();
+        }
+
+        function undoLast() {
+            const last = history.pop();
+            if (!last) return;
+            const el = document.getElementById(last.id);
+            if (el) {
+                el.textContent = last.prev;
+                if (!last.id.includes("_Total")) {
+                    data[last.id] = last.prev;
+                    updateTotal(last.id.split('_')[0]);
+                }
+                saveData();
+            }
+        }
+
+        window.onload = loadData;
+    </script>
+
+
+
+
+<div class="toolbar" style="margin-top: 30px; display: flex; justify-content: center; gap: 20px;">
+    <button class="btn undo" onclick="undoLast()">↩ Rückgängig</button>
+    <button class="btn paypal" onclick="togglePayPal()">💸 PayPal</button>
+</div>
+<div id="paypalModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background-color:rgba(0,0,0,0.85); justify-content:center; align-items:center; z-index:9999;">
+    <img src="frame.png" alt="PayPal QR" style="max-width:90%; max-height:90%; border:8px solid #fff; border-radius:12px;" onclick="togglePayPal()">
+</div>
+<script>
+    function togglePayPal() {
+        const modal = document.getElementById('paypalModal');
+        modal.style.display = (modal.style.display === 'flex') ? 'none' : 'flex';
+    }
+</script>
+
+
+<div style="text-align:center; margin-top: 30px;">
+    <a href="besorgungen.html" 
+       style="display: inline-block; padding: 12px 24px; background-color: #00c9a7; color: black;
+              border-radius: 10px; font-size: 1.2em; font-weight: bold; text-decoration: none; box-shadow: 0 0 10px #00c9a7;">
+       🛒 Besorgungen öffnen
+    </a>
+</div>
+
+</body>
+</html>
