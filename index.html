@@ -6,15 +6,77 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;800&display=swap" rel="stylesheet" />
   <style>
+    * {
+      box-sizing: border-box;
+    }
+
     html, body {
       height: 100%;
       margin: 0;
-      padding: 20px;
+      padding: 0;
       background-color: #0f1117;
       font-family: 'Orbitron', sans-serif;
       color: #f1f1f1;
+      overflow: hidden;
+    }
+
+    body {
       display: flex;
       flex-direction: column;
+    }
+
+    .content {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      padding: 20px;
+      overflow: hidden;
+    }
+
+    .logo {
+      text-align: center;
+      margin-bottom: 10px;
+    }
+
+    .logo img {
+      max-width: 250px;
+      height: auto;
+    }
+
+    #tableContainer {
+      flex: 1;
+      overflow: auto;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background-color: #1a1d24;
+      table-layout: fixed;
+      font-size: 0.9em;
+    }
+
+    th, td {
+      padding: 6px;
+      text-align: center;
+      border-bottom: 1px solid #2a2d34;
+    }
+
+    th {
+      font-size: 1em;
+      font-weight: 600;
+      color: #ffffff;
+    }
+
+    td:last-child {
+      font-weight: bold;
+      color: #ffd700;
+    }
+
+    .counter {
+      font-size: 1.2em;
+      margin-bottom: 5px;
+      font-weight: bold;
     }
 
     .btn {
@@ -30,67 +92,23 @@
     .plus { background-color: #00c9a7; color: #000; }
     .reset { background-color: #555; color: #fff; }
     .undo { background-color: #ffa500; color: #000; }
-    .paypal { background-color: #0070ba; color: #fff; font-weight: bold; }
-    .counter { font-size: 1.2em; margin-bottom: 5px; font-weight: bold; }
-
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      background-color: #1a1d24;
-      table-layout: fixed;
-      font-size: 0.9em;
-    }
-    th, td {
-      padding: 6px;
-      text-align: center;
-      border-bottom: 1px solid #2a2d34;
-    }
-    th {
-      font-size: 1em;
-      font-weight: 600;
-      color: #ffffff;
-    }
-    td:last-child {
-      font-weight: bold;
-      color: #ffd700;
-    }
-
-    .top {
-      text-align: center;
-      margin-bottom: 20px;
-    }
-
-    #tableContainer {
-      flex: 1;
-      overflow-y: auto;
-    }
-
-    .button-area {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      margin-top: 20px;
-      margin-bottom: 20px;
-    }
-
-    .open-list {
+    .paypal { background-color: #0070ba; color: #fff; }
+    .besorgungen {
       background-color: #00c9a7;
       color: black;
-      text-decoration: none;
-      padding: 12px 24px;
-      border-radius: 10px;
-      font-size: 1.2em;
       font-weight: bold;
       box-shadow: 0 0 10px #00c9a7;
+      text-decoration: none;
     }
 
-    .button-row {
+    .buttons {
+      text-align: center;
       margin-top: 10px;
-    }
-
-    .button-row .btn {
-      margin: 6px;
+      margin-bottom: 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      align-items: center;
     }
 
     #paypalModal {
@@ -113,24 +131,24 @@
   </style>
 </head>
 <body>
-  <div class="top">
-    <img src="02_SICK _ SOUND_WHITE_TYPE.png" alt="Sick & Sound Logo" style="max-width: 300px; height: auto;">
-  </div>
+  <div class="content">
+    <div class="logo">
+      <img src="02_SICK _ SOUND_WHITE_TYPE.png" alt="Sick & Sound Logo" />
+    </div>
 
-  <div id="tableContainer"></div>
+    <div id="tableContainer"></div>
 
-  <!-- Buttons mittig zwischen Tabelle und unterem Rand -->
-  <div class="button-area">
-    <a href="besorgungen.html" class="open-list">🛒 Besorgungen öffnen</a>
-    <div class="button-row">
-      <button class="btn undo" onclick="undoLast()">↩ Rückgängig</button>
-      <button class="btn paypal" onclick="togglePayPal()">💸 PayPal</button>
+    <div class="buttons">
+      <a href="besorgungen.html" class="btn besorgungen">🛒 Besorgungen öffnen</a>
+      <div>
+        <button class="btn undo" onclick="undoLast()">↩ Rückgängig</button>
+        <button class="btn paypal" onclick="togglePayPal()">💸 PayPal</button>
+      </div>
     </div>
   </div>
 
-  <!-- PayPal Modal -->
   <div id="paypalModal">
-    <img src="frame.png" alt="PayPal QR" onclick="togglePayPal()">
+    <img src="frame.png" alt="PayPal QR" onclick="togglePayPal()" />
   </div>
 
   <script>
