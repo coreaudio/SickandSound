@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <title>Besorgungen</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <style>
+    body {
+      font-family: sans-serif;
+      background: #111;
+      color: white;
+      text-align: center;
+      padding: 20px;
+      margin: 0;
+    }
+    input {
+      padding: 10px;
+      width: 70%;
+      margin-bottom: 10px;
+      border-radius: 5px;
+      border: none;
+    }
+    button {
+      padding: 10px 15px;
+      margin: 5px;
+      border: none;
+      border-radius: 5px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+    ul {
+      list-style: none;
+      padding: 0;
+      margin-top: 20px;
+      max-width: 500px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+    li {
+      background: #222;
+      margin: 8px 0;
+      padding: 12px 16px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .delete {
+      background: #e00;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      padding: 6px 10px;
+      font-size: 1.1em;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <h1>🛒 Besorgungen</h1>
+  <a href="index.html" style="color:#00c9a7; display:block; margin-bottom:20px;">🔙 Zurück zur Strichliste</a>
+  <input type="text" id="itemInput" placeholder="Artikel hinzufügen" />
+  <br />
+  <button onclick="addItem()">Hinzufügen</button>
+  <button onclick="clearAll()">Alles löschen</button>
+  <ul id="itemList"></ul>
+
+  <!-- Firebase SDKs -->
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyBtZsr4QPHQbvO2qae6MoBoxJF5dNP2vh0",
+      authDomain: "sickandsound-8a15f.firebaseapp.com",
+      projectId: "sickandsound-8a15f",
+      storageBucket: "sickandsound-8a15f.appspot.com",
+      messagingSenderId: "32138160959",
+      appId: "1:32138160959:web:a65c7f4ad7d44e757fc18a",
+      databaseURL: "https://sickandsound-8a15f-default-rtdb.europe-west1.firebasedatabase.app"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+    const listRef = db.ref("besorgungen");
+
+    function addItem() {
+      const input = document.getElementById("itemInput");
+      const text = input.value.trim();
+      if (text !== "") {
+        const newItemRef = listRef.push();
+        newItemRef.set(text);
+        input.value = "";
+      }
+    }
+
+    function clearAll() {
+      if (confirm("Alle Einträge löschen?")) {
+        listRef.remove();
+      }
+    }
+
+    function removeItem(key) {
+      listRef.child(key).remove();
+    }
+
+    listRef.on("value", (snapshot) => {
+      const list = document.getElementById("itemList");
+      list.innerHTML = "";
+      snapshot.forEach((childSnapshot) => {
+        const li = document.createElement("li");
+        li.textContent = childSnapshot.val();
+        const delBtn = document.createElement("button");
+        delBtn.textContent = "🗑";
+        delBtn.className = "delete";
+        delBtn.onclick = () => removeItem(childSnapshot.key);
+        li.appendChild(delBtn);
+        list.appendChild(li);
+      });
+    });
+  </script>
+</body>
+</html>
