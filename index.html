@@ -7,63 +7,120 @@
   <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;800&display=swap" rel="stylesheet" />
   <style>
     html, body {
-      height: 100%;
-      overflow: hidden;
+      margin: 0;
+      padding: 0;
+      height: 100vh;
+      width: 100vw;
       background-color: #0f1117;
       font-family: 'Orbitron', sans-serif;
       color: #f1f1f1;
-      margin: 0;
-      padding: 20px;
+      display: flex;
+      flex-direction: column;
     }
-    .toolbar {
-      text-align: center;
-      margin-bottom: 20px;
+
+    body > * {
+      flex-shrink: 0;
     }
-    .btn {
-      padding: 8px 14px;
-      margin: 4px;
-      font-size: 1em;
-      font-weight: bold;
-      border: none;
-      border-radius: 8px;
-      cursor: pointer;
+
+    #tableContainer {
+      flex: 1;
+      overflow-y: auto;
+      margin: 0 10px;
     }
-    .plus { background-color: #00c9a7; color: #000; }
-    .reset { background-color: #555; color: #fff; }
-    .undo { background-color: #ffa500; color: #000; }
-    .paypal { background-color: #0070ba; color: #fff; font-weight: bold; }
-    .counter { font-size: 1.2em; margin-bottom: 5px; font-weight: bold; }
+
+    .toolbar,
+    #paypalModal,
+    .bottom-button {
+      flex-shrink: 0;
+    }
+
     table {
       width: 100%;
       border-collapse: collapse;
       background-color: #1a1d24;
       table-layout: fixed;
-      font-size: 0.9em;
+      font-size: 0.85em;
     }
+
     th, td {
       padding: 6px;
       text-align: center;
       border-bottom: 1px solid #2a2d34;
     }
+
     th {
-      font-size: 1em;
       font-weight: 600;
       color: #ffffff;
     }
+
     td:last-child {
       font-weight: bold;
       color: #ffd700;
     }
+
+    .btn {
+      padding: 6px 10px;
+      font-size: 0.9em;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: bold;
+    }
+
+    .plus { background-color: #00c9a7; color: #000; }
+    .reset { background-color: #555; color: #fff; }
+    .undo { background-color: #ffa500; color: #000; }
+    .paypal { background-color: #0070ba; color: #fff; }
+
+    .counter {
+      font-size: 1em;
+      font-weight: bold;
+      margin-bottom: 4px;
+    }
+
+    .logo {
+      text-align: center;
+      margin: 12px 0;
+    }
+
+    .bottom-button {
+      text-align: center;
+      padding: 12px;
+    }
+
+    .bottom-button a {
+      display: inline-block;
+      padding: 12px 24px;
+      background-color: #00c9a7;
+      color: black;
+      border-radius: 10px;
+      font-size: 1.1em;
+      font-weight: bold;
+      text-decoration: none;
+      box-shadow: 0 0 10px #00c9a7;
+    }
   </style>
 </head>
 <body>
-  <div style="text-align:center; margin-bottom: 20px;">
+
+  <div class="logo">
     <img src="02_SICK _ SOUND_WHITE_TYPE.png" alt="Sick & Sound Logo" style="max-width: 300px; height: auto;">
   </div>
 
-  <!-- Die ganze Tabelle wird hier durch JavaScript aufgebaut -->
-
   <div id="tableContainer"></div>
+
+  <div class="toolbar" style="display: flex; justify-content: center; gap: 20px;">
+    <button class="btn undo" onclick="undoLast()">↩ Rückgängig</button>
+    <button class="btn paypal" onclick="togglePayPal()">💸 PayPal</button>
+  </div>
+
+  <div class="bottom-button">
+    <a href="besorgungen.html">🛒 Besorgungen öffnen</a>
+  </div>
+
+  <div id="paypalModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background-color:rgba(0,0,0,0.85); justify-content:center; align-items:center; z-index:9999;">
+    <img src="frame.png" alt="PayPal QR" style="max-width:90%; max-height:90%; border:8px solid #fff; border-radius:12px;" onclick="togglePayPal()">
+  </div>
 
   <script>
     const prices = {
@@ -87,7 +144,7 @@
       html += `<th>Gesamt (€)</th><th>Reset</th></tr></thead><tbody>`;
 
       for (const person of people) {
-        html += `<tr><th style="color: #fff;">${person}</th>`;
+        html += `<tr><th>${person}</th>`;
         for (const drink in prices) {
           const id = `${person}_${drink}`;
           html += `
@@ -176,34 +233,15 @@
       }
     }
 
+    function togglePayPal() {
+      const modal = document.getElementById('paypalModal');
+      modal.style.display = (modal.style.display === 'flex') ? 'none' : 'flex';
+    }
+
     window.onload = () => {
       buildTable();
       loadData();
     };
   </script>
-
-  <div class="toolbar" style="margin-top: 30px; display: flex; justify-content: center; gap: 20px;">
-    <button class="btn undo" onclick="undoLast()">↩ Rückgängig</button>
-    <button class="btn paypal" onclick="togglePayPal()">💸 PayPal</button>
-  </div>
-
-  <div id="paypalModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background-color:rgba(0,0,0,0.85); justify-content:center; align-items:center; z-index:9999;">
-    <img src="frame.png" alt="PayPal QR" style="max-width:90%; max-height:90%; border:8px solid #fff; border-radius:12px;" onclick="togglePayPal()">
-  </div>
-
-  <script>
-    function togglePayPal() {
-      const modal = document.getElementById('paypalModal');
-      modal.style.display = (modal.style.display === 'flex') ? 'none' : 'flex';
-    }
-  </script>
-
-  <div style="text-align:center; margin-top: 30px;">
-    <a href="besorgungen.html"
-       style="display: inline-block; padding: 12px 24px; background-color: #00c9a7; color: black;
-              border-radius: 10px; font-size: 1.2em; font-weight: bold; text-decoration: none; box-shadow: 0 0 10px #00c9a7;">
-       🛒 Besorgungen öffnen
-    </a>
-  </div>
 </body>
 </html>
