@@ -10,28 +10,28 @@
       margin: 0;
       padding: 0;
       height: 100vh;
-      width: 100vw;
+      display: flex;
+      flex-direction: column;
       background-color: #0f1117;
       font-family: 'Orbitron', sans-serif;
       color: #f1f1f1;
-      display: flex;
-      flex-direction: column;
     }
 
-    body > * {
+    .logo {
+      text-align: center;
+      padding: 10px;
       flex-shrink: 0;
+    }
+
+    .logo img {
+      max-width: 300px;
+      height: auto;
     }
 
     #tableContainer {
-      flex: 1;
+      flex-grow: 1;
       overflow-y: auto;
-      margin: 0 10px;
-    }
-
-    .toolbar,
-    #paypalModal,
-    .bottom-button {
-      flex-shrink: 0;
+      padding: 0 10px;
     }
 
     table {
@@ -39,7 +39,7 @@
       border-collapse: collapse;
       background-color: #1a1d24;
       table-layout: fixed;
-      font-size: 0.85em;
+      font-size: 0.9em;
     }
 
     th, td {
@@ -49,6 +49,7 @@
     }
 
     th {
+      font-size: 1em;
       font-weight: 600;
       color: #ffffff;
     }
@@ -58,13 +59,20 @@
       color: #ffd700;
     }
 
+    .toolbar {
+      text-align: center;
+      margin: 10px 0;
+      flex-shrink: 0;
+    }
+
     .btn {
-      padding: 6px 10px;
-      font-size: 0.9em;
-      border: none;
-      border-radius: 6px;
-      cursor: pointer;
+      padding: 8px 14px;
+      margin: 4px;
+      font-size: 1em;
       font-weight: bold;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
     }
 
     .plus { background-color: #00c9a7; color: #000; }
@@ -73,19 +81,15 @@
     .paypal { background-color: #0070ba; color: #fff; }
 
     .counter {
-      font-size: 1em;
+      font-size: 1.1em;
       font-weight: bold;
       margin-bottom: 4px;
     }
 
-    .logo {
-      text-align: center;
-      margin: 12px 0;
-    }
-
     .bottom-button {
       text-align: center;
-      padding: 12px;
+      margin-bottom: 12px;
+      flex-shrink: 0;
     }
 
     .bottom-button a {
@@ -99,17 +103,35 @@
       text-decoration: none;
       box-shadow: 0 0 10px #00c9a7;
     }
+
+    #paypalModal {
+      display: none;
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      background-color: rgba(0,0,0,0.85);
+      justify-content: center;
+      align-items: center;
+      z-index: 9999;
+    }
+
+    #paypalModal img {
+      max-width: 90%;
+      max-height: 90%;
+      border: 8px solid #fff;
+      border-radius: 12px;
+    }
   </style>
 </head>
 <body>
 
   <div class="logo">
-    <img src="02_SICK _ SOUND_WHITE_TYPE.png" alt="Sick & Sound Logo" style="max-width: 300px; height: auto;">
+    <img src="02_SICK _ SOUND_WHITE_TYPE.png" alt="Sick & Sound Logo">
   </div>
 
   <div id="tableContainer"></div>
 
-  <div class="toolbar" style="display: flex; justify-content: center; gap: 20px;">
+  <div class="toolbar">
     <button class="btn undo" onclick="undoLast()">↩ Rückgängig</button>
     <button class="btn paypal" onclick="togglePayPal()">💸 PayPal</button>
   </div>
@@ -118,8 +140,8 @@
     <a href="besorgungen.html">🛒 Besorgungen öffnen</a>
   </div>
 
-  <div id="paypalModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background-color:rgba(0,0,0,0.85); justify-content:center; align-items:center; z-index:9999;">
-    <img src="frame.png" alt="PayPal QR" style="max-width:90%; max-height:90%; border:8px solid #fff; border-radius:12px;" onclick="togglePayPal()">
+  <div id="paypalModal">
+    <img src="frame.png" alt="PayPal QR" onclick="togglePayPal()">
   </div>
 
   <script>
@@ -144,7 +166,7 @@
       html += `<th>Gesamt (€)</th><th>Reset</th></tr></thead><tbody>`;
 
       for (const person of people) {
-        html += `<tr><th>${person}</th>`;
+        html += `<tr><th style="color: #fff;">${person}</th>`;
         for (const drink in prices) {
           const id = `${person}_${drink}`;
           html += `
