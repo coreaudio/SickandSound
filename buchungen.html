@@ -1,32 +1,30 @@
 <!DOCTYPE html>
 <html lang="de">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="UTF-8" />
   <title>Buchungsliste</title>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;800&display=swap" rel="stylesheet" />
   <style>
-    body { font-family: Arial, sans-serif; padding: 20px; }
-    table { width: 100%; border-collapse: collapse; }
-    th, td { border: 1px solid #ccc; padding: 8px; text-align: center; }
+    body { background:#0f1117; color:#fff; font-family:'Orbitron',sans-serif; margin:20px; }
+    table { width:100%; border-collapse:collapse; background:#1a1d24; }
+    th,td { padding:10px; border-bottom:1px solid #333; text-align:center; }
+    th { background:#222; }
+    .btn { padding:10px 16px; border:none; border-radius:8px; cursor:pointer; font-weight:bold; }
   </style>
 </head>
 <body>
-  <h1>Alle Buchungen</h1>
-  <table>
-    <thead>
-      <tr><th>Datum</th><th>Hausdienst</th><th>Summe</th></tr>
-    </thead>
-    <tbody id="buchungenListe"></tbody>
-  </table>
+  <h1>Buchungsliste</h1>
+  <table id="buchungen"><thead><tr><th>Datum</th><th>Person</th><th>Summe (€)</th></tr></thead><tbody></tbody></table>
   <br>
-  <button onclick="window.location.href='index.html'">Zurück</button>
+  <button class="btn" style="background:#444; color:#fff;" onclick="window.location='index.html'">⬅ Zurück</button>
 
   <script>
-    let buchungen = JSON.parse(localStorage.getItem("buchungen")) || [];
-    let tbody = document.getElementById("buchungenListe");
-    buchungen.forEach(b => {
-      let tr = document.createElement("tr");
-      tr.innerHTML = `<td>${b.datum}</td><td>${b.person}</td><td>${b.summe}€</td>`;
-      tbody.appendChild(tr);
+    let bookings=JSON.parse(localStorage.getItem("sick_sound_bookings"))||[];
+    let tbody=document.querySelector("#buchungen tbody");
+    bookings.forEach(b=>{
+      let row=document.createElement("tr");
+      row.innerHTML=`<td>${b.date}</td><td>${b.person}</td><td>${b.sum.toFixed(2)}</td>`;
+      tbody.appendChild(row);
     });
   </script>
 </body>
