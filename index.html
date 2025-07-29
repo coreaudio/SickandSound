@@ -70,6 +70,13 @@
     .gold { color: gold; }
     .silver { color: silver; }
     .bronze { color: #cd7f32; }
+    /* Hausdienst Highlight */
+    .hausdienst {
+      background-color: #00c9a7;
+      color: #000 !important;
+      border-radius: 6px;
+      padding: 2px 6px;
+    }
     #paypalModal {
       display:none; position:fixed; top:0; left:0; width:100%; height:100%;
       background-color:rgba(0,0,0,0.85); justify-content:center; align-items:center; z-index:9999;
@@ -141,7 +148,7 @@
       for (const drink in prices){
         html += `<th draggable="true" data-col="${drink}" onclick="deleteColumn('${drink}')">${drink.replace('_',' ')}<br>(${prices[drink]}€)</th>`;
       }
-      html += `<th>Gesamt (€)</th><th>Reset</th><th>Hausdienst</th></tr></thead><tbody>`;
+      html += `<th>Gesamt (€)</th><th>Reset</th></tr></thead><tbody>`;
 
       people.forEach(person=>{
         let rankClass = "";
@@ -150,16 +157,16 @@
         else if (stats[1] && stats[1][0]===person) rankClass="silver";
         else if (stats[2] && stats[2][0]===person) rankClass="bronze";
 
-        html += `<tr><th onclick="deletePerson('${person}')" class="${rankClass}">${person}</th>`;
+        let hausdienstMark = hausdienst.current===person ? "hausdienst" : "";
+
+        html += `<tr><th onclick="deletePerson('${person}')" class="${rankClass} ${hausdienstMark}">${person}</th>`;
         for (const drink in prices){
           const id = `${person}_${drink}`;
           const val = data[id]||0;
           html += `<td><div id="${id}" class="counter">${val}</div><button class="btn plus" onclick="changeValue('${id}',1)">+1</button></td>`;
         }
-        let isHausdienst = hausdienst.current===person;
         html += `<td id="${person}_Total">0.00</td>
                  <td><button class="btn reset" onclick="resetPerson('${person}')">Reset</button></td>
-                 <td><button class="btn" style="background:${isHausdienst?'#00c9a7':'#444'}; color:#000;" disabled>Hausdienst</button></td>
                  </tr>`;
       });
 
