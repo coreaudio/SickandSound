@@ -31,7 +31,13 @@
     .undo { background-color: #ffa500; color: #000; }
     .paypal { background-color: #0070ba; color: #fff; }
     .delete { background-color: #ff4444; color: #fff; }
-    .counter { font-size: 1.2em; margin-bottom: 5px; font-weight: bold; }
+    .footer {
+      margin-top: auto;
+      padding: 10px 0;
+      display: flex;
+      justify-content: center;
+      gap: 20px;
+    }
     table {
       width: 100%;
       border-collapse: collapse;
@@ -46,23 +52,8 @@
       text-align: center;
       border-bottom: 1px solid #2a2d34;
     }
-    th {
-      font-size: 1em;
-      font-weight: 600;
-      color: #ffffff;
-      cursor: pointer;
-    }
-    td:last-child {
-      font-weight: bold;
-      color: #ffd700;
-    }
-    .footer {
-      margin-top: auto;
-      padding: 10px 0;
-      display: flex;
-      justify-content: center;
-      gap: 20px;
-    }
+    th { font-size: 1em; font-weight: 600; color: #ffffff; }
+    td:last-child { font-weight: bold; color: #ffd700; }
     .gold { color: gold; }
     .silver { color: silver; }
     .bronze { color: #cd7f32; }
@@ -78,6 +69,11 @@
 <body>
   <div style="text-align:center; margin-bottom: 10px;">
     <img src="02_SICK _ SOUND_WHITE_TYPE.png" alt="Sick & Sound Logo" style="max-width: 300px; height: auto;">
+  </div>
+
+  <!-- Anzeige aktueller Hausdienst -->
+  <div id="hausdienstAktuell" style="text-align:center; margin-bottom:15px; font-size:1.2em; font-weight:bold; color:#00c9a7;">
+    Aktueller Hausdienst: -
   </div>
 
   <div id="tableContainer" style="flex-grow:1; overflow:auto;"></div>
@@ -131,7 +127,7 @@
       people.sort();
       let html = `<table><thead><tr><th>Person</th>`;
       for (const drink in prices){
-        html += `<th data-col="${drink}" onclick="handleColumnClick('${drink}')">${drink.replace('_',' ')}<br>(${prices[drink]}€)</th>`;
+        html += `<th>${drink.replace('_',' ')}<br>(${prices[drink]}€)</th>`;
       }
       html += `<th>Gesamt (€)</th><th>Reset</th></tr></thead><tbody>`;
 
@@ -142,19 +138,23 @@
         else if (stats[1] && stats[1][0]===person) rankClass="silver";
         else if (stats[2] && stats[2][0]===person) rankClass="bronze";
 
-        html += `<tr><th class="${rankClass}" onclick="handlePersonClick('${person}')">${person}</th>`;
+        let highlight = (hausdienst.current===person) ? "style='background-color:#004d40; font-weight:bold;'" : "";
+
+        html += `<tr ${highlight}><th class="${rankClass}">${person}</th>`;
         for (const drink in prices){
           const id = `${person}_${drink}`;
           const val = data[id]||0;
           html += `<td><div id="${id}" class="counter">${val}</div><button class="btn plus" onclick="changeValue('${id}',1)">+1</button></td>`;
         }
         html += `<td id="${person}_Total">0.00</td>
-                 <td><button class="btn reset" onclick="resetPerson('${person}')">Reset</button></td></tr>`;
+                 <td><button class="btn reset" onclick="resetPerson('${person}')">Reset</button></td>
+                 </tr>`;
       });
 
       html += `</tbody></table>`;
       document.getElementById("tableContainer").innerHTML = html;
       updateAllTotals();
+      updateHausdienstAnzeige();
     }
 
     function changeValue(id,delta){
@@ -219,26 +219,13 @@
       alert(deleteMode?"Löschmodus aktiv: Klicke auf Spalte oder Person":"Löschmodus deaktiviert");
     }
 
-    function handleColumnClick(drink){
-      if (!deleteMode) return;
-      if (!confirm(`${drink} wirklich löschen?`)) return;
-      delete prices[drink];
-      for (let key in data){
-        if (key.endsWith("_"+drink)) delete data[key];
+    function updateHausdienstAnzeige(){
+      let el = document.getElementById("hausdienstAktuell");
+      if(hausdienst.current){
+        el.innerHTML = "🏠 Aktueller Hausdienst: <span style='color:#ffd700'>" + hausdienst.current + "</span>";
+      } else {
+        el.innerHTML = "🏠 Aktueller Hausdienst: -";
       }
-      saveAll();
-      buildTable();
-    }
-
-    function handlePersonClick(person){
-      if (!deleteMode) return;
-      if (!confirm(`${person} wirklich löschen?`)) return;
-      people = people.filter(p=>p!==person);
-      for (let key in data){
-        if (key.startsWith(person+"_")) delete data[key];
-      }
-      saveAll();
-      buildTable();
     }
 
     window.onload=()=>buildTable();
