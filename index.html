@@ -1,72 +1,104 @@
-<script>
-  const peopleKey="sick_sound_people";
-  const drinksKey="sick_sound_drinks";
-  let deleteMode=false;
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <title>Indexliste</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 20px; }
+    h3 { margin-top: 20px; }
+    ul { list-style: none; padding: 0; }
+    li { margin: 5px 0; padding: 6px; background: #f0f0f0; border-radius: 5px; cursor: pointer; }
+    li:hover { background: #ddd; }
+    input { margin: 5px 0; padding: 5px; }
+    button { margin: 5px 0; padding: 6px 10px; cursor: pointer; }
+    #deleteButton { background: #ffcccc; border: 1px solid #cc0000; }
+  </style>
+</head>
+<body>
+  <h2>Indexliste</h2>
 
-  let people=JSON.parse(localStorage.getItem(peopleKey))||[];
-  let drinks=JSON.parse(localStorage.getItem(drinksKey))||[];
+  <button id="deleteButton" onclick="toggleDeleteMode()">🗑 Löschmodus</button>
 
-  function save(){
-    localStorage.setItem(peopleKey,JSON.stringify(people));
-    localStorage.setItem(drinksKey,JSON.stringify(drinks));
-  }
+  <div>
+    <h3>➕ Person hinzufügen</h3>
+    <input type="text" id="newPerson" placeholder="Name eingeben">
+    <button onclick="addPerson()">Hinzufügen</button>
+  </div>
 
-  function toggleDeleteMode(){
-    deleteMode=!deleteMode;
-    document.getElementById("deleteButton").innerText=
-      deleteMode?"❌ Löschmodus aktiv!":"🗑 Löschmodus";
-  }
+  <div>
+    <h3>➕ Getränk hinzufügen</h3>
+    <input type="text" id="newDrink" placeholder="Getränk eingeben">
+    <button onclick="addDrink()">Hinzufügen</button>
+  </div>
 
-  function renderPeople(){
-    let html="<h3>👤 Personen</h3><ul>";
-    people.forEach((p,i)=>{
-      html+=`<li onclick="handlePersonClick(${i})">${p}</li>`;
-    });
-    html+="</ul>";
-    document.getElementById("peopleList").innerHTML=html;
-  }
+  <div id="peopleList"></div>
+  <div id="drinksList"></div>
 
-  function renderDrinks(){
-    let html="<h3>🥤 Getränke</h3><ul>";
-    drinks.forEach((d,i)=>{
-      html+=`<li onclick="handleDrinkClick(${i})">${d}</li>`;
-    });
-    html+="</ul>";
-    document.getElementById("drinksList").innerHTML=html;
-  }
+  <script>
+    const peopleKey = "sick_sound_people";
+    const drinksKey = "sick_sound_drinks";
+    let deleteMode = false;
 
-  function handlePersonClick(index){
-    if(deleteMode){
-      if(confirm(`Person "${people[index]}" wirklich löschen?`)){
-        people.splice(index,1);
-        save();
-        renderPeople();
-      }
-      deleteMode=false; // Löschmodus automatisch aus
-      document.getElementById("deleteButton").innerText="🗑 Löschmodus";
-    } else {
-      // hier deine normale Personenauswahl
-      alert("Ausgewählt: "+people[index]);
+    let people = JSON.parse(localStorage.getItem(peopleKey)) || [];
+    let drinks = JSON.parse(localStorage.getItem(drinksKey)) || [];
+
+    function save() {
+      localStorage.setItem(peopleKey, JSON.stringify(people));
+      localStorage.setItem(drinksKey, JSON.stringify(drinks));
     }
-  }
 
-  function handleDrinkClick(index){
-    if(deleteMode){
-      if(confirm(`Getränk "${drinks[index]}" wirklich löschen?`)){
-        drinks.splice(index,1);
-        save();
-        renderDrinks();
-      }
-      deleteMode=false; // Löschmodus automatisch aus
-      document.getElementById("deleteButton").innerText="🗑 Löschmodus";
-    } else {
-      // hier deine normale Getränk-Auswahl
-      alert("Ausgewählt: "+drinks[index]);
+    function toggleDeleteMode() {
+      deleteMode = !deleteMode;
+      document.getElementById("deleteButton").innerText =
+        deleteMode ? "❌ Löschmodus aktiv!" : "🗑 Löschmodus";
     }
-  }
 
-  window.onload=()=>{
-    renderPeople();
-    renderDrinks();
-  }
-</script>
+    function renderPeople() {
+      let html = "<h3>👤 Personen</h3><ul>";
+      people.forEach((p, i) => {
+        html += `<li onclick="handlePersonClick(${i})">${p}</li>`;
+      });
+      html += "</ul>";
+      document.getElementById("peopleList").innerHTML = html;
+    }
+
+    function renderDrinks() {
+      let html = "<h3>🥤 Getränke</h3><ul>";
+      drinks.forEach((d, i) => {
+        html += `<li onclick="handleDrinkClick(${i})">${d}</li>`;
+      });
+      html += "</ul>";
+      document.getElementById("drinksList").innerHTML = html;
+    }
+
+    function handlePersonClick(index) {
+      if (deleteMode) {
+        if (confirm(`Person "${people[index]}" wirklich löschen?`)) {
+          people.splice(index, 1);
+          save();
+          renderPeople();
+        }
+        // Löschmodus nach einer Aktion automatisch beenden
+        deleteMode = false;
+        document.getElementById("deleteButton").innerText = "🗑 Löschmodus";
+      } else {
+        alert("Ausgewählt: " + people[index]);
+      }
+    }
+
+    function handleDrinkClick(index) {
+      if (deleteMode) {
+        if (confirm(`Getränk "${drinks[index]}" wirklich löschen?`)) {
+          drinks.splice(index, 1);
+          save();
+          renderDrinks();
+        }
+        // Löschmodus nach einer Aktion automatisch beenden
+        deleteMode = false;
+        document.getElementById("deleteButton").innerText = "🗑 Löschmodus";
+      } else {
+        alert("Ausgewählt: " + drinks[index]);
+      }
+    }
+
+    function
