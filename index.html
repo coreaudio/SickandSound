@@ -1,129 +1,270 @@
 <!DOCTYPE html>
 <html lang="de">
 <head>
-  <meta charset="UTF-8">
-  <title>Indexliste</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;800&display=swap" rel="stylesheet">
+  <meta charset="UTF-8" />
+  <title>Sick & Sound Strichliste</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;800&display=swap" rel="stylesheet" />
   <style>
-    body {
-      background:#0f1117;
-      font-family:'Orbitron',sans-serif;
-      color:#fff;
-      margin:0;
-      padding:20px;
-      display:flex;
-      flex-direction:column;
-      min-height:100vh;
+    html, body {
+      height: 100%;
+      overflow: hidden;
+      background-color: #0f1117;
+      font-family: 'Orbitron', sans-serif;
+      color: #f1f1f1;
+      margin: 0;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
     }
-    h1 { text-align:center; }
     table {
-      width:100%; border-collapse:collapse; background:#1a1d24;
-      margin-bottom:20px;
+      width: 100%;
+      border-collapse: collapse;
+      background-color: #1a1d24;
+      table-layout: fixed;
+      font-size: 0.9em;
+      flex-grow: 1;
     }
-    th,td { padding:10px; border-bottom:1px solid #333; text-align:center; }
-    th { background:#222; }
+    th, td {
+      padding: 6px;
+      text-align: center;
+      border-bottom: 1px solid #2a2d34;
+    }
+    th {
+      font-size: 1em;
+      font-weight: 600;
+      color: #ffffff;
+    }
+    td:last-child {
+      font-weight: bold;
+      color: #ffd700;
+    }
     .btn {
-      padding:6px 12px;
-      border:none; border-radius:6px;
-      cursor:pointer; font-weight:bold;
+      padding: 8px 14px;
+      font-size: 0.9em;
+      font-weight: bold;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      margin: 2px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.4);
     }
-    .delete { background:#e74c3c; color:#fff; }
-    .add { background:#00c9a7; color:#000; }
-    .back { background:#444; color:#fff; }
-    .toolbar {
-      display:flex;
-      justify-content:center;
-      gap:10px;
-      margin-bottom:20px;
-      flex-wrap:wrap;
+    .plus { background-color: #00c9a7; color: #000; }
+    .reset { background-color: #555; color: #fff; }
+    .undo { background-color: #ffa500; color: #000; }
+    .paypal { background-color: #0070ba; color: #fff; }
+    .delete { background-color: #ff4444; color: #fff; }
+    .add { background-color: #4caf50; color: #fff; }
+    .footer {
+      margin-top: auto;
+      padding: 10px 0;
+      display: flex;
+      justify-content: center;
+      gap: 15px;
+      flex-wrap: wrap;
     }
+    .gold { color: gold; }
+    .silver { color: silver; }
+    .bronze { color: #cd7f32; }
     .hausdienst {
-      background:#00c9a7; color:#000 !important;
-      border-radius:6px; padding:2px 6px;
+      background-color: #00c9a7;
+      color: #000 !important;
+      border-radius: 6px;
+      padding: 2px 6px;
     }
+    #paypalModal {
+      display:none; position:fixed; top:0; left:0; width:100%; height:100%;
+      background-color:rgba(0,0,0,0.85); justify-content:center; align-items:center; z-index:9999;
+    }
+    #paypalModal img {
+      max-width:90%; max-height:90%; border:8px solid #fff; border-radius:12px;
+    }
+    .delete-active { background-color: #ff8800 !important; }
   </style>
 </head>
 <body>
-  <h1>📋 Indexliste</h1>
-
-  <div class="toolbar">
-    <button class="btn add" onclick="addDrink()">➕ Getränk hinzufügen</button>
-    <button class="btn delete" onclick="toggleDeleteMode()">🗑 Löschen</button>
-    <button class="btn back" onclick="window.location='hausdienst.html'">🏠 Hausdienst</button>
+  <div style="text-align:center; margin-bottom: 10px;">
+    <img src="02_SICK _ SOUND_WHITE_TYPE.png" alt="Sick & Sound Logo" style="max-width: 300px; height: auto;">
   </div>
 
-  <div id="indexTable"></div>
+  <div id="tableContainer" style="flex-grow:1; overflow:auto;"></div>
+
+  <!-- Buttons unten -->
+  <div class="footer">
+    <button class="btn add" onclick="addDrink()">➕ Getränk hinzufügen</button>
+    <button class="btn undo" onclick="undoLast()">↩ Rückgängig</button>
+    <button class="btn paypal" onclick="togglePayPal()">💸 PayPal</button>
+    <button id="deleteBtn" class="btn delete" onclick="toggleDeleteMode()">🗑 Löschen</button>
+    <button class="btn" style="background:#444; color:#fff;" onclick="window.location='buchungen.html'">📖 Buchungen</button>
+    <button class="btn" style="background:#444; color:#fff;" onclick="window.location='hausdienst.html'">🏆 Hausdienst Rangliste</button>
+  </div>
+
+  <!-- PayPal Modal -->
+  <div id="paypalModal" onclick="togglePayPal()">
+    <img src="frame.png" alt="PayPal QR">
+  </div>
 
   <script>
+    const pricesKey = "sick_sound_prices";
     const peopleKey = "sick_sound_people";
-    const drinksKey = "sick_sound_drinks";
+    const dataKey = "sick_sound_data";
+    const historyKey = "sick_sound_history";
+    const bookingsKey = "sick_sound_bookings";
+    const hausdienstKey = "sick_sound_hausdienst";
 
-    let people = JSON.parse(localStorage.getItem(peopleKey)) || ["Max","Lisa","Tom"];
-    let drinks = JSON.parse(localStorage.getItem(drinksKey)) || { "Wasser":1.0, "Cola":1.5 };
-
+    let prices = JSON.parse(localStorage.getItem(pricesKey)) || {
+      "Cola_Zero": 1.0,
+      "Monster": 1.5,
+      "Wasser": 0.5,
+      "Kaffee": 1.0,
+      "Mittagessen": 6.0
+    };
+    let people = JSON.parse(localStorage.getItem(peopleKey)) || ["Chris","Daniel","Elmi","Florian","Joel","Kevin","Kiste","Marco","Meli","Simon"];
+    let data = JSON.parse(localStorage.getItem(dataKey)) || {};
+    let history = JSON.parse(localStorage.getItem(historyKey)) || [];
+    let bookings = JSON.parse(localStorage.getItem(bookingsKey)) || [];
+    let hausdienst = JSON.parse(localStorage.getItem(hausdienstKey)) || { current: null, stats: {} };
     let deleteMode = false;
 
-    function save(){
+    function saveAll(){
+      localStorage.setItem(pricesKey, JSON.stringify(prices));
       localStorage.setItem(peopleKey, JSON.stringify(people));
-      localStorage.setItem(drinksKey, JSON.stringify(drinks));
+      localStorage.setItem(dataKey, JSON.stringify(data));
+      localStorage.setItem(historyKey, JSON.stringify(history));
+      localStorage.setItem(bookingsKey, JSON.stringify(bookings));
+      localStorage.setItem(hausdienstKey, JSON.stringify(hausdienst));
     }
 
-    function renderTable(){
-      let drinkNames = Object.keys(drinks);
-
+    function buildTable(){
+      people.sort();
       let html = `<table><thead><tr><th>Person</th>`;
-      drinkNames.forEach(d=>{
-        html += `<th>${d}<br>(${drinks[d].toFixed(2)}€)</th>`;
-      });
-      html += `<th>Aktion</th></tr></thead><tbody>`;
+      for (const drink in prices){
+        html += `<th onclick="deleteColumn('${drink}')">${drink.replace('_',' ')}<br>(${prices[drink]}€)</th>`;
+      }
+      html += `<th>Gesamt (€)</th><th>Reset</th></tr></thead><tbody>`;
 
-      people.forEach(p=>{
-        html += `<tr><td>${p}</td>`;
-        drinkNames.forEach(d=>{
-          html += `<td>0</td>`; // hier könnte später die Zählung drin stehen
-        });
-        html += `<td>`;
-        if(deleteMode){
-          html += `<button class="btn delete" onclick="deletePerson('${p}')">❌</button>`;
+      people.forEach(person=>{
+        let rankClass = "";
+        let stats = Object.entries(hausdienst.stats||{}).sort((a,b)=>b[1]-a[1]);
+        if (stats[0] && stats[0][0]===person) rankClass="gold";
+        else if (stats[1] && stats[1][0]===person) rankClass="silver";
+        else if (stats[2] && stats[2][0]===person) rankClass="bronze";
+
+        let hausdienstMark = hausdienst.current===person ? "hausdienst" : "";
+
+        html += `<tr><th onclick="deletePerson('${person}')" class="${rankClass} ${hausdienstMark}">${person}</th>`;
+        for (const drink in prices){
+          const id = `${person}_${drink}`;
+          const val = data[id]||0;
+          html += `<td><div id="${id}" class="counter">${val}</div><button class="btn plus" onclick="changeValue('${id}',1)">+1</button></td>`;
         }
-        html += `</td></tr>`;
+        html += `<td id="${person}_Total">0.00</td>
+                 <td><button class="btn reset" onclick="resetPerson('${person}')">Reset</button></td>
+                 </tr>`;
       });
 
       html += `</tbody></table>`;
-      document.getElementById("indexTable").innerHTML = html;
+      document.getElementById("tableContainer").innerHTML = html;
+      updateAllTotals();
+    }
+
+    function changeValue(id,delta){
+      const el=document.getElementById(id);
+      const current=parseInt(el.textContent||'0');
+      const next=Math.max(0,current+delta);
+      history.push({id,prev:current,action:"change"});
+      data[id]=next;
+      el.textContent=next;
+      updateTotal(id.split('_')[0]);
+      saveAll();
+    }
+
+    function updateTotal(person){
+      let total=0;
+      for (const drink in prices){
+        const id=`${person}_${drink}`;
+        total += (data[id]||0)*prices[drink];
+      }
+      document.getElementById(person+"_Total").textContent=total.toFixed(2);
+    }
+
+    function updateAllTotals(){ people.forEach(p=>updateTotal(p)); }
+
+    function resetPerson(person){
+      if (!confirm(`Alle Striche von ${person} zurücksetzen?`)) return;
+      let sum=parseFloat(document.getElementById(person+"_Total").textContent);
+      history.push({person,sum,action:"reset"});
+      bookings.push({date:new Date().toLocaleDateString("de-DE"),person,sum});
+      for (const drink in prices){
+        const id=`${person}_${drink}`;
+        data[id]=0;
+      }
+      document.getElementById(person+"_Total").textContent="0.00";
+      saveAll();
+      buildTable();
+    }
+
+    function undoLast(){
+      const last=history.pop();
+      if (!last) return;
+      if (last.action==="change"){
+        data[last.id]=last.prev;
+      } else if (last.action==="reset"){
+        bookings=bookings.filter(b=>!(b.person===last.person && b.sum===last.sum));
+      }
+      saveAll();
+      buildTable();
+    }
+
+    function togglePayPal(){
+      const modal=document.getElementById('paypalModal');
+      modal.style.display=(modal.style.display==="flex")?"none":"flex";
     }
 
     function toggleDeleteMode(){
-      deleteMode = !deleteMode;
-      renderTable();
+      deleteMode=!deleteMode;
+      const btn=document.getElementById("deleteBtn");
+      if(deleteMode){
+        btn.classList.add("delete-active");
+        alert("🗑 Löschmodus aktiviert: Klicke auf eine Person oder Getränk-Spalte zum Löschen.");
+      } else {
+        btn.classList.remove("delete-active");
+      }
     }
 
-    function deletePerson(name){
-      people = people.filter(p=>p!==name);
-      save();
-      deleteMode = false; // automatisch wieder aus
-      renderTable();
+    function deletePerson(person){
+      if(!deleteMode) return;
+      if(confirm(`${person} wirklich löschen?`)){
+        people=people.filter(p=>p!==person);
+        saveAll();
+      }
+      deleteMode=false;
+      document.getElementById("deleteBtn").classList.remove("delete-active");
+      buildTable();
+    }
+
+    function deleteColumn(drink){
+      if(!deleteMode) return;
+      if(confirm(`Getränk "${drink}" wirklich löschen?`)){
+        delete prices[drink];
+        saveAll();
+      }
+      deleteMode=false;
+      document.getElementById("deleteBtn").classList.remove("delete-active");
+      buildTable();
     }
 
     function addDrink(){
-      let name = prompt("Name des Getränks:");
+      let name = prompt("Name des neuen Getränks:");
       if(!name) return;
-      if(drinks[name]){
-        alert("Getränk existiert bereits!");
-        return;
-      }
-      let price = parseFloat(prompt("Preis in €:"));
-      if(isNaN(price) || price<=0){
-        alert("Ungültiger Preis!");
-        return;
-      }
-      drinks[name]=price;
-      save();
-      renderTable();
+      let price = parseFloat(prompt("Preis für "+name+" in €:"));
+      if(isNaN(price) || price<=0) return alert("Ungültiger Preis!");
+      prices[name.replace(" ","_")] = price;
+      saveAll();
+      buildTable();
     }
 
-    window.onload=()=>{ renderTable(); }
+    window.onload=()=>buildTable();
   </script>
 </body>
 </html>
