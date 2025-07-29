@@ -1,143 +1,262 @@
 <!DOCTYPE html>
 <html lang="de">
 <head>
-  <meta charset="UTF-8">
-  <title>Strichliste</title>
-  <link rel="stylesheet" href="style.css">
+  <meta charset="UTF-8" />
+  <title>Sick & Sound Strichliste</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;800&display=swap" rel="stylesheet" />
+  <style>
+    html, body {
+      height: 100%;
+      overflow: hidden;
+      background-color: #0f1117;
+      font-family: 'Orbitron', sans-serif;
+      color: #f1f1f1;
+      margin: 0;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+    }
+    .toolbar {
+      display: flex;
+      justify-content: center;
+      gap: 15px;
+    }
+    .btn {
+      padding: 10px 16px;
+      font-size: 1em;
+      font-weight: bold;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.4);
+    }
+    .plus { background-color: #00c9a7; color: #000; }
+    .reset { background-color: #555; color: #fff; }
+    .undo { background-color: #ffa500; color: #000; }
+    .paypal { background-color: #0070ba; color: #fff; }
+    .delete { background-color: #ff4444; color: #fff; }
+    .counter { font-size: 1.2em; margin-bottom: 5px; font-weight: bold; }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background-color: #1a1d24;
+      table-layout: fixed;
+      font-size: 0.9em;
+      flex-grow: 1;
+      overflow-y: auto;
+    }
+    th, td {
+      padding: 6px;
+      text-align: center;
+      border-bottom: 1px solid #2a2d34;
+    }
+    th {
+      font-size: 1em;
+      font-weight: 600;
+      color: #ffffff;
+      cursor: pointer;
+    }
+    td:last-child {
+      font-weight: bold;
+      color: #ffd700;
+    }
+    .footer {
+      margin-top: auto;
+      padding: 10px 0;
+      display: flex;
+      justify-content: center;
+      gap: 20px;
+    }
+    .gold { color: gold; }
+    .silver { color: silver; }
+    .bronze { color: #cd7f32; }
+    #paypalModal {
+      display:none; position:fixed; top:0; left:0; width:100%; height:100%;
+      background-color:rgba(0,0,0,0.85); justify-content:center; align-items:center; z-index:9999;
+    }
+    #paypalModal img {
+      max-width:90%; max-height:90%; border:8px solid #fff; border-radius:12px;
+    }
+  </style>
 </head>
 <body>
-<div class="container">
-
-  <h1>Strichliste</h1>
-
-  <!-- Navigation -->
-  <div class="nav-container">
-    <button onclick="window.location.href='buchungen.html'">Buchungen</button>
-    <button onclick="window.location.href='hausdienst.html'">Rangliste</button>
+  <div style="text-align:center; margin-bottom: 10px;">
+    <img src="02_SICK _ SOUND_WHITE_TYPE.png" alt="Sick & Sound Logo" style="max-width: 300px; height: auto;">
   </div>
 
-  <!-- Tabelle -->
-  <table id="drinkTable">
-    <thead>
-      <tr>
-        <th>Person</th>
-        <th>Cola</th>
-        <th>Wasser</th>
-        <th>Bier</th>
-      </tr>
-    </thead>
-    <tbody id="personBody">
-      <tr><td>Anna</td><td>0</td><td>0</td><td>0</td></tr>
-      <tr><td>Ben</td><td>0</td><td>0</td><td>0</td></tr>
-      <tr><td>Chris</td><td>0</td><td>0</td><td>0</td></tr>
-    </tbody>
-  </table>
+  <div id="tableContainer" style="flex-grow:1; overflow:auto;"></div>
 
   <!-- Buttons unten -->
-  <div class="button-container">
-    <button class="add" onclick="addColumn()">Add+</button>
-    <button onclick="addPerson()">+</button>
-    <button onclick="resetTable()">Reset</button>
-    <button onclick="undoReset()">Rückgängig</button>
-    <button class="delete-mode" onclick="toggleDeleteMode()">Löschen</button>
+  <div class="footer">
+    <button class="btn undo" onclick="undoLast()">↩ Rückgängig</button>
+    <button class="btn paypal" onclick="togglePayPal()">💸 PayPal</button>
+    <button class="btn delete" onclick="toggleDeleteMode()">🗑 Löschen</button>
+    <button class="btn" style="background:#444; color:#fff;" onclick="window.location='buchungen.html'">📖 Buchungen</button>
+    <button class="btn" style="background:#444; color:#fff;" onclick="window.location='hausdienst.html'">🏆 Hausdienst Rangliste</button>
   </div>
 
-</div>
+  <!-- PayPal Modal -->
+  <div id="paypalModal" onclick="togglePayPal()">
+    <img src="frame.png" alt="PayPal QR">
+  </div>
 
-<script>
-let deleteMode = false;
-let resetHistory = [];
+  <script>
+    const pricesKey = "sick_sound_prices";
+    const peopleKey = "sick_sound_people";
+    const dataKey = "sick_sound_data";
+    const historyKey = "sick_sound_history";
+    const bookingsKey = "sick_sound_bookings";
+    const hausdienstKey = "sick_sound_hausdienst";
 
-function addColumn() {
-  const table = document.getElementById("drinkTable");
-  const colName = prompt("Name des neuen Getränks?");
-  if (!colName) return;
+    let prices = JSON.parse(localStorage.getItem(pricesKey)) || {
+      "Cola_Zero": 1.0,
+      "Monster": 1.5,
+      "Wasser": 0.5,
+      "Kaffee": 1.0,
+      "Mittagessen": 6.0
+    };
+    let people = JSON.parse(localStorage.getItem(peopleKey)) || ["Chris","Daniel","Elmi","Florian","Joel","Kevin","Kiste","Marco","Meli","Simon"];
+    let data = JSON.parse(localStorage.getItem(dataKey)) || {};
+    let history = JSON.parse(localStorage.getItem(historyKey)) || [];
+    let bookings = JSON.parse(localStorage.getItem(bookingsKey)) || [];
+    let hausdienst = JSON.parse(localStorage.getItem(hausdienstKey)) || { current: null, stats: {} };
+    let deleteMode = false;
 
-  // Neue Spalte ins Header
-  const th = document.createElement("th");
-  th.innerText = colName;
-  th.onclick = () => { if(deleteMode) confirmDeleteColumn(th.cellIndex); };
-  table.rows[0].appendChild(th);
-
-  // Neue Spalte für jede Person
-  for (let i = 1; i < table.rows.length; i++) {
-    const td = document.createElement("td");
-    td.innerText = "0";
-    table.rows[i].appendChild(td);
-  }
-}
-
-function addPerson() {
-  const tbody = document.getElementById("personBody");
-  const name = prompt("Name der Person?");
-  if (!name) return;
-
-  const table = document.getElementById("drinkTable");
-  const row = document.createElement("tr");
-  const tdName = document.createElement("td");
-  tdName.innerText = name;
-  row.appendChild(tdName);
-
-  // Leerspalten für Getränke
-  for (let i = 1; i < table.rows[0].cells.length; i++) {
-    const td = document.createElement("td");
-    td.innerText = "0";
-    row.appendChild(td);
-  }
-
-  row.onclick = () => { if(deleteMode) confirmDeleteRow(row); };
-  tbody.appendChild(row);
-
-  sortTable();
-}
-
-function resetTable() {
-  const tbody = document.getElementById("personBody");
-  const rows = tbody.rows;
-  let log = [];
-  for (let r of rows) {
-    let sum = 0;
-    for (let i = 1; i < r.cells.length; i++) {
-      sum += parseInt(r.cells[i].innerText);
-      r.cells[i].innerText = "0";
+    function saveAll(){
+      localStorage.setItem(pricesKey, JSON.stringify(prices));
+      localStorage.setItem(peopleKey, JSON.stringify(people));
+      localStorage.setItem(dataKey, JSON.stringify(data));
+      localStorage.setItem(historyKey, JSON.stringify(history));
+      localStorage.setItem(bookingsKey, JSON.stringify(bookings));
+      localStorage.setItem(hausdienstKey, JSON.stringify(hausdienst));
     }
-    log.push({person: r.cells[0].innerText, sum: sum});
-  }
-  const date = new Date().toLocaleDateString("de-DE");
-  resetHistory.push({date: date, entries: log});
-  localStorage.setItem("buchungen", JSON.stringify(resetHistory));
-}
 
-function undoReset() {
-  if (resetHistory.length === 0) return;
-  resetHistory.pop();
-  localStorage.setItem("buchungen", JSON.stringify(resetHistory));
-}
+    function buildTable(){
+      people.sort();
+      let html = `<table><thead><tr><th>Person</th>`;
+      for (const drink in prices){
+        html += `<th data-col="${drink}" onclick="handleColumnClick('${drink}')">${drink.replace('_',' ')}<br>(${prices[drink]}€)</th>`;
+      }
+      html += `<th>Gesamt (€)</th><th>Reset</th><th>Hausdienst</th></tr></thead><tbody>`;
 
-function toggleDeleteMode() {
-  deleteMode = !deleteMode;
-  alert(deleteMode ? "Löschen-Modus aktiviert: Klick auf Person oder Spalte" : "Löschen-Modus deaktiviert");
-}
+      people.forEach(person=>{
+        let rankClass = "";
+        let stats = Object.entries(hausdienst.stats||{}).sort((a,b)=>b[1]-a[1]);
+        if (stats[0] && stats[0][0]===person) rankClass="gold";
+        else if (stats[1] && stats[1][0]===person) rankClass="silver";
+        else if (stats[2] && stats[2][0]===person) rankClass="bronze";
 
-function confirmDeleteRow(row) {
-  if (confirm("Person wirklich löschen?")) row.remove();
-}
+        html += `<tr><th class="${rankClass}" onclick="handlePersonClick('${person}')">${person}</th>`;
+        for (const drink in prices){
+          const id = `${person}_${drink}`;
+          const val = data[id]||0;
+          html += `<td><div id="${id}" class="counter">${val}</div><button class="btn plus" onclick="changeValue('${id}',1)">+1</button></td>`;
+        }
+        let isHausdienst = hausdienst.current===person;
+        html += `<td id="${person}_Total">0.00</td>
+                 <td><button class="btn reset" onclick="resetPerson('${person}')">Reset</button></td>
+                 <td><button class="btn" style="background:${isHausdienst?'#00c9a7':'#444'}; color:#000;" onclick="setHausdienst('${person}')">Hausdienst</button></td>
+                 </tr>`;
+      });
 
-function confirmDeleteColumn(index) {
-  if (confirm("Getränk wirklich löschen?")) {
-    const table = document.getElementById("drinkTable");
-    for (let r of table.rows) {
-      r.deleteCell(index);
+      html += `</tbody></table>`;
+      document.getElementById("tableContainer").innerHTML = html;
+      updateAllTotals();
     }
-  }
-}
 
-function sortTable() {
-  const tbody = document.getElementById("personBody");
-  let rows = Array.from(tbody.rows);
-  rows.sort((a, b) => a.cells[0].innerText.localeCompare(b.cells[0].innerText));
-  rows.forEach(r => tbody.appendChild(r));
-}
-</script>
+    function changeValue(id,delta){
+      const el=document.getElementById(id);
+      const current=parseInt(el.textContent||'0');
+      const next=Math.max(0,current+delta);
+      history.push({id,prev:current,action:"change"});
+      data[id]=next;
+      el.textContent=next;
+      updateTotal(id.split('_')[0]);
+      saveAll();
+    }
+
+    function updateTotal(person){
+      let total=0;
+      for (const drink in prices){
+        const id=`${person}_${drink}`;
+        total += (data[id]||0)*prices[drink];
+      }
+      document.getElementById(person+"_Total").textContent=total.toFixed(2);
+    }
+
+    function updateAllTotals(){
+      people.forEach(p=>updateTotal(p));
+    }
+
+    function resetPerson(person){
+      if (!confirm(`Alle Striche von ${person} zurücksetzen?`)) return;
+      let sum=parseFloat(document.getElementById(person+"_Total").textContent);
+      history.push({person,sum,action:"reset"});
+      bookings.push({date:new Date().toLocaleDateString("de-DE"),person,sum});
+      for (const drink in prices){
+        const id=`${person}_${drink}`;
+        data[id]=0;
+      }
+      document.getElementById(person+"_Total").textContent="0.00";
+      saveAll();
+      buildTable();
+    }
+
+    function undoLast(){
+      const last=history.pop();
+      if (!last) return;
+      if (last.action==="change"){
+        data[last.id]=last.prev;
+        document.getElementById(last.id).textContent=last.prev;
+        updateTotal(last.id.split('_')[0]);
+      } else if (last.action==="reset"){
+        bookings=bookings.filter(b=>!(b.person===last.person && b.sum===last.sum));
+      }
+      saveAll();
+      buildTable();
+    }
+
+    function togglePayPal(){
+      const modal=document.getElementById('paypalModal');
+      modal.style.display=(modal.style.display==="flex")?"none":"flex";
+    }
+
+    function toggleDeleteMode(){
+      deleteMode=!deleteMode;
+      alert(deleteMode?"Löschmodus aktiv: Klicke auf Spalte oder Person":"Löschmodus deaktiviert");
+    }
+
+    function handleColumnClick(drink){
+      if (!deleteMode) return;
+      if (!confirm(`${drink} wirklich löschen?`)) return;
+      delete prices[drink];
+      for (let key in data){
+        if (key.endsWith("_"+drink)) delete data[key];
+      }
+      saveAll();
+      buildTable();
+    }
+
+    function handlePersonClick(person){
+      if (!deleteMode) return;
+      if (!confirm(`${person} wirklich löschen?`)) return;
+      people = people.filter(p=>p!==person);
+      for (let key in data){
+        if (key.startsWith(person+"_")) delete data[key];
+      }
+      saveAll();
+      buildTable();
+    }
+
+    function setHausdienst(person){
+      hausdienst.current=person;
+      hausdienst.stats[person]=(hausdienst.stats[person]||0)+1;
+      saveAll();
+      buildTable();
+    }
+
+    window.onload=()=>buildTable();
+  </script>
 </body>
 </html>
