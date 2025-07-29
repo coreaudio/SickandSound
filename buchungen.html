@@ -2,32 +2,81 @@
 <html lang="de">
 <head>
   <meta charset="UTF-8">
-  <title>Buchungen</title>
+  <title>Sick & Sound – Buchungen</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;800&display=swap" rel="stylesheet">
   <style>
-    body { font-family: Arial, sans-serif; background:#f9f9f9; }
-    h1 { text-align:center; }
-    table { margin:20px auto; border-collapse:collapse; background:white; box-shadow:0 0 10px rgba(0,0,0,0.1); }
-    th, td { border:1px solid #ddd; padding:8px 12px; }
-    th { background:#eee; }
-    button { display:block; margin:20px auto; padding:10px 20px; border:none; background:#34495e; color:white; border-radius:6px; cursor:pointer; }
+    body {
+      background-color: #0f1117;
+      color: #f1f1f1;
+      font-family: 'Orbitron', sans-serif;
+      margin: 0;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+    }
+    h1 { text-align: center; margin-bottom: 20px; }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background-color: #1a1d24;
+      flex-grow: 1;
+      overflow-y: auto;
+    }
+    th, td {
+      padding: 10px;
+      text-align: center;
+      border-bottom: 1px solid #2a2d34;
+    }
+    th { font-size: 1em; font-weight: 600; color: #fff; }
+    .footer {
+      margin-top: auto;
+      padding: 10px 0;
+      display: flex;
+      justify-content: center;
+    }
+    .btn {
+      padding: 10px 16px;
+      font-size: 1em;
+      font-weight: bold;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.4);
+      background: #444;
+      color: #fff;
+    }
   </style>
 </head>
 <body>
-  <h1>📑 Buchungen</h1>
-  <table id="buchungen-table">
-    <thead><tr><th>Datum</th><th>Person</th><th>Summe</th></tr></thead>
-    <tbody></tbody>
-  </table>
-  <button onclick="window.location.href='index.html'">Zurück zur Strichliste</button>
+  <h1>📖 Buchungen</h1>
+  <div id="buchungenContainer"></div>
+
+  <div class="footer">
+    <button class="btn" onclick="window.location='index.html'">⬅ Zurück</button>
+  </div>
 
   <script>
-    let buchungen = JSON.parse(localStorage.getItem("buchungen")) || [];
-    const tbody=document.querySelector("#buchungen-table tbody");
-    buchungen.forEach(b=>{
-      const tr=document.createElement("tr");
-      tr.innerHTML=`<td>${b.date}</td><td>${b.person}</td><td>${b.sum}</td>`;
-      tbody.appendChild(tr);
-    });
+    const bookingsKey = "sick_sound_bookings";
+    let bookings = JSON.parse(localStorage.getItem(bookingsKey)) || [];
+
+    function buildBuchungen() {
+      if (bookings.length === 0) {
+        document.getElementById("buchungenContainer").innerHTML = "<p style='text-align:center;'>Keine Buchungen vorhanden.</p>";
+        return;
+      }
+
+      let html = `<table><thead><tr><th>Datum</th><th>Person</th><th>Betrag (€)</th></tr></thead><tbody>`;
+      bookings.forEach(b => {
+        html += `<tr><td>${b.date}</td><td>${b.person}</td><td>${b.sum.toFixed(2)}</td></tr>`;
+      });
+      html += "</tbody></table>";
+
+      document.getElementById("buchungenContainer").innerHTML = html;
+    }
+
+    window.onload = buildBuchungen;
   </script>
 </body>
 </html>
