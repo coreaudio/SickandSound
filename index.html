@@ -17,11 +17,6 @@
       display: flex;
       flex-direction: column;
     }
-    .toolbar {
-      display: flex;
-      justify-content: center;
-      gap: 15px;
-    }
     .btn {
       padding: 10px 16px;
       font-size: 1em;
@@ -138,7 +133,7 @@
       for (const drink in prices){
         html += `<th data-col="${drink}" onclick="handleColumnClick('${drink}')">${drink.replace('_',' ')}<br>(${prices[drink]}€)</th>`;
       }
-      html += `<th>Gesamt (€)</th><th>Reset</th><th>Hausdienst</th></tr></thead><tbody>`;
+      html += `<th>Gesamt (€)</th><th>Reset</th></tr></thead><tbody>`;
 
       people.forEach(person=>{
         let rankClass = "";
@@ -153,11 +148,8 @@
           const val = data[id]||0;
           html += `<td><div id="${id}" class="counter">${val}</div><button class="btn plus" onclick="changeValue('${id}',1)">+1</button></td>`;
         }
-        let isHausdienst = hausdienst.current===person;
         html += `<td id="${person}_Total">0.00</td>
-                 <td><button class="btn reset" onclick="resetPerson('${person}')">Reset</button></td>
-                 <td><button class="btn" style="background:${isHausdienst?'#00c9a7':'#444'}; color:#000;" onclick="setHausdienst('${person}')">Hausdienst</button></td>
-                 </tr>`;
+                 <td><button class="btn reset" onclick="resetPerson('${person}')">Reset</button></td></tr>`;
       });
 
       html += `</tbody></table>`;
@@ -245,13 +237,6 @@
       for (let key in data){
         if (key.startsWith(person+"_")) delete data[key];
       }
-      saveAll();
-      buildTable();
-    }
-
-    function setHausdienst(person){
-      hausdienst.current=person;
-      hausdienst.stats[person]=(hausdienst.stats[person]||0)+1;
       saveAll();
       buildTable();
     }
