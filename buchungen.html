@@ -1,40 +1,33 @@
 <!DOCTYPE html>
 <html lang="de">
 <head>
-  <meta charset="UTF-8" />
+  <meta charset="UTF-8">
   <title>Buchungsliste</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;800&display=swap" rel="stylesheet" />
   <style>
-    body { font-family: 'Orbitron', sans-serif; background: #0f1117; color: #f1f1f1; margin: 0; padding: 20px; }
-    h1 { text-align: center; margin-bottom: 20px; }
-    table { width: 100%; border-collapse: collapse; background: #1a1d24; }
-    th, td { padding: 10px; border: 1px solid #333; text-align: center; }
-    th { background: #222; }
-    tr:nth-child(even) { background: #2a2d34; }
-    .back { display: block; margin: 20px auto; padding: 10px 20px; background: #4444ff; color: #fff; border: none; border-radius: 6px; cursor: pointer; text-align: center; }
+    body { font-family: Arial, sans-serif; padding: 20px; }
+    table { width: 100%; border-collapse: collapse; }
+    th, td { border: 1px solid #ccc; padding: 8px; text-align: center; }
   </style>
 </head>
 <body>
-  <h1>📑 Buchungsliste</h1>
+  <h1>Alle Buchungen</h1>
   <table>
     <thead>
-      <tr><th>Datum</th><th>Person</th><th>Summe (€)</th></tr>
+      <tr><th>Datum</th><th>Hausdienst</th><th>Summe</th></tr>
     </thead>
-    <tbody id="buchungenBody"></tbody>
+    <tbody id="buchungenListe"></tbody>
   </table>
-  <button class="back" onclick="window.location.href='index.html'">⬅ Zurück</button>
+  <br>
+  <button onclick="window.location.href='index.html'">Zurück</button>
 
   <script>
-    const bookingsKey = 'sick_sound_bookings';
-    const buchungenBody = document.getElementById("buchungenBody");
-    let bookings = JSON.parse(localStorage.getItem(bookingsKey) || "[]");
-
-    for (let b of bookings) {
+    let buchungen = JSON.parse(localStorage.getItem("buchungen")) || [];
+    let tbody = document.getElementById("buchungenListe");
+    buchungen.forEach(b => {
       let tr = document.createElement("tr");
-      tr.innerHTML = `<td>${b.date}</td><td>${b.person}</td><td>${b.sum.toFixed(2)}</td>`;
-      buchungenBody.appendChild(tr);
-    }
+      tr.innerHTML = `<td>${b.datum}</td><td>${b.person}</td><td>${b.summe}€</td>`;
+      tbody.appendChild(tr);
+    });
   </script>
 </body>
 </html>
