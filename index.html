@@ -80,6 +80,18 @@
       max-width:90%; max-height:90%; border:8px solid #fff; border-radius:12px;
     }
     .delete-active { background-color: #ff8800 !important; }
+    .add-person-row td {
+      padding: 10px;
+      font-size: 1.2em;
+      cursor: pointer;
+      color: #00c9a7;
+      font-weight: bold;
+    }
+    .add-person-row td:hover {
+      background-color: #00c9a7;
+      color: #000;
+      border-radius: 6px;
+    }
   </style>
 </head>
 <body>
@@ -162,6 +174,9 @@
                  <td><button class="btn reset" onclick="resetPerson('${person}')">Reset</button></td>
                  </tr>`;
       });
+
+      // ➕ Person hinzufügen - Zeile
+      html += `<tr class="add-person-row"><td colspan="${Object.keys(prices).length+3}" onclick="addPerson()">➕ Person hinzufügen</td></tr>`;
 
       html += `</tbody></table>`;
       document.getElementById("tableContainer").innerHTML = html;
@@ -260,6 +275,15 @@
       let price = parseFloat(prompt("Preis für "+name+" in €:"));
       if(isNaN(price) || price<=0) return alert("Ungültiger Preis!");
       prices[name.replace(" ","_")] = price;
+      saveAll();
+      buildTable();
+    }
+
+    function addPerson(){
+      let name = prompt("Name der neuen Person:");
+      if(!name) return;
+      if(people.includes(name)) return alert("Person existiert bereits!");
+      people.push(name);
       saveAll();
       buildTable();
     }
