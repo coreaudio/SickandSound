@@ -1,79 +1,143 @@
-import tkinter as tk
-from tkinter import messagebox, ttk
-import random
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <title>Hausdienst Rangliste</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;800&display=swap" rel="stylesheet" />
+  <style>
+    body { background:#0f1117; color:#f1f1f1; font-family:'Orbitron',sans-serif; margin:20px; }
+    h2 { text-align:center; }
+    table { width:100%; border-collapse:collapse; background:#1a1d24; margin-bottom:20px; }
+    th, td { padding:8px; text-align:center; border-bottom:1px solid #2a2d34; }
+    th { font-size:1em; font-weight:600; }
+    .gold { color:gold; } .silver { color:silver; } .bronze { color:#cd7f32; }
+    .hausdienstAktuell { background:#00c9a7; color:#000; font-weight:bold; border-radius:6px; padding:2px 6px; }
+    .footer { margin-top:20px; display:flex; flex-wrap:wrap; justify-content:center; gap:15px; }
+    .btn { padding:10px 16px; border:none; border-radius:8px; cursor:pointer; font-weight:bold; }
+    .undo { background:#ffa500; color:#000; }
+    .back { background:#444; color:#fff; }
+    .select { background:#00c9a7; color:#000; }
+    .reset { background:#ff4444; color:#fff; }
+    h3 { margin-top:30px; }
+  </style>
+</head>
+<body>
+  <h2>🏆 Hausdienst Rangliste</h2>
+  <div id="hausdienstTable"></div>
 
-# --- Initialdaten ---
-schueler = [
-    "Anna", "Ben", "Carla", "David", "Ella",
-    "Finn", "Greta", "Henry", "Ida", "Jonas"
-]
+  <h3>📅 Monatsübersicht</h3>
+  <div id="monthlyTable"></div>
 
-punkte = {name: 0 for name in schueler}
-letzte_aktionen = []  # speichert die letzten Hausdienste (für Rückgängig)
+  <h3>📅 Jahresübersicht</h3>
+  <div id="yearlyTable"></div>
 
-# --- Funktionen ---
-def hausdienst_ziehen():
-    """Zufällig Schüler ziehen, Punkte vergeben und in Historie speichern."""
-    if not schueler:
-        messagebox.showinfo("Info", "Keine Schüler verfügbar!")
-        return
+  <div class="footer">
+    <button class="btn select" onclick="setRandomHausdienst()">🎲 Zufällig auswählen</button>
+    <button class="btn undo" onclick="undoHausdienst()">↩ Rückgängig</button>
+    <button class="btn reset" onclick="resetHausdienst()">♻ Reset</button>
+    <button class="btn back" onclick="window.location='index.html'">⬅ Zurück</button>
+  </div>
 
-    gezogen = random.choice(schueler)
-    punkte[gezogen] += 1
-    letzte_aktionen.append(gezogen)  # merken, falls Rückgängig gedrückt wird
+<script>
+  const hausdienstKey="sick_sound_hausdienst"; 
+  const peopleKey="sick_sound_people";
+  let hausdienst=JSON.parse(localStorage.getItem(hausdienstKey))||{current:null,stats:{},history:[]};
+  let people=JSON.parse(localStorage.getItem(peopleKey))||[];
 
-    update_liste()
-    messagebox.showinfo("Hausdienst", f"{gezogen} wurde für den Hausdienst ausgewählt!")
+  function save(){ localStorage.setItem(hausdienstKey,JSON.stringify(hausdienst)); }
 
-def rueckgaengig():
-    """Letzte Hausdienst-Aktion rückgängig machen."""
-    if not letzte_aktionen:
-        messagebox.showwarning("Warnung", "Keine Aktion zum Rückgängig machen!")
-        return
+  function buildHausdienstTable(){
+    // vollständige Liste (auch ohne Punkte)
+    let stats={};
+    people.forEach(p=>stats[p]=0);
+    for(let p in hausdienst.stats){ stats[p]=hausdienst.stats[p]; }
 
-    letzter = letzte_aktionen.pop()
-    if punkte[letzter] > 0:
-        punkte[letzter] -= 1
+    let arr=Object.entries(stats).sort((a,b)=>b[1]-a[1]||a[0].localeCompare(b[0]));
+    let html="<table><thead><tr><th>Platz</th><th>Person</th><th>Punkte</th><th>Aktion</th></tr></thead><tbody>";
+    arr.forEach(([person,punkte],i)=>{
+      let rankClass=i===0?"gold":i===1?"silver":i===2?"bronze":"";
+      let isAktuell=hausdienst.current===person;
+      html+=`<tr>
+               <td>${i+1}</td>
+               <td class="${rankClass}">${person} ${isAktuell?'<span class="hausdienstAktuell">Aktuell</span>':""}</td>
+               <td>${punkte}</td>
+               <td><button class="btn select" onclick="setHausdienst('${person}')">Hausdienst auswählen</button></td>
+             </tr>`;
+    });
+    html+="</tbody></table>";
+    document.getElementById("hausdienstTable").innerHTML=html;
+    buildMonthlyTable();
+    buildYearlyTable();
+  }
 
-    update_liste()
-    messagebox.showinfo("Rückgängig", f"Die Auswahl von {letzter} wurde rückgängig gemacht.")
+  function setHausdienst(person){
+    hausdienst.current=person;
+    hausdienst.stats[person]=(hausdienst.stats[person]||0)+1;
+    hausdienst.history.push({person,date:new Date().toISOString()});
+    save(); buildHausdienstTable();
+  }
 
-def update_liste():
-    """Hausdienst-Liste nach Rang sortieren und anzeigen."""
-    for row in tree.get_children():
-        tree.delete(row)
+  function setRandomHausdienst(){
+    if(people.length===0) return;
+    let randomPerson=people[Math.floor(Math.random()*people.length)];
+    setHausdienst(randomPerson);
+  }
 
-    # Sortierung: Nach Punkten (absteigend), bei Gleichstand nach Name
-    sortiert = sorted(punkte.items(), key=lambda x: (-x[1], x[0]))
+  function undoHausdienst(){
+    if(hausdienst.history.length===0) return;
+    let last=hausdienst.history.pop();
+    if(hausdienst.stats[last.person]>0){ hausdienst.stats[last.person]--; }
+    if(hausdienst.current===last.person){ hausdienst.current=null; }
+    save(); buildHausdienstTable();
+  }
 
-    for platz, (name, score) in enumerate(sortiert, start=1):
-        tree.insert("", "end", values=(platz, name, score))
+  function resetHausdienst(){
+    if(!confirm("⚠️ Willst du wirklich alle Punkte zurücksetzen?")) return;
+    hausdienst={current:null,stats:{},history:[]};
+    save(); buildHausdienstTable();
+  }
 
-# --- GUI Setup ---
-root = tk.Tk()
-root.title("Hausdienst-Liste")
+  function buildMonthlyTable(){
+    let now=new Date();
+    let currentMonth=now.getMonth();
+    let currentYear=now.getFullYear();
+    let monthlyStats={};
+    people.forEach(p=>monthlyStats[p]=0);
+    hausdienst.history.forEach(entry=>{
+      let d=new Date(entry.date);
+      if(d.getMonth()===currentMonth && d.getFullYear()===currentYear){
+        monthlyStats[entry.person]++;
+      }
+    });
+    renderTable("monthlyTable",monthlyStats,"Monat");
+  }
 
-frame = tk.Frame(root)
-frame.pack(pady=10)
+  function buildYearlyTable(){
+    let currentYear=new Date().getFullYear();
+    let yearlyStats={};
+    people.forEach(p=>yearlyStats[p]=0);
+    hausdienst.history.forEach(entry=>{
+      let d=new Date(entry.date);
+      if(d.getFullYear()===currentYear){
+        yearlyStats[entry.person]++;
+      }
+    });
+    renderTable("yearlyTable",yearlyStats,"Jahr");
+  }
 
-btn_ziehen = tk.Button(frame, text="Hausdienst ziehen", command=hausdienst_ziehen)
-btn_ziehen.grid(row=0, column=0, padx=5)
+  function renderTable(divId,stats,title){
+    let arr=Object.entries(stats).sort((a,b)=>b[1]-a[1]||a[0].localeCompare(b[0]));
+    let html="<table><thead><tr><th>Platz</th><th>Person</th><th>Punkte</th></tr></thead><tbody>";
+    arr.forEach(([person,punkte],i)=>{
+      let rankClass=i===0?"gold":i===1?"silver":i===2?"bronze":"";
+      html+=`<tr><td>${i+1}</td><td class="${rankClass}">${person}</td><td>${punkte}</td></tr>`;
+    });
+    html+="</tbody></table>";
+    document.getElementById(divId).innerHTML=html;
+  }
 
-btn_rueck = tk.Button(frame, text="Rückgängig", command=rueckgaengig)
-btn_rueck.grid(row=0, column=1, padx=5)
-
-# Treeview für Rangliste
-tree = ttk.Treeview(root, columns=("Platz", "Name", "Punkte"), show="headings", height=10)
-tree.heading("Platz", text="Platz")
-tree.heading("Name", text="Name")
-tree.heading("Punkte", text="Punkte")
-
-tree.column("Platz", width=50, anchor="center")
-tree.column("Name", width=120, anchor="center")
-tree.column("Punkte", width=80, anchor="center")
-
-tree.pack(pady=10)
-
-update_liste()
-
-root.mainloop()
+  window.onload=()=>buildHausdienstTable();
+</script>
+</body>
+</html>
