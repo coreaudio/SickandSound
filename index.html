@@ -2,7 +2,7 @@
 <html lang="de">
 <head>
   <meta charset="UTF-8">
-  <title>Hausdienst Rangliste</title>
+  <title>Indexliste</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;800&display=swap" rel="stylesheet">
   <style>
@@ -28,181 +28,102 @@
       border:none; border-radius:6px;
       cursor:pointer; font-weight:bold;
     }
-    .select { background:#00c9a7; color:#000; }
-    .undo { background:#ffa500; color:#000; }
-    .reset { background:#555; color:#fff; }
-    .add { background:#008cff; color:#fff; }
+    .delete { background:#e74c3c; color:#fff; }
+    .add { background:#00c9a7; color:#000; }
     .back { background:#444; color:#fff; }
+    .toolbar {
+      display:flex;
+      justify-content:center;
+      gap:10px;
+      margin-bottom:20px;
+      flex-wrap:wrap;
+    }
     .hausdienst {
       background:#00c9a7; color:#000 !important;
       border-radius:6px; padding:2px 6px;
     }
-    .gold { color:gold; }
-    .silver { color:silver; }
-    .bronze { color:#cd7f32; }
-    .toolbar {
-      display:flex;
-      justify-content:center;
-      flex-wrap:wrap;
-      gap:10px;
-      margin-bottom:20px;
-    }
   </style>
 </head>
 <body>
-  <h1>🏆 Hausdienst Rangliste</h1>
+  <h1>📋 Indexliste</h1>
 
   <div class="toolbar">
-    <button class="btn undo" onclick="undoHausdienst()">↩ Rückgängig</button>
-    <button class="btn reset" onclick="resetHausdienst()">🔄 Reset</button>
     <button class="btn add" onclick="addDrink()">➕ Getränk hinzufügen</button>
-    <button class="btn back" onclick="window.location='index.html'">⬅ Zurück</button>
+    <button class="btn delete" onclick="toggleDeleteMode()">🗑 Löschen</button>
+    <button class="btn back" onclick="window.location='hausdienst.html'">🏠 Hausdienst</button>
   </div>
 
-  <div id="ranking"></div>
-  <h2>📅 Monatsübersicht</h2>
-  <div id="monthly"></div>
-  <h2>📅 Jahresübersicht</h2>
-  <div id="yearly"></div>
+  <div id="indexTable"></div>
 
   <script>
-    const hausdienstKey = "sick_sound_hausdienst";
     const peopleKey = "sick_sound_people";
     const drinksKey = "sick_sound_drinks";
 
-    let people = JSON.parse(localStorage.getItem(peopleKey)) || [];
-    let hausdienst = JSON.parse(localStorage.getItem(hausdienstKey)) || { current:null, stats:{}, history:[], monthly:{}, yearly:{} };
-    let drinks = JSON.parse(localStorage.getItem(drinksKey)) || [];
+    let people = JSON.parse(localStorage.getItem(peopleKey)) || ["Max","Lisa","Tom"];
+    let drinks = JSON.parse(localStorage.getItem(drinksKey)) || { "Wasser":1.0, "Cola":1.5 };
+
+    let deleteMode = false;
 
     function save(){
-      localStorage.setItem(hausdienstKey, JSON.stringify(hausdienst));
+      localStorage.setItem(peopleKey, JSON.stringify(people));
       localStorage.setItem(drinksKey, JSON.stringify(drinks));
     }
 
-    function buildRanking(){
-      let html = `<table><thead><tr><th>Platz</th><th>Person</th><th>Punkte</th><th>Hausdienst</th>`;
-      drinks.forEach(d=> html += `<th>${d.name}<br>(${d.price.toFixed(2)}€)</th>`);
-      html += `</tr></thead><tbody>`;
+    function renderTable(){
+      let drinkNames = Object.keys(drinks);
 
-      // Ranking sortiert
-      let sorted = [...people].sort((a,b)=>(hausdienst.stats[b]||0)-(hausdienst.stats[a]||0));
-      let rank = 1;
-      sorted.forEach(p=>{
-        let score = hausdienst.stats[p]||0;
-        let rowClass = "";
-        if(rank===1) rowClass="gold";
-        else if(rank===2) rowClass="silver";
-        else if(rank===3) rowClass="bronze";
+      let html = `<table><thead><tr><th>Person</th>`;
+      drinkNames.forEach(d=>{
+        html += `<th>${d}<br>(${drinks[d].toFixed(2)}€)</th>`;
+      });
+      html += `<th>Aktion</th></tr></thead><tbody>`;
 
-        let hausdienstMark = hausdienst.current===p ? "hausdienst" : "";
-
-        html += `<tr>
-          <td>${rank}</td>
-          <td class="${rowClass} ${hausdienstMark}">${p}</td>
-          <td>${score}</td>
-          <td><button class="btn select" onclick="selectHausdienst('${p}')">Hausdienst auswählen</button></td>`;
-
-        drinks.forEach(d=>{
-          hausdienst.drinkStats = hausdienst.drinkStats || {};
-          hausdienst.drinkStats[p] = hausdienst.drinkStats[p] || {};
-          let amount = hausdienst.drinkStats[p][d.name]||0;
-          html += `<td>${amount}x <br><button class="btn" onclick="buyDrink('${p}','${d.name}')">+1</button></td>`;
+      people.forEach(p=>{
+        html += `<tr><td>${p}</td>`;
+        drinkNames.forEach(d=>{
+          html += `<td>0</td>`; // hier könnte später die Zählung drin stehen
         });
-
-        html += `</tr>`;
-        rank++;
+        html += `<td>`;
+        if(deleteMode){
+          html += `<button class="btn delete" onclick="deletePerson('${p}')">❌</button>`;
+        }
+        html += `</td></tr>`;
       });
 
       html += `</tbody></table>`;
-      document.getElementById("ranking").innerHTML=html;
+      document.getElementById("indexTable").innerHTML = html;
     }
 
-    function selectHausdienst(person){
-      hausdienst.history.push(JSON.parse(JSON.stringify(hausdienst)));
-
-      hausdienst.stats[person] = (hausdienst.stats[person]||0)+1;
-      hausdienst.current = person;
-
-      let now = new Date();
-      let monthKey = now.getFullYear()+"-"+(now.getMonth()+1);
-      let yearKey = now.getFullYear();
-
-      hausdienst.monthly[monthKey] = hausdienst.monthly[monthKey] || {};
-      hausdienst.monthly[monthKey][person] = (hausdienst.monthly[monthKey][person]||0)+1;
-
-      hausdienst.yearly[yearKey] = hausdienst.yearly[yearKey] || {};
-      hausdienst.yearly[yearKey][person] = (hausdienst.yearly[yearKey][person]||0)+1;
-
-      save();
-      buildRanking();
-      buildOverviews();
+    function toggleDeleteMode(){
+      deleteMode = !deleteMode;
+      renderTable();
     }
 
-    function undoHausdienst(){
-      if(hausdienst.history.length===0) return;
-      hausdienst = hausdienst.history.pop();
+    function deletePerson(name){
+      people = people.filter(p=>p!==name);
       save();
-      buildRanking();
-      buildOverviews();
-    }
-
-    function resetHausdienst(){
-      if(!confirm("Alle Hausdienst-Punkte zurücksetzen?")) return;
-      hausdienst.history.push(JSON.parse(JSON.stringify(hausdienst)));
-      hausdienst.stats = {};
-      hausdienst.current = null;
-      hausdienst.drinkStats = {};
-      save();
-      buildRanking();
-      buildOverviews();
+      deleteMode = false; // automatisch wieder aus
+      renderTable();
     }
 
     function addDrink(){
-      let name = prompt("Name des Getränks?");
+      let name = prompt("Name des Getränks:");
       if(!name) return;
-      let price = parseFloat(prompt("Preis des Getränks in €?"));
-      if(isNaN(price)) return alert("Ungültiger Preis!");
-      drinks.push({name, price});
+      if(drinks[name]){
+        alert("Getränk existiert bereits!");
+        return;
+      }
+      let price = parseFloat(prompt("Preis in €:"));
+      if(isNaN(price) || price<=0){
+        alert("Ungültiger Preis!");
+        return;
+      }
+      drinks[name]=price;
       save();
-      buildRanking();
+      renderTable();
     }
 
-    function buyDrink(person, drink){
-      hausdienst.history.push(JSON.parse(JSON.stringify(hausdienst)));
-      hausdienst.drinkStats = hausdienst.drinkStats || {};
-      hausdienst.drinkStats[person] = hausdienst.drinkStats[person] || {};
-      hausdienst.drinkStats[person][drink] = (hausdienst.drinkStats[person][drink]||0)+1;
-      save();
-      buildRanking();
-    }
-
-    function buildOverviews(){
-      // Monatsübersicht
-      let now = new Date();
-      let monthKey = now.getFullYear()+"-"+(now.getMonth()+1);
-      let monthData = hausdienst.monthly[monthKey]||{};
-      let monthHtml = `<table><thead><tr><th>Person</th><th>Hausdienste im Monat</th></tr></thead><tbody>`;
-      people.forEach(p=>{
-        monthHtml += `<tr><td>${p}</td><td>${monthData[p]||0}</td></tr>`;
-      });
-      monthHtml += `</tbody></table>`;
-      document.getElementById("monthly").innerHTML=monthHtml;
-
-      // Jahresübersicht
-      let yearKey = now.getFullYear();
-      let yearData = hausdienst.yearly[yearKey]||{};
-      let yearHtml = `<table><thead><tr><th>Person</th><th>Hausdienste im Jahr</th></tr></thead><tbody>`;
-      people.forEach(p=>{
-        yearHtml += `<tr><td>${p}</td><td>${yearData[p]||0}</td></tr>`;
-      });
-      yearHtml += `</tbody></table>`;
-      document.getElementById("yearly").innerHTML=yearHtml;
-    }
-
-    window.onload=()=>{
-      buildRanking();
-      buildOverviews();
-    }
+    window.onload=()=>{ renderTable(); }
   </script>
 </body>
 </html>
