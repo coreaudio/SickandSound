@@ -1,115 +1,240 @@
 <!DOCTYPE html>
 <html lang="de">
 <head>
-  <meta charset="UTF-8">
-  <title>Buchungs- und Hausdienstliste</title>
+  <meta charset="UTF-8" />
+  <title>Sick & Sound Strichliste</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;800&display=swap" rel="stylesheet" />
   <style>
-    body { font-family: Arial, sans-serif; padding: 20px; }
-    .person { padding: 10px; margin: 5px 0; border: 1px solid #ccc; cursor: pointer; }
-    .highlight { box-shadow: 0 0 10px #666; }
-    .gold { background: gold; }
-    .silver { background: silver; }
-    .bronze { background: #cd7f32; color: white; }
-    .hausdienst { border: 2px solid red; font-weight: bold; }
-    button { margin: 5px; padding: 8px 15px; }
+    html, body {
+      height: 100%;
+      overflow: hidden;
+      background-color: #0f1117;
+      font-family: 'Orbitron', sans-serif;
+      color: #f1f1f1;
+      margin: 0;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+    }
+    .toolbar {
+      display: flex;
+      justify-content: center;
+      gap: 15px;
+    }
+    .btn {
+      padding: 10px 16px;
+      font-size: 1em;
+      font-weight: bold;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.4);
+    }
+    .plus { background-color: #00c9a7; color: #000; }
+    .reset { background-color: #555; color: #fff; }
+    .undo { background-color: #ffa500; color: #000; }
+    .paypal { background-color: #0070ba; color: #fff; }
+    .delete { background-color: #ff4444; color: #fff; }
+    .counter { font-size: 1.2em; margin-bottom: 5px; font-weight: bold; }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background-color: #1a1d24;
+      table-layout: fixed;
+      font-size: 0.9em;
+      flex-grow: 1;
+      overflow-y: auto;
+    }
+    th, td {
+      padding: 6px;
+      text-align: center;
+      border-bottom: 1px solid #2a2d34;
+    }
+    th {
+      font-size: 1em;
+      font-weight: 600;
+      color: #ffffff;
+    }
+    td:last-child {
+      font-weight: bold;
+      color: #ffd700;
+    }
+    .footer {
+      margin-top: auto;
+      padding: 10px 0;
+      display: flex;
+      justify-content: center;
+      gap: 20px;
+    }
+    .gold { color: gold; }
+    .silver { color: silver; }
+    .bronze { color: #cd7f32; }
+    #paypalModal {
+      display:none; position:fixed; top:0; left:0; width:100%; height:100%;
+      background-color:rgba(0,0,0,0.85); justify-content:center; align-items:center; z-index:9999;
+    }
+    #paypalModal img {
+      max-width:90%; max-height:90%; border:8px solid #fff; border-radius:12px;
+    }
   </style>
 </head>
 <body>
-  <h1>Buchungen & Hausdienst</h1>
-  
-  <h2>Personen</h2>
-  <div id="personenListe"></div>
+  <div style="text-align:center; margin-bottom: 10px;">
+    <img src="02_SICK _ SOUND_WHITE_TYPE.png" alt="Sick & Sound Logo" style="max-width: 300px; height: auto;">
+  </div>
 
-  <h2>Hausdienst auswählen</h2>
-  <select id="hausdienstSelect"></select>
-  <button onclick="setHausdienst()">Hausdienst festlegen</button>
-  <p id="aktuellerHausdienst"></p>
+  <div id="tableContainer" style="flex-grow:1; overflow:auto;"></div>
 
-  <h2>Aktionen</h2>
-  <button onclick="reset()">Reset</button>
-  <button onclick="undo()">Rückgängig</button>
-  <br><br>
-  <button onclick="window.location.href='buchungen.html'">Zur Buchungsliste</button>
-  <button onclick="window.location.href='hausdienst.html'">Zur Hausdienst-Rangliste</button>
+  <!-- Buttons unten -->
+  <div class="footer">
+    <button class="btn undo" onclick="undoLast()">↩ Rückgängig</button>
+    <button class="btn paypal" onclick="togglePayPal()">💸 PayPal</button>
+    <button class="btn delete" onclick="toggleDeleteMode()">🗑 Löschen</button>
+    <button class="btn" style="background:#444; color:#fff;" onclick="window.location='buchungen.html'">📖 Buchungen</button>
+    <button class="btn" style="background:#444; color:#fff;" onclick="window.location='hausdienst.html'">🏆 Hausdienst Rangliste</button>
+  </div>
+
+  <!-- PayPal Modal -->
+  <div id="paypalModal" onclick="togglePayPal()">
+    <img src="frame.png" alt="PayPal QR">
+  </div>
 
   <script>
-    let personen = ["Anna", "Ben", "Clara", "David", "Eva"];
-    let summen = {};
-    let buchungen = JSON.parse(localStorage.getItem("buchungen")) || [];
-    let hausdienstHistory = JSON.parse(localStorage.getItem("hausdienstHistory")) || [];
-    let aktuellerHausdienst = localStorage.getItem("aktuellerHausdienst") || "";
+    const pricesKey = "sick_sound_prices";
+    const peopleKey = "sick_sound_people";
+    const dataKey = "sick_sound_data";
+    const historyKey = "sick_sound_history";
+    const bookingsKey = "sick_sound_bookings";
+    const hausdienstKey = "sick_sound_hausdienst";
 
-    // Init Summen
-    personen.forEach(p => { summen[p] = 0; });
+    let prices = JSON.parse(localStorage.getItem(pricesKey)) || {
+      "Cola_Zero": 1.0,
+      "Monster": 1.5,
+      "Wasser": 0.5,
+      "Kaffee": 1.0,
+      "Mittagessen": 6.0
+    };
+    let people = JSON.parse(localStorage.getItem(peopleKey)) || ["Chris","Daniel","Elmi","Florian","Joel","Kevin","Kiste","Marco","Meli","Simon"];
+    let data = JSON.parse(localStorage.getItem(dataKey)) || {};
+    let history = JSON.parse(localStorage.getItem(historyKey)) || [];
+    let bookings = JSON.parse(localStorage.getItem(bookingsKey)) || [];
+    let hausdienst = JSON.parse(localStorage.getItem(hausdienstKey)) || { current: null, stats: {} };
+    let deleteMode = false;
 
-    function renderPersonen() {
-      let container = document.getElementById("personenListe");
-      container.innerHTML = "";
-      personen.forEach((p, i) => {
-        let div = document.createElement("div");
-        div.className = "person";
-        div.textContent = p + " → " + summen[p] + "€";
-        if (p === aktuellerHausdienst) div.classList.add("hausdienst");
-        container.appendChild(div);
-      });
-      markTop3();
+    function saveAll(){
+      localStorage.setItem(pricesKey, JSON.stringify(prices));
+      localStorage.setItem(peopleKey, JSON.stringify(people));
+      localStorage.setItem(dataKey, JSON.stringify(data));
+      localStorage.setItem(historyKey, JSON.stringify(history));
+      localStorage.setItem(bookingsKey, JSON.stringify(bookings));
+      localStorage.setItem(hausdienstKey, JSON.stringify(hausdienst));
     }
 
-    function markTop3() {
-      let ranking = [...personen].sort((a, b) => getHausdienstCount(b) - getHausdienstCount(a));
-      let top3 = ranking.slice(0, 3);
-      document.querySelectorAll(".person").forEach(div => {
-        div.classList.remove("gold","silver","bronze");
-        if (div.textContent.startsWith(top3[0])) div.classList.add("gold");
-        if (div.textContent.startsWith(top3[1])) div.classList.add("silver");
-        if (div.textContent.startsWith(top3[2])) div.classList.add("bronze");
-      });
-    }
-
-    function getHausdienstCount(p) {
-      return hausdienstHistory.filter(h => h.person === p).length;
-    }
-
-    function setHausdienst() {
-      let p = document.getElementById("hausdienstSelect").value;
-      aktuellerHausdienst = p;
-      localStorage.setItem("aktuellerHausdienst", p);
-
-      hausdienstHistory.push({person: p, datum: new Date().toLocaleDateString("de-DE")});
-      localStorage.setItem("hausdienstHistory", JSON.stringify(hausdienstHistory));
-
-      document.getElementById("aktuellerHausdienst").innerText = "Aktueller Hausdienst: " + p;
-      renderPersonen();
-    }
-
-    function reset() {
-      let sum = 0;
-      for (let p in summen) sum += summen[p];
-      let eintrag = {datum: new Date().toLocaleDateString("de-DE"), person: aktuellerHausdienst, summe: sum};
-      buchungen.push(eintrag);
-      localStorage.setItem("buchungen", JSON.stringify(buchungen));
-      alert("Buchung gespeichert!");
-    }
-
-    function undo() {
-      buchungen.pop();
-      localStorage.setItem("buchungen", JSON.stringify(buchungen));
-      alert("Letzte Buchung entfernt!");
-    }
-
-    function init() {
-      renderPersonen();
-      let select = document.getElementById("hausdienstSelect");
-      personen.forEach(p => {
-        let opt = document.createElement("option");
-        opt.value = p; opt.textContent = p;
-        select.appendChild(opt);
-      });
-      if (aktuellerHausdienst) {
-        document.getElementById("aktuellerHausdienst").innerText = "Aktueller Hausdienst: " + aktuellerHausdienst;
+    function buildTable(){
+      people.sort();
+      let html = `<table><thead><tr><th>Person</th>`;
+      for (const drink in prices){
+        html += `<th draggable="true" ondragstart="drag(event)" data-col="${drink}">${drink.replace('_',' ')}<br>(${prices[drink]}€)</th>`;
       }
+      html += `<th>Gesamt (€)</th><th>Reset</th><th>Hausdienst</th></tr></thead><tbody>`;
+
+      people.forEach(person=>{
+        let rankClass = "";
+        let stats = Object.entries(hausdienst.stats||{}).sort((a,b)=>b[1]-a[1]);
+        if (stats[0] && stats[0][0]===person) rankClass="gold";
+        else if (stats[1] && stats[1][0]===person) rankClass="silver";
+        else if (stats[2] && stats[2][0]===person) rankClass="bronze";
+
+        html += `<tr><th class="${rankClass}">${person}</th>`;
+        for (const drink in prices){
+          const id = `${person}_${drink}`;
+          const val = data[id]||0;
+          html += `<td><div id="${id}" class="counter">${val}</div><button class="btn plus" onclick="changeValue('${id}',1)">+1</button></td>`;
+        }
+        let isHausdienst = hausdienst.current===person;
+        html += `<td id="${person}_Total">0.00</td>
+                 <td><button class="btn reset" onclick="resetPerson('${person}')">Reset</button></td>
+                 <td><button class="btn" style="background:${isHausdienst?'#00c9a7':'#444'}; color:#000;" onclick="setHausdienst('${person}')">Hausdienst</button></td>
+                 </tr>`;
+      });
+
+      html += `</tbody></table>`;
+      document.getElementById("tableContainer").innerHTML = html;
+      updateAllTotals();
     }
-    init();
+
+    function changeValue(id,delta){
+      const el=document.getElementById(id);
+      const current=parseInt(el.textContent||'0');
+      const next=Math.max(0,current+delta);
+      history.push({id,prev:current,action:"change"});
+      data[id]=next;
+      el.textContent=next;
+      updateTotal(id.split('_')[0]);
+      saveAll();
+    }
+
+    function updateTotal(person){
+      let total=0;
+      for (const drink in prices){
+        const id=`${person}_${drink}`;
+        total += (data[id]||0)*prices[drink];
+      }
+      document.getElementById(person+"_Total").textContent=total.toFixed(2);
+    }
+
+    function updateAllTotals(){
+      people.forEach(p=>updateTotal(p));
+    }
+
+    function resetPerson(person){
+      if (!confirm(`Alle Striche von ${person} zurücksetzen?`)) return;
+      let sum=parseFloat(document.getElementById(person+"_Total").textContent);
+      history.push({person,sum,action:"reset"});
+      bookings.push({date:new Date().toLocaleDateString("de-DE"),person,sum});
+      for (const drink in prices){
+        const id=`${person}_${drink}`;
+        data[id]=0;
+      }
+      document.getElementById(person+"_Total").textContent="0.00";
+      saveAll();
+      buildTable();
+    }
+
+    function undoLast(){
+      const last=history.pop();
+      if (!last) return;
+      if (last.action==="change"){
+        data[last.id]=last.prev;
+        document.getElementById(last.id).textContent=last.prev;
+        updateTotal(last.id.split('_')[0]);
+      } else if (last.action==="reset"){
+        // restore reset
+        bookings=bookings.filter(b=>!(b.person===last.person && b.sum===last.sum));
+      }
+      saveAll();
+      buildTable();
+    }
+
+    function togglePayPal(){
+      const modal=document.getElementById('paypalModal');
+      modal.style.display=(modal.style.display==="flex")?"none":"flex";
+    }
+
+    function toggleDeleteMode(){
+      deleteMode=!deleteMode;
+      alert(deleteMode?"Löschmodus aktiv: Klicke auf Spalte oder Person":"Löschmodus deaktiviert");
+    }
+
+    function setHausdienst(person){
+      hausdienst.current=person;
+      hausdienst.stats[person]=(hausdienst.stats[person]||0)+1;
+      saveAll();
+      buildTable();
+    }
+
+    window.onload=()=>buildTable();
   </script>
 </body>
 </html>
