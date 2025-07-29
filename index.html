@@ -3,197 +3,141 @@
 <head>
   <meta charset="UTF-8">
   <title>Strichliste</title>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      display: flex;
-      flex-direction: column;
-      height: 100vh;
-      margin: 0;
-      background: #f9f9f9;
-    }
-    h1 {
-      text-align: center;
-      margin: 10px 0;
-    }
-    table {
-      flex: 1;
-      width: 90%;
-      margin: 0 auto;
-      border-collapse: collapse;
-      box-shadow: 0 0 15px rgba(0,0,0,0.1);
-      background: white;
-    }
-    th, td {
-      border: 1px solid #ddd;
-      padding: 10px;
-      text-align: center;
-    }
-    th {
-      background: #eee;
-    }
-    tr.hausdienst {
-      background: #ffeaa7 !important;
-      font-weight: bold;
-    }
-    .button-container {
-      display: flex;
-      justify-content: center;
-      gap: 10px;
-      margin: 15px;
-    }
-    button {
-      padding: 8px 14px;
-      border: none;
-      border-radius: 6px;
-      cursor: pointer;
-      background: #3498db;
-      color: white;
-      font-weight: bold;
-      box-shadow: 0 2px 5px rgba(0,0,0,0.2);
-      transition: 0.2s;
-    }
-    button:hover {
-      background: #2980b9;
-    }
-    .add-btn { background: #2ecc71; }
-    .delete-btn { background: #e74c3c; }
-    .reset-btn { background: #f39c12; }
-    .undo-btn { background: #9b59b6; }
-    .paypal-btn { background: #27ae60; }
-    .nav-btn { background: #34495e; }
-  </style>
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <h1>🍻 Strichliste</h1>
-  <table id="strichliste">
+<div class="container">
+
+  <h1>Strichliste</h1>
+
+  <!-- Navigation -->
+  <div class="nav-container">
+    <button onclick="window.location.href='buchungen.html'">Buchungen</button>
+    <button onclick="window.location.href='hausdienst.html'">Rangliste</button>
+  </div>
+
+  <!-- Tabelle -->
+  <table id="drinkTable">
     <thead>
-      <tr id="header-row">
+      <tr>
         <th>Person</th>
-        <th><button class="add-btn" onclick="addColumn()">Add+</button></th>
+        <th>Cola</th>
+        <th>Wasser</th>
+        <th>Bier</th>
       </tr>
     </thead>
-    <tbody id="table-body">
-      <tr>
-        <td>Max</td>
-        <td>0</td>
-      </tr>
-      <tr>
-        <td><button onclick="addPerson()">+</button></td>
-        <td></td>
-      </tr>
+    <tbody id="personBody">
+      <tr><td>Anna</td><td>0</td><td>0</td><td>0</td></tr>
+      <tr><td>Ben</td><td>0</td><td>0</td><td>0</td></tr>
+      <tr><td>Chris</td><td>0</td><td>0</td><td>0</td></tr>
     </tbody>
   </table>
 
+  <!-- Buttons unten -->
   <div class="button-container">
-    <button class="delete-btn" onclick="activateDeleteMode()">Löschen</button>
-    <button class="reset-btn" onclick="resetTable()">Reset</button>
-    <button class="undo-btn" onclick="undoReset()">Rückgängig</button>
-    <button class="paypal-btn">PayPal</button>
-    <button class="nav-btn" onclick="window.location.href='buchungen.html'">Buchungen</button>
-    <button class="nav-btn" onclick="window.location.href='hausdienst.html'">Hausdienst</button>
+    <button class="add" onclick="addColumn()">Add+</button>
+    <button onclick="addPerson()">+</button>
+    <button onclick="resetTable()">Reset</button>
+    <button onclick="undoReset()">Rückgängig</button>
+    <button class="delete-mode" onclick="toggleDeleteMode()">Löschen</button>
   </div>
 
-  <script>
-    let deleteMode = false;
-    let history = [];
-    let hausdienstPerson = null;
+</div>
 
-    function addColumn() {
-      const headerRow = document.getElementById("header-row");
-      const th = document.createElement("th");
-      th.textContent = "Getränk";
-      headerRow.appendChild(th);
+<script>
+let deleteMode = false;
+let resetHistory = [];
 
-      document.querySelectorAll("#table-body tr").forEach((row, idx) => {
-        if(idx < row.parentNode.rows.length - 1){
-          const td = document.createElement("td");
-          td.textContent = "0";
-          row.appendChild(td);
-        } else {
-          row.appendChild(document.createElement("td"));
-        }
-      });
+function addColumn() {
+  const table = document.getElementById("drinkTable");
+  const colName = prompt("Name des neuen Getränks?");
+  if (!colName) return;
+
+  // Neue Spalte ins Header
+  const th = document.createElement("th");
+  th.innerText = colName;
+  th.onclick = () => { if(deleteMode) confirmDeleteColumn(th.cellIndex); };
+  table.rows[0].appendChild(th);
+
+  // Neue Spalte für jede Person
+  for (let i = 1; i < table.rows.length; i++) {
+    const td = document.createElement("td");
+    td.innerText = "0";
+    table.rows[i].appendChild(td);
+  }
+}
+
+function addPerson() {
+  const tbody = document.getElementById("personBody");
+  const name = prompt("Name der Person?");
+  if (!name) return;
+
+  const table = document.getElementById("drinkTable");
+  const row = document.createElement("tr");
+  const tdName = document.createElement("td");
+  tdName.innerText = name;
+  row.appendChild(tdName);
+
+  // Leerspalten für Getränke
+  for (let i = 1; i < table.rows[0].cells.length; i++) {
+    const td = document.createElement("td");
+    td.innerText = "0";
+    row.appendChild(td);
+  }
+
+  row.onclick = () => { if(deleteMode) confirmDeleteRow(row); };
+  tbody.appendChild(row);
+
+  sortTable();
+}
+
+function resetTable() {
+  const tbody = document.getElementById("personBody");
+  const rows = tbody.rows;
+  let log = [];
+  for (let r of rows) {
+    let sum = 0;
+    for (let i = 1; i < r.cells.length; i++) {
+      sum += parseInt(r.cells[i].innerText);
+      r.cells[i].innerText = "0";
     }
+    log.push({person: r.cells[0].innerText, sum: sum});
+  }
+  const date = new Date().toLocaleDateString("de-DE");
+  resetHistory.push({date: date, entries: log});
+  localStorage.setItem("buchungen", JSON.stringify(resetHistory));
+}
 
-    function addPerson() {
-      const tbody = document.getElementById("table-body");
-      const newRow = document.createElement("tr");
-      const name = prompt("Name der Person:");
-      if(!name) return;
-      const firstCell = document.createElement("td");
-      firstCell.textContent = name;
-      newRow.appendChild(firstCell);
-      for(let i=1;i<document.getElementById("header-row").cells.length;i++){
-        const td = document.createElement("td");
-        td.textContent = "0";
-        newRow.appendChild(td);
-      }
-      tbody.insertBefore(newRow, tbody.lastElementChild);
-      sortPersons();
+function undoReset() {
+  if (resetHistory.length === 0) return;
+  resetHistory.pop();
+  localStorage.setItem("buchungen", JSON.stringify(resetHistory));
+}
+
+function toggleDeleteMode() {
+  deleteMode = !deleteMode;
+  alert(deleteMode ? "Löschen-Modus aktiviert: Klick auf Person oder Spalte" : "Löschen-Modus deaktiviert");
+}
+
+function confirmDeleteRow(row) {
+  if (confirm("Person wirklich löschen?")) row.remove();
+}
+
+function confirmDeleteColumn(index) {
+  if (confirm("Getränk wirklich löschen?")) {
+    const table = document.getElementById("drinkTable");
+    for (let r of table.rows) {
+      r.deleteCell(index);
     }
+  }
+}
 
-    function sortPersons(){
-      const tbody = document.getElementById("table-body");
-      let rows = Array.from(tbody.rows).slice(0, -1);
-      rows.sort((a,b)=> a.cells[0].textContent.localeCompare(b.cells[0].textContent));
-      rows.forEach(r=>tbody.insertBefore(r, tbody.lastElementChild));
-    }
-
-    function activateDeleteMode(){
-      deleteMode = true;
-      alert("Löschmodus aktiv. Klicke auf eine Person oder Spalte.");
-    }
-
-    document.getElementById("strichliste").addEventListener("click", e=>{
-      if(!deleteMode) return;
-      if(e.target.tagName==="TD" && e.target.cellIndex===0){
-        if(confirm("Person wirklich löschen?")) e.target.parentNode.remove();
-      } else if(e.target.tagName==="TH" && e.target.cellIndex>0){
-        if(confirm("Spalte wirklich löschen?")){
-          let idx = e.target.cellIndex;
-          document.querySelectorAll("tr").forEach(r=> r.deleteCell(idx));
-        }
-      }
-      deleteMode=false;
-    });
-
-    function resetTable(){
-      let buchungen = JSON.parse(localStorage.getItem("buchungen")) || [];
-      const date = new Date();
-      const dateStr = date.toLocaleDateString("de-DE");
-      document.querySelectorAll("#table-body tr").forEach((row, idx)=>{
-        if(idx<row.parentNode.rows.length-1){
-          let person=row.cells[0].textContent;
-          let sum=0;
-          for(let i=1;i<row.cells.length;i++) sum+=parseInt(row.cells[i].textContent)||0;
-          buchungen.push({date:dateStr, person, sum});
-          for(let i=1;i<row.cells.length;i++) row.cells[i].textContent="0";
-        }
-      });
-      localStorage.setItem("buchungen", JSON.stringify(buchungen));
-      history.push(buchungen);
-    }
-
-    function undoReset(){
-      let buchungen = JSON.parse(localStorage.getItem("buchungen")) || [];
-      if(history.length>0){
-        let last = history.pop();
-        buchungen = buchungen.filter(b=> !last.some(l=> l.date===b.date && l.person===b.person && l.sum===b.sum));
-        localStorage.setItem("buchungen", JSON.stringify(buchungen));
-      }
-    }
-
-    // Hausdienst übernehmen (vom Ranking)
-    window.addEventListener("storage", ()=>{
-      hausdienstPerson = localStorage.getItem("hausdienst") || null;
-      document.querySelectorAll("#table-body tr").forEach(r=>{
-        r.classList.remove("hausdienst");
-        if(r.cells[0] && r.cells[0].textContent===hausdienstPerson){
-          r.classList.add("hausdienst");
-        }
-      });
-    });
-  </script>
+function sortTable() {
+  const tbody = document.getElementById("personBody");
+  let rows = Array.from(tbody.rows);
+  rows.sort((a, b) => a.cells[0].innerText.localeCompare(b.cells[0].innerText));
+  rows.forEach(r => tbody.appendChild(r));
+}
+</script>
 </body>
 </html>
