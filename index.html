@@ -1,240 +1,199 @@
 <!DOCTYPE html>
 <html lang="de">
 <head>
-  <meta charset="UTF-8" />
-  <title>Sick & Sound Strichliste</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;800&display=swap" rel="stylesheet" />
+  <meta charset="UTF-8">
+  <title>Strichliste</title>
   <style>
-    html, body {
-      height: 100%;
-      overflow: hidden;
-      background-color: #0f1117;
-      font-family: 'Orbitron', sans-serif;
-      color: #f1f1f1;
-      margin: 0;
-      padding: 20px;
+    body {
+      font-family: Arial, sans-serif;
       display: flex;
       flex-direction: column;
+      height: 100vh;
+      margin: 0;
+      background: #f9f9f9;
     }
-    .toolbar {
-      display: flex;
-      justify-content: center;
-      gap: 15px;
+    h1 {
+      text-align: center;
+      margin: 10px 0;
     }
-    .btn {
-      padding: 10px 16px;
-      font-size: 1em;
-      font-weight: bold;
-      border: none;
-      border-radius: 8px;
-      cursor: pointer;
-      box-shadow: 0 4px 10px rgba(0,0,0,0.4);
-    }
-    .plus { background-color: #00c9a7; color: #000; }
-    .reset { background-color: #555; color: #fff; }
-    .undo { background-color: #ffa500; color: #000; }
-    .paypal { background-color: #0070ba; color: #fff; }
-    .delete { background-color: #ff4444; color: #fff; }
-    .counter { font-size: 1.2em; margin-bottom: 5px; font-weight: bold; }
     table {
-      width: 100%;
+      flex: 1;
+      width: 90%;
+      margin: 0 auto;
       border-collapse: collapse;
-      background-color: #1a1d24;
-      table-layout: fixed;
-      font-size: 0.9em;
-      flex-grow: 1;
-      overflow-y: auto;
+      box-shadow: 0 0 15px rgba(0,0,0,0.1);
+      background: white;
     }
     th, td {
-      padding: 6px;
+      border: 1px solid #ddd;
+      padding: 10px;
       text-align: center;
-      border-bottom: 1px solid #2a2d34;
     }
     th {
-      font-size: 1em;
-      font-weight: 600;
-      color: #ffffff;
+      background: #eee;
     }
-    td:last-child {
+    tr.hausdienst {
+      background: #ffeaa7 !important;
       font-weight: bold;
-      color: #ffd700;
     }
-    .footer {
-      margin-top: auto;
-      padding: 10px 0;
+    .button-container {
       display: flex;
       justify-content: center;
-      gap: 20px;
+      gap: 10px;
+      margin: 15px;
     }
-    .gold { color: gold; }
-    .silver { color: silver; }
-    .bronze { color: #cd7f32; }
-    #paypalModal {
-      display:none; position:fixed; top:0; left:0; width:100%; height:100%;
-      background-color:rgba(0,0,0,0.85); justify-content:center; align-items:center; z-index:9999;
+    button {
+      padding: 8px 14px;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      background: #3498db;
+      color: white;
+      font-weight: bold;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+      transition: 0.2s;
     }
-    #paypalModal img {
-      max-width:90%; max-height:90%; border:8px solid #fff; border-radius:12px;
+    button:hover {
+      background: #2980b9;
     }
+    .add-btn { background: #2ecc71; }
+    .delete-btn { background: #e74c3c; }
+    .reset-btn { background: #f39c12; }
+    .undo-btn { background: #9b59b6; }
+    .paypal-btn { background: #27ae60; }
+    .nav-btn { background: #34495e; }
   </style>
 </head>
 <body>
-  <div style="text-align:center; margin-bottom: 10px;">
-    <img src="02_SICK _ SOUND_WHITE_TYPE.png" alt="Sick & Sound Logo" style="max-width: 300px; height: auto;">
-  </div>
+  <h1>🍻 Strichliste</h1>
+  <table id="strichliste">
+    <thead>
+      <tr id="header-row">
+        <th>Person</th>
+        <th><button class="add-btn" onclick="addColumn()">Add+</button></th>
+      </tr>
+    </thead>
+    <tbody id="table-body">
+      <tr>
+        <td>Max</td>
+        <td>0</td>
+      </tr>
+      <tr>
+        <td><button onclick="addPerson()">+</button></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
 
-  <div id="tableContainer" style="flex-grow:1; overflow:auto;"></div>
-
-  <!-- Buttons unten -->
-  <div class="footer">
-    <button class="btn undo" onclick="undoLast()">↩ Rückgängig</button>
-    <button class="btn paypal" onclick="togglePayPal()">💸 PayPal</button>
-    <button class="btn delete" onclick="toggleDeleteMode()">🗑 Löschen</button>
-    <button class="btn" style="background:#444; color:#fff;" onclick="window.location='buchungen.html'">📖 Buchungen</button>
-    <button class="btn" style="background:#444; color:#fff;" onclick="window.location='hausdienst.html'">🏆 Hausdienst Rangliste</button>
-  </div>
-
-  <!-- PayPal Modal -->
-  <div id="paypalModal" onclick="togglePayPal()">
-    <img src="frame.png" alt="PayPal QR">
+  <div class="button-container">
+    <button class="delete-btn" onclick="activateDeleteMode()">Löschen</button>
+    <button class="reset-btn" onclick="resetTable()">Reset</button>
+    <button class="undo-btn" onclick="undoReset()">Rückgängig</button>
+    <button class="paypal-btn">PayPal</button>
+    <button class="nav-btn" onclick="window.location.href='buchungen.html'">Buchungen</button>
+    <button class="nav-btn" onclick="window.location.href='hausdienst.html'">Hausdienst</button>
   </div>
 
   <script>
-    const pricesKey = "sick_sound_prices";
-    const peopleKey = "sick_sound_people";
-    const dataKey = "sick_sound_data";
-    const historyKey = "sick_sound_history";
-    const bookingsKey = "sick_sound_bookings";
-    const hausdienstKey = "sick_sound_hausdienst";
-
-    let prices = JSON.parse(localStorage.getItem(pricesKey)) || {
-      "Cola_Zero": 1.0,
-      "Monster": 1.5,
-      "Wasser": 0.5,
-      "Kaffee": 1.0,
-      "Mittagessen": 6.0
-    };
-    let people = JSON.parse(localStorage.getItem(peopleKey)) || ["Chris","Daniel","Elmi","Florian","Joel","Kevin","Kiste","Marco","Meli","Simon"];
-    let data = JSON.parse(localStorage.getItem(dataKey)) || {};
-    let history = JSON.parse(localStorage.getItem(historyKey)) || [];
-    let bookings = JSON.parse(localStorage.getItem(bookingsKey)) || [];
-    let hausdienst = JSON.parse(localStorage.getItem(hausdienstKey)) || { current: null, stats: {} };
     let deleteMode = false;
+    let history = [];
+    let hausdienstPerson = null;
 
-    function saveAll(){
-      localStorage.setItem(pricesKey, JSON.stringify(prices));
-      localStorage.setItem(peopleKey, JSON.stringify(people));
-      localStorage.setItem(dataKey, JSON.stringify(data));
-      localStorage.setItem(historyKey, JSON.stringify(history));
-      localStorage.setItem(bookingsKey, JSON.stringify(bookings));
-      localStorage.setItem(hausdienstKey, JSON.stringify(hausdienst));
-    }
+    function addColumn() {
+      const headerRow = document.getElementById("header-row");
+      const th = document.createElement("th");
+      th.textContent = "Getränk";
+      headerRow.appendChild(th);
 
-    function buildTable(){
-      people.sort();
-      let html = `<table><thead><tr><th>Person</th>`;
-      for (const drink in prices){
-        html += `<th draggable="true" ondragstart="drag(event)" data-col="${drink}">${drink.replace('_',' ')}<br>(${prices[drink]}€)</th>`;
-      }
-      html += `<th>Gesamt (€)</th><th>Reset</th><th>Hausdienst</th></tr></thead><tbody>`;
-
-      people.forEach(person=>{
-        let rankClass = "";
-        let stats = Object.entries(hausdienst.stats||{}).sort((a,b)=>b[1]-a[1]);
-        if (stats[0] && stats[0][0]===person) rankClass="gold";
-        else if (stats[1] && stats[1][0]===person) rankClass="silver";
-        else if (stats[2] && stats[2][0]===person) rankClass="bronze";
-
-        html += `<tr><th class="${rankClass}">${person}</th>`;
-        for (const drink in prices){
-          const id = `${person}_${drink}`;
-          const val = data[id]||0;
-          html += `<td><div id="${id}" class="counter">${val}</div><button class="btn plus" onclick="changeValue('${id}',1)">+1</button></td>`;
+      document.querySelectorAll("#table-body tr").forEach((row, idx) => {
+        if(idx < row.parentNode.rows.length - 1){
+          const td = document.createElement("td");
+          td.textContent = "0";
+          row.appendChild(td);
+        } else {
+          row.appendChild(document.createElement("td"));
         }
-        let isHausdienst = hausdienst.current===person;
-        html += `<td id="${person}_Total">0.00</td>
-                 <td><button class="btn reset" onclick="resetPerson('${person}')">Reset</button></td>
-                 <td><button class="btn" style="background:${isHausdienst?'#00c9a7':'#444'}; color:#000;" onclick="setHausdienst('${person}')">Hausdienst</button></td>
-                 </tr>`;
       });
-
-      html += `</tbody></table>`;
-      document.getElementById("tableContainer").innerHTML = html;
-      updateAllTotals();
     }
 
-    function changeValue(id,delta){
-      const el=document.getElementById(id);
-      const current=parseInt(el.textContent||'0');
-      const next=Math.max(0,current+delta);
-      history.push({id,prev:current,action:"change"});
-      data[id]=next;
-      el.textContent=next;
-      updateTotal(id.split('_')[0]);
-      saveAll();
-    }
-
-    function updateTotal(person){
-      let total=0;
-      for (const drink in prices){
-        const id=`${person}_${drink}`;
-        total += (data[id]||0)*prices[drink];
+    function addPerson() {
+      const tbody = document.getElementById("table-body");
+      const newRow = document.createElement("tr");
+      const name = prompt("Name der Person:");
+      if(!name) return;
+      const firstCell = document.createElement("td");
+      firstCell.textContent = name;
+      newRow.appendChild(firstCell);
+      for(let i=1;i<document.getElementById("header-row").cells.length;i++){
+        const td = document.createElement("td");
+        td.textContent = "0";
+        newRow.appendChild(td);
       }
-      document.getElementById(person+"_Total").textContent=total.toFixed(2);
+      tbody.insertBefore(newRow, tbody.lastElementChild);
+      sortPersons();
     }
 
-    function updateAllTotals(){
-      people.forEach(p=>updateTotal(p));
+    function sortPersons(){
+      const tbody = document.getElementById("table-body");
+      let rows = Array.from(tbody.rows).slice(0, -1);
+      rows.sort((a,b)=> a.cells[0].textContent.localeCompare(b.cells[0].textContent));
+      rows.forEach(r=>tbody.insertBefore(r, tbody.lastElementChild));
     }
 
-    function resetPerson(person){
-      if (!confirm(`Alle Striche von ${person} zurücksetzen?`)) return;
-      let sum=parseFloat(document.getElementById(person+"_Total").textContent);
-      history.push({person,sum,action:"reset"});
-      bookings.push({date:new Date().toLocaleDateString("de-DE"),person,sum});
-      for (const drink in prices){
-        const id=`${person}_${drink}`;
-        data[id]=0;
+    function activateDeleteMode(){
+      deleteMode = true;
+      alert("Löschmodus aktiv. Klicke auf eine Person oder Spalte.");
+    }
+
+    document.getElementById("strichliste").addEventListener("click", e=>{
+      if(!deleteMode) return;
+      if(e.target.tagName==="TD" && e.target.cellIndex===0){
+        if(confirm("Person wirklich löschen?")) e.target.parentNode.remove();
+      } else if(e.target.tagName==="TH" && e.target.cellIndex>0){
+        if(confirm("Spalte wirklich löschen?")){
+          let idx = e.target.cellIndex;
+          document.querySelectorAll("tr").forEach(r=> r.deleteCell(idx));
+        }
       }
-      document.getElementById(person+"_Total").textContent="0.00";
-      saveAll();
-      buildTable();
+      deleteMode=false;
+    });
+
+    function resetTable(){
+      let buchungen = JSON.parse(localStorage.getItem("buchungen")) || [];
+      const date = new Date();
+      const dateStr = date.toLocaleDateString("de-DE");
+      document.querySelectorAll("#table-body tr").forEach((row, idx)=>{
+        if(idx<row.parentNode.rows.length-1){
+          let person=row.cells[0].textContent;
+          let sum=0;
+          for(let i=1;i<row.cells.length;i++) sum+=parseInt(row.cells[i].textContent)||0;
+          buchungen.push({date:dateStr, person, sum});
+          for(let i=1;i<row.cells.length;i++) row.cells[i].textContent="0";
+        }
+      });
+      localStorage.setItem("buchungen", JSON.stringify(buchungen));
+      history.push(buchungen);
     }
 
-    function undoLast(){
-      const last=history.pop();
-      if (!last) return;
-      if (last.action==="change"){
-        data[last.id]=last.prev;
-        document.getElementById(last.id).textContent=last.prev;
-        updateTotal(last.id.split('_')[0]);
-      } else if (last.action==="reset"){
-        // restore reset
-        bookings=bookings.filter(b=>!(b.person===last.person && b.sum===last.sum));
+    function undoReset(){
+      let buchungen = JSON.parse(localStorage.getItem("buchungen")) || [];
+      if(history.length>0){
+        let last = history.pop();
+        buchungen = buchungen.filter(b=> !last.some(l=> l.date===b.date && l.person===b.person && l.sum===b.sum));
+        localStorage.setItem("buchungen", JSON.stringify(buchungen));
       }
-      saveAll();
-      buildTable();
     }
 
-    function togglePayPal(){
-      const modal=document.getElementById('paypalModal');
-      modal.style.display=(modal.style.display==="flex")?"none":"flex";
-    }
-
-    function toggleDeleteMode(){
-      deleteMode=!deleteMode;
-      alert(deleteMode?"Löschmodus aktiv: Klicke auf Spalte oder Person":"Löschmodus deaktiviert");
-    }
-
-    function setHausdienst(person){
-      hausdienst.current=person;
-      hausdienst.stats[person]=(hausdienst.stats[person]||0)+1;
-      saveAll();
-      buildTable();
-    }
-
-    window.onload=()=>buildTable();
+    // Hausdienst übernehmen (vom Ranking)
+    window.addEventListener("storage", ()=>{
+      hausdienstPerson = localStorage.getItem("hausdienst") || null;
+      document.querySelectorAll("#table-body tr").forEach(r=>{
+        r.classList.remove("hausdienst");
+        if(r.cells[0] && r.cells[0].textContent===hausdienstPerson){
+          r.classList.add("hausdienst");
+        }
+      });
+    });
   </script>
 </body>
 </html>
