@@ -2,7 +2,7 @@
 <html lang="de">
 <head>
   <meta charset="UTF-8">
-  <title>Indexliste</title>
+  <title>Hausdienst Rangliste</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;800&display=swap" rel="stylesheet">
   <style>
@@ -12,6 +12,8 @@
       color:#fff;
       margin:0;
       padding:20px;
+      display:flex;
+      flex-direction:column;
       min-height:100vh;
     }
     h1 { text-align:center; }
@@ -26,117 +28,181 @@
       border:none; border-radius:6px;
       cursor:pointer; font-weight:bold;
     }
-    .add { background:#00c9a7; color:#000; }
-    .delete { background:#e74c3c; color:#fff; }
+    .select { background:#00c9a7; color:#000; }
+    .undo { background:#ffa500; color:#000; }
+    .reset { background:#555; color:#fff; }
+    .add { background:#008cff; color:#fff; }
+    .back { background:#444; color:#fff; }
+    .hausdienst {
+      background:#00c9a7; color:#000 !important;
+      border-radius:6px; padding:2px 6px;
+    }
+    .gold { color:gold; }
+    .silver { color:silver; }
+    .bronze { color:#cd7f32; }
     .toolbar {
-      display:flex; justify-content:center; flex-wrap:wrap; gap:10px; margin-bottom:20px;
+      display:flex;
+      justify-content:center;
+      flex-wrap:wrap;
+      gap:10px;
+      margin-bottom:20px;
     }
-    .counter-btn {
-      background:#444; color:#fff; border-radius:6px; padding:4px 8px; cursor:pointer;
-    }
-    .counter-btn:hover { background:#666; }
   </style>
 </head>
 <body>
-  <h1>📋 Indexliste</h1>
+  <h1>🏆 Hausdienst Rangliste</h1>
 
   <div class="toolbar">
-    <button class="btn add" onclick="addPerson()">➕ Person hinzufügen</button>
-    <button class="btn add" onclick="addDrink()">🥤 Getränk hinzufügen</button>
-    <button class="btn delete" onclick="toggleDelete()">❌ Löschen</button>
-    <button class="btn" onclick="window.location='hausdienst.html'">➡ Hausdienst</button>
+    <button class="btn undo" onclick="undoHausdienst()">↩ Rückgängig</button>
+    <button class="btn reset" onclick="resetHausdienst()">🔄 Reset</button>
+    <button class="btn add" onclick="addDrink()">➕ Getränk hinzufügen</button>
+    <button class="btn back" onclick="window.location='index.html'">⬅ Zurück</button>
   </div>
 
-  <div id="indexTable"></div>
+  <div id="ranking"></div>
+  <h2>📅 Monatsübersicht</h2>
+  <div id="monthly"></div>
+  <h2>📅 Jahresübersicht</h2>
+  <div id="yearly"></div>
 
   <script>
+    const hausdienstKey = "sick_sound_hausdienst";
     const peopleKey = "sick_sound_people";
     const drinksKey = "sick_sound_drinks";
-    const scoresKey = "sick_sound_scores";
 
     let people = JSON.parse(localStorage.getItem(peopleKey)) || [];
+    let hausdienst = JSON.parse(localStorage.getItem(hausdienstKey)) || { current:null, stats:{}, history:[], monthly:{}, yearly:{} };
     let drinks = JSON.parse(localStorage.getItem(drinksKey)) || [];
-    let scores = JSON.parse(localStorage.getItem(scoresKey)) || {}; 
-    // Struktur: scores[person][drink] = Anzahl
-
-    let deleteMode = false;
 
     function save(){
-      localStorage.setItem(peopleKey, JSON.stringify(people));
+      localStorage.setItem(hausdienstKey, JSON.stringify(hausdienst));
       localStorage.setItem(drinksKey, JSON.stringify(drinks));
-      localStorage.setItem(scoresKey, JSON.stringify(scores));
     }
 
-    function buildTable(){
-      let html = `<table><thead><tr><th>Person</th>`;
-      drinks.forEach(d=>{
-        html += `<th>${d.name} <small>(${d.price.toFixed(2)}€)</small></th>`;
-      });
-      html += `<th>Summe (€)</th><th>Aktion</th></tr></thead><tbody>`;
+    function buildRanking(){
+      let html = `<table><thead><tr><th>Platz</th><th>Person</th><th>Punkte</th><th>Hausdienst</th>`;
+      drinks.forEach(d=> html += `<th>${d.name}<br>(${d.price.toFixed(2)}€)</th>`);
+      html += `</tr></thead><tbody>`;
 
-      people.forEach(p=>{
-        if(!scores[p]) scores[p] = {};
-        let sum = 0;
-        html += `<tr><td>${p}</td>`;
+      // Ranking sortiert
+      let sorted = [...people].sort((a,b)=>(hausdienst.stats[b]||0)-(hausdienst.stats[a]||0));
+      let rank = 1;
+      sorted.forEach(p=>{
+        let score = hausdienst.stats[p]||0;
+        let rowClass = "";
+        if(rank===1) rowClass="gold";
+        else if(rank===2) rowClass="silver";
+        else if(rank===3) rowClass="bronze";
+
+        let hausdienstMark = hausdienst.current===p ? "hausdienst" : "";
+
+        html += `<tr>
+          <td>${rank}</td>
+          <td class="${rowClass} ${hausdienstMark}">${p}</td>
+          <td>${score}</td>
+          <td><button class="btn select" onclick="selectHausdienst('${p}')">Hausdienst auswählen</button></td>`;
+
         drinks.forEach(d=>{
-          if(!scores[p][d.name]) scores[p][d.name]=0;
-          let count = scores[p][d.name];
-          sum += count * d.price;
-          html += `<td>
-            <button class="counter-btn" onclick="changeCount('${p}','${d.name}',-1)">-</button>
-            ${count}
-            <button class="counter-btn" onclick="changeCount('${p}','${d.name}',1)">+</button>
-          </td>`;
+          hausdienst.drinkStats = hausdienst.drinkStats || {};
+          hausdienst.drinkStats[p] = hausdienst.drinkStats[p] || {};
+          let amount = hausdienst.drinkStats[p][d.name]||0;
+          html += `<td>${amount}x <br><button class="btn" onclick="buyDrink('${p}','${d.name}')">+1</button></td>`;
         });
-        html += `<td>${sum.toFixed(2)}</td>`;
-        html += `<td><button class="btn delete" onclick="deletePerson('${p}')">Löschen</button></td></tr>`;
+
+        html += `</tr>`;
+        rank++;
       });
 
       html += `</tbody></table>`;
-      document.getElementById("indexTable").innerHTML=html;
-      save();
+      document.getElementById("ranking").innerHTML=html;
     }
 
-    function changeCount(person, drink, delta){
-      if(!scores[person]) scores[person] = {};
-      if(!scores[person][drink]) scores[person][drink] = 0;
-      scores[person][drink] = Math.max(0, scores[person][drink] + delta);
-      buildTable();
+    function selectHausdienst(person){
+      hausdienst.history.push(JSON.parse(JSON.stringify(hausdienst)));
+
+      hausdienst.stats[person] = (hausdienst.stats[person]||0)+1;
+      hausdienst.current = person;
+
+      let now = new Date();
+      let monthKey = now.getFullYear()+"-"+(now.getMonth()+1);
+      let yearKey = now.getFullYear();
+
+      hausdienst.monthly[monthKey] = hausdienst.monthly[monthKey] || {};
+      hausdienst.monthly[monthKey][person] = (hausdienst.monthly[monthKey][person]||0)+1;
+
+      hausdienst.yearly[yearKey] = hausdienst.yearly[yearKey] || {};
+      hausdienst.yearly[yearKey][person] = (hausdienst.yearly[yearKey][person]||0)+1;
+
+      save();
+      buildRanking();
+      buildOverviews();
     }
 
-    function addPerson(){
-      let name = prompt("Name der Person:");
-      if(!name) return;
-      people.push(name);
+    function undoHausdienst(){
+      if(hausdienst.history.length===0) return;
+      hausdienst = hausdienst.history.pop();
       save();
-      buildTable();
+      buildRanking();
+      buildOverviews();
+    }
+
+    function resetHausdienst(){
+      if(!confirm("Alle Hausdienst-Punkte zurücksetzen?")) return;
+      hausdienst.history.push(JSON.parse(JSON.stringify(hausdienst)));
+      hausdienst.stats = {};
+      hausdienst.current = null;
+      hausdienst.drinkStats = {};
+      save();
+      buildRanking();
+      buildOverviews();
     }
 
     function addDrink(){
-      let name = prompt("Name des Getränks:");
+      let name = prompt("Name des Getränks?");
       if(!name) return;
-      let price = parseFloat(prompt("Preis des Getränks (€):"));
-      if(isNaN(price)) price = 0;
-      drinks.push({name:name, price:price});
+      let price = parseFloat(prompt("Preis des Getränks in €?"));
+      if(isNaN(price)) return alert("Ungültiger Preis!");
+      drinks.push({name, price});
       save();
-      buildTable();
+      buildRanking();
     }
 
-    function deletePerson(name){
-      if(!deleteMode) return;
-      people = people.filter(p=>p!==name);
-      delete scores[name];
+    function buyDrink(person, drink){
+      hausdienst.history.push(JSON.parse(JSON.stringify(hausdienst)));
+      hausdienst.drinkStats = hausdienst.drinkStats || {};
+      hausdienst.drinkStats[person] = hausdienst.drinkStats[person] || {};
+      hausdienst.drinkStats[person][drink] = (hausdienst.drinkStats[person][drink]||0)+1;
       save();
-      deleteMode=false; // automatisch ausschalten
-      buildTable();
+      buildRanking();
     }
 
-    function toggleDelete(){
-      deleteMode = !deleteMode;
-      if(deleteMode) alert("Löschmodus aktiv – wähle eine Person, um sie zu entfernen.");
+    function buildOverviews(){
+      // Monatsübersicht
+      let now = new Date();
+      let monthKey = now.getFullYear()+"-"+(now.getMonth()+1);
+      let monthData = hausdienst.monthly[monthKey]||{};
+      let monthHtml = `<table><thead><tr><th>Person</th><th>Hausdienste im Monat</th></tr></thead><tbody>`;
+      people.forEach(p=>{
+        monthHtml += `<tr><td>${p}</td><td>${monthData[p]||0}</td></tr>`;
+      });
+      monthHtml += `</tbody></table>`;
+      document.getElementById("monthly").innerHTML=monthHtml;
+
+      // Jahresübersicht
+      let yearKey = now.getFullYear();
+      let yearData = hausdienst.yearly[yearKey]||{};
+      let yearHtml = `<table><thead><tr><th>Person</th><th>Hausdienste im Jahr</th></tr></thead><tbody>`;
+      people.forEach(p=>{
+        yearHtml += `<tr><td>${p}</td><td>${yearData[p]||0}</td></tr>`;
+      });
+      yearHtml += `</tbody></table>`;
+      document.getElementById("yearly").innerHTML=yearHtml;
     }
 
-    window.onload=()=>{ buildTable(); }
+    window.onload=()=>{
+      buildRanking();
+      buildOverviews();
+    }
   </script>
 </body>
 </html>
