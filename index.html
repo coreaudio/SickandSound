@@ -1,82 +1,99 @@
 <!DOCTYPE html>
 <html lang="de">
 <head>
-  <meta charset="UTF-8" />
-  <title>Sick & Sound Strichliste</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;800&display=swap" rel="stylesheet" />
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Hausverwaltung</title>
   <style>
-    html, body {
-      height: 100%;
-      overflow: hidden;
-      background-color: #0f1117;
-      font-family: 'Orbitron', sans-serif;
+    body {
+      font-family: Arial, sans-serif;
+      background: #121212;
       color: #f1f1f1;
-      margin: 0;
-      padding: 10px;
-      display: flex;
-      flex-direction: column;
+      text-align: center;
+      padding: 40px;
     }
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      background-color: #1a1d24;
-      table-layout: fixed;
-      font-size: 1.1em;
-      flex-grow: 1;
-      overflow: auto;
-    }
-    th, td { padding: 8px; text-align: center; border-bottom: 1px solid #2a2d34; }
-    th { font-size: 1em; font-weight: 600; color: #ffffff; cursor: grab; }
-    td:last-child { font-weight: bold; color: #ffd700; }
 
-    .btn {
-      padding: 12px 18px;
-      font-size: 1em;
-      font-weight: bold;
-      border: none;
-      border-radius: 10px;
-      cursor: pointer;
-      margin: 4px;
-      box-shadow: 0 4px 10px rgba(0,0,0,0.4);
-      flex: 1 1 auto;
-      min-width: 120px;
+    h1 {
+      margin-bottom: 30px;
+      color: #00c9a7;
     }
-    .plus { background-color: #00c9a7; color: #000; }
-    .reset { background-color: #555; color: #fff; }
-    .undo { background-color: #ffa500; color: #000; }
-    .paypal { background-color: #0070ba; color: #fff; }
-    .delete { background-color: #ff4444; color: #fff; }
-    .add { background-color: #4caf50; color: #fff; }
-    .footer {
-      margin-top: auto;
-      padding: 10px 0;
+
+    .button-container {
       display: flex;
-      justify-content: center;
-      gap: 10px;
       flex-wrap: wrap;
+      justify-content: center;
+      gap: 20px;
     }
-    .footer .btn { flex: 1 1 30%; }
+
+    .menu-btn {
+      background: #1f1f1f;
+      color: #f1f1f1;
+      border: none;
+      padding: 16px 28px;
+      font-size: 18px;
+      border-radius: 12px;
+      cursor: pointer;
+      transition: 0.2s;
+    }
+
+    .menu-btn:hover {
+      background: #00c9a7;
+      color: #000;
+    }
+
+    /* Submenu */
+    .button-group {
+      position: relative;
+      display: inline-block;
+    }
+
+    .submenu {
+      display: none;
+      position: absolute;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #1a1d24;
+      border-radius: 8px;
+      padding: 8px;
+      margin-top: 6px;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.4);
+      min-width: 180px;
+      z-index: 100;
+    }
+
+    .submenu a {
+      display: block;
+      padding: 10px;
+      text-decoration: none;
+      color: #f1f1f1;
+      border-radius: 6px;
+    }
+
+    .submenu a:hover {
+      background: #00c9a7;
+      color: #000;
+    }
+
+    .button-group:hover .submenu {
+      display: block;
+    }
   </style>
 </head>
 <body>
-  <div style="text-align:center; margin-bottom: 8px;">
-    <img src="02_SICK _ SOUND_WHITE_TYPE.png" alt="Sick & Sound Logo" style="max-width: 250px; height: auto;">
+  <h1>Hausverwaltung</h1>
+
+  <div class="button-container">
+    <div class="button-group">
+      <button class="menu-btn">Hausdienst</button>
+      <div class="submenu">
+        <a href="hausdienst.html">📊 Rangliste</a>
+        <a href="hausdienst_checklist.html">✅ Checkliste</a>
+      </div>
+    </div>
+
+    <a href="putzplan.html"><button class="menu-btn">Putzplan</button></a>
+    <a href="einkaufsliste.html"><button class="menu-btn">Einkaufsliste</button></a>
+    <a href="reparaturen.html"><button class="menu-btn">Reparaturen</button></a>
   </div>
-
-  <div id="tableContainer" style="flex-grow:1; overflow:auto;"></div>
-
-  <!-- Buttons unten -->
-  <div class="footer">
-    <button class="btn add" onclick="openDrinkModal()">➕ Getränk</button>
-    <button class="btn undo" onclick="undoLast()">↩ Rückgängig</button>
-    <button class="btn paypal" onclick="togglePayPal()">💸 PayPal</button>
-    <button id="deleteBtn" class="btn delete" onclick="toggleDeleteMode()">🗑 Löschen</button>
-    <button class="btn" style="background:#444;" onclick="window.location='buchungen.html'">📖 Buchungen</button>
-    <button class="btn" style="background:#444;" onclick="window.location='hausdienst.html'">🏆 Hausdienst</button>
-    <button class="btn" style="background:#00c9a7; color:#000;" onclick="window.location='hausdienst_aufgaben.html'">📋 Hausdienst Aufgaben</button>
-  </div>
-
-  <!-- (Rest deines Scripts bleibt gleich) -->
 </body>
 </html>
