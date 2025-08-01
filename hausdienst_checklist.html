@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Hausdienst Checkliste</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #121212;
+      color: #f1f1f1;
+      text-align: center;
+      padding: 20px;
+    }
+
+    h1 {
+      margin-bottom: 20px;
+      color: #00c9a7;
+    }
+
+    .task-list {
+      max-width: 500px;
+      margin: 0 auto;
+      text-align: left;
+      background: #1f1f1f;
+      padding: 20px;
+      border-radius: 12px;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+    }
+
+    .task {
+      display: flex;
+      align-items: center;
+      margin: 12px 0;
+    }
+
+    .task input {
+      margin-right: 12px;
+      transform: scale(1.3);
+      cursor: pointer;
+    }
+
+    .task label {
+      cursor: pointer;
+    }
+
+    .done label {
+      text-decoration: line-through;
+      color: gray;
+    }
+
+    .back {
+      margin-top: 20px;
+      display: inline-block;
+      text-decoration: none;
+      color: #00c9a7;
+      background: #1f1f1f;
+      padding: 10px 16px;
+      border-radius: 8px;
+      transition: 0.2s;
+    }
+
+    .back:hover {
+      background: #00c9a7;
+      color: #000;
+    }
+  </style>
+</head>
+<body>
+  <h1>Hausdienst Checkliste</h1>
+
+  <div class="task-list">
+    <div class="task"><input type="checkbox" id="task1"><label for="task1">Müll rausbringen</label></div>
+    <div class="task"><input type="checkbox" id="task2"><label for="task2">Flur wischen</label></div>
+    <div class="task"><input type="checkbox" id="task3"><label for="task3">Treppenhaus kehren</label></div>
+    <div class="task"><input type="checkbox" id="task4"><label for="task4">Postkästen kontrollieren</label></div>
+    <div class="task"><input type="checkbox" id="task5"><label for="task5">Garten checken</label></div>
+  </div>
+
+  <a href="index.html" class="back">⬅ Zurück</a>
+
+  <script>
+    const checkboxes = document.querySelectorAll('input[type="checkbox"]');
+    const today = new Date().toDateString();
+    const STORAGE_KEY = "hausdienst_checklist";
+
+    // Lade gespeicherte Daten
+    const savedData = JSON.parse(localStorage.getItem(STORAGE_KEY)) || {};
+
+    if (savedData.date === today) {
+      // Zustand wiederherstellen
+      checkboxes.forEach((cb, i) => {
+        cb.checked = savedData.tasks?.[i] || false;
+        if (cb.checked) cb.parentElement.classList.add("done");
+      });
+    } else {
+      // Reset, da neuer Tag
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({ date: today, tasks: [] }));
+    }
+
+    // Speichern, wenn Checkbox verändert wird
+    checkboxes.forEach((cb, i) => {
+      cb.addEventListener("change", () => {
+        cb.parentElement.classList.toggle("done", cb.checked);
+        const taskStates = Array.from(checkboxes).map(c => c.checked);
+        localStorage.setItem(STORAGE_KEY, JSON.stringify({ date: today, tasks: taskStates }));
+      });
+    });
+  </script>
+</body>
+</html>
