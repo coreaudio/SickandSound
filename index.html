@@ -11,7 +11,7 @@
   <!-- Tabelle -->
   <div id="tableContainer" style="flex-grow:1; overflow:auto;"></div>
 
-  <!-- Buttons -->
+  <!-- Buttons unten -->
   <div class="footer">
     <button class="btn add" onclick="openDrinkModal()">➕ Getränk</button>
     <button class="btn undo" onclick="undoLast()">↩ Rückgängig</button>
@@ -65,7 +65,10 @@
 
   <!-- 2) Deine App-Logik -->
   <script>
-    // --- Firebase initialisieren ---
+    // **NEU**: Delete-Mode-Flag initialisieren
+    let deleteMode = false;
+
+    // Firebase initialisieren
     const firebaseConfig = {
       apiKey: "AIzaSyBFHjGXI5yHyK0DyupS0bnTVAqlu6lvpNw",
       authDomain: "sickandsound-e9704.firebaseapp.com",
@@ -79,7 +82,7 @@
     firebase.analytics();
     const db = firebase.firestore();
 
-    // --- Keys & Default-State ---
+    // Keys & Default-State
     const pricesKey     = "sick_sound_prices",
           peopleKey     = "sick_sound_people",
           dataKey       = "sick_sound_data",
@@ -96,7 +99,7 @@
         hausdienst  = {current:null,stats:{}},
         columnOrder = [];
 
-    // --- State laden (Cloud → Fallback lokal) ---
+    // State laden (Cloud → Fallback lokal)
     async function loadState() {
       try {
         const snap = await db.collection("state").doc("global").get();
@@ -127,7 +130,7 @@
       buildTable();
     }
 
-    // --- State speichern (lokal + Cloud) ---
+    // State speichern (lokal + Cloud)
     async function saveAll() {
       // lokal
       localStorage.setItem(pricesKey,     JSON.stringify(prices));
@@ -147,7 +150,7 @@
       }
     }
 
-    // --- Echtzeit-Updates ---
+    // Echtzeit-Updates abonnieren
     db.collection("state").doc("global")
       .onSnapshot(snap => {
         if (!snap.exists) return;
@@ -162,12 +165,12 @@
         buildTable();
       });
 
-    // --- UI-Funktionen ---
+    // UI-Funktionen
     function buildTable() {
       people.sort();
       let html = `<table id="mainTable"><thead><tr><th>Person</th>`;
       columnOrder.forEach(drink => {
-        if (prices[drink]!==undefined) {
+        if (prices[drink] !== undefined) {
           html += `<th draggable="true" ondragstart="drag(event)" ondragover="allowDrop(event)" ondrop="drop(event)" data-drink="${drink}" onclick="deleteColumn('${drink}')">${drink.replace('_',' ')}<br>(${prices[drink]}€)</th>`;
         }
       });
@@ -176,7 +179,7 @@
         const mark = hausdienst.current===person ? "hausdienst" : "";
         html += `<tr><th class="${mark}" onclick="deletePerson('${person}')">${person}</th>`;
         columnOrder.forEach(drink => {
-          if (prices[drink]!==undefined) {
+          if (prices[drink] !== undefined) {
             const id = `${person}_${drink}`, val = data[id]||0;
             html += `<td><div id="${id}" class="counter">${val}</div><button class="btn plus" onclick="changeValue('${id}',1)">+1</button></td>`;
           }
@@ -194,8 +197,9 @@
     function allowDrop(ev){ ev.preventDefault(); }
     function drop(ev){
       ev.preventDefault();
-      const from=ev.dataTransfer.getData("drink"), to=ev.target.dataset.drink;
-      if (from&&to&&from!==to) {
+      const from = ev.dataTransfer.getData("drink"),
+            to   = ev.target.dataset.drink;
+      if (from && to && from !== to) {
         columnOrder.splice(columnOrder.indexOf(from),1);
         columnOrder.splice(columnOrder.indexOf(to),0,from);
         saveAll(); buildTable();
@@ -206,6 +210,7 @@
     }
     function updateTotal(person){ let tot=0; columnOrder.forEach(d=>tot+=(data[`${person}_${d}`]||0)*prices[d]); document.getElementById(`${person}_Total`).textContent=tot.toFixed(2); }
     function updateAllTotals(){ people.forEach(p=>updateTotal(p)); }
+
     function resetPerson(person){
       if(!confirm(`Alle Striche von ${person} zurücksetzen?`))return;
       const sum=parseFloat(document.getElementById(`${person}_Total`).textContent);
@@ -218,41 +223,70 @@
       else if(last.action==="reset") bookings=bookings.filter(b=>!(b.person===last.person&&b.sum===last.sum));
       saveAll(); buildTable();
     }
+
     function openPersonModal(){ toggleModal("personModal","flex"); }
-    function openDrinkModal(){ toggleModal("drinkModal","flex"); }
-    function openHausdienstModal(){ toggleModal("hausdienstModal","flex"); }
-    function togglePayPal(){ toggleModal("paypalModal"); }
+    function openDrinkModal() { toggleModal("drinkModal","flex"); }
+    function openHausdienstModal() { toggleModal("hausdienstModal","flex"); }
+    function togglePayPal() { toggleModal("paypalModal"); }
+
     function toggleDeleteMode(){
-      deleteMode=!deleteMode; const btn=document.getElementById("deleteBtn");
-      if(deleteMode){ btn.classList.add("delete-active"); alert("🗑 Löschmodus aktiviert."); }
-      else btn.classList.remove("delete-active");
+      deleteMode = !deleteMode;
+      const btn = document.getElementById("deleteBtn");
+      if (deleteMode) {
+        btn.classList.add("delete-active");
+        alert("🗑 Löschmodus aktiviert.");
+      } else {
+        btn.classList.remove("delete-active");
+      }
     }
+
     function deletePerson(person){
-      if(!deleteMode)return;
-      if(confirm(`${person} wirklich löschen?`)){ people=people.filter(p=>p!==person); saveAll(); }
-      deleteMode=false; document.getElementById("deleteBtn").classList.remove("delete-active"); buildTable();
+      if (!deleteMode) return;
+      if (confirm(`${person} wirklich löschen?`)) {
+        people = people.filter(p=>p!==person);
+        saveAll();
+      }
+      deleteMode = false;
+      document.getElementById("deleteBtn").classList.remove("delete-active");
+      buildTable();
     }
+
     function deleteColumn(drink){
-      if(!deleteMode)return;
-      if(confirm(`Getränk "${drink}" wirklich löschen?`)){ delete prices[drink]; columnOrder=columnOrder.filter(d=>d!==drink); saveAll(); }
-      deleteMode=false; document.getElementById("deleteBtn").classList.remove("delete-active"); buildTable();
+      if (!deleteMode) return;
+      if (confirm(`Getränk "${drink}" wirklich löschen?`)) {
+        delete prices[drink];
+        columnOrder = columnOrder.filter(d=>d!==drink);
+        saveAll();
+      }
+      deleteMode = false;
+      document.getElementById("deleteBtn").classList.remove("delete-active");
+      buildTable();
     }
+
     function confirmAddPerson(){
-      const name=document.getElementById("personName").value.trim();
-      if(!name)return alert("Bitte Name eingeben!");
-      if(people.includes(name))return alert("Person existiert bereits!");
-      people.push(name); saveAll(); buildTable(); closeModal("personModal"); document.getElementById("personName").value="";
+      const name = document.getElementById("personName").value.trim();
+      if (!name) return alert("Bitte Name eingeben!");
+      if (people.includes(name)) return alert("Person existiert bereits!");
+      people.push(name); saveAll(); buildTable(); closeModal("personModal");
+      document.getElementById("personName").value = "";
     }
+
     function confirmAddDrink(){
-      const name=document.getElementById("drinkName").value.trim(), price=parseFloat(document.getElementById("drinkPrice").value);
-      if(!name||isNaN(price)||price<=0)return alert("Bitte gültige Eingaben machen!");
-      const key=name.replace(/\s+/g,"_"); prices[key]=price; if(!columnOrder.includes(key))columnOrder.push(key);
-      saveAll(); buildTable(); closeModal("drinkModal"); document.getElementById("drinkName").value=""; document.getElementById("drinkPrice").value="";
+      const name  = document.getElementById("drinkName").value.trim();
+      const price = parseFloat(document.getElementById("drinkPrice").value);
+      if (!name || isNaN(price) || price <= 0) return alert("Bitte gültige Eingaben machen!");
+      const key = name.replace(/\s+/g, "_");
+      prices[key] = price;
+      if (!columnOrder.includes(key)) columnOrder.push(key);
+      saveAll(); buildTable(); closeModal("drinkModal");
+      document.getElementById("drinkName").value = "";
+      document.getElementById("drinkPrice").value = "";
     }
-    function closeModal(id){ document.getElementById(id).style.display="none"; }
-    function toggleModal(id,display="flex"){
-      const m=document.getElementById(id);
-      m.style.display=(m.style.display===display)?"none":display;
+
+    function closeModal(id){ document.getElementById(id).style.display = "none"; }
+    function toggleModal(id, display="flex"){
+      const m = document.getElementById(id);
+      m.style.display = (m.style.display === display) ? "none" : display;
     }
 
     // App starten
