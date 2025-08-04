@@ -1,111 +1,340 @@
 <!DOCTYPE html>
 <html lang="de">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Hausdienst Checkliste</title>
+  <meta charset="UTF-8" />
+  <title>Sick & Sound Strichliste</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;800&display=swap" rel="stylesheet" />
   <style>
-    body {
-      font-family: Arial, sans-serif;
-      background: #121212;
+    html, body {
+      height: 100%;
+      overflow: hidden;
+      background-color: #0f1117;
+      font-family: 'Orbitron', sans-serif;
       color: #f1f1f1;
-      text-align: center;
+      margin: 0;
       padding: 20px;
-    }
-
-    h1 {
-      margin-bottom: 20px;
-      color: #00c9a7;
-    }
-
-    .task-list {
-      max-width: 500px;
-      margin: 0 auto;
-      text-align: left;
-      background: #1f1f1f;
-      padding: 20px;
-      border-radius: 12px;
-      box-shadow: 0 4px 8px rgba(0,0,0,0.3);
-    }
-
-    .task {
       display: flex;
-      align-items: center;
-      margin: 12px 0;
+      flex-direction: column;
     }
-
-    .task input {
-      margin-right: 12px;
-      transform: scale(1.3);
-      cursor: pointer;
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background-color: #1a1d24;
+      table-layout: fixed;
+      font-size: 0.9em;
+      flex-grow: 1;
     }
+    th, td { padding: 6px; text-align: center; border-bottom: 1px solid #2a2d34; }
+    th { font-size: 1em; font-weight: 600; color: #ffffff; cursor: grab; }
+    td:last-child { font-weight: bold; color: #ffd700; }
 
-    .task label {
-      cursor: pointer;
+    .btn {
+      padding: 8px 14px; font-size: 0.9em; font-weight: bold;
+      border: none; border-radius: 8px; cursor: pointer; margin: 2px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.4);
     }
-
-    .done label {
-      text-decoration: line-through;
-      color: gray;
+    .plus { background-color: #00c9a7; color: #000; }
+    .reset { background-color: #555; color: #fff; }
+    .undo { background-color: #ffa500; color: #000; }
+    .paypal { background-color: #0070ba; color: #fff; }
+    .delete { background-color: #ff4444; color: #fff; }
+    .add { background-color: #4caf50; color: #fff; }
+    .footer { margin-top: auto; padding: 10px 0; display: flex; justify-content: center; gap: 15px; flex-wrap: wrap; }
+    .gold { color: gold; } .silver { color: silver; } .bronze { color: #cd7f32; }
+    .hausdienst { background-color: #00c9a7; color: #000 !important; border-radius: 6px; padding: 2px 6px; }
+    .delete-active { background-color: #ff8800 !important; }
+    .add-person-row td {
+      padding: 10px; font-size: 1.2em; cursor: pointer; color: #00c9a7; font-weight: bold;
     }
+    .add-person-row td:hover { background-color: #00c9a7; color: #000; border-radius: 6px; }
 
-    .back {
-      margin-top: 20px;
+    /* Popups */
+    .modal {
+      display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(0,0,0,0.85); justify-content: center; align-items: center; z-index: 9999;
+    }
+    .modal-content {
+      background: #1a1d24; padding: 20px; border-radius: 12px; text-align: center;
+      box-shadow: 0 6px 20px rgba(0,0,0,0.6); width: 90%; max-width: 400px;
+    }
+    .modal-content h2 { margin-bottom: 15px; }
+    .modal-content input {
+      width: 80%; padding: 10px; margin: 8px 0; border: none; border-radius: 6px;
+      font-size: 1em; text-align: center;
+    }
+    .modal-buttons { margin-top: 15px; display: flex; justify-content: center; gap: 10px; }
+
+    /* Hausdienst Submenu */
+    .button-group {
+      position: relative;
       display: inline-block;
-      text-decoration: none;
-      color: #00c9a7;
-      background: #1f1f1f;
-      padding: 10px 16px;
-      border-radius: 8px;
-      transition: 0.2s;
     }
-
-    .back:hover {
+    .submenu {
+      display: none;
+      position: absolute;
+      background: #1a1d24;
+      border-radius: 8px;
+      padding: 8px;
+      margin-top: 6px;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.4);
+      min-width: 180px;
+      z-index: 100;
+    }
+    .submenu a {
+      display: block;
+      padding: 10px;
+      text-decoration: none;
+      color: #f1f1f1;
+      border-radius: 6px;
+    }
+    .submenu a:hover {
       background: #00c9a7;
       color: #000;
+    }
+    .button-group:hover .submenu {
+      display: block;
     }
   </style>
 </head>
 <body>
-  <h1>Hausdienst Checkliste</h1>
-
-  <div class="task-list">
-    <div class="task"><input type="checkbox" id="task1"><label for="task1">Müll rausbringen</label></div>
-    <div class="task"><input type="checkbox" id="task2"><label for="task2">Flur wischen</label></div>
-    <div class="task"><input type="checkbox" id="task3"><label for="task3">Treppenhaus kehren</label></div>
-    <div class="task"><input type="checkbox" id="task4"><label for="task4">Postkästen kontrollieren</label></div>
-    <div class="task"><input type="checkbox" id="task5"><label for="task5">Garten checken</label></div>
+  <div style="text-align:center; margin-bottom: 10px;">
+    <img src="02_SICK _ SOUND_WHITE_TYPE.png" alt="Sick & Sound Logo" style="max-width: 300px; height: auto;">
   </div>
 
-  <a href="index.html" class="back">⬅ Zurück</a>
+  <div id="tableContainer" style="flex-grow:1; overflow:auto;"></div>
+
+  <!-- Buttons unten -->
+  <div class="footer">
+    <button class="btn add" onclick="openDrinkModal()">➕ Getränk hinzufügen</button>
+    <button class="btn undo" onclick="undoLast()">↩ Rückgängig</button>
+    <button class="btn paypal" onclick="togglePayPal()">💸 PayPal</button>
+    <button id="deleteBtn" class="btn delete" onclick="toggleDeleteMode()">🗑 Löschen</button>
+    <button class="btn" style="background:#444; color:#fff;" onclick="window.location='buchungen.html'">📖 Buchungen</button>
+
+    <!-- NEU: Hausdienst-Button mit Submenu -->
+    <div class="button-group">
+      <button class="btn" style="background:#444; color:#fff;">🏆 Hausdienst</button>
+      <div class="submenu">
+        <a href="hausdienst.html">📊 Rangliste</a>
+        <a href="hausdienst_checklist.html">✅ Checkliste</a>
+      </div>
+    </div>
+  </div>
+
+  <!-- PayPal Modal -->
+  <div id="paypalModal" class="modal" onclick="togglePayPal()">
+    <img src="frame.png" alt="PayPal QR" style="max-width:90%; max-height:90%; border:8px solid #fff; border-radius:12px;">
+  </div>
+
+  <!-- Person hinzufügen Modal -->
+  <div id="personModal" class="modal">
+    <div class="modal-content">
+      <h2>➕ Neue Person</h2>
+      <input id="personName" type="text" placeholder="Name eingeben">
+      <div class="modal-buttons">
+        <button class="btn add" onclick="confirmAddPerson()">Speichern</button>
+        <button class="btn reset" onclick="closeModal('personModal')">Abbrechen</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Getränk hinzufügen Modal -->
+  <div id="drinkModal" class="modal">
+    <div class="modal-content">
+      <h2>🥤 Neues Getränk</h2>
+      <input id="drinkName" type="text" placeholder="Name des Getränks">
+      <input id="drinkPrice" type="number" step="0.1" placeholder="Preis (€)">
+      <div class="modal-buttons">
+        <button class="btn add" onclick="confirmAddDrink()">Speichern</button>
+        <button class="btn reset" onclick="closeModal('drinkModal')">Abbrechen</button>
+      </div>
+    </div>
+  </div>
 
   <script>
-    const checkboxes = document.querySelectorAll('input[type="checkbox"]');
-    const today = new Date().toDateString();
-    const STORAGE_KEY = "hausdienst_checklist";
+    // --- deine bisherigen Keys & Datenstrukturen ---
+    const pricesKey = "sick_sound_prices";
+    const peopleKey = "sick_sound_people";
+    const dataKey = "sick_sound_data";
+    const historyKey = "sick_sound_history";
+    const bookingsKey = "sick_sound_bookings";
+    const hausdienstKey = "sick_sound_hausdienst";
+    const orderKey = "sick_sound_order";
 
-    // Lade gespeicherte Daten
-    const savedData = JSON.parse(localStorage.getItem(STORAGE_KEY)) || {};
+    let prices = JSON.parse(localStorage.getItem(pricesKey)) || {
+      "Cola_Zero": 1.0, "Monster": 1.5, "Wasser": 0.5, "Kaffee": 1.0, "Mittagessen": 6.0
+    };
+    let people = JSON.parse(localStorage.getItem(peopleKey)) || ["Chris","Daniel","Elmi","Florian","Joel","Kevin","Kiste","Marco","Meli","Simon"];
+    let data = JSON.parse(localStorage.getItem(dataKey)) || {};
+    let history = JSON.parse(localStorage.getItem(historyKey)) || [];
+    let bookings = JSON.parse(localStorage.getItem(bookingsKey)) || [];
+    let hausdienst = JSON.parse(localStorage.getItem(hausdienstKey)) || { current: null, stats: {} };
+    let columnOrder = JSON.parse(localStorage.getItem(orderKey)) || Object.keys(prices);
+    let deleteMode = false;
 
-    if (savedData.date === today) {
-      // Zustand wiederherstellen
-      checkboxes.forEach((cb, i) => {
-        cb.checked = savedData.tasks?.[i] || false;
-        if (cb.checked) cb.parentElement.classList.add("done");
-      });
-    } else {
-      // Reset, da neuer Tag
-      localStorage.setItem(STORAGE_KEY, JSON.stringify({ date: today, tasks: [] }));
+    // --- Speicherfunktion ---
+    function saveAll(){
+      localStorage.setItem(pricesKey, JSON.stringify(prices));
+      localStorage.setItem(peopleKey, JSON.stringify(people));
+      localStorage.setItem(dataKey, JSON.stringify(data));
+      localStorage.setItem(historyKey, JSON.stringify(history));
+      localStorage.setItem(bookingsKey, JSON.stringify(bookings));
+      localStorage.setItem(hausdienstKey, JSON.stringify(hausdienst));
+      localStorage.setItem(orderKey, JSON.stringify(columnOrder));
     }
 
-    // Speichern, wenn Checkbox verändert wird
-    checkboxes.forEach((cb, i) => {
-      cb.addEventListener("change", () => {
-        cb.parentElement.classList.toggle("done", cb.checked);
-        const taskStates = Array.from(checkboxes).map(c => c.checked);
-        localStorage.setItem(STORAGE_KEY, JSON.stringify({ date: today, tasks: taskStates }));
+    // --- Tabellenaufbau ---
+    function buildTable(){
+      people.sort();
+      let html = `<table><thead><tr><th>Person</th>`;
+      columnOrder.forEach(drink=>{
+        if(prices[drink] !== undefined){
+          html += `<th draggable="true" ondragstart="drag(event)" ondragover="allowDrop(event)" ondrop="drop(event)" data-drink="${drink}" onclick="deleteColumn('${drink}')">${drink.replace('_',' ')}<br>(${prices[drink]}€)</th>`;
+        }
       });
-    });
+      html += `<th>Gesamt (€)</th><th>Reset</th></tr></thead><tbody>`;
+
+      people.forEach(person=>{
+        let hausdienstMark = hausdienst.current===person ? "hausdienst" : "";
+        html += `<tr><th onclick="deletePerson('${person}')" class="${hausdienstMark}">${person}</th>`;
+        columnOrder.forEach(drink=>{
+          if(prices[drink] !== undefined){
+            const id = `${person}_${drink}`;
+            const val = data[id]||0;
+            html += `<td><div id="${id}" class="counter">${val}</div><button class="btn plus" onclick="changeValue('${id}',1)">+1</button></td>`;
+          }
+        });
+        html += `<td id="${person}_Total">0.00</td>
+                 <td><button class="btn reset" onclick="resetPerson('${person}')">Reset</button></td>
+                 </tr>`;
+      });
+
+      html += `<tr class="add-person-row"><td colspan="${columnOrder.length+3}" onclick="openPersonModal()">➕ Person hinzufügen</td></tr>`;
+      html += `</tbody></table>`;
+      document.getElementById("tableContainer").innerHTML = html;
+      updateAllTotals();
+    }
+
+    // --- Drag & Drop für Spalten ---
+    function drag(ev){ ev.dataTransfer.setData("drink", ev.target.dataset.drink); }
+    function allowDrop(ev){ ev.preventDefault(); }
+    function drop(ev){
+      ev.preventDefault();
+      let from = ev.dataTransfer.getData("drink");
+      let to = ev.target.dataset.drink;
+      if(from && to && from !== to){
+        let fromIndex = columnOrder.indexOf(from);
+        let toIndex = columnOrder.indexOf(to);
+        columnOrder.splice(fromIndex,1);
+        columnOrder.splice(toIndex,0,from);
+        saveAll(); buildTable();
+      }
+    }
+
+    // --- Werte ändern ---
+    function changeValue(id,delta){
+      const el=document.getElementById(id);
+      const current=parseInt(el.textContent||'0');
+      const next=Math.max(0,current+delta);
+      history.push({id,prev:current,action:"change"});
+      data[id]=next;
+      el.textContent=next;
+      updateTotal(id.split('_')[0]);
+      saveAll();
+    }
+
+    function updateTotal(person){
+      let total=0;
+      for (const drink of columnOrder){
+        const id=`${person}_${drink}`;
+        total += (data[id]||0)*prices[drink];
+      }
+      document.getElementById(person+"_Total").textContent=total.toFixed(2);
+    }
+
+    function updateAllTotals(){ people.forEach(p=>updateTotal(p)); }
+
+    // --- Reset Person ---
+    function resetPerson(person){
+      if (!confirm(`Alle Striche von ${person} zurücksetzen?`)) return;
+      let sum=parseFloat(document.getElementById(person+"_Total").textContent);
+      history.push({person,sum,action:"reset"});
+      bookings.push({date:new Date().toLocaleDateString("de-DE"),person,sum});
+      for (const drink in prices){ data[`${person}_${drink}`]=0; }
+      document.getElementById(person+"_Total").textContent="0.00";
+      saveAll(); buildTable();
+    }
+
+    // --- Undo ---
+    function undoLast(){
+      const last=history.pop();
+      if (!last) return;
+      if (last.action==="change"){ data[last.id]=last.prev; }
+      else if (last.action==="reset"){ bookings=bookings.filter(b=>!(b.person===last.person && b.sum===last.sum)); }
+      saveAll(); buildTable();
+    }
+
+    // --- Modal Steuerung ---
+    function togglePayPal(){ toggleModal("paypalModal"); }
+    function openPersonModal(){ toggleModal("personModal","flex"); }
+    function openDrinkModal(){ toggleModal("drinkModal","flex"); }
+    function closeModal(id){ document.getElementById(id).style.display="none"; }
+    function toggleModal(id,display="flex"){
+      const modal=document.getElementById(id);
+      modal.style.display=(modal.style.display===display)?"none":display;
+    }
+
+    // --- Delete Mode ---
+    function toggleDeleteMode(){
+      deleteMode=!deleteMode;
+      const btn=document.getElementById("deleteBtn");
+      if(deleteMode){ btn.classList.add("delete-active"); alert("🗑 Löschmodus aktiviert."); }
+      else { btn.classList.remove("delete-active"); }
+    }
+
+    function deletePerson(person){
+      if(!deleteMode) return;
+      if(confirm(`${person} wirklich löschen?`)){
+        people=people.filter(p=>p!==person);
+        saveAll();
+      }
+      deleteMode=false; document.getElementById("deleteBtn").classList.remove("delete-active");
+      buildTable();
+    }
+
+    function deleteColumn(drink){
+      if(!deleteMode) return;
+      if(confirm(`Getränk "${drink}" wirklich löschen?`)){
+        delete prices[drink]; columnOrder=columnOrder.filter(d=>d!==drink); saveAll();
+      }
+      deleteMode=false; document.getElementById("deleteBtn").classList.remove("delete-active");
+      buildTable();
+    }
+
+    // --- Person / Drink hinzufügen ---
+    function confirmAddPerson(){
+      let name=document.getElementById("personName").value.trim();
+      if(!name) return alert("Bitte Name eingeben!");
+      if(people.includes(name)) return alert("Person existiert bereits!");
+      people.push(name);
+      saveAll(); buildTable(); closeModal("personModal");
+      document.getElementById("personName").value="";
+    }
+
+    function confirmAddDrink(){
+      let name=document.getElementById("drinkName").value.trim();
+      let price=parseFloat(document.getElementById("drinkPrice").value);
+      if(!name || isNaN(price) || price<=0) return alert("Bitte gültige Eingaben machen!");
+      let key = name.replace(" ","_");
+      prices[key] = price;
+      if(!columnOrder.includes(key)) columnOrder.push(key);
+      saveAll(); buildTable(); closeModal("drinkModal");
+      document.getElementById("drinkName").value="";
+      document.getElementById("drinkPrice").value="";
+    }
+
+    window.onload=()=>buildTable();
   </script>
 </body>
 </html>
