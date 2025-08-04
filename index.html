@@ -65,34 +65,31 @@
     }
     .modal-buttons { margin-top: 15px; display: flex; justify-content: center; gap: 10px; }
 
-    /* Hausdienst Submenu */
-    .button-group {
+    /* Dropdown für Hausdienst */
+    .dropdown {
       position: relative;
       display: inline-block;
     }
-    .submenu {
+    .dropdown-content {
       display: none;
       position: absolute;
-      background: #1a1d24;
-      border-radius: 8px;
-      padding: 8px;
-      margin-top: 6px;
-      box-shadow: 0 4px 8px rgba(0,0,0,0.4);
+      background-color: #1a1d24;
       min-width: 180px;
-      z-index: 100;
+      box-shadow: 0px 8px 16px rgba(0,0,0,0.5);
+      border-radius: 8px;
+      z-index: 1;
     }
-    .submenu a {
-      display: block;
-      padding: 10px;
-      text-decoration: none;
+    .dropdown-content a {
       color: #f1f1f1;
-      border-radius: 6px;
+      padding: 10px 14px;
+      text-decoration: none;
+      display: block;
     }
-    .submenu a:hover {
-      background: #00c9a7;
+    .dropdown-content a:hover {
+      background-color: #00c9a7;
       color: #000;
     }
-    .button-group:hover .submenu {
+    .dropdown:hover .dropdown-content {
       display: block;
     }
   </style>
@@ -112,11 +109,11 @@
     <button id="deleteBtn" class="btn delete" onclick="toggleDeleteMode()">🗑 Löschen</button>
     <button class="btn" style="background:#444; color:#fff;" onclick="window.location='buchungen.html'">📖 Buchungen</button>
 
-    <!-- NEU: Hausdienst-Button mit Submenu -->
-    <div class="button-group">
-      <button class="btn" style="background:#444; color:#fff;">🏆 Hausdienst</button>
-      <div class="submenu">
-        <a href="hausdienst.html">📊 Rangliste</a>
+    <!-- Dropdown Hausdienst -->
+    <div class="dropdown">
+      <button class="btn" style="background:#444; color:#fff;">🏠 Hausdienst ▾</button>
+      <div class="dropdown-content">
+        <a href="hausdienst.html">🏆 Rangliste</a>
         <a href="hausdienst_checklist.html">✅ Checkliste</a>
       </div>
     </div>
@@ -153,7 +150,6 @@
   </div>
 
   <script>
-    // --- deine bisherigen Keys & Datenstrukturen ---
     const pricesKey = "sick_sound_prices";
     const peopleKey = "sick_sound_people";
     const dataKey = "sick_sound_data";
@@ -173,7 +169,6 @@
     let columnOrder = JSON.parse(localStorage.getItem(orderKey)) || Object.keys(prices);
     let deleteMode = false;
 
-    // --- Speicherfunktion ---
     function saveAll(){
       localStorage.setItem(pricesKey, JSON.stringify(prices));
       localStorage.setItem(peopleKey, JSON.stringify(people));
@@ -184,7 +179,6 @@
       localStorage.setItem(orderKey, JSON.stringify(columnOrder));
     }
 
-    // --- Tabellenaufbau ---
     function buildTable(){
       people.sort();
       let html = `<table><thead><tr><th>Person</th>`;
@@ -196,8 +190,7 @@
       html += `<th>Gesamt (€)</th><th>Reset</th></tr></thead><tbody>`;
 
       people.forEach(person=>{
-        let hausdienstMark = hausdienst.current===person ? "hausdienst" : "";
-        html += `<tr><th onclick="deletePerson('${person}')" class="${hausdienstMark}">${person}</th>`;
+        html += `<tr><th onclick="deletePerson('${person}')">${person}</th>`;
         columnOrder.forEach(drink=>{
           if(prices[drink] !== undefined){
             const id = `${person}_${drink}`;
@@ -211,12 +204,12 @@
       });
 
       html += `<tr class="add-person-row"><td colspan="${columnOrder.length+3}" onclick="openPersonModal()">➕ Person hinzufügen</td></tr>`;
+
       html += `</tbody></table>`;
       document.getElementById("tableContainer").innerHTML = html;
       updateAllTotals();
     }
 
-    // --- Drag & Drop für Spalten ---
     function drag(ev){ ev.dataTransfer.setData("drink", ev.target.dataset.drink); }
     function allowDrop(ev){ ev.preventDefault(); }
     function drop(ev){
@@ -232,7 +225,6 @@
       }
     }
 
-    // --- Werte ändern ---
     function changeValue(id,delta){
       const el=document.getElementById(id);
       const current=parseInt(el.textContent||'0');
@@ -255,7 +247,6 @@
 
     function updateAllTotals(){ people.forEach(p=>updateTotal(p)); }
 
-    // --- Reset Person ---
     function resetPerson(person){
       if (!confirm(`Alle Striche von ${person} zurücksetzen?`)) return;
       let sum=parseFloat(document.getElementById(person+"_Total").textContent);
@@ -266,7 +257,6 @@
       saveAll(); buildTable();
     }
 
-    // --- Undo ---
     function undoLast(){
       const last=history.pop();
       if (!last) return;
@@ -275,7 +265,6 @@
       saveAll(); buildTable();
     }
 
-    // --- Modal Steuerung ---
     function togglePayPal(){ toggleModal("paypalModal"); }
     function openPersonModal(){ toggleModal("personModal","flex"); }
     function openDrinkModal(){ toggleModal("drinkModal","flex"); }
@@ -285,7 +274,6 @@
       modal.style.display=(modal.style.display===display)?"none":display;
     }
 
-    // --- Delete Mode ---
     function toggleDeleteMode(){
       deleteMode=!deleteMode;
       const btn=document.getElementById("deleteBtn");
@@ -312,7 +300,6 @@
       buildTable();
     }
 
-    // --- Person / Drink hinzufügen ---
     function confirmAddPerson(){
       let name=document.getElementById("personName").value.trim();
       if(!name) return alert("Bitte Name eingeben!");
