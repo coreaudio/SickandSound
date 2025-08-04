@@ -1,17 +1,16 @@
-/* === Allgemein === */
+/* === Allgemeines Layout === */
 html, body {
   height: 100%;
-  overflow: hidden;
+  margin: 0;
+  padding: 20px;
   background-color: #0f1117;
   font-family: 'Orbitron', sans-serif;
   color: #f1f1f1;
-  margin: 0;
-  padding: 20px;
   display: flex;
   flex-direction: column;
 }
 
-/* === Tabelle === */
+/* === Tabellen === */
 table {
   width: 100%;
   border-collapse: collapse;
@@ -20,17 +19,20 @@ table {
   font-size: 0.9em;
   flex-grow: 1;
 }
+
 th, td {
   padding: 6px;
   text-align: center;
   border-bottom: 1px solid #2a2d34;
 }
+
 th {
   font-size: 1em;
   font-weight: 600;
   color: #ffffff;
   cursor: grab;
 }
+
 td:last-child {
   font-weight: bold;
   color: #ffd700;
@@ -47,12 +49,15 @@ td:last-child {
   margin: 2px;
   box-shadow: 0 4px 10px rgba(0,0,0,0.4);
 }
+
 .plus { background-color: #00c9a7; color: #000; }
 .reset { background-color: #555; color: #fff; }
 .undo { background-color: #ffa500; color: #000; }
 .paypal { background-color: #0070ba; color: #fff; }
 .delete { background-color: #ff4444; color: #fff; }
 .add { background-color: #4caf50; color: #fff; }
+.back { background-color: #555; color: #fff; }
+.reset-list { background-color: #ff4444; color: #fff; }
 
 /* === Footer === */
 .footer {
@@ -64,10 +69,12 @@ td:last-child {
   flex-wrap: wrap;
 }
 
-/* === Spezielle Markierungen === */
+/* === Ranglisten-Styles === */
 .gold { color: gold; }
 .silver { color: silver; }
 .bronze { color: #cd7f32; }
+
+/* Hausdienst Markierung */
 .hausdienst {
   background-color: #00c9a7;
   color: #000 !important;
@@ -75,12 +82,12 @@ td:last-child {
   padding: 2px 6px;
 }
 
-/* Löschmodus */
+/* === Löschmodus === */
 .delete-active {
   background-color: #ff8800 !important;
 }
 
-/* === Person hinzufügen Zeile === */
+/* === Personen hinzufügen Zeile === */
 .add-person-row td {
   padding: 10px;
   font-size: 1.2em;
@@ -94,7 +101,7 @@ td:last-child {
   border-radius: 6px;
 }
 
-/* === Modal-Popups === */
+/* === Modale Popups === */
 .modal {
   display: none;
   position: fixed;
@@ -105,6 +112,7 @@ td:last-child {
   align-items: center;
   z-index: 9999;
 }
+
 .modal-content {
   background: #1a1d24;
   padding: 20px;
@@ -114,7 +122,11 @@ td:last-child {
   width: 90%;
   max-width: 400px;
 }
-.modal-content h2 { margin-bottom: 15px; }
+
+.modal-content h2 {
+  margin-bottom: 15px;
+}
+
 .modal-content input {
   width: 80%;
   padding: 10px;
@@ -124,6 +136,7 @@ td:last-child {
   font-size: 1em;
   text-align: center;
 }
+
 .modal-buttons {
   margin-top: 15px;
   display: flex;
@@ -131,30 +144,24 @@ td:last-child {
   gap: 10px;
 }
 
-/* === Dropdown für Hausdienst === */
-.dropdown {
-  position: relative;
-  display: inline-block;
-}
-.dropdown-content {
-  display: none;
-  position: absolute;
-  background-color: #1a1d24;
-  min-width: 180px;
-  box-shadow: 0px 8px 16px rgba(0,0,0,0.5);
+/* === Checkliste (hausdienst_checklist.html) === */
+h1 { text-align: center; margin-bottom: 20px; }
+h2 { margin-top: 20px; color: #00c9a7; }
+
+ul { list-style: none; padding: 0; }
+li {
+  background: #1a1d24;
+  margin: 8px 0;
+  padding: 12px 16px;
   border-radius: 8px;
-  z-index: 1;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.4);
 }
-.dropdown-content a {
-  color: #f1f1f1;
-  padding: 10px 14px;
-  text-decoration: none;
-  display: block;
-}
-.dropdown-content a:hover {
-  background-color: #00c9a7;
+li.checked {
+  background: #00c9a7;
   color: #000;
-}
-.dropdown:hover .dropdown-content {
-  display: block;
+  text-decoration: line-through;
 }
