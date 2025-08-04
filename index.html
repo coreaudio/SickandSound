@@ -9,24 +9,37 @@
 </head>
 <body>
   <div style="text-align:center; margin-bottom: 8px;">
-    <img src="02_SICK _ SOUND_WHITE_TYPE.png" alt="Sick & Sound Logo" style="max-width: 220px; height: auto;">
+    <img src="02_SICK _ SOUND_WHITE_TYPE.png" alt="Sick & Sound Logo" style="max-width: 240px; height: auto;">
   </div>
 
-  <div id="tableContainer" style="flex-grow:1;"></div>
+  <div id="tableContainer" style="flex-grow:1; overflow:auto;"></div>
 
-  <!-- Footer Buttons -->
+  <!-- Buttons unten -->
   <div class="footer">
     <button class="btn add" onclick="openDrinkModal()">➕ Getränk</button>
     <button class="btn undo" onclick="undoLast()">↩ Rückgängig</button>
     <button class="btn paypal" onclick="togglePayPal()">💸 PayPal</button>
     <button id="deleteBtn" class="btn delete" onclick="toggleDeleteMode()">🗑 Löschen</button>
     <button class="btn" style="background:#444; color:#fff;" onclick="window.location='buchungen.html'">📖 Buchungen</button>
-    <button class="btn" style="background:#444; color:#fff;" onclick="window.location='hausdienst_menu.html'">🏠 Hausdienst</button>
+    <button class="btn" style="background:#444; color:#fff;" onclick="openHausdienstModal()">🏠 Hausdienst</button>
   </div>
 
   <!-- PayPal Modal -->
   <div id="paypalModal" class="modal" onclick="togglePayPal()">
     <img src="frame.png" alt="PayPal QR">
+  </div>
+
+  <!-- Hausdienst Modal -->
+  <div id="hausdienstModal" class="modal">
+    <div class="modal-content">
+      <h2>🏠 Hausdienst</h2>
+      <div class="modal-buttons">
+        <button class="btn" style="background:#00c9a7; color:#000;" onclick="window.location='hausdienst.html'">🏆 Rangliste</button>
+        <button class="btn" style="background:#444; color:#fff;" onclick="window.location='hausdienst_checklist.html'">📋 Checkliste</button>
+      </div>
+      <br>
+      <button class="btn reset" onclick="closeModal('hausdienstModal')">Abbrechen</button>
+    </div>
   </div>
 
   <!-- Person hinzufügen Modal -->
@@ -60,6 +73,7 @@
     const dataKey = "sick_sound_data";
     const historyKey = "sick_sound_history";
     const bookingsKey = "sick_sound_bookings";
+    const hausdienstKey = "sick_sound_hausdienst";
     const orderKey = "sick_sound_order";
 
     let prices = JSON.parse(localStorage.getItem(pricesKey)) || {
@@ -69,6 +83,7 @@
     let data = JSON.parse(localStorage.getItem(dataKey)) || {};
     let history = JSON.parse(localStorage.getItem(historyKey)) || [];
     let bookings = JSON.parse(localStorage.getItem(bookingsKey)) || [];
+    let hausdienst = JSON.parse(localStorage.getItem(hausdienstKey)) || { current: null, stats: {} };
     let columnOrder = JSON.parse(localStorage.getItem(orderKey)) || Object.keys(prices);
     let deleteMode = false;
 
@@ -78,6 +93,7 @@
       localStorage.setItem(dataKey, JSON.stringify(data));
       localStorage.setItem(historyKey, JSON.stringify(history));
       localStorage.setItem(bookingsKey, JSON.stringify(bookings));
+      localStorage.setItem(hausdienstKey, JSON.stringify(hausdienst));
       localStorage.setItem(orderKey, JSON.stringify(columnOrder));
     }
 
@@ -92,7 +108,8 @@
       html += `<th>Gesamt (€)</th><th>Reset</th></tr></thead><tbody>`;
 
       people.forEach(person=>{
-        html += `<tr><th onclick="deletePerson('${person}')">${person}</th>`;
+        let hausdienstMark = hausdienst.current===person ? "hausdienst" : "";
+        html += `<tr><th class="${hausdienstMark}" onclick="deletePerson('${person}')">${person}</th>`;
         columnOrder.forEach(drink=>{
           if(prices[drink] !== undefined){
             const id = `${person}_${drink}`;
@@ -101,29 +118,16 @@
           }
         });
         html += `<td id="${person}_Total">0.00</td>
-                 <td><button class="btn reset" onclick="resetPerson('${person}')">Reset</button></td></tr>`;
+                 <td><button class="btn reset" onclick="resetPerson('${person}')">Reset</button></td>
+                 </tr>`;
       });
 
-      // Neue Person hinzufügen
       html += `<tr class="add-person-row"><td colspan="${columnOrder.length+3}" onclick="openPersonModal()">➕ Person hinzufügen</td></tr>`;
 
       html += `</tbody></table>`;
       document.getElementById("tableContainer").innerHTML = html;
-
       updateAllTotals();
-      resizeRows();
     }
-
-    function resizeRows(){
-      const table = document.getElementById("mainTable");
-      if(!table) return;
-      const rows = table.querySelectorAll("tbody tr");
-      const availableHeight = window.innerHeight - document.querySelector(".footer").offsetHeight - 120;
-      const rowHeight = Math.floor(availableHeight / rows.length);
-      rows.forEach(r => r.style.height = rowHeight+"px");
-    }
-
-    window.onresize = resizeRows;
 
     function drag(ev){ ev.dataTransfer.setData("drink", ev.target.dataset.drink); }
     function allowDrop(ev){ ev.preventDefault(); }
@@ -183,6 +187,7 @@
     function togglePayPal(){ toggleModal("paypalModal"); }
     function openPersonModal(){ toggleModal("personModal","flex"); }
     function openDrinkModal(){ toggleModal("drinkModal","flex"); }
+    function openHausdienstModal(){ toggleModal("hausdienstModal","flex"); }
     function closeModal(id){ document.getElementById(id).style.display="none"; }
     function toggleModal(id,display="flex"){
       const modal=document.getElementById(id);
