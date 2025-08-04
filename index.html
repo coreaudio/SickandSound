@@ -2,7 +2,7 @@
 <html lang="de">
 <head>
   <meta charset="UTF-8" />
-  <title>Sick & Sound Strichliste</title>
+  <title>Sick &amp; Sound Strichliste</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;800&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="style.css" />
@@ -12,7 +12,7 @@
   <div id="tableContainer" style="flex-grow:1; overflow:hidden;"></div>
 
   <div class="footer">
-    <button id="addDrinkBtn" class="btn add">➕ Getränk</button>
+    <button id="addDrinkBtn" class="btn add">➕ Getränk hinzufügen</button>
     <button id="undoBtn" class="btn undo">↩ Rückgängig</button>
     <button id="paypalBtn" class="btn paypal">💸 PayPal</button>
     <button id="deleteBtn" class="btn delete">🗑 Löschen</button>
@@ -63,45 +63,88 @@
     </div>
   </div>
 
-  <!-- Firebase + App Logic -->
   <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-app.js";
+    import { initializeApp }     from "https://www.gstatic.com/firebasejs/12.0.0/firebase-app.js";
     import { getDatabase, ref, onValue, set, push, remove } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-database.js";
+    import Sortable              from "https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/modular/sortable.esm.js";
 
+    // 1) Standard-Daten
+    const DEFAULT_PRICES  = { Cola_Zero:1.0, Monster:1.5, Wasser:0.5, Kaffee:1.0, Mittagessen:6.0 };
+    const DEFAULT_PEOPLE  = ["Chris","Daniel","Elmi","Florian","Joel","Kevin","Kiste","Marco","Meli","Simon"];
+    const DEFAULT_ORDER   = Object.keys(DEFAULT_PRICES);
+
+    // 2) Firebase initialisieren
     const firebaseConfig = {
       apiKey: "AIzaSyCSQuBqp-wVTXLNp3OtIQjKyOFyMulMvbQ",
-      authDomain: "sickandsound-be902.firebaseapp.com",
-      databaseURL: "https://sickandsound-be902-default-rtdb.europe-west1.firebasedatabase.app",
-      projectId: "sickandsound-be902",
-      storageBucket: "sickandsound-be902.appspot.com",
-      messagingSenderId: "797518207823",
-      appId: "1:797518207823:web:35a1dfdd95ab2a49a8c33a"
+      authDomain:"sickandsound-be902.firebaseapp.com",
+      databaseURL:"https://sickandsound-be902-default-rtdb.europe-west1.firebasedatabase.app",
+      projectId:"sickandsound-be902",
+      storageBucket:"sickandsound-be902.appspot.com",
+      messagingSenderId:"797518207823",
+      appId:"1:797518207823:web:35a1dfdd95ab2a49a8c33a"
     };
     const app = initializeApp(firebaseConfig);
     const db  = getDatabase(app);
 
-    const pricesRef     = ref(db, 'strichliste/prices');
-    const peopleRef     = ref(db, 'strichliste/people');
-    const dataRef       = ref(db, 'strichliste/data');
-    const bookingsRef   = ref(db, 'strichliste/bookings');
-    const hausdienstRef = ref(db, 'strichliste/hausdienst');
-    const orderRef      = ref(db, 'strichliste/order');
+    // 3) Referenzen
+    const pricesRef     = ref(db,'strichliste/prices');
+    const peopleRef     = ref(db,'strichliste/people');
+    const dataRef       = ref(db,'strichliste/data');
+    const bookingsRef   = ref(db,'strichliste/bookings');
+    const hausdienstRef = ref(db,'strichliste/hausdienst');
+    const orderRef      = ref(db,'strichliste/order');
 
+    // 4) Lokale Variablen
     let prices      = {};
     let people      = [];
     let data        = {};
     let history     = [];
     let bookings    = [];
-    let hausdienst  = { current: null, stats: {} };
+    let hausdienst  = { current:null, stats:{} };
     let columnOrder = [];
 
-    onValue(pricesRef,      snap => { if(snap.exists()) prices = snap.val(); buildTable(); });
-    onValue(peopleRef,      snap => { if(snap.exists()) people = snap.val(); buildTable(); });
-    onValue(dataRef,        snap => { if(snap.exists()) data = snap.val(); updateAllTotals(); });
-    onValue(bookingsRef,    snap => { if(snap.exists()) bookings = snap.val(); });
-    onValue(hausdienstRef,  snap => { if(snap.exists()) hausdienst = snap.val(); buildTable(); });
-    onValue(orderRef,       snap => { if(snap.exists()) columnOrder = snap.val(); buildTable(); });
+    // 5) Live‐Sync & Fallback initialisieren
+    onValue(pricesRef, snap => {
+      if (snap.exists()) {
+        prices = snap.val();
+      } else {
+        prices = DEFAULT_PRICES;
+        set(pricesRef, prices);
+      }
+      buildTable();
+    });
+    onValue(peopleRef, snap => {
+      if (snap.exists()) {
+        people = snap.val();
+      } else {
+        people = DEFAULT_PEOPLE;
+        set(peopleRef, people);
+      }
+      buildTable();
+    });
+    onValue(dataRef, snap => {
+      data = snap.exists() ? snap.val() : {};
+      updateAllTotals();
+    });
+    onValue(bookingsRef, snap => {
+      bookings = snap.exists() ? snap.val() : [];
+    });
+    onValue(hausdienstRef, snap => {
+      hausdienst = snap.exists() ? snap.val() : { current:null, stats:{} };
+      set(hausdienstRef, hausdienst);
+      buildTable();
+    });
+    onValue(orderRef, snap => {
+      if (snap.exists()) {
+        columnOrder = snap.val();
+      } else {
+        columnOrder = DEFAULT_ORDER;
+        set(orderRef, columnOrder);
+      }
+      buildTable();
+    });
 
+    // 6) Speichern
     function savePrices()     { set(pricesRef, prices); }
     function savePeople()     { set(peopleRef, people); }
     function saveData()       { set(dataRef, data); }
@@ -109,21 +152,21 @@
     function saveHausdienst(){ set(hausdienstRef, hausdienst); }
     function saveOrder()      { set(orderRef, columnOrder); }
 
+    // 7) Aufbau & Funktionen
     function buildTable(){
       people.sort();
       let html = `<table><thead><tr><th>Person</th>`;
       columnOrder.forEach(drink => {
-        if(prices[drink] !== undefined){
+        if (prices[drink] !== undefined) {
           html += `<th data-drink="${drink}">${drink.replace('_',' ')}<br>(${prices[drink]}€)</th>`;
         }
       });
       html += `<th>Gesamt (€)</th><th>Reset</th></tr></thead><tbody>`;
-
       people.forEach(person => {
-        const mark = hausdienst.current === person ? "hausdienst" : "";
+        const mark = hausdienst.current===person ? "hausdienst" : "";
         html += `<tr><th class="${mark}" onclick="deletePerson('${person}')">${person}</th>`;
         columnOrder.forEach(drink => {
-          if(prices[drink] !== undefined){
+          if (prices[drink] !== undefined) {
             const id = `${person}_${drink}`, val = data[id]||0;
             html += `<td><div id="${id}" class="counter">${val}</div>
                       <button class="btn plus" onclick="changeValue('${id}',1)">+1</button></td>`;
@@ -132,7 +175,7 @@
         html += `<td id="${person}_Total">0.00</td>
                  <td><button class="btn reset" onclick="resetPerson('${person}')">Reset</button></td></tr>`;
       });
-
+      // ➕ Person hinzufügen
       html += `<tr class="add-person-row">
                  <td colspan="${columnOrder.length+3}" onclick="toggleModal('personModal')">➕ Person hinzufügen</td>
                </tr>`;
@@ -140,13 +183,14 @@
       document.getElementById("tableContainer").innerHTML = html;
       updateAllTotals();
 
+      // SortableJS initialisieren (Maus + Touch)
       new Sortable(document.querySelector("thead tr"), {
-        animation: 150,
+        animation:150,
         filter: "th:first-child, th:last-child",
         onEnd: () => {
-          let cols = Array.from(document.querySelectorAll("thead th"))
-                        .map(th => th.dataset.drink)
-                        .filter(Boolean);
+          const cols = Array.from(document.querySelectorAll("thead th"))
+                            .map(th=>th.dataset.drink)
+                            .filter(Boolean);
           columnOrder = cols;
           saveOrder();
           buildTable();
@@ -158,7 +202,7 @@
       const el = document.getElementById(id),
             cur = parseInt(el.textContent||'0'),
             nxt = Math.max(0, cur+delta);
-      history.push({id,prev:cur, action:"change"});
+      history.push({id,prev:cur,action:"change"});
       data[id] = nxt;
       el.textContent = nxt;
       updateTotal(id.split('_')[0]);
@@ -167,40 +211,34 @@
 
     function updateTotal(person){
       let total=0;
-      columnOrder.forEach(drink => {
+      columnOrder.forEach(drink=>{
         total += (data[`${person}_${drink}`]||0)*prices[drink];
       });
-      document.getElementById(person+"_Total").textContent = total.toFixed(2);
+      document.getElementById(person+"_Total").textContent=total.toFixed(2);
     }
 
-    function updateAllTotals(){
-      people.forEach(p => updateTotal(p));
-    }
+    function updateAllTotals(){ people.forEach(p=>updateTotal(p)); }
 
     function resetPerson(person){
-      if(!confirm(`Alle Striche von ${person} zurücksetzen?`)) return;
+      if (!confirm(`Alle Striche von ${person} zurücksetzen?`)) return;
       const sum = parseFloat(document.getElementById(person+"_Total").textContent);
-      history.push({person,sum, action:"reset"});
-      bookings.push({date:new Date().toLocaleDateString("de-DE"), person, sum});
-      columnOrder.forEach(drink => data[`${person}_${drink}`]=0);
-      saveBookings();
-      saveData();
-      buildTable();
+      history.push({person,sum,action:"reset"});
+      bookings.push({date:new Date().toLocaleDateString("de-DE"),person,sum});
+      columnOrder.forEach(drink=> data[`${person}_${drink}`]=0);
+      saveBookings(); saveData(); buildTable();
     }
 
     function undoLast(){
-      const last=history.pop(); if(!last) return;
-      if(last.action==="change"){
-        data[last.id] = last.prev;
-      } else if(last.action==="reset"){
+      const last = history.pop(); if(!last) return;
+      if (last.action==="change") data[last.id] = last.prev;
+      else if (last.action==="reset")
         bookings = bookings.filter(b=>!(b.person===last.person && b.sum===last.sum));
-      }
       saveData(); saveBookings(); buildTable();
     }
 
     function deletePerson(person){
-      if(!deleteMode) return;
-      if(confirm(`${person} wirklich löschen?`)){
+      if (!deleteMode) return;
+      if (confirm(`${person} wirklich löschen?`)) {
         people = people.filter(p=>p!==person);
         savePeople();
       }
@@ -209,25 +247,26 @@
 
     function confirmAddPerson(){
       const name = document.getElementById("personName").value.trim();
-      if(!name) return alert("Bitte Name eingeben!");
-      if(people.includes(name)) return alert("Person existiert bereits!");
+      if (!name) return alert("Bitte Name eingeben!");
+      if (people.includes(name)) return alert("Person existiert bereits!");
       people.push(name); savePeople(); buildTable(); toggleModal('personModal');
     }
 
     function confirmAddDrink(){
       const name = document.getElementById("drinkName").value.trim(),
             price= parseFloat(document.getElementById("drinkPrice").value);
-      if(!name||isNaN(price)||price<=0) return alert("Bitte gültige Eingaben machen!");
-      const key = name.replace(" ","_");
-      prices[key]=price;
-      if(!columnOrder.includes(key)) columnOrder.push(key);
+      if (!name||isNaN(price)||price<=0) return alert("Bitte gültige Eingaben!");
+      const key = name.replace(/ /g,"_");
+      prices[key] = price;
+      if (!columnOrder.includes(key)) columnOrder.push(key);
       savePrices(); saveOrder(); buildTable(); toggleModal('drinkModal');
     }
 
+    let deleteMode = false;
     function toggleDeleteMode(){
       deleteMode = !deleteMode;
       document.getElementById("deleteBtn").classList.toggle("delete-active", deleteMode);
-      if(deleteMode) alert("🗑 Löschmodus aktiviert");
+      if (deleteMode) alert("🗑 Löschmodus aktiviert");
     }
 
     function navigateHausdienst(url){
@@ -240,14 +279,14 @@
       m.style.display = (m.style.display==="flex"?"none":"flex");
     }
 
-    window.onload = () => {
+    window.onload = ()=>{
       buildTable();
       document.getElementById("undoBtn").addEventListener("click", undoLast);
       document.getElementById("paypalBtn").addEventListener("click", ()=>toggleModal('paypalModal'));
       document.getElementById("addDrinkBtn").addEventListener("click", ()=>toggleModal('drinkModal'));
       document.getElementById("confirmAddDrinkBtn").addEventListener("click", confirmAddDrink);
       document.getElementById("confirmAddPersonBtn").addEventListener("click", confirmAddPerson);
-      document.getElementById("buchungenBtn").addEventListener("click", ()=>window.location='buchungen.html');
+      document.getElementById("buchungenBtn").addEventListener("click", ()=>location.href='buchungen.html');
       document.getElementById("hausdienstBtn").addEventListener("click", ()=>toggleModal('hausdienstModal'));
       document.getElementById("deleteBtn").addEventListener("click", toggleDeleteMode);
     };
