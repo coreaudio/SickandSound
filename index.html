@@ -73,12 +73,13 @@
       onValue,
       set
     } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-database.js";
-    import Sortable from "https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/modular/sortable.esm.js";
 
+    // Default-Werte
     const DEFAULT_PRICES = { Cola_Zero:1.0, Monster:1.5, Wasser:0.5, Kaffee:1.0, Mittagessen:6.0 };
     const DEFAULT_PEOPLE = ["Chris","Daniel","Elmi","Florian","Joel","Kevin","Kiste","Marco","Meli","Simon"];
     const DEFAULT_ORDER  = Object.keys(DEFAULT_PRICES);
 
+    // Firebase konfigurieren
     const firebaseConfig = {
       apiKey: "AIzaSyCSQuBqp-wVTXLNp3OtIQjKyOFyMulMvbQ",
       authDomain:"sickandsound-be902.firebaseapp.com",
@@ -91,6 +92,7 @@
     const app = initializeApp(firebaseConfig);
     const db  = getDatabase(app);
 
+    // DB-Referenzen
     const pricesRef     = ref(db,'strichliste/prices');
     const peopleRef     = ref(db,'strichliste/people');
     const dataRef       = ref(db,'strichliste/data');
@@ -98,10 +100,16 @@
     const hausdienstRef = ref(db,'strichliste/hausdienst');
     const orderRef      = ref(db,'strichliste/order');
 
-    let prices      = {}, people = [], data = {}, history = [], bookings = [];
-    let hausdienst  = { current:null, stats:{} }, columnOrder = [], deleteMode = false;
+    let prices      = {};
+    let people      = [];
+    let data        = {};
+    let history     = [];
+    let bookings    = [];
+    let hausdienst  = { current:null, stats:{} };
+    let columnOrder = [];
+    let deleteMode  = false;
 
-    function save(){ 
+    function saveAll(){
       set(pricesRef,     prices);
       set(peopleRef,     people);
       set(dataRef,       data);
@@ -129,21 +137,18 @@
     });
     onValue(orderRef, snap => {
       columnOrder = snap.exists() ? snap.val() : DEFAULT_ORDER;
-      if(!snap.exists()) set(orderRef, columnOrder);
-      buildTable();
-    });
-
-    function buildTable(){
-      // **FALLBACK**: wenn order leer ist
       if(!Array.isArray(columnOrder) || columnOrder.length===0){
         columnOrder = Object.keys(prices);
         set(orderRef, columnOrder);
       }
+      buildTable();
+    });
 
+    function buildTable(){
       people.sort();
       let html = `<table><thead><tr><th>Person</th>`;
       columnOrder.forEach(drink=>{
-        if(prices[drink]!==undefined){
+        if(prices[drink]!=null){
           html += `<th data-drink="${drink}">${drink.replace('_',' ')}<br>(${prices[drink]}€)</th>`;
         }
       });
@@ -153,11 +158,11 @@
         const mark = hausdienst.current===person ? "hausdienst" : "";
         html += `<tr><th class="${mark}" onclick="deletePerson('${person}')">${person}</th>`;
         columnOrder.forEach(drink=>{
-          if(prices[drink]!==undefined){
+          if(prices[drink]!=null){
             const id=`${person}_${drink}`, val=data[id]||0;
             html += `<td>
-                      <div id="${id}" class="counter">${val}</div>
-                      <button class="btn plus" onclick="changeValue('${id}',1)">+1</button>
+                       <div id="${id}" class="counter">${val}</div>
+                       <button class="btn plus" onclick="changeValue('${id}',1)">+1</button>
                      </td>`;
           }
         });
@@ -166,13 +171,14 @@
       });
 
       html += `<tr class="add-person-row">
-                 <td colspan="${columnOrder.length+3}" onclick="toggleModal('personModal')">➕ Person hinzufügen</td>
+                 <td colspan="${columnOrder.length+3}" onclick="toggleModal('personModal')">
+                   ➕ Person hinzufügen
+                 </td>
                </tr>`;
       html += `</tbody></table>`;
       document.getElementById("tableContainer").innerHTML = html;
       updateAllTotals();
 
-      // Re-Init SortableJS
       new Sortable(document.querySelector("thead tr"), {
         animation:150,
         filter:"th:first-child, th:last-child",
@@ -241,7 +247,6 @@
       if(people.includes(name)) return alert("Person existiert bereits!");
       people.push(name);
       set(peopleRef,people);
-      buildTable();
       toggleModal('personModal');
     }
 
@@ -254,7 +259,6 @@
       if(!columnOrder.includes(key)) columnOrder.push(key);
       set(pricesRef,prices);
       set(orderRef,columnOrder);
-      buildTable();
       toggleModal('drinkModal');
     }
 
@@ -269,30 +273,21 @@
       toggleModal('hausdienstModal');
       window.location=url;
     }
+
     function toggleModal(id){
       const m=document.getElementById(id);
       m.style.display=(m.style.display==="flex"?"none":"flex");
     }
 
-    window.onload=()=>{
-      document.getElementById("undoBtn")
-              .addEventListener("click",undoLast);
-      document.getElementById("paypalBtn")
-              .addEventListener("click",()=>toggleModal('paypalModal'));
-      document.getElementById("addDrinkBtn")
-              .addEventListener("click",()=>toggleModal('drinkModal'));
-      document.getElementById("confirmAddDrinkBtn")
-              .addEventListener("click",confirmAddDrink);
-      document.getElementById("confirmAddPersonBtn")
-              .addEventListener("click",confirmAddPerson);
-      document.getElementById("buchungenBtn")
-              .addEventListener("click",()=>location.href='buchungen.html');
-      document.getElementById("hausdienstBtn")
-              .addEventListener("click",()=>toggleModal('hausdienstModal'));
-      document.getElementById("deleteBtn")
-              .addEventListener("click",toggleDeleteMode);
-
-      // Initial render
+    window.onload = ()=>{
+      document.getElementById("undoBtn").onclick = undoLast;
+      document.getElementById("paypalBtn").onclick = ()=>toggleModal('paypalModal');
+      document.getElementById("addDrinkBtn").onclick = ()=>toggleModal('drinkModal');
+      document.getElementById("confirmAddDrinkBtn").onclick = confirmAddDrink;
+      document.getElementById("confirmAddPersonBtn").onclick = confirmAddPerson;
+      document.getElementById("buchungenBtn").onclick = ()=>location.href='buchungen.html';
+      document.getElementById("hausdienstBtn").onclick = ()=>toggleModal('hausdienstModal');
+      document.getElementById("deleteBtn").onclick = toggleDeleteMode;
       buildTable();
     };
   </script>
