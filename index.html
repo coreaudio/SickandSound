@@ -5,100 +5,15 @@
   <title>Sick & Sound Strichliste</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;800&display=swap" rel="stylesheet" />
-  <style>
-    html, body {
-      height: 100%;
-      overflow: hidden;
-      background-color: #0f1117;
-      font-family: 'Orbitron', sans-serif;
-      color: #f1f1f1;
-      margin: 0;
-      padding: 20px;
-      display: flex;
-      flex-direction: column;
-    }
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      background-color: #1a1d24;
-      table-layout: fixed;
-      font-size: 0.9em;
-      flex-grow: 1;
-    }
-    th, td { padding: 6px; text-align: center; border-bottom: 1px solid #2a2d34; }
-    th { font-size: 1em; font-weight: 600; color: #ffffff; cursor: grab; }
-    td:last-child { font-weight: bold; color: #ffd700; }
-
-    .btn {
-      padding: 8px 14px; font-size: 0.9em; font-weight: bold;
-      border: none; border-radius: 8px; cursor: pointer; margin: 2px;
-      box-shadow: 0 4px 10px rgba(0,0,0,0.4);
-    }
-    .plus { background-color: #00c9a7; color: #000; }
-    .reset { background-color: #555; color: #fff; }
-    .undo { background-color: #ffa500; color: #000; }
-    .paypal { background-color: #0070ba; color: #fff; }
-    .delete { background-color: #ff4444; color: #fff; }
-    .add { background-color: #4caf50; color: #fff; }
-    .footer { margin-top: auto; padding: 10px 0; display: flex; justify-content: center; gap: 15px; flex-wrap: wrap; }
-    .gold { color: gold; } .silver { color: silver; } .bronze { color: #cd7f32; }
-    .hausdienst { background-color: #00c9a7; color: #000 !important; border-radius: 6px; padding: 2px 6px; }
-    .delete-active { background-color: #ff8800 !important; }
-    .add-person-row td {
-      padding: 10px; font-size: 1.2em; cursor: pointer; color: #00c9a7; font-weight: bold;
-    }
-    .add-person-row td:hover { background-color: #00c9a7; color: #000; border-radius: 6px; }
-
-    /* Popups */
-    .modal {
-      display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-      background: rgba(0,0,0,0.85); justify-content: center; align-items: center; z-index: 9999;
-    }
-    .modal-content {
-      background: #1a1d24; padding: 20px; border-radius: 12px; text-align: center;
-      box-shadow: 0 6px 20px rgba(0,0,0,0.6); width: 90%; max-width: 400px;
-    }
-    .modal-content h2 { margin-bottom: 15px; }
-    .modal-content input {
-      width: 80%; padding: 10px; margin: 8px 0; border: none; border-radius: 6px;
-      font-size: 1em; text-align: center;
-    }
-    .modal-buttons { margin-top: 15px; display: flex; justify-content: center; gap: 10px; }
-
-    /* Dropdown für Hausdienst */
-    .dropdown {
-      position: relative;
-      display: inline-block;
-    }
-    .dropdown-content {
-      display: none;
-      position: absolute;
-      background-color: #1a1d24;
-      min-width: 180px;
-      box-shadow: 0px 8px 16px rgba(0,0,0,0.5);
-      border-radius: 8px;
-      z-index: 1;
-    }
-    .dropdown-content a {
-      color: #f1f1f1;
-      padding: 10px 14px;
-      text-decoration: none;
-      display: block;
-    }
-    .dropdown-content a:hover {
-      background-color: #00c9a7;
-      color: #000;
-    }
-    .dropdown:hover .dropdown-content {
-      display: block;
-    }
-  </style>
+  <link rel="stylesheet" href="style.css" />
 </head>
 <body>
+  <!-- Logo -->
   <div style="text-align:center; margin-bottom: 10px;">
     <img src="02_SICK _ SOUND_WHITE_TYPE.png" alt="Sick & Sound Logo" style="max-width: 300px; height: auto;">
   </div>
 
+  <!-- Tabelle -->
   <div id="tableContainer" style="flex-grow:1; overflow:auto;"></div>
 
   <!-- Buttons unten -->
@@ -109,9 +24,9 @@
     <button id="deleteBtn" class="btn delete" onclick="toggleDeleteMode()">🗑 Löschen</button>
     <button class="btn" style="background:#444; color:#fff;" onclick="window.location='buchungen.html'">📖 Buchungen</button>
 
-    <!-- Dropdown Hausdienst -->
+    <!-- Hausdienst Dropdown -->
     <div class="dropdown">
-      <button class="btn" style="background:#444; color:#fff;">🏠 Hausdienst ▾</button>
+      <button class="btn" style="background:#444; color:#fff;">🏠 Hausdienst</button>
       <div class="dropdown-content">
         <a href="hausdienst.html">🏆 Rangliste</a>
         <a href="hausdienst_checklist.html">✅ Checkliste</a>
@@ -161,167 +76,3 @@
     let prices = JSON.parse(localStorage.getItem(pricesKey)) || {
       "Cola_Zero": 1.0, "Monster": 1.5, "Wasser": 0.5, "Kaffee": 1.0, "Mittagessen": 6.0
     };
-    let people = JSON.parse(localStorage.getItem(peopleKey)) || ["Chris","Daniel","Elmi","Florian","Joel","Kevin","Kiste","Marco","Meli","Simon"];
-    let data = JSON.parse(localStorage.getItem(dataKey)) || {};
-    let history = JSON.parse(localStorage.getItem(historyKey)) || [];
-    let bookings = JSON.parse(localStorage.getItem(bookingsKey)) || [];
-    let hausdienst = JSON.parse(localStorage.getItem(hausdienstKey)) || { current: null, stats: {} };
-    let columnOrder = JSON.parse(localStorage.getItem(orderKey)) || Object.keys(prices);
-    let deleteMode = false;
-
-    function saveAll(){
-      localStorage.setItem(pricesKey, JSON.stringify(prices));
-      localStorage.setItem(peopleKey, JSON.stringify(people));
-      localStorage.setItem(dataKey, JSON.stringify(data));
-      localStorage.setItem(historyKey, JSON.stringify(history));
-      localStorage.setItem(bookingsKey, JSON.stringify(bookings));
-      localStorage.setItem(hausdienstKey, JSON.stringify(hausdienst));
-      localStorage.setItem(orderKey, JSON.stringify(columnOrder));
-    }
-
-    function buildTable(){
-      people.sort();
-      let html = `<table><thead><tr><th>Person</th>`;
-      columnOrder.forEach(drink=>{
-        if(prices[drink] !== undefined){
-          html += `<th draggable="true" ondragstart="drag(event)" ondragover="allowDrop(event)" ondrop="drop(event)" data-drink="${drink}" onclick="deleteColumn('${drink}')">${drink.replace('_',' ')}<br>(${prices[drink]}€)</th>`;
-        }
-      });
-      html += `<th>Gesamt (€)</th><th>Reset</th></tr></thead><tbody>`;
-
-      people.forEach(person=>{
-        html += `<tr><th onclick="deletePerson('${person}')">${person}</th>`;
-        columnOrder.forEach(drink=>{
-          if(prices[drink] !== undefined){
-            const id = `${person}_${drink}`;
-            const val = data[id]||0;
-            html += `<td><div id="${id}" class="counter">${val}</div><button class="btn plus" onclick="changeValue('${id}',1)">+1</button></td>`;
-          }
-        });
-        html += `<td id="${person}_Total">0.00</td>
-                 <td><button class="btn reset" onclick="resetPerson('${person}')">Reset</button></td>
-                 </tr>`;
-      });
-
-      html += `<tr class="add-person-row"><td colspan="${columnOrder.length+3}" onclick="openPersonModal()">➕ Person hinzufügen</td></tr>`;
-
-      html += `</tbody></table>`;
-      document.getElementById("tableContainer").innerHTML = html;
-      updateAllTotals();
-    }
-
-    function drag(ev){ ev.dataTransfer.setData("drink", ev.target.dataset.drink); }
-    function allowDrop(ev){ ev.preventDefault(); }
-    function drop(ev){
-      ev.preventDefault();
-      let from = ev.dataTransfer.getData("drink");
-      let to = ev.target.dataset.drink;
-      if(from && to && from !== to){
-        let fromIndex = columnOrder.indexOf(from);
-        let toIndex = columnOrder.indexOf(to);
-        columnOrder.splice(fromIndex,1);
-        columnOrder.splice(toIndex,0,from);
-        saveAll(); buildTable();
-      }
-    }
-
-    function changeValue(id,delta){
-      const el=document.getElementById(id);
-      const current=parseInt(el.textContent||'0');
-      const next=Math.max(0,current+delta);
-      history.push({id,prev:current,action:"change"});
-      data[id]=next;
-      el.textContent=next;
-      updateTotal(id.split('_')[0]);
-      saveAll();
-    }
-
-    function updateTotal(person){
-      let total=0;
-      for (const drink of columnOrder){
-        const id=`${person}_${drink}`;
-        total += (data[id]||0)*prices[drink];
-      }
-      document.getElementById(person+"_Total").textContent=total.toFixed(2);
-    }
-
-    function updateAllTotals(){ people.forEach(p=>updateTotal(p)); }
-
-    function resetPerson(person){
-      if (!confirm(`Alle Striche von ${person} zurücksetzen?`)) return;
-      let sum=parseFloat(document.getElementById(person+"_Total").textContent);
-      history.push({person,sum,action:"reset"});
-      bookings.push({date:new Date().toLocaleDateString("de-DE"),person,sum});
-      for (const drink in prices){ data[`${person}_${drink}`]=0; }
-      document.getElementById(person+"_Total").textContent="0.00";
-      saveAll(); buildTable();
-    }
-
-    function undoLast(){
-      const last=history.pop();
-      if (!last) return;
-      if (last.action==="change"){ data[last.id]=last.prev; }
-      else if (last.action==="reset"){ bookings=bookings.filter(b=>!(b.person===last.person && b.sum===last.sum)); }
-      saveAll(); buildTable();
-    }
-
-    function togglePayPal(){ toggleModal("paypalModal"); }
-    function openPersonModal(){ toggleModal("personModal","flex"); }
-    function openDrinkModal(){ toggleModal("drinkModal","flex"); }
-    function closeModal(id){ document.getElementById(id).style.display="none"; }
-    function toggleModal(id,display="flex"){
-      const modal=document.getElementById(id);
-      modal.style.display=(modal.style.display===display)?"none":display;
-    }
-
-    function toggleDeleteMode(){
-      deleteMode=!deleteMode;
-      const btn=document.getElementById("deleteBtn");
-      if(deleteMode){ btn.classList.add("delete-active"); alert("🗑 Löschmodus aktiviert."); }
-      else { btn.classList.remove("delete-active"); }
-    }
-
-    function deletePerson(person){
-      if(!deleteMode) return;
-      if(confirm(`${person} wirklich löschen?`)){
-        people=people.filter(p=>p!==person);
-        saveAll();
-      }
-      deleteMode=false; document.getElementById("deleteBtn").classList.remove("delete-active");
-      buildTable();
-    }
-
-    function deleteColumn(drink){
-      if(!deleteMode) return;
-      if(confirm(`Getränk "${drink}" wirklich löschen?`)){
-        delete prices[drink]; columnOrder=columnOrder.filter(d=>d!==drink); saveAll();
-      }
-      deleteMode=false; document.getElementById("deleteBtn").classList.remove("delete-active");
-      buildTable();
-    }
-
-    function confirmAddPerson(){
-      let name=document.getElementById("personName").value.trim();
-      if(!name) return alert("Bitte Name eingeben!");
-      if(people.includes(name)) return alert("Person existiert bereits!");
-      people.push(name);
-      saveAll(); buildTable(); closeModal("personModal");
-      document.getElementById("personName").value="";
-    }
-
-    function confirmAddDrink(){
-      let name=document.getElementById("drinkName").value.trim();
-      let price=parseFloat(document.getElementById("drinkPrice").value);
-      if(!name || isNaN(price) || price<=0) return alert("Bitte gültige Eingaben machen!");
-      let key = name.replace(" ","_");
-      prices[key] = price;
-      if(!columnOrder.includes(key)) columnOrder.push(key);
-      saveAll(); buildTable(); closeModal("drinkModal");
-      document.getElementById("drinkName").value="";
-      document.getElementById("drinkPrice").value="";
-    }
-
-    window.onload=()=>buildTable();
-  </script>
-</body>
-</html>
