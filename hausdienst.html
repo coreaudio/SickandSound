@@ -6,138 +6,164 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;800&display=swap" rel="stylesheet" />
   <style>
-    body { background:#0f1117; color:#f1f1f1; font-family:'Orbitron',sans-serif; margin:20px; }
-    h2 { text-align:center; }
-    table { width:100%; border-collapse:collapse; background:#1a1d24; margin-bottom:20px; }
-    th, td { padding:8px; text-align:center; border-bottom:1px solid #2a2d34; }
-    th { font-size:1em; font-weight:600; }
-    .gold { color:gold; } .silver { color:silver; } .bronze { color:#cd7f32; }
-    .hausdienstAktuell { background:#00c9a7; color:#000; font-weight:bold; border-radius:6px; padding:2px 6px; }
-    .footer { margin-top:20px; display:flex; flex-wrap:wrap; justify-content:center; gap:15px; }
-    .btn { padding:10px 16px; border:none; border-radius:8px; cursor:pointer; font-weight:bold; }
-    .undo { background:#ffa500; color:#000; }
-    .back { background:#444; color:#fff; }
-    .select { background:#00c9a7; color:#000; }
-    .reset { background:#ff4444; color:#fff; }
-    h3 { margin-top:30px; }
+    body {
+      margin: 0;
+      padding: 20px;
+      background: #0f1117;
+      color: #f1f1f1;
+      font-family: 'Orbitron', sans-serif;
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+    }
+    h1 { text-align: center; margin-bottom: 20px; }
+    #peopleList {
+      list-style: none;
+      padding: 0;
+      flex-grow: 1;
+      overflow-y: auto;
+    }
+    #peopleList li {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: #1a1d24;
+      margin: 8px 0;
+      padding: 12px;
+      border-radius: 8px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.4);
+    }
+    #peopleList li.current {
+      background: #00c9a7;
+      color: #000;
+    }
+    .btn {
+      padding: 10px 16px;
+      font-weight: bold;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.4);
+    }
+    .back { background: #555; color: #fff; margin-top: auto; }
+    .select { background: #00c9a7; color: #000; }
   </style>
 </head>
 <body>
-  <h2>🏆 Hausdienst Rangliste</h2>
-  <div id="hausdienstTable"></div>
+  <h1>🏠 Hausdienst Rangliste</h1>
+  <ul id="peopleList"></ul>
 
-  <h3>📅 Monatsübersicht</h3>
-  <div id="monthlyTable"></div>
+  <button class="btn back" onclick="window.location='index.html'">⬅ Zurück</button>
 
-  <h3>📅 Jahresübersicht</h3>
-  <div id="yearlyTable"></div>
+  <!-- 1) Firebase-Compat-SDKs -->
+  <script src="https://www.gstatic.com/firebasejs/12.0.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/12.0.0/firebase-analytics-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/12.0.0/firebase-firestore-compat.js"></script>
 
-  <div class="footer">
-    <button class="btn select" onclick="setRandomHausdienst()">🎲 Zufällig auswählen</button>
-    <button class="btn undo" onclick="undoHausdienst()">↩ Rückgängig</button>
-    <button class="btn reset" onclick="resetHausdienst()">♻ Reset</button>
-    <button class="btn back" onclick="window.location='index.html'">⬅ Zurück</button>
-  </div>
+  <script>
+    // 2) Keys müssen mit index.html übereinstimmen
+    const peopleKey     = "sick_sound_people";
+    const hausdienstKey = "sick_sound_hausdienst";
 
-<script>
-  const hausdienstKey="sick_sound_hausdienst"; 
-  const peopleKey="sick_sound_people";
-  let hausdienst=JSON.parse(localStorage.getItem(hausdienstKey))||{current:null,stats:{},history:[]};
-  let people=JSON.parse(localStorage.getItem(peopleKey))||[];
+    // 3) Firebase initialisieren
+    const firebaseConfig = {
+      apiKey: "AIzaSyBFHjGXI5yHyK0DyupS0bnTVAqlu6lvpNw",
+      authDomain: "sickandsound-e9704.firebaseapp.com",
+      projectId: "sickandsound-e9704",
+      storageBucket: "sickandsound-e9704.firebasestorage.app",
+      messagingSenderId: "248197359659",
+      appId: "1:248197359659:web:a8777cbed3f83d6b1ca26e",
+      measurementId: "G-62LH8V7S2E"
+    };
+    firebase.initializeApp(firebaseConfig);
+    firebase.analytics();
+    const db = firebase.firestore();
 
-  function save(){ localStorage.setItem(hausdienstKey,JSON.stringify(hausdienst)); }
+    let people     = [];
+    let hausdienst = { current: null, stats: {} };
 
-  function buildHausdienstTable(){
-    // vollständige Liste (auch ohne Punkte)
-    let stats={};
-    people.forEach(p=>stats[p]=0);
-    for(let p in hausdienst.stats){ stats[p]=hausdienst.stats[p]; }
+    // 4) State laden (Cloud → Fallback lokalStorage)
+    async function loadState() {
+      // a) People
+      const pplLS = JSON.parse(localStorage.getItem(peopleKey));
+      people = Array.isArray(pplLS) ? pplLS : [];
 
-    let arr=Object.entries(stats).sort((a,b)=>b[1]-a[1]||a[0].localeCompare(b[0]));
-    let html="<table><thead><tr><th>Platz</th><th>Person</th><th>Punkte</th><th>Aktion</th></tr></thead><tbody>";
-    arr.forEach(([person,punkte],i)=>{
-      let rankClass=i===0?"gold":i===1?"silver":i===2?"bronze":"";
-      let isAktuell=hausdienst.current===person;
-      html+=`<tr>
-               <td>${i+1}</td>
-               <td class="${rankClass}">${person} ${isAktuell?'<span class="hausdienstAktuell">Aktuell</span>':""}</td>
-               <td>${punkte}</td>
-               <td><button class="btn select" onclick="setHausdienst('${person}')">Hausdienst auswählen</button></td>
-             </tr>`;
-    });
-    html+="</tbody></table>";
-    document.getElementById("hausdienstTable").innerHTML=html;
-    buildMonthlyTable();
-    buildYearlyTable();
-  }
-
-  function setHausdienst(person){
-    hausdienst.current=person;
-    hausdienst.stats[person]=(hausdienst.stats[person]||0)+1;
-    hausdienst.history.push({person,date:new Date().toISOString()});
-    save(); buildHausdienstTable();
-  }
-
-  function setRandomHausdienst(){
-    if(people.length===0) return;
-    let randomPerson=people[Math.floor(Math.random()*people.length)];
-    setHausdienst(randomPerson);
-  }
-
-  function undoHausdienst(){
-    if(hausdienst.history.length===0) return;
-    let last=hausdienst.history.pop();
-    if(hausdienst.stats[last.person]>0){ hausdienst.stats[last.person]--; }
-    if(hausdienst.current===last.person){ hausdienst.current=null; }
-    save(); buildHausdienstTable();
-  }
-
-  function resetHausdienst(){
-    if(!confirm("⚠️ Willst du wirklich alle Punkte zurücksetzen?")) return;
-    hausdienst={current:null,stats:{},history:[]};
-    save(); buildHausdienstTable();
-  }
-
-  function buildMonthlyTable(){
-    let now=new Date();
-    let currentMonth=now.getMonth();
-    let currentYear=now.getFullYear();
-    let monthlyStats={};
-    people.forEach(p=>monthlyStats[p]=0);
-    hausdienst.history.forEach(entry=>{
-      let d=new Date(entry.date);
-      if(d.getMonth()===currentMonth && d.getFullYear()===currentYear){
-        monthlyStats[entry.person]++;
+      // b) Hausdienst aus Cloud
+      try {
+        const snap = await db.collection("state").doc("global").get();
+        if (snap.exists && snap.data().hausdienst) {
+          hausdienst = snap.data().hausdienst;
+        } else {
+          // Fallback aus localStorage
+          const hdLS = JSON.parse(localStorage.getItem(hausdienstKey));
+          if (hdLS && hdLS.current) hausdienst = hdLS;
+        }
+      } catch(e) {
+        console.warn("Firestore-Laden fehlgeschlagen, nutze localStorage:", e);
+        const hdLS = JSON.parse(localStorage.getItem(hausdienstKey));
+        if (hdLS && hdLS.current) hausdienst = hdLS;
       }
-    });
-    renderTable("monthlyTable",monthlyStats,"Monat");
-  }
 
-  function buildYearlyTable(){
-    let currentYear=new Date().getFullYear();
-    let yearlyStats={};
-    people.forEach(p=>yearlyStats[p]=0);
-    hausdienst.history.forEach(entry=>{
-      let d=new Date(entry.date);
-      if(d.getFullYear()===currentYear){
-        yearlyStats[entry.person]++;
+      buildList();
+    }
+
+    // 5) Liste rendern
+    function buildList() {
+      const ul = document.getElementById("peopleList");
+      ul.innerHTML = "";
+      people.forEach(person => {
+        const li = document.createElement("li");
+        if (person === hausdienst.current) li.classList.add("current");
+
+        const span = document.createElement("span");
+        span.textContent = person;
+
+        const btn = document.createElement("button");
+        btn.textContent = "Hausdienst auswählen";
+        btn.className = "btn select";
+        btn.onclick = () => selectHouseService(person);
+
+        li.appendChild(span);
+        li.appendChild(btn);
+        ul.appendChild(li);
+      });
+    }
+
+    // 6) Hausdienst setzen
+    async function selectHouseService(person) {
+      hausdienst.current = person;
+      // optional: statistik hochzählen
+      hausdienst.stats[person] = (hausdienst.stats[person] || 0) + 1;
+
+      // a) localStorage
+      localStorage.setItem(hausdienstKey, JSON.stringify(hausdienst));
+
+      // b) Cloud
+      try {
+        await db.collection("state").doc("global").set(
+          { hausdienst },
+          { merge: true }
+        );
+      } catch (e) {
+        console.error("Firestore-Update fehlgeschlagen:", e);
       }
-    });
-    renderTable("yearlyTable",yearlyStats,"Jahr");
-  }
 
-  function renderTable(divId,stats,title){
-    let arr=Object.entries(stats).sort((a,b)=>b[1]-a[1]||a[0].localeCompare(b[0]));
-    let html="<table><thead><tr><th>Platz</th><th>Person</th><th>Punkte</th></tr></thead><tbody>";
-    arr.forEach(([person,punkte],i)=>{
-      let rankClass=i===0?"gold":i===1?"silver":i===2?"bronze":"";
-      html+=`<tr><td>${i+1}</td><td class="${rankClass}">${person}</td><td>${punkte}</td></tr>`;
-    });
-    html+="</tbody></table>";
-    document.getElementById(divId).innerHTML=html;
-  }
+      // Feedback & neu rendern
+      alert(`Hausdienst auf ${person} gesetzt.`);
+      buildList();
+    }
 
-  window.onload=()=>buildHausdienstTable();
-</script>
+    // 7) Echtzeit-Updates abonnieren (optional)
+    db.collection("state").doc("global")
+      .onSnapshot(snap => {
+        if (snap.exists && snap.data().hausdienst) {
+          hausdienst = snap.data().hausdienst;
+          buildList();
+        }
+      });
+
+    // 8) Start
+    window.onload = loadState;
+  </script>
 </body>
 </html>
