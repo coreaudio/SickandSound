@@ -127,4 +127,22 @@ td:last-child {
   font-size: 1em;
   text-align: center;
 }
-.modal-buttons
+.modal-buttons {
+  margin-top: 12px;
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+}
+
+/* ========== PayPal-Modal Bild ========== */
+#paypalModal img {
+  max-width: 60%;
+  max-height: 60%;
+  border: 8px solid #fff;
+  border-radius: 12px;
+}
+
+/* ========== Hausdienst-Modal Buttons ========== */
+#hausdienstModal .modal-buttons .btn {
+  flex: 1;
+}
