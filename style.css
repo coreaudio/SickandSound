@@ -1,82 +1,101 @@
-/* Basis-Layout */
+/* ========== Grundlayout ========== */
 html, body {
   height: 100%;
   overflow: hidden;
-  background-color: #0f1117;
-  font-family: 'Orbitron', sans-serif;
-  color: #f1f1f1;
   margin: 0;
   padding: 20px;
   display: flex;
   flex-direction: column;
+  background-color: #0f1117;
+  color: #f1f1f1;
+  font-family: 'Orbitron', sans-serif;
+}
+#tableContainer {
+  flex-grow: 1;
+  overflow: hidden;
 }
 
+/* ========== Tabelle ========== */
 table {
   width: 100%;
   border-collapse: collapse;
   background-color: #1a1d24;
   table-layout: fixed;
-  flex-grow: 1;
+  font-size: 0.85em;
 }
-
 th, td {
-  padding: 4px;
+  padding: 4px 6px;
   text-align: center;
   border-bottom: 1px solid #2a2d34;
-  white-space: nowrap;
+}
+th {
+  font-size: 0.9em;
+  font-weight: 600;
+  color: #fff;
+  cursor: grab;
+}
+td:last-child {
+  font-weight: bold;
+  color: #ffd700;
 }
 
-/* Dynamische Anpassung von Zeilenhöhe & Schriftgröße */
-#mainTable tbody tr {
-  height: calc(100vh / 15); /* Teilt die Höhe gleichmäßig auf */
-}
-#mainTable th, #mainTable td {
-  font-size: calc(1vw + 0.2vh);
-  line-height: 1.2;
-}
-
-/* Buttons */
+/* ========== Buttons ========== */
 .btn {
-  padding: 6px 12px;
-  font-size: 0.85em;
+  padding: 8px 14px;
+  margin: 2px;
+  font-size: 0.9em;
   font-weight: bold;
   border: none;
   border-radius: 8px;
   cursor: pointer;
-  margin: 2px;
-  box-shadow: 0 3px 8px rgba(0,0,0,0.4);
+  box-shadow: 0 4px 10px rgba(0,0,0,0.4);
 }
-
-.plus { background-color: #00c9a7; color: #000; }
-.reset { background-color: #555; color: #fff; }
-.undo { background-color: #ffa500; color: #000; }
+.plus   { background-color: #00c9a7; color: #000; }
+.reset  { background-color: #555;    color: #fff; }
+.undo   { background-color: #ffa500; color: #000; }
 .paypal { background-color: #0070ba; color: #fff; }
 .delete { background-color: #ff4444; color: #fff; }
-.add { background-color: #4caf50; color: #fff; }
+.add    { background-color: #4caf50; color: #fff; }
 
+/* ========== Footer ========== */
 .footer {
   margin-top: auto;
-  padding: 8px 0;
+  padding: 6px 0;
   display: flex;
   justify-content: center;
-  gap: 12px;
+  gap: 8px;
   flex-wrap: wrap;
 }
 
-/* Hausdienst Highlight */
+/* ========== Highlighting & Icons ========== */
+.gold    { color: gold;    }
+.silver  { color: silver;  }
+.bronze  { color: #cd7f32; }
 .hausdienst {
-  background-color: #00c9a7 !important;
+  background-color: #00c9a7;
   color: #000 !important;
-  border-radius: 6px;
   padding: 2px 6px;
+  border-radius: 6px;
+}
+.delete-active {
+  background-color: #ff8800 !important;
 }
 
-/* Rangfarben */
-.gold { color: gold; }
-.silver { color: silver; }
-.bronze { color: #cd7f32; }
+/* ========== "Person hinzufügen"-Zeile ========== */
+.add-person-row td {
+  padding: 8px;
+  font-size: 1.1em;
+  font-weight: bold;
+  color: #00c9a7;
+  cursor: pointer;
+}
+.add-person-row td:hover {
+  background-color: #00c9a7;
+  color: #000;
+  border-radius: 6px;
+}
 
-/* Modal */
+/* ========== Modals ========== */
 .modal {
   display: none;
   position: fixed;
@@ -96,26 +115,16 @@ th, td {
   width: 90%;
   max-width: 400px;
 }
+.modal-content h2 {
+  margin-bottom: 12px;
+}
 .modal-content input {
   width: 80%;
-  padding: 8px;
-  margin: 8px 0;
+  padding: 10px;
+  margin: 6px 0;
   border: none;
   border-radius: 6px;
   font-size: 1em;
   text-align: center;
 }
-.modal-buttons {
-  margin-top: 12px;
-  display: flex;
-  justify-content: center;
-  gap: 10px;
-}
-
-/* PayPal QR kleiner */
-#paypalModal img {
-  max-width: 60%;
-  max-height: 60%;
-  border: 6px solid #fff;
-  border-radius: 12px;
-}
+.modal-buttons
