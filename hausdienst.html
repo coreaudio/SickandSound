@@ -16,7 +16,10 @@
       flex-direction: column;
       height: 100%;
     }
-    h1 { text-align: center; margin-bottom: 20px; }
+    h1 {
+      text-align: center;
+      margin-bottom: 20px;
+    }
     #peopleList {
       list-style: none;
       padding: 0;
@@ -45,8 +48,16 @@
       cursor: pointer;
       box-shadow: 0 4px 10px rgba(0,0,0,0.4);
     }
-    .back { background: #555; color: #fff; margin-top: auto; }
-    .select { background: #00c9a7; color: #000; }
+    .back {
+      background: #555;
+      color: #fff;
+      margin-top: auto;
+      align-self: center;
+    }
+    .select {
+      background: #00c9a7;
+      color: #000;
+    }
   </style>
 </head>
 <body>
@@ -60,12 +71,12 @@
   <script src="https://www.gstatic.com/firebasejs/12.0.0/firebase-analytics-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/12.0.0/firebase-firestore-compat.js"></script>
 
+  <!-- 2) App-Logik -->
   <script>
-    // 2) Keys müssen mit index.html übereinstimmen
     const peopleKey     = "sick_sound_people";
     const hausdienstKey = "sick_sound_hausdienst";
 
-    // 3) Firebase initialisieren
+    // Firebase initialisieren
     const firebaseConfig = {
       apiKey: "AIzaSyBFHjGXI5yHyK0DyupS0bnTVAqlu6lvpNw",
       authDomain: "sickandsound-e9704.firebaseapp.com",
@@ -79,49 +90,52 @@
     firebase.analytics();
     const db = firebase.firestore();
 
-    let people     = [];
-    let hausdienst = { current: null, stats: {} };
+    // Default-Personenliste
+    const defaultPeople = ["Chris","Daniel","Elmi","Florian","Joel","Kevin","Kiste","Marco","Meli","Simon"];
 
-    // 4) State laden (Cloud → Fallback lokalStorage)
+    // LocalStorage initialisieren
+    let people = JSON.parse(localStorage.getItem(peopleKey)) || defaultPeople.slice();
+    let hausdienst = JSON.parse(localStorage.getItem(hausdienstKey)) || { current: null, stats: {} };
+
+    // Lade Hausdienst aus Firestore (falls vorhanden)
     async function loadState() {
-      // a) People
-      const pplLS = JSON.parse(localStorage.getItem(peopleKey));
-      people = Array.isArray(pplLS) ? pplLS : [];
-
-      // b) Hausdienst aus Cloud
       try {
         const snap = await db.collection("state").doc("global").get();
         if (snap.exists && snap.data().hausdienst) {
           hausdienst = snap.data().hausdienst;
-        } else {
-          // Fallback aus localStorage
-          const hdLS = JSON.parse(localStorage.getItem(hausdienstKey));
-          if (hdLS && hdLS.current) hausdienst = hdLS;
         }
-      } catch(e) {
-        console.warn("Firestore-Laden fehlgeschlagen, nutze localStorage:", e);
-        const hdLS = JSON.parse(localStorage.getItem(hausdienstKey));
-        if (hdLS && hdLS.current) hausdienst = hdLS;
+      } catch (e) {
+        console.warn("Fehler beim Laden aus Firestore, nutze localStorage:", e);
       }
-
       buildList();
     }
 
-    // 5) Liste rendern
+    // Baue Rangliste (sortiert nach Anzahl absteigend)
     function buildList() {
       const ul = document.getElementById("peopleList");
       ul.innerHTML = "";
-      people.forEach(person => {
+
+      // Sortieren nach Hausdienst-Einsätzen
+      const sorted = people.slice().sort((a, b) => {
+        return (hausdienst.stats[b] || 0) - (hausdienst.stats[a] || 0);
+      });
+
+      sorted.forEach(person => {
         const li = document.createElement("li");
-        if (person === hausdienst.current) li.classList.add("current");
+        if (person === hausdienst.current) {
+          li.classList.add("current");
+        }
 
+        // Name + Count
         const span = document.createElement("span");
-        span.textContent = person;
+        const count = hausdienst.stats[person] || 0;
+        span.textContent = `${person} (${count})`;
 
+        // Auswahl-Button
         const btn = document.createElement("button");
         btn.textContent = "Hausdienst auswählen";
         btn.className = "btn select";
-        btn.onclick = () => selectHouseService(person);
+        btn.addEventListener("click", () => selectHouseService(person));
 
         li.appendChild(span);
         li.appendChild(btn);
@@ -129,31 +143,28 @@
       });
     }
 
-    // 6) Hausdienst setzen
+    // Wähle aktuellen Hausdienst und speichere lokal + in Firestore
     async function selectHouseService(person) {
       hausdienst.current = person;
-      // optional: statistik hochzählen
       hausdienst.stats[person] = (hausdienst.stats[person] || 0) + 1;
 
-      // a) localStorage
+      // lokal speichern
       localStorage.setItem(hausdienstKey, JSON.stringify(hausdienst));
 
-      // b) Cloud
+      // in Firestore speichern
       try {
         await db.collection("state").doc("global").set(
           { hausdienst },
           { merge: true }
         );
       } catch (e) {
-        console.error("Firestore-Update fehlgeschlagen:", e);
+        console.error("Fehler beim Speichern in Firestore:", e);
       }
 
-      // Feedback & neu rendern
-      alert(`Hausdienst auf ${person} gesetzt.`);
       buildList();
     }
 
-    // 7) Echtzeit-Updates abonnieren (optional)
+    // Realtime-Update abonnieren
     db.collection("state").doc("global")
       .onSnapshot(snap => {
         if (snap.exists && snap.data().hausdienst) {
@@ -162,8 +173,8 @@
         }
       });
 
-    // 8) Start
-    window.onload = loadState;
+    // App starten, wenn DOM bereit
+    window.addEventListener("DOMContentLoaded", loadState);
   </script>
 </body>
 </html>
