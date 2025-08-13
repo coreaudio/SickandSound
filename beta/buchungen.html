@@ -15,6 +15,9 @@
 <div class="app">
   <header class="appbar">
     <div class="app-title"><div class="brand-dot"></div><h1>Buchungen</h1></div>
+    <div class="appbar-actions">
+      <button class="btn small danger" title="Alle löschen" onclick="clearAllBookings()">🧹</button>
+    </div>
   </header>
 
   <main class="content">
@@ -48,18 +51,56 @@
   const firebaseConfig={apiKey:"AIzaSyBFHjGXI5yHyK0DyupS0bnTVAqlu6lvpNw",authDomain:"sickandsound-e9704.firebaseapp.com",projectId:"sickandsound-e9704",storageBucket:"sickandsound-e9704.firebasestorage.app",messagingSenderId:"248197359659",appId:"1:248197359659:web:a8777cbed3f83d6b1ca26e",measurementId:"G-62LH8V7S2E"};
   firebase.initializeApp(firebaseConfig); firebase.analytics(); const db=firebase.firestore();
 
+  // Prod/Beta Umschalter
+  const STATE_COLLECTION = location.search.includes("beta") ? "state_beta" : "state";
+
+  let bookingsCache=[];
+
   async function load(){
-    const snap=await db.collection("state").doc("global").get();
-    const bookings=snap.exists?(snap.data().bookings||[]):(JSON.parse(localStorage.getItem("sick_sound_bookings"))||[]);
-    if(!bookings.length){
+    const snap=await db.collection(STATE_COLLECTION).doc("global").get();
+    bookingsCache = snap.exists ? (snap.data().bookings||[]) : (JSON.parse(localStorage.getItem("sick_sound_bookings"))||[]);
+    render();
+  }
+
+  function render(){
+    if(!bookingsCache.length){
       document.getElementById("buchungenContainer").innerHTML="<div class='sub'>Keine Buchungen vorhanden.</div>";
       return;
     }
     let html=`<h2 class="section-title">Abrechnungen</h2><table><thead>
-      <tr><th>Datum</th><th>Person</th><th>Betrag (€)</th></tr></thead><tbody>`;
-    bookings.forEach(b=>{ html+=`<tr><td>${b.date}</td><td>${b.person}</td><td>${Number(b.sum).toFixed(2)}</td></tr>`; });
+      <tr><th>#</th><th>Datum</th><th>Person</th><th>Betrag (€)</th><th>Aktion</th></tr></thead><tbody>`;
+    bookingsCache.forEach((b,i)=>{
+      html+=`<tr>
+        <td>${i+1}</td>
+        <td>${b.date}</td>
+        <td>${b.person}</td>
+        <td>${Number(b.sum).toFixed(2)}</td>
+        <td><button class="btn small danger" onclick="deleteBooking(${i})">Löschen</button></td>
+      </tr>`;
+    });
     html+="</tbody></table>";
     document.getElementById("buchungenContainer").innerHTML=html;
+  }
+
+  async function saveBookings(){
+    localStorage.setItem("sick_sound_bookings", JSON.stringify(bookingsCache));
+    await db.collection(STATE_COLLECTION).doc("global").set({bookings: bookingsCache},{merge:true});
+  }
+
+  async function deleteBooking(index){
+    if(!confirm("Diesen Buchungseintrag löschen?")) return;
+    bookingsCache.splice(index,1);
+    await saveBookings();
+    render();
+  }
+
+  async function clearAllBookings(){
+    const pw=prompt("Zum Löschen aller Buchungen Passwort eingeben:"); 
+    if(pw!=="1379"){ alert("Falsches Passwort"); return; }
+    if(!confirm("Wirklich ALLE Buchungen löschen?")) return;
+    bookingsCache = [];
+    await saveBookings();
+    render();
   }
 
   if('serviceWorker' in navigator){ navigator.serviceWorker.register('./sw.js').catch(()=>{}); }
