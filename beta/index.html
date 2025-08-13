@@ -38,9 +38,11 @@
     <div class="card" style="margin-top:12px">
       <div class="section-title">Aktionen</div>
       <div class="footer">
-        <button class="btn warning" onclick="undoLast()">↩ Rückgängig</button>
+        <button class="btn warning" id="undoBtn" onclick="undoLast()">↩ Rückgängig</button>
+        <button class="btn secondary" id="redoBtn" onclick="redoLast()">↪ Wiederholen</button>
         <button class="btn danger" id="deleteBtn" onclick="toggleDeleteMode()">🗑 Löschen</button>
         <button class="btn dark" onclick="resetAll()">♻ Abrechnen & zurücksetzen</button>
+        <button class="btn ghost" onclick="window.location='buchungen.html'">📖 Buchungen</button>
       </div>
     </div>
   </main>
@@ -100,12 +102,15 @@ const CORE = ["Chris","Daniel","Elmi","Florian","Joel","Kevin","Kiste","Marco","
 const firebaseConfig={apiKey:"AIzaSyBFHjGXI5yHyK0DyupS0bnTVAqlu6lvpNw",authDomain:"sickandsound-e9704.firebaseapp.com",projectId:"sickandsound-e9704",storageBucket:"sickandsound-e9704.firebasestorage.app",messagingSenderId:"248197359659",appId:"1:248197359659:web:a8777cbed3f83d6b1ca26e",measurementId:"G-62LH8V7S2E"};
 firebase.initializeApp(firebaseConfig); firebase.analytics(); const db=firebase.firestore();
 
+/* ===== Prod/Beta Datenspeicher ===== */
+const STATE_COLLECTION = location.search.includes("beta") ? "state_beta" : "state";
+
 /* ===== State ===== */
 const pricesKey="sick_sound_prices", peopleKey="sick_sound_people", dataKey="sick_sound_data",
       historyKey="sick_sound_history", bookingsKey="sick_sound_bookings", orderKey="sick_sound_order",
-      xpKey="sick_sound_xp";
+      xpKey="sick_sound_xp", redoKey="sick_sound_redo";
 let prices={"Cola_Zero":1.0,"Monster":1.5,"Wasser":0.5,"Kaffee":1.0,"Mittagessen":6.0};
-let people=[], data={}, history=[], bookings=[], columnOrder=Object.keys(prices), xp={};
+let people=[], data={}, history=[], redoStack=[], bookings=[], columnOrder=Object.keys(prices), xp={};
 let deleteMode=false, hdToday=null;
 
 /* ===== Sounds & Level helpers ===== */
@@ -124,47 +129,63 @@ window.onmouseup=stopHold; window.onmouseleave=stopHold;
 /* ===== Load ===== */
 async function loadState(){
   try{
-    const snap=await db.collection("state").doc("global").get();
+    const snap=await db.collection(STATE_COLLECTION).doc("global").get();
     if(snap.exists){
       const s=snap.data();
-      prices=s.prices||prices; people=s.people||JSON.parse(localStorage.getItem(peopleKey))||[];
-      data=s.data||data; history=s.history||history; bookings=s.bookings||bookings;
-      columnOrder=s.columnOrder||Object.keys(prices); xp=s.xp||xp;
+      prices=s.prices||prices;
+      people=s.people||JSON.parse(localStorage.getItem(peopleKey))||[];
+      data=s.data||data;
+      history=s.history||history;
+      redoStack=s.redoStack||JSON.parse(localStorage.getItem(redoKey))||[];
+      bookings=s.bookings||bookings;
+      columnOrder=s.columnOrder||Object.keys(prices);
+      xp=s.xp||xp;
     }else{
       people=JSON.parse(localStorage.getItem(peopleKey))||[];
+      redoStack=JSON.parse(localStorage.getItem(redoKey))||[];
     }
   }catch(e){
     prices=JSON.parse(localStorage.getItem(pricesKey))||prices;
     people=JSON.parse(localStorage.getItem(peopleKey))||[];
     data=JSON.parse(localStorage.getItem(dataKey))||data;
     history=JSON.parse(localStorage.getItem(historyKey))||history;
+    redoStack=JSON.parse(localStorage.getItem(redoKey))||[];
     bookings=JSON.parse(localStorage.getItem(bookingsKey))||bookings;
     columnOrder=JSON.parse(localStorage.getItem(orderKey))||Object.keys(prices);
     xp=JSON.parse(localStorage.getItem(xpKey))||xp;
   }
   CORE.forEach(n=>{ if(!people.includes(n)) people.push(n); });
-  saveAll(); buildTable(); updateTodayBanner(); subscribeRealtime();
+  saveAll(); buildTable(); updateTodayBanner(); subscribeRealtime(); updateUndoRedoButtons();
 }
+
 function saveAll(){
   localStorage.setItem(pricesKey,JSON.stringify(prices));
   localStorage.setItem(peopleKey,JSON.stringify(people));
   localStorage.setItem(dataKey,JSON.stringify(data));
   localStorage.setItem(historyKey,JSON.stringify(history));
+  localStorage.setItem(redoKey,JSON.stringify(redoStack));
   localStorage.setItem(bookingsKey,JSON.stringify(bookings));
   localStorage.setItem(orderKey,JSON.stringify(columnOrder));
   localStorage.setItem(xpKey,JSON.stringify(xp));
-  db.collection("state").doc("global").set({prices,people,data,history,bookings,columnOrder,xp},{merge:true});
+  db.collection(STATE_COLLECTION).doc("global").set(
+    {prices,people,data,history,redoStack,bookings,columnOrder,xp},
+    {merge:true}
+  );
 }
+
 function subscribeRealtime(){
-  db.collection("state").doc("global").onSnapshot(snap=>{
-    if(!snap.exists) return; const s=snap.data();
-    prices=s.prices||prices; people=s.people||people; data=s.data||data; history=s.history||history;
+  db.collection(STATE_COLLECTION).doc("global").onSnapshot(snap=>{
+    if(!snap.exists) return;
+    const s=snap.data();
+    prices=s.prices||prices; people=s.people||people; data=s.data||data;
+    history=s.history||history; redoStack=s.redoStack||redoStack;
     bookings=s.bookings||bookings; columnOrder=s.columnOrder||columnOrder; xp=s.xp||xp;
     CORE.forEach(n=>{ if(!people.includes(n)) people.push(n); });
-    buildTable(); updateTodayBanner();
+    buildTable(); updateTodayBanner(); updateUndoRedoButtons();
   });
   db.collection("hausdienst").doc(todayStr()).onSnapshot(doc=>{
-    hdToday = doc.exists ? doc.data().person : null; updateTodayBanner(hdToday); buildTable();
+    hdToday = doc.exists ? doc.data().person : null;
+    updateTodayBanner(hdToday); buildTable();
   });
 }
 
@@ -180,6 +201,37 @@ async function updateTodayBanner(existing){
   el.innerHTML = person
     ? `Heute eingetragener Hausdienst: <span class="badge ok">${person}</span> · <a href="hausdienst_checklist.html" class="badge gold" style="text-decoration:none">Checkliste öffnen</a>`
     : `Heute: <span class="badge none">Noch niemand eingetragen</span>`;
+}
+
+/* ===== Undo/Redo helpers ===== */
+function updateUndoRedoButtons(){
+  const u=document.getElementById("undoBtn");
+  const r=document.getElementById("redoBtn");
+  if(!u||!r) return;
+  u.disabled = history.length===0;
+  r.disabled = redoStack.length===0;
+}
+
+function applyAction(a){
+  if(a.type==="inc"){
+    data[a.id] = (a.prev||0) + 1;
+    if(a.person){ xp[a.person] = (xp[a.person]||0) + (a.xpDelta||0); }
+  } else if (a.action==="change"){ // Fallback für ältere History-Einträge
+    data[a.id] = (a.prev||0) + 1;
+    const parts=a.id.split('_'); const person=parts[0]; const drink=parts.slice(1).join('_');
+    xp[person] = (xp[person]||0) + (prices[drink]||0);
+  }
+}
+
+function applyInverse(a){
+  if(a.type==="inc"){
+    data[a.id] = a.prev;
+    if(a.person){ xp[a.person] = Math.max(0, (xp[a.person]||0) - (a.xpDelta||0)); }
+  } else if (a.action==="change"){ // Fallback
+    data[a.id] = a.prev;
+    const parts=a.id.split('_'); const person=parts[0]; const drink=parts.slice(1).join('_');
+    xp[person] = Math.max(0, (xp[person]||0) - (prices[drink]||0));
+  }
 }
 
 /* ===== Table (Level-Ring ohne XP/%) ===== */
@@ -261,16 +313,17 @@ function buildTable(){
   document.getElementById("tableContainer").innerHTML = html;
 }
 
+/* ===== Interactions (mit Undo/Redo) ===== */
 function headerClick(drink){ if(deleteMode) deleteColumn(drink); }
 
-/* ===== Interactions (mit XP-Undo) ===== */
 function inc(id,drink,person){
   const el=document.getElementById(id);
   const cur=parseInt(el.textContent||'0'); const next=cur+1;
   el.textContent=next; el.classList.remove('bump'); void el.offsetWidth; el.classList.add('bump');
 
   const xpDelta = prices[drink]||0;
-  history.push({type:"inc", id, prev:cur, person, xpDelta});   // <- speichere XP-Delta
+  history.push({type:"inc", id, prev:cur, person, xpDelta});
+  redoStack = []; // neuer Schritt löscht die "Zukunft"
   data[id]=next;
 
   const before=levelOf((xp[person]||0));
@@ -278,26 +331,30 @@ function inc(id,drink,person){
   const after=levelOf(xp[person]);
   (after>before ? sLevel : sClick).play();
 
-  updateTotalsFor(person); saveAll();
+  updateTotalsFor(person); saveAll(); updateUndoRedoButtons();
 }
 
 function updateTotalsFor(person){
   const tot = columnOrder.reduce((s,d)=>s+(data[`${person}_${d}`]||0)*prices[d],0);
-  document.getElementById(`${person}_Total`).textContent=tot.toFixed(2);
+  const el=document.getElementById(`${person}_Total`);
+  if(el) el.textContent=tot.toFixed(2);
   buildTable(); // Ring neu zeichnen
 }
 
 function undoLast(){
-  const last=history.pop(); if(!last) return;
-  if(last.type==="inc"){                         // neuer Pfad mit XP-Delta
-    data[last.id]=last.prev;
-    if(last.person){ xp[last.person]=Math.max(0,(xp[last.person]||0)-(last.xpDelta||0)); }
-  }else if(last.action==="change"){              // Fallback für alte History-Einträge
-    data[last.id]=last.prev;
-    const parts=last.id.split('_'); const person=parts[0]; const drink=parts.slice(1).join('_');
-    xp[person]=Math.max(0,(xp[person]||0)-(prices[drink]||0));
-  }
-  saveAll(); buildTable();
+  const last = history.pop();
+  if(!last) return;
+  applyInverse(last);
+  redoStack.push(last);
+  saveAll(); buildTable(); updateUndoRedoButtons();
+}
+
+function redoLast(){
+  const act = redoStack.pop();
+  if(!act) return;
+  applyAction(act);
+  history.push(act);
+  saveAll(); buildTable(); updateUndoRedoButtons();
 }
 
 function resetAll(){
@@ -308,7 +365,8 @@ function resetAll(){
     if(sum>0) bookings.push({date:new Date().toLocaleDateString("de-DE"), person:p, sum});
     xp[p]=(xp[p]||0)+sum; columnOrder.forEach(d=>data[`${p}_${d}`]=0);
   });
-  saveAll(); buildTable();
+  history=[]; redoStack=[];
+  saveAll(); buildTable(); updateUndoRedoButtons();
 }
 
 /* Modals & helpers */
