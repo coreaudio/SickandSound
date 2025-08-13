@@ -50,41 +50,54 @@
   const CORE=["Chris","Daniel","Elmi","Florian","Joel","Kevin","Kiste","Marco","Meli","Simon"];
   const firebaseConfig={apiKey:"AIzaSyBFHjGXI5yHyK0DyupS0bnTVAqlu6lvpNw",authDomain:"sickandsound-e9704.firebaseapp.com",projectId:"sickandsound-e9704",storageBucket:"sickandsound-e9704.firebasestorage.app",messagingSenderId:"248197359659",appId:"1:248197359659:web:a8777cbed3f83d6b1ca26e",measurementId:"G-62LH8V7S2E"};
   firebase.initializeApp(firebaseConfig); firebase.analytics(); const db=firebase.firestore();
+
+  // Prod/Beta Umschalter (…?beta in der URL nutzt "state_beta")
+  const STATE_COLLECTION = location.search.includes("beta") ? "state_beta" : "state";
   const levelOf=x=>Math.floor(Math.sqrt(x/20))+1;
 
-  async function load(){
-    const s=await db.collection("state").doc("global").get();
-    const st=s.exists?s.data():{}; const people=st.people||[]; const bookings=st.bookings||[]; const xp=st.xp||{};
+  async function ensureXpFromExistingStriche(stateDoc){
+    // Migrations-Schritt: vorhandene Striche -> XP (ohne Doppelzählen)
+    const st = stateDoc.exists ? stateDoc.data() : {};
+    const prices = st.prices || {};
+    const data   = st.data   || {};
+    const people = st.people || [];
+    let   xp     = st.xp     || {};
+    let changed=false;
 
-    // 1) Rangliste Einzahlungen
+    // XP aus aktuellen Strichen berechnen
+    const drinks = Object.keys(prices);
+    people.forEach(p=>{
+      let xpFromData = 0;
+      drinks.forEach(d=>{
+        const cnt = data[`${p}_${d}`] || 0;
+        xpFromData += cnt * (prices[d]||0);
+      });
+      if ((xp[p]||0) < xpFromData){ xp[p]=xpFromData; changed=true; }
+    });
+
+    if(changed){
+      await db.collection(STATE_COLLECTION).doc("global").set({xp},{merge:true});
+      return xp;
+    }
+    return xp;
+  }
+
+  async function load(){
+    const s=await db.collection(STATE_COLLECTION).doc("global").get();
+    const st=s.exists?s.data():{};
+    const people=st.people||[];
+    const bookings=st.bookings||[];
+
+    // 1) XP-Migration sicherstellen (falls XP bisher 0 war)
+    const xp = await ensureXpFromExistingStriche(s);
+
+    // 2) Rangliste Einzahlungen
     const sums={}; people.forEach(p=>sums[p]=0);
     bookings.forEach(b=>{ sums[b.person]=(sums[b.person]||0)+Number(b.sum||0); });
     const arrMoney=Object.entries(sums).sort((a,b)=>b[1]-a[1]);
     document.getElementById("money").innerHTML=buildTable("💰 Rangliste Einzahlungen",["Platz","Person","Summe €"],
       arrMoney.map(([p,v],i)=>[i+1,p,v.toFixed(2)]));
 
-    // 2) Hausdienst (nur Kernteam)
-    const docs=await db.collection("hausdienst").get(); const today=new Date().toISOString().slice(0,10);
-    const cnt={}; CORE.forEach(p=>cnt[p]=0);
-    docs.forEach(d=>{ if(d.id<=today){ const person=d.data().person; if(CORE.includes(person)) cnt[person]++; } });
-    const arrHd=Object.entries(cnt).sort((a,b)=>b[1]-a[1]);
-    document.getElementById("hausdienst").innerHTML=buildTable("🧹 Hausdienst",["Platz","Person","Tage"],
-      arrHd.map(([p,v],i)=>[i+1,p,v]));
-
-    // 3) Level
-    const arrLv=Object.entries(xp).sort((a,b)=>b[1]-a[1]);
-    document.getElementById("levels").innerHTML=buildTable("🎮 Level (XP)",["Platz","Person","Level","XP"],
-      arrLv.map(([p,x],i)=>[i+1,p,"Lv. "+levelOf(x),x]));
-  }
-
-  function buildTable(title,heads,rows){
-    const h=heads.map(h=>`<th>${h}</th>`).join("");
-    const r=rows.map(row=>`<tr>${row.map(c=>`<td>${c}</td>`).join("")}</tr>`).join("");
-    return `<h2 class="section-title">${title}</h2><table><thead><tr>${h}</tr></thead><tbody>${r}</tbody></table>`;
-  }
-
-  if('serviceWorker' in navigator){ navigator.serviceWorker.register('./sw.js').catch(()=>{}); }
-  window.onload=load;
-</script>
-</body>
-</html>
+    // 3) Hausdienst (nur Kernteam, alle Tage bis heute)
+    const docs=await db.collection("hausdienst").get();
+    const today=new Date
