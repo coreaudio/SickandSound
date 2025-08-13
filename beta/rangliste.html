@@ -56,22 +56,22 @@
     const s=await db.collection("state").doc("global").get();
     const st=s.exists?s.data():{}; const people=st.people||[]; const bookings=st.bookings||[]; const xp=st.xp||{};
 
-    // Money ranking
+    // 1) Rangliste Einzahlungen
     const sums={}; people.forEach(p=>sums[p]=0);
     bookings.forEach(b=>{ sums[b.person]=(sums[b.person]||0)+Number(b.sum||0); });
     const arrMoney=Object.entries(sums).sort((a,b)=>b[1]-a[1]);
-    document.getElementById("money").innerHTML=buildTable("💰 Einzahlungen (All-time)",["Platz","Person","Summe €"],
+    document.getElementById("money").innerHTML=buildTable("💰 Rangliste Einzahlungen",["Platz","Person","Summe €"],
       arrMoney.map(([p,v],i)=>[i+1,p,v.toFixed(2)]));
 
-    // Hausdienst nur Kernteam
+    // 2) Hausdienst (nur Kernteam)
     const docs=await db.collection("hausdienst").get(); const today=new Date().toISOString().slice(0,10);
     const cnt={}; CORE.forEach(p=>cnt[p]=0);
     docs.forEach(d=>{ if(d.id<=today){ const person=d.data().person; if(CORE.includes(person)) cnt[person]++; } });
     const arrHd=Object.entries(cnt).sort((a,b)=>b[1]-a[1]);
-    document.getElementById("hausdienst").innerHTML=buildTable("🧹 Hausdienst (nur Kernteam, bis heute)",["Platz","Person","Tage"],
+    document.getElementById("hausdienst").innerHTML=buildTable("🧹 Hausdienst",["Platz","Person","Tage"],
       arrHd.map(([p,v],i)=>[i+1,p,v]));
 
-    // Level
+    // 3) Level
     const arrLv=Object.entries(xp).sort((a,b)=>b[1]-a[1]);
     document.getElementById("levels").innerHTML=buildTable("🎮 Level (XP)",["Platz","Person","Level","XP"],
       arrLv.map(([p,x],i)=>[i+1,p,"Lv. "+levelOf(x),x]));
