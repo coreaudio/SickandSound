@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <title>Hausdienst planen</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="stylesheet" href="style.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;800&display=swap" rel="stylesheet" />
+</head>
+<body>
+  <div class="container">
+    <div class="card">
+      <h1>🏠 Hausdienst</h1>
+      <div class="sub">Eintragungen sind **tagesgebunden**. Pro Tag ist genau eine Person eingetragen.</div>
+      <div style="display:flex;gap:10px;margin-top:10px;flex-wrap:wrap">
+        <select id="personSel" style="max-width:300px"></select>
+        <input type="date" id="dateSel">
+        <button class="btn" onclick="saveAssignment()">Eintragen</button>
+        <button class="btn ghost" onclick="removeAssignment()">Austragen</button>
+        <button class="btn dark" onclick="window.location='hausdienst_checklist.html'">📋 Checkliste</button>
+        <button class="btn secondary" onclick="window.location='rangliste.html'">🏆 Ranglisten</button>
+        <button class="btn ghost" onclick="window.location='index.html'">⬅ Zurück</button>
+      </div>
+    </div>
+
+    <div class="card table-wrap" id="calendar"></div>
+  </div>
+
+  <script src="https://www.gstatic.com/firebasejs/12.0.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/12.0.0/firebase-analytics-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/12.0.0/firebase-firestore-compat.js"></script>
+  <script>
+    const firebaseConfig={apiKey:"AIzaSyBFHjGXI5yHyK0DyupS0bnTVAqlu6lvpNw",authDomain:"sickandsound-e9704.firebaseapp.com",projectId:"sickandsound-e9704",storageBucket:"sickandsound-e9704.firebasestorage.app",messagingSenderId:"248197359659",appId:"1:248197359659:web:a8777cbed3f83d6b1ca26e",measurementId:"G-62LH8V7S2E"};
+    firebase.initializeApp(firebaseConfig); firebase.analytics(); const db=firebase.firestore();
+
+    let people=[];
+    const peopleKey="sick_sound_people";
+    const today = new Date().toISOString().slice(0,10);
+
+    async function init(){
+      const s = await db.collection("state").doc("global").get();
+      people = s.exists ? (s.data().people || JSON.parse(localStorage.getItem(peopleKey))||[]) : (JSON.parse(localStorage.getItem(peopleKey))||[]);
+      buildSelectors();
+      renderCalendar();
+      // Live updates
+      db.collection("hausdienst").onSnapshot(renderCalendar);
+    }
+
+    function buildSelectors(){
+      const sel=document.getElementById("personSel"); sel.innerHTML="";
+      people.sort().forEach(p=>{
+        const o=document.createElement("option"); o.value=o.textContent=p; sel.appendChild(o);
+      });
+      document.getElementById("dateSel").value = today;
+    }
+
+    function ymd(d){ return new Date(d).toISOString().slice(0,10); }
+
+    async function saveAssignment(){
+      const person = document.getElementById("personSel").value;
+      const date   = document.getElementById("dateSel").value;
+      if(!person||!date) return alert("Bitte Person und Datum wählen");
+      const docRef = db.collection("hausdienst").doc(date);
+      const ex = await docRef.get();
+      if(ex.exists){ if(!confirm(`Für ${date} ist bereits ${ex.data().person} eingetragen. Überschreiben?`)) return; }
+      await docRef.set({person, ts: Date.now()});
+      // Bei heutigem Tag direkt Checkliste öffnen
+      if(date===today) window.location='hausdienst_checklist.html';
+    }
+
+    async function removeAssignment(){
+      const date = document.getElementById("dateSel").value;
+      const ref = db.collection("hausdienst").doc(date);
+      const ex=await ref.get();
+      if(!ex.exists) return alert("Für dieses Datum ist niemand eingetragen.");
+      if(!confirm(`Eintrag für ${date} entfernen?`)) return;
+      await ref.delete();
+    }
+
+    async function renderCalendar(){
+      // Lade Einträge der nächsten 30 Tage (inkl. heute -5 bis +30 für Übersicht)
+      const start = new Date(); start.setDate(start.getDate()-5);
+      const end = new Date(); end.setDate(end.getDate()+30);
+      const rows = [];
+      let cur = new Date(start);
+      while(cur<=end){
+        const d=ymd(cur);
+        // eslint-disable-next-line no-await-in-loop
+        const doc=await db.collection("hausdienst").doc(d).get();
+        rows.push({date:d, person: doc.exists?doc.data().person:null});
+        cur.setDate(cur.getDate()+1);
+      }
+      let html = `<table><thead><tr><th>Datum</th><th>Status</th><th>Aktion</th></tr></thead><tbody>`;
+      rows.forEach(r=>{
+        const badge = r.person ? `<span class="badge ok">${r.person}</span>` : `<span class="badge none">frei</span>`;
+        const btn = r.person
+          ? `<button class="btn small ghost" onclick="document.getElementById('dateSel').value='${r.date}'; removeAssignment()">Austragen</button>`
+          : `<button class="btn small" onclick="document.getElementById('dateSel').value='${r.date}'; saveAssignment()">Eintragen</button>`;
+        html += `<tr><td>${r.date}</td><td>${badge}</td><td>${btn}</td></tr>`;
+      });
+      html += `</tbody></table>`;
+      document.getElementById("calendar").innerHTML = html;
+    }
+
+    window.onload = init;
+  </script>
+</body>
+</html>
