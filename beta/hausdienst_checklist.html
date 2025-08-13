@@ -11,7 +11,7 @@
   <div class="container">
     <div class="card">
       <h1>📋 Checkliste</h1>
-      <div class="sub">Die Aufgabenliste ist **dauerhaft** gespeichert. Abhaken gilt nur für den heutigen Tag.</div>
+      <div class="sub">Aufgaben sind dauerhaft gespeichert. Abhaken gilt nur für den heutigen Tag.</div>
       <div style="display:flex;gap:10px;margin-top:8px;flex-wrap:wrap">
         <input id="newTask" placeholder="Neue Aufgabe hinzufügen…">
         <button class="btn" onclick="addTask()">Hinzufügen</button>
@@ -30,47 +30,30 @@
     const firebaseConfig={apiKey:"AIzaSyBFHjGXI5yHyK0DyupS0bnTVAqlu6lvpNw",authDomain:"sickandsound-e9704.firebaseapp.com",projectId:"sickandsound-e9704",storageBucket:"sickandsound-e9704.firebasestorage.app",messagingSenderId:"248197359659",appId:"1:248197359659:web:a8777cbed3f83d6b1ca26e",measurementId:"G-62LH8V7S2E"};
     firebase.initializeApp(firebaseConfig); firebase.analytics(); const db=firebase.firestore();
 
-    const today = new Date().toISOString().slice(0,10);
-    const CHECKED_KEY = "hausdienst_checked_"+today; // lokale Tageshaken
-    let checked = JSON.parse(localStorage.getItem(CHECKED_KEY) || "{}"); // {taskId: true}
+    const today=new Date().toISOString().slice(0,10);
+    const CHECKED_KEY="hausdienst_checked_"+today;
+    let checked=JSON.parse(localStorage.getItem(CHECKED_KEY)||"{}");
+    function saveChecked(){ localStorage.setItem(CHECKED_KEY,JSON.stringify(checked)); }
 
-    function saveChecked(){ localStorage.setItem(CHECKED_KEY, JSON.stringify(checked)); }
+    async function addTask(){ const txt=document.getElementById('newTask').value.trim(); if(!txt) return;
+      await db.collection("checklistTasks").add({text:txt, createdAt:Date.now()}); document.getElementById('newTask').value=""; }
+    async function delTask(id){ if(!confirm("Aufgabe löschen?")) return; await db.collection("checklistTasks").doc(id).delete(); delete checked[id]; saveChecked(); }
+    function toggle(id){ checked[id]=!checked[id]; saveChecked(); render(); }
 
-    async function addTask(){
-      const txt = document.getElementById('newTask').value.trim();
-      if(!txt) return;
-      await db.collection("checklistTasks").add({text:txt, createdAt:Date.now()});
-      document.getElementById('newTask').value="";
-    }
-
-    async function delTask(id){
-      if(!confirm("Aufgabe löschen?")) return;
-      await db.collection("checklistTasks").doc(id).delete();
-      delete checked[id]; saveChecked();
-    }
-
-    function toggle(id){
-      checked[id] = !checked[id]; saveChecked(); render();
-    }
-
-    function render(tasksSnap){
-      let tasks = [];
-      if(tasksSnap && tasksSnap.forEach){
-        tasksSnap.forEach(d=>tasks.push({id:d.id,...d.data()}));
-      }
-      const rows = tasks.sort((a,b)=>a.text.localeCompare(b.text)).map(t=>{
-        const mark = checked[t.id] ? '✅' : '⬜️';
+    function render(snap){
+      const tasks=[]; if(snap&&snap.forEach) snap.forEach(d=>tasks.push({id:d.id,...d.data()}));
+      const rows=tasks.sort((a,b)=>a.text.localeCompare(b.text)).map(t=>{
+        const mark=checked[t.id]?'✅':'⬜️';
         return `<tr>
           <td style="text-align:left">${t.text}</td>
           <td><button class="btn small" onclick="toggle('${t.id}')">${mark}</button></td>
           <td><button class="btn small ghost" onclick="delTask('${t.id}')">Löschen</button></td>
         </tr>`;
       }).join("");
-      document.getElementById("list").innerHTML =
-        `<table><thead><tr><th style="text-align:left">Aufgabe</th><th>Status (heute)</th><th>Aktion</th></tr></thead><tbody>${rows||"<tr><td colspan=3>Keine Aufgaben vorhanden.</td></tr>"}</tbody></table>`;
+      document.getElementById("list").innerHTML=`<table>
+        <thead><tr><th style="text-align:left">Aufgabe</th><th>Status (heute)</th><th>Aktion</th></tr></thead>
+        <tbody>${rows||"<tr><td colspan=3>Keine Aufgaben vorhanden.</td></tr>"}</tbody></table>`;
     }
-
-    // Live aktualisieren
     db.collection("checklistTasks").onSnapshot(render);
   </script>
 </body>
