@@ -18,9 +18,9 @@
   </header>
 
   <main class="content">
-    <div class="card table-wrap" id="money"></div>
-    <div class="card table-wrap" id="hausdienst" style="margin-top:12px"></div>
-    <div class="card table-wrap" id="levels" style="margin-top:12px"></div>
+    <div class="card table-wrap" id="money"><div class="sub">Lade „Rangliste Einzahlungen“…</div></div>
+    <div class="card table-wrap" id="hausdienst" style="margin-top:12px"><div class="sub">Lade „Hausdienst“…</div></div>
+    <div class="card table-wrap" id="levels" style="margin-top:12px"><div class="sub">Lade „Level (XP)“…</div></div>
   </main>
 
   <nav class="bottomnav">
@@ -43,61 +43,138 @@
   </nav>
 </div>
 
+<!-- Firebase -->
 <script src="https://www.gstatic.com/firebasejs/12.0.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/12.0.0/firebase-analytics-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/12.0.0/firebase-firestore-compat.js"></script>
 <script>
   const CORE=["Chris","Daniel","Elmi","Florian","Joel","Kevin","Kiste","Marco","Meli","Simon"];
   const firebaseConfig={apiKey:"AIzaSyBFHjGXI5yHyK0DyupS0bnTVAqlu6lvpNw",authDomain:"sickandsound-e9704.firebaseapp.com",projectId:"sickandsound-e9704",storageBucket:"sickandsound-e9704.firebasestorage.app",messagingSenderId:"248197359659",appId:"1:248197359659:web:a8777cbed3f83d6b1ca26e",measurementId:"G-62LH8V7S2E"};
-  firebase.initializeApp(firebaseConfig); firebase.analytics(); const db=firebase.firestore();
 
-  // Prod/Beta Umschalter (…?beta in der URL nutzt "state_beta")
+  // Firebase sicher initialisieren (kann offline/blocked sein)
+  let db=null;
+  try{
+    if(window.firebase){
+      firebase.initializeApp(firebaseConfig);
+      try{ firebase.analytics(); }catch(_){}
+      db=firebase.firestore();
+    }
+  }catch(_){ db=null; }
+
+  // Beta/Prod umschalten
   const STATE_COLLECTION = location.search.includes("beta") ? "state_beta" : "state";
+
+  // LocalStorage Keys
+  const K = {
+    people: "sick_sound_people",
+    bookings: "sick_sound_bookings",
+    prices: "sick_sound_prices",
+    data: "sick_sound_data",
+    xp: "sick_sound_xp"
+  };
+
   const levelOf=x=>Math.floor(Math.sqrt(x/20))+1;
 
-  async function ensureXpFromExistingStriche(stateDoc){
-    // Migrations-Schritt: vorhandene Striche -> XP (ohne Doppelzählen)
-    const st = stateDoc.exists ? stateDoc.data() : {};
-    const prices = st.prices || {};
-    const data   = st.data   || {};
-    const people = st.people || [];
-    let   xp     = st.xp     || {};
+  function buildTable(title,heads,rows,emptyText){
+    const thead = `<thead><tr>${heads.map(h=>`<th>${h}</th>`).join("")}</tr></thead>`;
+    const tbody = rows.length
+      ? `<tbody>${rows.map(r=>`<tr>${r.map(c=>`<td>${c}</td>`).join("")}</tr>`).join("")}</tbody>`
+      : `<tbody><tr><td colspan="${heads.length}">${emptyText||"Keine Daten"}</td></tr></tbody>`;
+    return `<h2 class="section-title">${title}</h2><table>${thead}${tbody}</table>`;
+  }
+
+  // XP aus vorhandenen Strichen (Preise*Counts) hochziehen – ohne Doppelzählung
+  function ensureXpFromExistingStriche(state){
+    const prices = state.prices || {};
+    const people = state.people || [];
+    const data   = state.data   || {};
+    const xp     = state.xp     || {};
+    const drinks = Object.keys(prices);
     let changed=false;
 
-    // XP aus aktuellen Strichen berechnen
-    const drinks = Object.keys(prices);
     people.forEach(p=>{
-      let xpFromData = 0;
+      let xpFromData=0;
       drinks.forEach(d=>{
         const cnt = data[`${p}_${d}`] || 0;
         xpFromData += cnt * (prices[d]||0);
       });
-      if ((xp[p]||0) < xpFromData){ xp[p]=xpFromData; changed=true; }
+      if((xp[p]||0) < xpFromData){ xp[p]=xpFromData; changed=true; }
     });
+    return {xp, changed};
+  }
 
-    if(changed){
-      await db.collection(STATE_COLLECTION).doc("global").set({xp},{merge:true});
-      return xp;
-    }
-    return xp;
+  async function saveXp(xp){
+    try{
+      if(db){ await db.collection(STATE_COLLECTION).doc("global").set({xp},{merge:true}); }
+      localStorage.setItem(K.xp, JSON.stringify(xp));
+    }catch(_){}
   }
 
   async function load(){
-    const s=await db.collection(STATE_COLLECTION).doc("global").get();
-    const st=s.exists?s.data():{};
-    const people=st.people||[];
-    const bookings=st.bookings||[];
+    // --- State laden (Firestore wenn möglich, sonst LocalStorage)
+    let state = {};
+    if(db){
+      try{
+        const s=await db.collection(STATE_COLLECTION).doc("global").get();
+        state = s.exists ? s.data() : {};
+      }catch(_){ state={}; }
+    }
+    // Fallback-Felder auffüllen
+    state.people   = state.people   || JSON.parse(localStorage.getItem(K.people))   || [];
+    state.bookings = state.bookings || JSON.parse(localStorage.getItem(K.bookings)) || [];
+    state.prices   = state.prices   || JSON.parse(localStorage.getItem(K.prices))   || {};
+    state.data     = state.data     || JSON.parse(localStorage.getItem(K.data))     || {};
+    state.xp       = state.xp       || JSON.parse(localStorage.getItem(K.xp))       || {};
 
-    // 1) XP-Migration sicherstellen (falls XP bisher 0 war)
-    const xp = await ensureXpFromExistingStriche(s);
+    // --- XP-Migration aus vorhandenen Strichen
+    const mig = ensureXpFromExistingStriche(state);
+    state.xp = mig.xp;
+    if(mig.changed){ await saveXp(state.xp); }
 
-    // 2) Rangliste Einzahlungen
-    const sums={}; people.forEach(p=>sums[p]=0);
-    bookings.forEach(b=>{ sums[b.person]=(sums[b.person]||0)+Number(b.sum||0); });
-    const arrMoney=Object.entries(sums).sort((a,b)=>b[1]-a[1]);
-    document.getElementById("money").innerHTML=buildTable("💰 Rangliste Einzahlungen",["Platz","Person","Summe €"],
-      arrMoney.map(([p,v],i)=>[i+1,p,v.toFixed(2)]));
+    // --- 1) Rangliste Einzahlungen
+    const sums={}; (state.people||[]).forEach(p=>sums[p]=0);
+    (state.bookings||[]).forEach(b=>{ sums[b.person]=(sums[b.person]||0)+Number(b.sum||0); });
+    const arrMoney = Object.entries(sums).sort((a,b)=>b[1]-a[1]);
+    document.getElementById("money").innerHTML = buildTable(
+      "💰 Rangliste Einzahlungen",
+      ["Platz","Person","Summe €"],
+      arrMoney.map(([p,v],i)=>[i+1,p,(+v).toFixed(2)]),
+      "Noch keine Buchungen vorhanden."
+    );
 
-    // 3) Hausdienst (nur Kernteam, alle Tage bis heute)
-    const docs=await db.collection("hausdienst").get();
-    const today=new Date
+    // --- 2) Hausdienst (nur Kernteam; aus Firestore, offline Hinweis)
+    if(db){
+      try{
+        const docs=await db.collection("hausdienst").get();
+        const today=new Date().toISOString().slice(0,10);
+        const cnt={}; CORE.forEach(p=>cnt[p]=0);
+        docs.forEach(d=>{ if(d.id<=today){ const person=d.data().person; if(CORE.includes(person)) cnt[person]++; } });
+        const arrHd=Object.entries(cnt).sort((a,b)=>b[1]-a[1]);
+        document.getElementById("hausdienst").innerHTML = buildTable(
+          "🧹 Hausdienst",
+          ["Platz","Person","Tage"],
+          arrHd.map(([p,v],i)=>[i+1,p,v]),
+          "Keine Einträge vorhanden."
+        );
+      }catch(_){
+        document.getElementById("hausdienst").innerHTML = `<h2 class="section-title">🧹 Hausdienst</h2><div class="sub">Fehler beim Laden.</div>`;
+      }
+    }else{
+      document.getElementById("hausdienst").innerHTML = `<h2 class="section-title">🧹 Hausdienst</h2><div class="sub">Offline: Hausdienst-Daten nicht verfügbar.</div>`;
+    }
+
+    // --- 3) Level (XP)
+    const arrLv = Object.entries(state.xp||{}).sort((a,b)=>b[1]-a[1]);
+    document.getElementById("levels").innerHTML = buildTable(
+      "🎮 Level (XP)",
+      ["Platz","Person","Level","XP"],
+      arrLv.map(([p,x],i)=>[i+1,p,"Lv. "+levelOf(+x),(+x).toFixed(0)]),
+      "Noch keine XP-Daten."
+    );
+  }
+
+  if('serviceWorker' in navigator){ navigator.serviceWorker.register('./sw.js').catch(()=>{}); }
+  window.onload=load;
+</script>
+</body>
+</html>
