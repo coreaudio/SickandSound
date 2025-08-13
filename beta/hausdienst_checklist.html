@@ -23,10 +23,18 @@
   <main class="content">
     <div class="card" style="margin-bottom:12px">
       <div class="section-title">Aufgaben</div>
-      <div class="sub">Aufgaben dauerhaft gespeichert · Abhak-Status gilt nur heute</div>
+      <div class="sub">Aufgaben dauerhaft gespeichert · Haken gilt nur heute</div>
+
       <div style="display:flex;gap:10px;margin-top:8px;flex-wrap:wrap">
         <input id="newTask" placeholder="Neue Aufgabe hinzufügen…">
         <button class="btn" onclick="addTask()">Hinzufügen</button>
+      </div>
+
+      <!-- Filter -->
+      <div id="filters" style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px">
+        <button id="fOpen"    class="btn small secondary" onclick="setMode('open')">Offen</button>
+        <button id="fDone"    class="btn small ghost"     onclick="setMode('done')">Erledigt</button>
+        <button id="fAll"     class="btn small ghost"     onclick="setMode('all')">Alle</button>
       </div>
     </div>
 
@@ -64,8 +72,32 @@
   const CHECKED_KEY="hausdienst_checked_"+today;
   let checked=JSON.parse(localStorage.getItem(CHECKED_KEY)||"{}");
   let tasksCache=[];
+  let showMode=localStorage.getItem("hausdienst_filter_mode")||"open"; // 'open' | 'done' | 'all'
 
   function saveChecked(){ localStorage.setItem(CHECKED_KEY,JSON.stringify(checked)); }
+  function setMode(m){
+    showMode=m;
+    localStorage.setItem("hausdienst_filter_mode", m);
+    updateFilterButtons();
+    render(); // neu zeichnen
+  }
+  function updateFilterButtons(){
+    const openCnt = tasksCache.filter(t=>!checked[t.id]).length;
+    const doneCnt = tasksCache.filter(t=> checked[t.id]).length;
+    const allCnt  = tasksCache.length;
+
+    const fOpen=document.getElementById("fOpen");
+    const fDone=document.getElementById("fDone");
+    const fAll =document.getElementById("fAll");
+
+    fOpen.textContent = `Offen (${openCnt})`;
+    fDone.textContent = `Erledigt (${doneCnt})`;
+    fAll.textContent  = `Alle (${allCnt})`;
+
+    fOpen.className = "btn small " + (showMode==="open" ? "secondary" : "ghost");
+    fDone.className = "btn small " + (showMode==="done" ? "secondary" : "ghost");
+    fAll.className  = "btn small " + (showMode==="all"  ? "secondary" : "ghost");
+  }
 
   async function addTask(){
     const txt=document.getElementById('newTask').value.trim(); if(!txt) return;
@@ -78,32 +110,75 @@
     delete checked[id]; saveChecked();
   }
   function toggle(id){
-    checked[id]=!checked[id]; saveChecked();
-    render(); // neu zeichnen ohne Snapshot (nur offene anzeigen)
+    checked[id]=!checked[id];
+    saveChecked();
+    render(); // bleibt im aktuellen Modus; offene bleiben sichtbar, erledigte werden ggf. ausgeblendet
   }
 
   function render(snap){
     if(snap && snap.forEach){
-      // Cache aktualisieren
       tasksCache=[]; snap.forEach(d=>tasksCache.push({id:d.id,...d.data()}));
     }
-    // Zeige nur offene Aufgaben
+
+    updateFilterButtons();
+
     const openTasks = tasksCache.filter(t=>!checked[t.id]).sort((a,b)=>a.text.localeCompare(b.text));
-    const rows=openTasks.map(t=>`
-      <tr>
-        <td style="text-align:left">${t.text}</td>
-        <td><button class="btn small" onclick="toggle('${t.id}')">✅ erledigt</button></td>
-        <td><button class="btn small ghost" onclick="delTask('${t.id}')">Löschen</button></td>
-      </tr>`).join("");
-    document.getElementById("list").innerHTML=`<table>
-      <thead><tr><th style="text-align:left">Aufgabe</th><th>Status (heute)</th><th>Aktion</th></tr></thead>
-      <tbody>${rows || "<tr><td colspan=3>Alle Aufgaben erledigt 🎉</td></tr>"}</tbody></table>`;
+    const doneTasks = tasksCache.filter(t=> checked[t.id]).sort((a,b)=>a.text.localeCompare(b.text));
+
+    let rows = "";
+    let headCols = "";
+
+    if(showMode==="open"){
+      headCols = `<th style="text-align:left">Aufgabe</th><th>Aktion</th><th>—</th>`;
+      rows = (openTasks.length ? openTasks : []).map(t=>`
+        <tr>
+          <td style="text-align:left">${t.text}</td>
+          <td><button class="btn small" onclick="toggle('${t.id}')">✅ erledigt</button></td>
+          <td><button class="btn small ghost" onclick="delTask('${t.id}')">Löschen</button></td>
+        </tr>`).join("");
+      if(!rows) rows = `<tr><td colspan="3">Alle Aufgaben erledigt 🎉 — „Erledigt“ zeigt abgehakte an.</td></tr>`;
+    }
+    else if(showMode==="done"){
+      headCols = `<th style="text-align:left">Erledigt</th><th>Aktion</th><th>—</th>`;
+      rows = (doneTasks.length ? doneTasks : []).map(t=>`
+        <tr>
+          <td style="text-align:left">${t.text}</td>
+          <td><button class="btn small warning" onclick="toggle('${t.id}')">↩️ rückgängig</button></td>
+          <td><button class="btn small ghost" onclick="delTask('${t.id}')">Löschen</button></td>
+        </tr>`).join("");
+      if(!rows) rows = `<tr><td colspan="3">Keine erledigten Aufgaben heute.</td></tr>`;
+    }
+    else{ // all
+      headCols = `<th style="text-align:left">Aufgabe</th><th>Status</th><th>Aktion</th>`;
+      const allList = [...openTasks.map(t=>({t,done:false})), ...doneTasks.map(t=>({t,done:true}))];
+      rows = allList.map(({t,done})=>`
+        <tr>
+          <td style="text-align:left">${t.text}</td>
+          <td>${done ? "✅" : "⬜️"}</td>
+          <td>
+            <button class="btn small ${done?'warning':''}" onclick="toggle('${t.id}')">
+              ${done ? "↩️ rückgängig" : "✅ erledigt"}
+            </button>
+            <button class="btn small ghost" style="margin-left:6px" onclick="delTask('${t.id}')">Löschen</button>
+          </td>
+        </tr>`).join("");
+      if(!rows) rows = `<tr><td colspan="3">Noch keine Aufgaben vorhanden.</td></tr>`;
+    }
+
+    document.getElementById("list").innerHTML = `
+      <table>
+        <thead><tr>${headCols}</tr></thead>
+        <tbody>${rows}</tbody>
+      </table>`;
   }
 
-  // Live aktualisieren
+  // Live-Updates
   db.collection("checklistTasks").onSnapshot(render);
 
   if('serviceWorker' in navigator){ navigator.serviceWorker.register('./sw.js').catch(()=>{}); }
+
+  // Initial UI state
+  updateFilterButtons();
 </script>
 </body>
 </html>
