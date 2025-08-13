@@ -63,27 +63,44 @@
   const today=new Date().toISOString().slice(0,10);
   const CHECKED_KEY="hausdienst_checked_"+today;
   let checked=JSON.parse(localStorage.getItem(CHECKED_KEY)||"{}");
+  let tasksCache=[];
+
   function saveChecked(){ localStorage.setItem(CHECKED_KEY,JSON.stringify(checked)); }
 
-  async function addTask(){ const txt=document.getElementById('newTask').value.trim(); if(!txt) return;
-    await db.collection("checklistTasks").add({text:txt, createdAt:Date.now()}); document.getElementById('newTask').value=""; }
-  async function delTask(id){ if(!confirm("Aufgabe löschen?")) return; await db.collection("checklistTasks").doc(id).delete(); delete checked[id]; saveChecked(); }
-  function toggle(id){ checked[id]=!checked[id]; saveChecked(); render(); }
+  async function addTask(){
+    const txt=document.getElementById('newTask').value.trim(); if(!txt) return;
+    await db.collection("checklistTasks").add({text:txt, createdAt:Date.now()});
+    document.getElementById('newTask').value="";
+  }
+  async function delTask(id){
+    if(!confirm("Aufgabe löschen?")) return;
+    await db.collection("checklistTasks").doc(id).delete();
+    delete checked[id]; saveChecked();
+  }
+  function toggle(id){
+    checked[id]=!checked[id]; saveChecked();
+    render(); // neu zeichnen ohne Snapshot (nur offene anzeigen)
+  }
 
   function render(snap){
-    const tasks=[]; if(snap&&snap.forEach) snap.forEach(d=>tasks.push({id:d.id,...d.data()}));
-    const rows=tasks.sort((a,b)=>a.text.localeCompare(b.text)).map(t=>{
-      const mark=checked[t.id]?'✅':'⬜️';
-      return `<tr>
+    if(snap && snap.forEach){
+      // Cache aktualisieren
+      tasksCache=[]; snap.forEach(d=>tasksCache.push({id:d.id,...d.data()}));
+    }
+    // Zeige nur offene Aufgaben
+    const openTasks = tasksCache.filter(t=>!checked[t.id]).sort((a,b)=>a.text.localeCompare(b.text));
+    const rows=openTasks.map(t=>`
+      <tr>
         <td style="text-align:left">${t.text}</td>
-        <td><button class="btn small" onclick="toggle('${t.id}')">${mark}</button></td>
+        <td><button class="btn small" onclick="toggle('${t.id}')">✅ erledigt</button></td>
         <td><button class="btn small ghost" onclick="delTask('${t.id}')">Löschen</button></td>
-      </tr>`;
-    }).join("");
+      </tr>`).join("");
     document.getElementById("list").innerHTML=`<table>
       <thead><tr><th style="text-align:left">Aufgabe</th><th>Status (heute)</th><th>Aktion</th></tr></thead>
-      <tbody>${rows||"<tr><td colspan=3>Keine Aufgaben vorhanden.</td></tr>"}</tbody></table>`;
+      <tbody>${rows || "<tr><td colspan=3>Alle Aufgaben erledigt 🎉</td></tr>"}</tbody></table>`;
   }
+
+  // Live aktualisieren
   db.collection("checklistTasks").onSnapshot(render);
 
   if('serviceWorker' in navigator){ navigator.serviceWorker.register('./sw.js').catch(()=>{}); }
