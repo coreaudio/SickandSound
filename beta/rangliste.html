@@ -11,13 +11,12 @@
   <div class="container">
     <div class="card">
       <h1>🏆 Ranglisten</h1>
-      <div class="sub">Wer bringt das meiste Geld? Wer macht am meisten Hausdienst? Wer hat das höchste Level?</div>
+      <div class="sub">Einzahlungen · Hausdienst (nur Kernteam) · Level</div>
       <div style="display:flex;gap:10px;margin-top:10px;flex-wrap:wrap">
         <button class="btn ghost" onclick="window.location='index.html'">⬅ Zur Strichliste</button>
         <button class="btn ghost" onclick="window.location='hausdienst.html'">🏠 Hausdienst</button>
       </div>
     </div>
-
     <div class="card table-wrap" id="money"></div>
     <div class="card table-wrap" id="hausdienst"></div>
     <div class="card table-wrap" id="levels"></div>
@@ -27,52 +26,42 @@
   <script src="https://www.gstatic.com/firebasejs/12.0.0/firebase-analytics-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/12.0.0/firebase-firestore-compat.js"></script>
   <script>
+    const CORE=["Chris","Daniel","Elmi","Florian","Joel","Kevin","Kiste","Marco","Meli","Simon"];
     const firebaseConfig={apiKey:"AIzaSyBFHjGXI5yHyK0DyupS0bnTVAqlu6lvpNw",authDomain:"sickandsound-e9704.firebaseapp.com",projectId:"sickandsound-e9704",storageBucket:"sickandsound-e9704.firebasestorage.app",messagingSenderId:"248197359659",appId:"1:248197359659:web:a8777cbed3f83d6b1ca26e",measurementId:"G-62LH8V7S2E"};
     firebase.initializeApp(firebaseConfig); firebase.analytics(); const db=firebase.firestore();
-
-    const levelOf = (x)=> Math.floor(Math.sqrt(x/20))+1;
+    const levelOf=x=>Math.floor(Math.sqrt(x/20))+1;
 
     async function load(){
-      const s = await db.collection("state").doc("global").get();
-      const state = s.exists ? s.data() : {};
-      const people = state.people||[];
-      const bookings = state.bookings||[];
-      const xp = state.xp||{};
-      // Money ranking (sum of bookings)
-      const sums = {};
-      people.forEach(p=>sums[p]=0);
+      const s=await db.collection("state").doc("global").get();
+      const st=s.exists?s.data():{}; const people=st.people||[]; const bookings=st.bookings||[]; const xp=st.xp||{};
+      // Money
+      const sums={}; people.forEach(p=>sums[p]=0);
       bookings.forEach(b=>{ sums[b.person]=(sums[b.person]||0)+Number(b.sum||0); });
-      const arrMoney = Object.entries(sums).sort((a,b)=>b[1]-a[1]);
-      document.getElementById("money").innerHTML =
-        buildTable("💰 Einzahlungen (All-time)", ["Platz","Person","Summe €"],
-          arrMoney.map(([p,v],i)=>[i+1,p,v.toFixed(2)]));
+      const arrMoney=Object.entries(sums).sort((a,b)=>b[1]-a[1]);
+      document.getElementById("money").innerHTML=buildTable("💰 Einzahlungen (All-time)",["Platz","Person","Summe €"],
+        arrMoney.map(([p,v],i)=>[i+1,p,v.toFixed(2)]));
 
-      // Hausdienst ranking: zähle vergangene Einträge
-      const docs = await db.collection("hausdienst").get();
-      const cnt = {}; people.forEach(p=>cnt[p]=0);
-      const today = new Date().toISOString().slice(0,10);
-      docs.forEach(d=>{
-        if(d.id<=today){ const person=d.data().person; if(person) cnt[person]=(cnt[person]||0)+1; }
-      });
-      const arrHd = Object.entries(cnt).sort((a,b)=>b[1]-a[1]);
-      document.getElementById("hausdienst").innerHTML =
-        buildTable("🧹 Hausdienst (Anzahl Tage, bis heute)", ["Platz","Person","Tage"],
-          arrHd.map(([p,v],i)=>[i+1,p,v]));
+      // Hausdienst nur Kernteam
+      const docs=await db.collection("hausdienst").get(); const today=new Date().toISOString().slice(0,10);
+      const cnt={}; CORE.forEach(p=>cnt[p]=0);
+      docs.forEach(d=>{ if(d.id<=today){ const person=d.data().person; if(CORE.includes(person)) cnt[person]++; } });
+      const arrHd=Object.entries(cnt).sort((a,b)=>b[1]-a[1]);
+      document.getElementById("hausdienst").innerHTML=buildTable("🧹 Hausdienst (nur Kernteam, bis heute)",["Platz","Person","Tage"],
+        arrHd.map(([p,v],i)=>[i+1,p,v]));
 
-      // Level ranking
-      const arrLv = Object.entries(xp).sort((a,b)=>b[1]-a[1]);
-      document.getElementById("levels").innerHTML =
-        buildTable("🎮 Level (XP-basiert)", ["Platz","Person","Level","XP"],
-          arrLv.map(([p,x],i)=>[i+1,p,"Lv. "+levelOf(x), x]));
+      // Level
+      const arrLv=Object.entries(xp).sort((a,b)=>b[1]-a[1]);
+      document.getElementById("levels").innerHTML=buildTable("🎮 Level (XP)",["Platz","Person","Level","XP"],
+        arrLv.map(([p,x],i)=>[i+1,p,"Lv. "+levelOf(x),x]));
     }
 
-    function buildTable(title, heads, rows){
-      const h = heads.map(h=>`<th>${h}</th>`).join("");
-      const r = rows.map(row=>`<tr>${row.map(c=>`<td>${c}</td>`).join("")}</tr>`).join("");
+    function buildTable(title,heads,rows){
+      const h=heads.map(h=>`<th>${h}</th>`).join("");
+      const r=rows.map(row=>`<tr>${row.map(c=>`<td>${c}</td>`).join("")}</tr>`).join("");
       return `<h2>${title}</h2><table><thead><tr>${h}</tr></thead><tbody>${r}</tbody></table>`;
     }
 
-    window.onload = load;
+    window.onload=load;
   </script>
 </body>
 </html>
