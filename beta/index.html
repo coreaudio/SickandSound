@@ -181,9 +181,8 @@ async function updateTodayBanner(existing){
     ? `Heute eingetragener Hausdienst: <span class="badge ok">${person}</span> · <a href="hausdienst_checklist.html" class="badge gold" style="text-decoration:none">Checkliste öffnen</a>`
     : `Heute: <span class="badge none">Noch niemand eingetragen</span>`;
 }
-function openHausdienst(){ window.location='hausdienst.html'; }
 
-/* ===== Table (with Level ring) ===== */
+/* ===== Table (Level-Ring ohne XP/%) ===== */
 function buildTable(){
   const core = CORE.filter(n=>people.includes(n));
   const guests = people.filter(n=>!CORE.includes(n)).sort((a,b)=>a.localeCompare(b));
@@ -207,8 +206,8 @@ function buildTable(){
     const pct = Math.max(0, Math.min(100, ((xpVal-min)/(next-min))*100));
     const r=22, c=2*Math.PI*r, off=c*(1-pct/100);
     return `
-      <div class="lvl-ring" aria-label="Level ${lvl}, ${pct.toFixed(0)}%">
-        <svg width="52" height="52" viewBox="0 0 52 52">
+      <div class="lvl-ring" aria-label="Level ${lvl}">
+        <svg width="52" height="52" viewBox="0 0 52 52" style="transform:rotate(-90deg)">
           <defs>
             <linearGradient id="grad" x1="0" y1="0" x2="1" y2="1">
               <stop offset="0%" stop-color="var(--accent)"/><stop offset="100%" stop-color="var(--accent-2)"/>
@@ -222,18 +221,13 @@ function buildTable(){
   };
 
   const row = (p)=>{
-    const xpVal=xp[p]||0, lvl=levelOf(xpVal), min=lvlMin(lvl), next=lvlNext(lvl);
-    const pct = Math.max(0, Math.min(100, ((xpVal-min)/(next-min))*100));
+    const xpVal=xp[p]||0;
     const hdClass = (hdToday===p) ? "hd-today" : "";
     let r = `<tr class="${hdClass}"><th style="text-align:left">
       <div class="person-cell">
         ${ring(xpVal)}
         <div class="p-info">
           <div class="p-name">${p}</div>
-          <div class="lvl-wrap">
-            <div class="lvl-line"><span>${xpVal} XP</span><span>${pct.toFixed(0)}% bis Level ${lvl+1}</span></div>
-            <div class="progress"><span style="width:${pct}%"></span></div>
-          </div>
         </div>
       </div>
     </th>`;
@@ -269,25 +263,43 @@ function buildTable(){
 
 function headerClick(drink){ if(deleteMode) deleteColumn(drink); }
 
-/* ===== Interactions ===== */
+/* ===== Interactions (mit XP-Undo) ===== */
 function inc(id,drink,person){
   const el=document.getElementById(id);
   const cur=parseInt(el.textContent||'0'); const next=cur+1;
   el.textContent=next; el.classList.remove('bump'); void el.offsetWidth; el.classList.add('bump');
-  history.push({id,prev:cur,action:"change"}); data[id]=next;
 
-  const addXp = prices[drink]||0; const before=levelOf((xp[person]||0));
-  xp[person]=(xp[person]||0)+addXp; const after=levelOf(xp[person]);
+  const xpDelta = prices[drink]||0;
+  history.push({type:"inc", id, prev:cur, person, xpDelta});   // <- speichere XP-Delta
+  data[id]=next;
+
+  const before=levelOf((xp[person]||0));
+  xp[person]=(xp[person]||0)+xpDelta;
+  const after=levelOf(xp[person]);
   (after>before ? sLevel : sClick).play();
 
   updateTotalsFor(person); saveAll();
 }
+
 function updateTotalsFor(person){
   const tot = columnOrder.reduce((s,d)=>s+(data[`${person}_${d}`]||0)*prices[d],0);
   document.getElementById(`${person}_Total`).textContent=tot.toFixed(2);
-  buildTable(); /* refresh ring/progress */
+  buildTable(); // Ring neu zeichnen
 }
-function undoLast(){ const last=history.pop(); if(!last) return; if(last.action==="change"){ data[last.id]=last.prev; } saveAll(); buildTable(); }
+
+function undoLast(){
+  const last=history.pop(); if(!last) return;
+  if(last.type==="inc"){                         // neuer Pfad mit XP-Delta
+    data[last.id]=last.prev;
+    if(last.person){ xp[last.person]=Math.max(0,(xp[last.person]||0)-(last.xpDelta||0)); }
+  }else if(last.action==="change"){              // Fallback für alte History-Einträge
+    data[last.id]=last.prev;
+    const parts=last.id.split('_'); const person=parts[0]; const drink=parts.slice(1).join('_');
+    xp[person]=Math.max(0,(xp[person]||0)-(prices[drink]||0));
+  }
+  saveAll(); buildTable();
+}
+
 function resetAll(){
   const pw=prompt("Passwort eingeben:"); if(pw!=="1379"){alert("Falsches Passwort");return;}
   if(!confirm("Alle Striche abrechnen und zurücksetzen?")) return;
