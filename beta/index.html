@@ -100,7 +100,16 @@
 /* ===== Config ===== */
 const CORE = ["Chris","Daniel","Elmi","Florian","Joel","Kevin","Kiste","Marco","Meli","Simon"];
 const firebaseConfig={apiKey:"AIzaSyBFHjGXI5yHyK0DyupS0bnTVAqlu6lvpNw",authDomain:"sickandsound-e9704.firebaseapp.com",projectId:"sickandsound-e9704",storageBucket:"sickandsound-e9704.firebasestorage.app",messagingSenderId:"248197359659",appId:"1:248197359659:web:a8777cbed3f83d6b1ca26e",measurementId:"G-62LH8V7S2E"};
-firebase.initializeApp(firebaseConfig); firebase.analytics(); const db=firebase.firestore();
+
+/* ===== Safe init Firebase (falls Script blockiert ist) ===== */
+let db=null;
+try{
+  if(window.firebase){
+    firebase.initializeApp(firebaseConfig);
+    try{ firebase.analytics(); }catch(_){}
+    db=firebase.firestore();
+  }
+}catch(_){ db=null; }
 
 /* ===== Prod/Beta Datenspeicher ===== */
 const STATE_COLLECTION = location.search.includes("beta") ? "state_beta" : "state";
@@ -113,9 +122,12 @@ let prices={"Cola_Zero":1.0,"Monster":1.5,"Wasser":0.5,"Kaffee":1.0,"Mittagessen
 let people=[], data={}, history=[], redoStack=[], bookings=[], columnOrder=Object.keys(prices), xp={};
 let deleteMode=false, hdToday=null;
 
-/* ===== Sounds & Level helpers ===== */
-const sClick=new Howl({src:["https://cdn.jsdelivr.net/gh/jshawl/howler-examples@master/audio/sfx/coin1.wav"]});
-const sLevel=new Howl({src:["https://cdn.jsdelivr.net/gh/jshawl/howler-examples@master/audio/sfx/powerUp5.wav"]});
+/* ===== Sounds (robust) ===== */
+const makeSound = (src)=> (window.Howl ? new Howl({src:[src]}) : {play:()=>{}});
+const sClick = makeSound("https://cdn.jsdelivr.net/gh/jshawl/howler-examples@master/audio/sfx/coin1.wav");
+const sLevel = makeSound("https://cdn.jsdelivr.net/gh/jshawl/howler-examples@master/audio/sfx/powerUp5.wav");
+
+/* ===== Helpers ===== */
 const todayStr=()=>new Date().toISOString().slice(0,10);
 const levelOf=x=>Math.floor(Math.sqrt(x/20))+1;
 const lvlMin=l=>20*(l-1)*(l-1), lvlNext=l=>20*l*l;
@@ -128,23 +140,36 @@ window.onmouseup=stopHold; window.onmouseleave=stopHold;
 
 /* ===== Load ===== */
 async function loadState(){
-  try{
-    const snap=await db.collection(STATE_COLLECTION).doc("global").get();
-    if(snap.exists){
-      const s=snap.data();
-      prices=s.prices||prices;
-      people=s.people||JSON.parse(localStorage.getItem(peopleKey))||[];
-      data=s.data||data;
-      history=s.history||history;
-      redoStack=s.redoStack||JSON.parse(localStorage.getItem(redoKey))||[];
-      bookings=s.bookings||bookings;
-      columnOrder=s.columnOrder||Object.keys(prices);
-      xp=s.xp||xp;
-    }else{
+  // Daten aus Firestore (wenn möglich), sonst LocalStorage
+  if(db){
+    try{
+      const snap=await db.collection(STATE_COLLECTION).doc("global").get();
+      if(snap.exists){
+        const s=snap.data();
+        prices=s.prices||prices;
+        people=s.people||JSON.parse(localStorage.getItem(peopleKey))||[];
+        data=s.data||data;
+        history=s.history||history;
+        redoStack=s.redoStack||JSON.parse(localStorage.getItem(redoKey))||[];
+        bookings=s.bookings||bookings;
+        columnOrder=s.columnOrder||Object.keys(prices);
+        xp=s.xp||xp;
+      }else{
+        people=JSON.parse(localStorage.getItem(peopleKey))||[];
+        redoStack=JSON.parse(localStorage.getItem(redoKey))||[];
+      }
+    }catch(e){
+      // Fallback auf LocalStorage
+      prices=JSON.parse(localStorage.getItem(pricesKey))||prices;
       people=JSON.parse(localStorage.getItem(peopleKey))||[];
+      data=JSON.parse(localStorage.getItem(dataKey))||data;
+      history=JSON.parse(localStorage.getItem(historyKey))||history;
       redoStack=JSON.parse(localStorage.getItem(redoKey))||[];
+      bookings=JSON.parse(localStorage.getItem(bookingsKey))||bookings;
+      columnOrder=JSON.parse(localStorage.getItem(orderKey))||Object.keys(prices);
+      xp=JSON.parse(localStorage.getItem(xpKey))||xp;
     }
-  }catch(e){
+  }else{
     prices=JSON.parse(localStorage.getItem(pricesKey))||prices;
     people=JSON.parse(localStorage.getItem(peopleKey))||[];
     data=JSON.parse(localStorage.getItem(dataKey))||data;
@@ -154,9 +179,16 @@ async function loadState(){
     columnOrder=JSON.parse(localStorage.getItem(orderKey))||Object.keys(prices);
     xp=JSON.parse(localStorage.getItem(xpKey))||xp;
   }
+
+  // Core immer oben
   CORE.forEach(n=>{ if(!people.includes(n)) people.push(n); });
-  saveAll(); buildTable(); updateTodayBanner(); subscribeRealtime(); updateUndoRedoButtons();
-  await ensureXpFromExistingStricheAfterLoad(); // einmalig Striche als XP übernehmen
+
+  saveAll();
+  buildTable();
+  updateTodayBanner();
+  subscribeRealtime();
+  updateUndoRedoButtons();
+  await ensureXpFromExistingStricheAfterLoad();
 }
 
 /* ===== Migration: vorhandene Striche -> XP (ohne Doppelzählung) ===== */
@@ -184,13 +216,16 @@ function saveAll(){
   localStorage.setItem(bookingsKey,JSON.stringify(bookings));
   localStorage.setItem(orderKey,JSON.stringify(columnOrder));
   localStorage.setItem(xpKey,JSON.stringify(xp));
-  db.collection(STATE_COLLECTION).doc("global").set(
-    {prices,people,data,history,redoStack,bookings,columnOrder,xp},
-    {merge:true}
-  );
+  if(db){
+    db.collection(STATE_COLLECTION).doc("global").set(
+      {prices,people,data,history,redoStack,bookings,columnOrder,xp},
+      {merge:true}
+    ).catch(()=>{});
+  }
 }
 
 function subscribeRealtime(){
+  if(!db) return;
   db.collection(STATE_COLLECTION).doc("global").onSnapshot(snap=>{
     if(!snap.exists) return;
     const s=snap.data();
@@ -201,23 +236,32 @@ function subscribeRealtime(){
     buildTable(); updateTodayBanner(); updateUndoRedoButtons();
   });
   db.collection("hausdienst").doc(todayStr()).onSnapshot(doc=>{
-    hdToday = doc.exists ? doc.data().person : null;
+    hdToday = doc && doc.exists ? doc.data().person : null;
     updateTodayBanner(hdToday); buildTable();
   });
 }
 
 /* ===== Banner ===== */
 async function updateTodayBanner(existing){
-  let person=existing;
-  if(person===undefined){
-    const d=await db.collection("hausdienst").doc(todayStr()).get();
-    person = d.exists ? d.data().person : null;
+  try{
+    let person=existing;
+    if(person===undefined){
+      if(db){
+        const d=await db.collection("hausdienst").doc(todayStr()).get();
+        person = d.exists ? d.data().person : null;
+      }else{
+        person=null;
+      }
+    }
+    hdToday=person;
+    const el=document.getElementById("todayInfo");
+    el.innerHTML = person
+      ? `Heute eingetragener Hausdienst: <span class="badge ok">${person}</span> · <a href="hausdienst_checklist.html" class="badge gold" style="text-decoration:none">Checkliste öffnen</a>`
+      : `Heute: <span class="badge none">Noch niemand eingetragen</span>`;
+  }catch(e){
+    const el=document.getElementById("todayInfo");
+    el.textContent = "Heute: Status nicht verfügbar (offline?)";
   }
-  hdToday=person;
-  const el=document.getElementById("todayInfo");
-  el.innerHTML = person
-    ? `Heute eingetragener Hausdienst: <span class="badge ok">${person}</span> · <a href="hausdienst_checklist.html" class="badge gold" style="text-decoration:none">Checkliste öffnen</a>`
-    : `Heute: <span class="badge none">Noch niemand eingetragen</span>`;
 }
 
 /* ===== Undo/Redo helpers ===== */
@@ -270,20 +314,21 @@ function buildTable(){
   });
   html += `<th>Gesamt (€)</th></tr></thead><tbody>`;
 
-  const ring = (xpVal)=>{
+  const ring = (xpVal, person)=>{
     const lvl = levelOf(xpVal), min=lvlMin(lvl), next=lvlNext(lvl);
     const pct = Math.max(0, Math.min(100, ((xpVal-min)/(next-min))*100));
     const r=22, c=2*Math.PI*r, off=c*(1-pct/100);
+    const gid = "grad_" + person.replace(/[^a-z0-9]/gi,'');
     return `
       <div class="lvl-ring" aria-label="Level ${lvl}">
         <svg width="52" height="52" viewBox="0 0 52 52" style="transform:rotate(-90deg)">
           <defs>
-            <linearGradient id="grad" x1="0" y1="0" x2="1" y2="1">
+            <linearGradient id="${gid}" x1="0" y1="0" x2="1" y2="1">
               <stop offset="0%" stop-color="var(--accent)"/><stop offset="100%" stop-color="var(--accent-2)"/>
             </linearGradient>
           </defs>
           <circle class="ring-bg" cx="26" cy="26" r="${r}" />
-          <circle class="ring-fg" cx="26" cy="26" r="${r}" stroke-dasharray="${c}" stroke-dashoffset="${off}" />
+          <circle class="ring-fg" cx="26" cy="26" r="${r}" stroke="url(#${gid})" stroke-dasharray="${c}" stroke-dashoffset="${off}" />
         </svg>
         <div class="val">Lv. ${lvl}</div>
       </div>`;
@@ -294,7 +339,7 @@ function buildTable(){
     const hdClass = (hdToday===p) ? "hd-today" : "";
     let r = `<tr class="${hdClass}"><th style="text-align:left">
       <div class="person-cell">
-        ${ring(xpVal)}
+        ${ring(xpVal, p)}
         <div class="p-info">
           <div class="p-name">${p}</div>
         </div>
@@ -327,7 +372,8 @@ function buildTable(){
   }
   html += `</tbody></table>
            <div class="add-row" onclick="openPersonModal()">➕ Person hinzufügen</div>`;
-  document.getElementById("tableContainer").innerHTML = html;
+  const container=document.getElementById("tableContainer");
+  if(container) container.innerHTML = html;
 }
 
 /* ===== Interactions (mit Undo/Redo) ===== */
@@ -335,12 +381,12 @@ function headerClick(drink){ if(deleteMode) deleteColumn(drink); }
 
 function inc(id,drink,person){
   const el=document.getElementById(id);
-  const cur=parseInt(el.textContent||'0'); const next=cur+1;
-  el.textContent=next; el.classList.remove('bump'); void el.offsetWidth; el.classList.add('bump');
+  const cur=parseInt(el?.textContent||'0'); const next=cur+1;
+  if(el){ el.textContent=next; el.classList.remove('bump'); void el.offsetWidth; el.classList.add('bump'); }
 
   const xpDelta = prices[drink]||0;
   history.push({type:"inc", id, prev:cur, person, xpDelta});
-  redoStack = []; // neuer Schritt löscht die "Zukunft"
+  redoStack = [];
   data[id]=next;
 
   const before=levelOf((xp[person]||0));
