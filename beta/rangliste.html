@@ -3,65 +3,88 @@
 <head>
   <meta charset="UTF-8" />
   <title>Ranglisten</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#0b0e14" />
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <link rel="manifest" href="manifest.webmanifest">
   <link rel="stylesheet" href="style.css" />
   <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;800&display=swap" rel="stylesheet" />
 </head>
 <body>
-  <div class="container">
-    <div class="card">
-      <h1>🏆 Ranglisten</h1>
-      <div class="sub">Einzahlungen · Hausdienst (nur Kernteam) · Level</div>
-      <div style="display:flex;gap:10px;margin-top:10px;flex-wrap:wrap">
-        <button class="btn ghost" onclick="window.location='index.html'">⬅ Zur Strichliste</button>
-        <button class="btn ghost" onclick="window.location='hausdienst.html'">🏠 Hausdienst</button>
-      </div>
-    </div>
+<div class="app">
+  <header class="appbar">
+    <div class="app-title"><div class="brand-dot"></div><h1>Ranglisten</h1></div>
+  </header>
+
+  <main class="content">
     <div class="card table-wrap" id="money"></div>
-    <div class="card table-wrap" id="hausdienst"></div>
-    <div class="card table-wrap" id="levels"></div>
-  </div>
+    <div class="card table-wrap" id="hausdienst" style="margin-top:12px"></div>
+    <div class="card table-wrap" id="levels" style="margin-top:12px"></div>
+  </main>
 
-  <script src="https://www.gstatic.com/firebasejs/12.0.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/12.0.0/firebase-analytics-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/12.0.0/firebase-firestore-compat.js"></script>
-  <script>
-    const CORE=["Chris","Daniel","Elmi","Florian","Joel","Kevin","Kiste","Marco","Meli","Simon"];
-    const firebaseConfig={apiKey:"AIzaSyBFHjGXI5yHyK0DyupS0bnTVAqlu6lvpNw",authDomain:"sickandsound-e9704.firebaseapp.com",projectId:"sickandsound-e9704",storageBucket:"sickandsound-e9704.firebasestorage.app",messagingSenderId:"248197359659",appId:"1:248197359659:web:a8777cbed3f83d6b1ca26e",measurementId:"G-62LH8V7S2E"};
-    firebase.initializeApp(firebaseConfig); firebase.analytics(); const db=firebase.firestore();
-    const levelOf=x=>Math.floor(Math.sqrt(x/20))+1;
+  <nav class="bottomnav">
+    <a class="tab" href="index.html">
+      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M4 6h16v2H4zM4 11h16v2H4zM4 16h10v2H4z"/></svg>
+      <span>Liste</span>
+    </a>
+    <a class="tab" href="hausdienst.html">
+      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 3l9 7-1.2 1.6L18 10.1V20h-5v-6H11v6H6v-9.9L4.2 11.6 3 10z"/></svg>
+      <span>Hausdienst</span>
+    </a>
+    <a class="tab active" href="rangliste.html">
+      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M7 17H3V7h4v10zm7 0h-4V3h4v14zm7 0h-4v-8h4v8z"/></svg>
+      <span>Rang</span>
+    </a>
+    <a class="tab" href="buchungen.html">
+      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 2h9l5 5v13a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2zm8 1.5V8h4.5L14 3.5z"/></svg>
+      <span>Buchungen</span>
+    </a>
+  </nav>
+</div>
 
-    async function load(){
-      const s=await db.collection("state").doc("global").get();
-      const st=s.exists?s.data():{}; const people=st.people||[]; const bookings=st.bookings||[]; const xp=st.xp||{};
-      // Money
-      const sums={}; people.forEach(p=>sums[p]=0);
-      bookings.forEach(b=>{ sums[b.person]=(sums[b.person]||0)+Number(b.sum||0); });
-      const arrMoney=Object.entries(sums).sort((a,b)=>b[1]-a[1]);
-      document.getElementById("money").innerHTML=buildTable("💰 Einzahlungen (All-time)",["Platz","Person","Summe €"],
-        arrMoney.map(([p,v],i)=>[i+1,p,v.toFixed(2)]));
+<script src="https://www.gstatic.com/firebasejs/12.0.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/12.0.0/firebase-analytics-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/12.0.0/firebase-firestore-compat.js"></script>
+<script>
+  const CORE=["Chris","Daniel","Elmi","Florian","Joel","Kevin","Kiste","Marco","Meli","Simon"];
+  const firebaseConfig={apiKey:"AIzaSyBFHjGXI5yHyK0DyupS0bnTVAqlu6lvpNw",authDomain:"sickandsound-e9704.firebaseapp.com",projectId:"sickandsound-e9704",storageBucket:"sickandsound-e9704.firebasestorage.app",messagingSenderId:"248197359659",appId:"1:248197359659:web:a8777cbed3f83d6b1ca26e",measurementId:"G-62LH8V7S2E"};
+  firebase.initializeApp(firebaseConfig); firebase.analytics(); const db=firebase.firestore();
+  const levelOf=x=>Math.floor(Math.sqrt(x/20))+1;
 
-      // Hausdienst nur Kernteam
-      const docs=await db.collection("hausdienst").get(); const today=new Date().toISOString().slice(0,10);
-      const cnt={}; CORE.forEach(p=>cnt[p]=0);
-      docs.forEach(d=>{ if(d.id<=today){ const person=d.data().person; if(CORE.includes(person)) cnt[person]++; } });
-      const arrHd=Object.entries(cnt).sort((a,b)=>b[1]-a[1]);
-      document.getElementById("hausdienst").innerHTML=buildTable("🧹 Hausdienst (nur Kernteam, bis heute)",["Platz","Person","Tage"],
-        arrHd.map(([p,v],i)=>[i+1,p,v]));
+  async function load(){
+    const s=await db.collection("state").doc("global").get();
+    const st=s.exists?s.data():{}; const people=st.people||[]; const bookings=st.bookings||[]; const xp=st.xp||{};
 
-      // Level
-      const arrLv=Object.entries(xp).sort((a,b)=>b[1]-a[1]);
-      document.getElementById("levels").innerHTML=buildTable("🎮 Level (XP)",["Platz","Person","Level","XP"],
-        arrLv.map(([p,x],i)=>[i+1,p,"Lv. "+levelOf(x),x]));
-    }
+    // Money ranking
+    const sums={}; people.forEach(p=>sums[p]=0);
+    bookings.forEach(b=>{ sums[b.person]=(sums[b.person]||0)+Number(b.sum||0); });
+    const arrMoney=Object.entries(sums).sort((a,b)=>b[1]-a[1]);
+    document.getElementById("money").innerHTML=buildTable("💰 Einzahlungen (All-time)",["Platz","Person","Summe €"],
+      arrMoney.map(([p,v],i)=>[i+1,p,v.toFixed(2)]));
 
-    function buildTable(title,heads,rows){
-      const h=heads.map(h=>`<th>${h}</th>`).join("");
-      const r=rows.map(row=>`<tr>${row.map(c=>`<td>${c}</td>`).join("")}</tr>`).join("");
-      return `<h2>${title}</h2><table><thead><tr>${h}</tr></thead><tbody>${r}</tbody></table>`;
-    }
+    // Hausdienst nur Kernteam
+    const docs=await db.collection("hausdienst").get(); const today=new Date().toISOString().slice(0,10);
+    const cnt={}; CORE.forEach(p=>cnt[p]=0);
+    docs.forEach(d=>{ if(d.id<=today){ const person=d.data().person; if(CORE.includes(person)) cnt[person]++; } });
+    const arrHd=Object.entries(cnt).sort((a,b)=>b[1]-a[1]);
+    document.getElementById("hausdienst").innerHTML=buildTable("🧹 Hausdienst (nur Kernteam, bis heute)",["Platz","Person","Tage"],
+      arrHd.map(([p,v],i)=>[i+1,p,v]));
 
-    window.onload=load;
-  </script>
+    // Level
+    const arrLv=Object.entries(xp).sort((a,b)=>b[1]-a[1]);
+    document.getElementById("levels").innerHTML=buildTable("🎮 Level (XP)",["Platz","Person","Level","XP"],
+      arrLv.map(([p,x],i)=>[i+1,p,"Lv. "+levelOf(x),x]));
+  }
+
+  function buildTable(title,heads,rows){
+    const h=heads.map(h=>`<th>${h}</th>`).join("");
+    const r=rows.map(row=>`<tr>${row.map(c=>`<td>${c}</td>`).join("")}</tr>`).join("");
+    return `<h2 class="section-title">${title}</h2><table><thead><tr>${h}</tr></thead><tbody>${r}</tbody></table>`;
+  }
+
+  if('serviceWorker' in navigator){ navigator.serviceWorker.register('./sw.js').catch(()=>{}); }
+  window.onload=load;
+</script>
 </body>
 </html>
