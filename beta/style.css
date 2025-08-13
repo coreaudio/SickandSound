@@ -1,107 +1,68 @@
-/* ====== Base / Layout ====== */
 :root{
-  --bg:#0b0e14;
-  --panel:#141926;
-  --panel-2:#101521;
-  --txt:#e9eefb;
-  --muted:#94a3b8;
-  --accent:#00e0b8;
-  --accent-2:#7c3aed;
-  --danger:#ff4d4f;
-  --gold:#ffd700;
+  --bg:#0b0e14;--panel:#141926;--panel-2:#101521;--txt:#e9eefb;--muted:#94a3b8;
+  --accent:#00e0b8;--accent-2:#7c3aed;--danger:#ff4d4f;--gold:#ffd700
 }
 *{box-sizing:border-box}
-html,body{
-  height:100%;
-  margin:0;
-  font-family: ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Orbitron", sans-serif;
-  color:var(--txt);
-  background: radial-gradient(1200px 800px at 100% -20%, #0f1b2d 0%, var(--bg) 60%) no-repeat fixed;
-}
-.container{
-  max-width:1200px;
-  margin:0 auto;
-  padding:18px;
-  min-height:100%;
-  display:flex;
-  flex-direction:column;
-  gap:14px;
-}
-
-/* ====== Card ====== */
-.card{
-  background: linear-gradient(180deg, var(--panel), var(--panel-2));
-  border:1px solid rgba(255,255,255,.06);
-  border-radius:16px;
-  box-shadow: 0 10px 30px rgba(0,0,0,.35), inset 0 1px 0 rgba(255,255,255,.03);
-  padding:14px;
-}
-
-/* ====== Headings ====== */
-h1{font-size:28px;margin:6px 0 2px 0; letter-spacing:.5px}
+html,body{height:100%;margin:0;background:radial-gradient(1200px 800px at 100% -20%,#0f1b2d 0%,var(--bg) 60%) fixed;
+  color:var(--txt);font-family:ui-sans-serif,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,"Orbitron",sans-serif}
+.container{max-width:1200px;margin:0 auto;min-height:100%;padding:18px;display:flex;flex-direction:column;gap:14px}
+.card{background:linear-gradient(180deg,var(--panel),var(--panel-2));border:1px solid rgba(255,255,255,.06);
+  border-radius:16px;box-shadow:0 10px 30px rgba(0,0,0,.35),inset 0 1px 0 rgba(255,255,255,.03);padding:14px}
+h1{font-size:28px;margin:6px 0 2px 0;letter-spacing:.5px}
 h2{font-size:20px;margin:0 0 8px 0}
 .sub{color:var(--muted);font-size:13px}
 
-/* ====== Table ====== */
+/* Tables */
 .table-wrap{overflow:auto}
 table{width:100%;border-collapse:collapse;table-layout:fixed}
 th,td{padding:8px;border-bottom:1px solid rgba(255,255,255,.06);text-align:center}
 th{font-weight:700;font-size:14px;color:#fff}
 td{font-size:14px}
 td:last-child{font-weight:700;color:var(--gold)}
+.section-row td{padding:10px 8px;background:rgba(255,255,255,.04);font-weight:800;color:#cbd5e1}
 
-/* ====== Buttons ====== */
-.btn{
-  -webkit-tap-highlight-color: transparent;
-  padding:10px 14px;
-  border:none;border-radius:10px;
-  font-weight:700;font-size:14px;
-  color:#000;background:var(--accent);
-  box-shadow:0 10px 20px rgba(0,224,184,.15), inset 0 1px 0 rgba(255,255,255,.25);
-  cursor:pointer; user-select:none;
-}
+/* Buttons */
+.btn{-webkit-tap-highlight-color:transparent;padding:10px 14px;border:none;border-radius:10px;font-weight:700;font-size:14px;
+  color:#000;background:var(--accent);box-shadow:0 10px 20px rgba(0,224,184,.15),inset 0 1px 0 rgba(255,255,255,.25);cursor:pointer;user-select:none}
 .btn:active{transform:translateY(1px)}
-.btn.secondary{background:#3b82f6; color:#fff}
+.btn.secondary{background:#3b82f6;color:#fff}
 .btn.dark{background:#242b3a;color:#fff}
 .btn.danger{background:var(--danger);color:#fff}
 .btn.warning{background:#f59e0b;color:#141414}
 .btn.ghost{background:transparent;color:#fff;border:1px solid rgba(255,255,255,.18)}
 .btn.small{padding:8px 10px;font-size:13px;border-radius:9px}
-
-/* ====== Footer ====== */
 .footer{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;margin-top:auto}
 
-/* ====== Badge / States ====== */
-.badge{
-  padding:2px 8px;border-radius:8px;font-size:12px;font-weight:800;display:inline-block
-}
-.badge.ok{background:rgba(0,224,184,.18); color:var(--accent)}
-.badge.none{background:rgba(255,255,255,.08); color:#e5e7eb}
-.badge.gold{background:rgba(255,215,0,.15); color:var(--gold)}
-.cell-mark{background:rgba(0,224,184,.18);border-radius:8px;padding:2px 6px}
+/* Badges */
+.badge{padding:2px 8px;border-radius:8px;font-size:12px;font-weight:800;display:inline-block}
+.badge.ok{background:rgba(0,224,184,.18);color:var(--accent)}
+.badge.none{background:rgba(255,255,255,.08);color:#e5e7eb}
+.badge.gold{background:rgba(255,215,0,.15);color:var(--gold)}
 
-/* ====== Modal ====== */
+/* Level / Progress */
+.lvl-wrap{display:flex;flex-direction:column;gap:4px}
+.lvl-line{font-size:12px;color:#cbd5e1}
+.progress{height:8px;background:#0e1422;border-radius:6px;overflow:hidden}
+.progress > span{display:block;height:100%;background:linear-gradient(90deg,var(--accent),var(--accent-2));width:0%}
+
+/* Modals */
 .modal{position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,.6);z-index:50}
 .modal.show{display:flex}
 .modal .box{width:min(92vw,520px);background:var(--panel);border:1px solid rgba(255,255,255,.07);border-radius:16px;padding:16px}
 
-/* ====== Inputs ====== */
-input,select{
-  width:100%;padding:12px;border-radius:10px;border:1px solid rgba(255,255,255,.08);
-  background:#0e1422;color:#fff;font-size:15px;outline:none
-}
+/* Inputs */
+input,select{width:100%;padding:12px;border-radius:10px;border:1px solid rgba(255,255,255,.08);background:#0e1422;color:#fff;font-size:15px;outline:none}
 input::placeholder{color:#91a0b5}
 
-/* ====== Add Row ====== */
+/* Add Row */
 .add-row{padding:12px;text-align:center;color:var(--accent);font-weight:800;border:1px dashed rgba(0,224,184,.3);border-radius:12px;cursor:pointer}
 .add-row:hover{background:rgba(0,224,184,.06)}
 
-/* ====== PayPal QR ====== */
+/* PayPal QR */
 .qr{max-width:60%;max-height:60%;border:8px solid #fff;border-radius:16px}
 
-/* ====== iPad touch ====== */
-button, .btn{min-height:44px}
-th button.btn.small{min-height:36px}
+/* Touch */
+button,.btn{min-height:44px}
 
-/* Hausdienst Markierung in Tabelle */
-.hausdienst-head{background:rgba(0,224,184,.18)}
+/* Highlight row for heutigem Hausdienst */
+.hd-today{background:rgba(0,224,184,.12)}
