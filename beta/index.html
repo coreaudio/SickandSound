@@ -287,4 +287,56 @@ function updateTotalsFor(person){
   document.getElementById(`${person}_Total`).textContent=tot.toFixed(2);
   buildTable(); /* refresh ring/progress */
 }
-function undoLast(){ const last=history.pop(); if(!last) return; if(last.action==="change"){ data[last.id]=last.prev; } saveAll(); buildTable();
+function undoLast(){ const last=history.pop(); if(!last) return; if(last.action==="change"){ data[last.id]=last.prev; } saveAll(); buildTable(); }
+function resetAll(){
+  const pw=prompt("Passwort eingeben:"); if(pw!=="1379"){alert("Falsches Passwort");return;}
+  if(!confirm("Alle Striche abrechnen und zurücksetzen?")) return;
+  people.forEach(p=>{
+    const sum = columnOrder.reduce((s,d)=>s+(data[`${p}_${d}`]||0)*prices[d],0);
+    if(sum>0) bookings.push({date:new Date().toLocaleDateString("de-DE"), person:p, sum});
+    xp[p]=(xp[p]||0)+sum; columnOrder.forEach(d=>data[`${p}_${d}`]=0);
+  });
+  saveAll(); buildTable();
+}
+
+/* Modals & helpers */
+function openDrinkModal(){ document.getElementById("drinkModal").classList.add("show"); }
+function openPersonModal(){ document.getElementById("personModal").classList.add("show"); }
+function closeModal(id){ document.getElementById(id).classList.remove("show"); }
+function togglePayPal(){ document.getElementById("paypalModal").classList.toggle("show"); }
+
+function confirmAddPerson(){
+  const name=document.getElementById("personName").value.trim(); if(!name) return alert("Bitte Namen eingeben");
+  if(people.includes(name)) return alert("Person existiert bereits");
+  people.push(name); saveAll(); buildTable(); closeModal('personModal'); document.getElementById("personName").value="";
+}
+function confirmAddDrink(){
+  const name=document.getElementById("drinkName").value.trim(), price=parseFloat(document.getElementById("drinkPrice").value);
+  if(!name||isNaN(price)||price<=0) return alert("Bitte gültige Eingaben");
+  const key=name.replace(/\s+/g,'_'); prices[key]=price; if(!columnOrder.includes(key)) columnOrder.push(key);
+  saveAll(); buildTable(); closeModal('drinkModal'); document.getElementById("drinkName").value=""; document.getElementById("drinkPrice").value="";
+}
+
+/* Delete mode (global) */
+function toggleDeleteMode(){
+  deleteMode=!deleteMode; const btn=document.getElementById("deleteBtn");
+  btn.textContent = deleteMode ? "❌ Abbrechen" : "🗑 Löschen";
+  btn.classList.toggle("ghost", deleteMode);
+}
+function deletePerson(p){
+  if(!deleteMode) return; if(CORE.includes(p)){ alert("Kernteam kann nicht gelöscht werden."); toggleDeleteMode(); return; }
+  if(!confirm(`${p} wirklich löschen?`)) return;
+  people=people.filter(x=>x!==p); saveAll(); buildTable(); toggleDeleteMode();
+}
+function deleteColumn(drink){
+  if(!deleteMode) return; if(!confirm(`Getränk "${drink}" löschen?`)) return;
+  delete prices[drink]; columnOrder=columnOrder.filter(d=>d!==drink); saveAll(); buildTable(); toggleDeleteMode();
+}
+
+/* SW (PWA) */
+if('serviceWorker' in navigator){ navigator.serviceWorker.register('./sw.js').catch(()=>{}); }
+
+window.onload=loadState;
+</script>
+</body>
+</html>
