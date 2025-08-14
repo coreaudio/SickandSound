@@ -10,35 +10,55 @@
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="stylesheet" href="style.css" />
   <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;800&display=swap" rel="stylesheet" />
+  <style>
+    /* Zusatz-UI für Tabs/Filter (leicht, app-like) */
+    .segmented { display:flex; gap:8px; flex-wrap:wrap; }
+    .segmented .tabbtn { padding:8px 12px; border-radius:999px; background:#1c2130; color:#e6e8ef; border:1px solid #2a3042; }
+    .segmented .tabbtn.active { background:linear-gradient(135deg,#6ee7ff,#a78bfa); color:#0b0e14; border-color:transparent; font-weight:800; }
+    .toolbar { display:flex; gap:10px; flex-wrap:wrap; align-items:center; }
+    .toolbar input, .toolbar select { flex:1 1 auto; min-width:160px; }
+    .groupTitle { font-weight:800; letter-spacing:.2px; }
+    @media (max-width: 420px){
+      .toolbar { flex-direction:column; align-items:stretch; }
+    }
+  </style>
 </head>
 <body>
 <div class="app">
   <header class="appbar">
     <div class="app-title"><div class="brand-dot"></div><h1>Checkliste</h1></div>
     <div class="appbar-actions">
-      <a class="btn small dark" href="hausdienst.html">🏠</a>
+      <a class="btn small dark" href="hausdienst.html" title="Zur Planung">🏠</a>
     </div>
   </header>
 
   <main class="content">
     <div class="card" style="margin-bottom:12px">
-      <div class="section-title">Aufgaben</div>
-      <div class="sub">Aufgaben dauerhaft gespeichert · Haken gilt nur heute</div>
+      <div class="section-title">Hausdienst</div>
+      <div class="sub">Aufgaben sind dauerhaft gespeichert · Haken gilt nur heute</div>
 
-      <div style="display:flex;gap:10px;margin-top:8px;flex-wrap:wrap">
+      <!-- Reiter/Tabs -->
+      <div class="segmented" id="catTabs" style="margin-top:10px"></div>
+
+      <!-- Eingabe + Filter -->
+      <div class="toolbar" style="margin-top:10px">
         <input id="newTask" placeholder="Neue Aufgabe hinzufügen…">
+        <select id="newTaskCat" title="Kategorie">
+          <option value="morgens">Morgens</option>
+          <option value="tag">Im Laufe des Tages</option>
+          <option value="abend">Bevor man geht</option>
+        </select>
         <button class="btn" onclick="addTask()">Hinzufügen</button>
       </div>
 
-      <!-- Filter -->
       <div id="filters" style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px">
-        <button id="fOpen"    class="btn small secondary" onclick="setMode('open')">Offen</button>
-        <button id="fDone"    class="btn small ghost"     onclick="setMode('done')">Erledigt</button>
-        <button id="fAll"     class="btn small ghost"     onclick="setMode('all')">Alle</button>
+        <button id="fOpen" class="btn small secondary" onclick="setMode('open')">Offen</button>
+        <button id="fDone" class="btn small ghost" onclick="setMode('done')">Erledigt</button>
+        <button id="fAll"  class="btn small ghost" onclick="setMode('all')">Alle</button>
       </div>
     </div>
 
-    <div class="card table-wrap" id="list"></div>
+    <div class="card table-wrap" id="list"><div class="sub">Lade Aufgaben…</div></div>
   </main>
 
   <nav class="bottomnav">
@@ -61,100 +81,123 @@
   </nav>
 </div>
 
+<!-- Firebase -->
 <script src="https://www.gstatic.com/firebasejs/12.0.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/12.0.0/firebase-analytics-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/12.0.0/firebase-firestore-compat.js"></script>
 <script>
   const firebaseConfig={apiKey:"AIzaSyBFHjGXI5yHyK0DyupS0bnTVAqlu6lvpNw",authDomain:"sickandsound-e9704.firebaseapp.com",projectId:"sickandsound-e9704",storageBucket:"sickandsound-e9704.firebasestorage.app",messagingSenderId:"248197359659",appId:"1:248197359659:web:a8777cbed3f83d6b1ca26e",measurementId:"G-62LH8V7S2E"};
-  firebase.initializeApp(firebaseConfig); firebase.analytics(); const db=firebase.firestore();
+  // robust init
+  let db=null;
+  try{
+    if(window.firebase){ firebase.initializeApp(firebaseConfig); try{firebase.analytics();}catch(_){ } db=firebase.firestore(); }
+  }catch(_){ db=null; }
+
+  // Kategorien (fixe Reihenfolge)
+  const CATS = [
+    {key:"morgens", label:"Morgens"},
+    {key:"tag",     label:"Im Laufe des Tages"},
+    {key:"abend",   label:"Bevor man geht"},
+  ];
+  let showCat = localStorage.getItem("hausdienst_cat") || "morgens";   // aktiver Reiter
+  let showMode= localStorage.getItem("hausdienst_filter_mode") || "open"; // open|done|all
 
   const today=new Date().toISOString().slice(0,10);
   const CHECKED_KEY="hausdienst_checked_"+today;
   let checked=JSON.parse(localStorage.getItem(CHECKED_KEY)||"{}");
-  let tasksCache=[];
-  let showMode=localStorage.getItem("hausdienst_filter_mode")||"open"; // 'open' | 'done' | 'all'
+  let tasksCache=[]; // {id, text, cat, createdAt}
 
   function saveChecked(){ localStorage.setItem(CHECKED_KEY,JSON.stringify(checked)); }
-  function setMode(m){
-    showMode=m;
-    localStorage.setItem("hausdienst_filter_mode", m);
-    updateFilterButtons();
-    render(); // neu zeichnen
+  function setMode(m){ showMode=m; localStorage.setItem("hausdienst_filter_mode",m); updateFilterButtons(); render(); }
+  function setCat(c){
+    showCat=c; localStorage.setItem("hausdienst_cat",c);
+    // Select für „neue Aufgabe“ auf aktiven Reiter setzen
+    const sel=document.getElementById('newTaskCat'); if(sel) sel.value=c;
+    updateTabs(); updateFilterButtons(); render();
   }
+
+  function updateTabs(){
+    const wrap=document.getElementById("catTabs");
+    wrap.innerHTML = CATS.map(c=>`
+      <button class="tabbtn ${c.key===showCat?'active':''}" onclick="setCat('${c.key}')">${c.label}</button>
+    `).join("");
+  }
+
   function updateFilterButtons(){
-    const openCnt = tasksCache.filter(t=>!checked[t.id]).length;
-    const doneCnt = tasksCache.filter(t=> checked[t.id]).length;
-    const allCnt  = tasksCache.length;
+    const byCat = tasksCache.filter(t=>t.cat===showCat);
+    const openCnt = byCat.filter(t=>!checked[t.id]).length;
+    const doneCnt = byCat.filter(t=> checked[t.id]).length;
+    const allCnt  = byCat.length;
 
-    const fOpen=document.getElementById("fOpen");
-    const fDone=document.getElementById("fDone");
-    const fAll =document.getElementById("fAll");
-
-    fOpen.textContent = `Offen (${openCnt})`;
-    fDone.textContent = `Erledigt (${doneCnt})`;
-    fAll.textContent  = `Alle (${allCnt})`;
-
-    fOpen.className = "btn small " + (showMode==="open" ? "secondary" : "ghost");
-    fDone.className = "btn small " + (showMode==="done" ? "secondary" : "ghost");
-    fAll.className  = "btn small " + (showMode==="all"  ? "secondary" : "ghost");
+    const fOpen=document.getElementById("fOpen"), fDone=document.getElementById("fDone"), fAll=document.getElementById("fAll");
+    fOpen.textContent=`Offen (${openCnt})`; fDone.textContent=`Erledigt (${doneCnt})`; fAll.textContent=`Alle (${allCnt})`;
+    fOpen.className="btn small "+(showMode==="open"?"secondary":"ghost");
+    fDone.className="btn small "+(showMode==="done"?"secondary":"ghost");
+    fAll.className ="btn small "+(showMode==="all" ?"secondary":"ghost");
   }
 
   async function addTask(){
     const txt=document.getElementById('newTask').value.trim(); if(!txt) return;
-    await db.collection("checklistTasks").add({text:txt, createdAt:Date.now()});
+    const cat=document.getElementById('newTaskCat').value || showCat;
+    if(!db){ alert("Offline – kann nicht speichern."); return; }
+    await db.collection("checklistTasks").add({text:txt, cat, createdAt:Date.now()});
     document.getElementById('newTask').value="";
   }
   async function delTask(id){
     if(!confirm("Aufgabe löschen?")) return;
+    if(!db){ alert("Offline – kann nicht löschen."); return; }
     await db.collection("checklistTasks").doc(id).delete();
     delete checked[id]; saveChecked();
   }
   function toggle(id){
-    checked[id]=!checked[id];
-    saveChecked();
-    render(); // bleibt im aktuellen Modus; offene bleiben sichtbar, erledigte werden ggf. ausgeblendet
+    checked[id]=!checked[id]; saveChecked(); render();
   }
 
   function render(snap){
     if(snap && snap.forEach){
-      tasksCache=[]; snap.forEach(d=>tasksCache.push({id:d.id,...d.data()}));
+      tasksCache=[]; snap.forEach(d=>tasksCache.push({id:d.id, ...d.data()}));
     }
+    // Filter je Reiter/Modus
+    let list = tasksCache.filter(t=>t.cat===showCat);
+
+    // Sortierung: zuerst createdAt (falls vorhanden), sonst alphabetisch
+    list.sort((a,b)=>{
+      const ac=a.createdAt||0, bc=b.createdAt||0;
+      if(ac!==bc) return ac-bc;
+      return (a.text||"").localeCompare(b.text||"");
+    });
 
     updateFilterButtons();
 
-    const openTasks = tasksCache.filter(t=>!checked[t.id]).sort((a,b)=>a.text.localeCompare(b.text));
-    const doneTasks = tasksCache.filter(t=> checked[t.id]).sort((a,b)=>a.text.localeCompare(b.text));
-
-    let rows = "";
-    let headCols = "";
+    let rows="", headCols="";
+    const openList = list.filter(t=>!checked[t.id]);
+    const doneList = list.filter(t=> checked[t.id]);
 
     if(showMode==="open"){
-      headCols = `<th style="text-align:left">Aufgabe</th><th>Aktion</th><th>—</th>`;
-      rows = (openTasks.length ? openTasks : []).map(t=>`
+      headCols=`<th style="text-align:left">Aufgabe</th><th>Aktion</th><th>—</th>`;
+      rows = openList.map(t=>`
         <tr>
-          <td style="text-align:left">${t.text}</td>
+          <td style="text-align:left">${escapeHtml(t.text||"")}</td>
           <td><button class="btn small" onclick="toggle('${t.id}')">✅ erledigt</button></td>
           <td><button class="btn small ghost" onclick="delTask('${t.id}')">Löschen</button></td>
         </tr>`).join("");
-      if(!rows) rows = `<tr><td colspan="3">Alle Aufgaben erledigt 🎉 — „Erledigt“ zeigt abgehakte an.</td></tr>`;
-    }
-    else if(showMode==="done"){
-      headCols = `<th style="text-align:left">Erledigt</th><th>Aktion</th><th>—</th>`;
-      rows = (doneTasks.length ? doneTasks : []).map(t=>`
+      if(!rows) rows=`<tr><td colspan="3">Alle Aufgaben in „${labelOf(showCat)}“ erledigt 🎉 — „Erledigt“ zeigt Haken.</td></tr>`;
+    }else if(showMode==="done"){
+      headCols=`<th style="text-align:left">Erledigt</th><th>Aktion</th><th>—</th>`;
+      rows = doneList.map(t=>`
         <tr>
-          <td style="text-align:left">${t.text}</td>
+          <td style="text-align:left">${escapeHtml(t.text||"")}</td>
           <td><button class="btn small warning" onclick="toggle('${t.id}')">↩️ rückgängig</button></td>
           <td><button class="btn small ghost" onclick="delTask('${t.id}')">Löschen</button></td>
         </tr>`).join("");
-      if(!rows) rows = `<tr><td colspan="3">Keine erledigten Aufgaben heute.</td></tr>`;
-    }
-    else{ // all
-      headCols = `<th style="text-align:left">Aufgabe</th><th>Status</th><th>Aktion</th>`;
-      const allList = [...openTasks.map(t=>({t,done:false})), ...doneTasks.map(t=>({t,done:true}))];
+      if(!rows) rows=`<tr><td colspan="3">Keine erledigten Aufgaben in „${labelOf(showCat)}“.</td></tr>`;
+    }else{ // all
+      headCols=`<th style="text-align:left">Aufgabe</th><th>Status</th><th>Aktion</th>`;
+      const allList=[...openList.map(t=>({t,done:false})), ...doneList.map(t=>({t,done:true}))];
       rows = allList.map(({t,done})=>`
         <tr>
-          <td style="text-align:left">${t.text}</td>
-          <td>${done ? "✅" : "⬜️"}</td>
+          <td style="text-align:left">${escapeHtml(t.text||"")}</td>
+          <td>${done?"✅":"⬜️"}</td>
           <td>
             <button class="btn small ${done?'warning':''}" onclick="toggle('${t.id}')">
               ${done ? "↩️ rückgängig" : "✅ erledigt"}
@@ -162,23 +205,78 @@
             <button class="btn small ghost" style="margin-left:6px" onclick="delTask('${t.id}')">Löschen</button>
           </td>
         </tr>`).join("");
-      if(!rows) rows = `<tr><td colspan="3">Noch keine Aufgaben vorhanden.</td></tr>`;
+      if(!rows) rows=`<tr><td colspan="3">Noch keine Aufgaben in „${labelOf(showCat)}“.</td></tr>`;
     }
 
     document.getElementById("list").innerHTML = `
-      <table>
-        <thead><tr>${headCols}</tr></thead>
-        <tbody>${rows}</tbody>
-      </table>`;
+      <h2 class="groupTitle">${labelOf(showCat)}</h2>
+      <table><thead><tr>${headCols}</tr></thead><tbody>${rows}</tbody></table>`;
   }
 
-  // Live-Updates
-  db.collection("checklistTasks").onSnapshot(render);
+  function labelOf(cat){
+    const f=CATS.find(c=>c.key===cat); return f?f.label:cat;
+  }
+  function escapeHtml(s){ return (s||"").replace(/[&<>"']/g, m=>({ "&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#039;" }[m])); }
+
+  // ---- Defaults nur hier (einmalig) anlegen ----
+  async function ensureDefaults(){
+    if(!db) return;
+    const snap=await db.collection("checklistTasks").limit(1).get();
+    if(!snap.empty) return; // schon Inhalt vorhanden
+
+    const defs = [
+      {cat:"morgens", text:"Briefkasten leeren"},
+      {cat:"morgens", text:"Spülmaschine ausräumen"},
+      {cat:"morgens", text:"Toilettenpapier & Zewa auffüllen"},
+      {cat:"morgens", text:"Getränke auffüllen"},
+      {cat:"morgens", text:"Staubsauger Wasser checken"},
+      {cat:"tag",     text:"Wäsche an machen & aufhängen"},
+      {cat:"tag",     text:"Pakete entgegennehmen"},
+      {cat:"tag",     text:"Für Grundordnung sorgen"},
+      {cat:"abend",   text:"Oberflächen in der Küche + Geräte wischen"},
+      {cat:"abend",   text:"Müll rausbringen & mitnehmen"},
+    ];
+    const batch=db.batch();
+    defs.forEach(d=>{ const ref=db.collection("checklistTasks").doc(); batch.set(ref,{...d, createdAt:Date.now()}); });
+    await batch.commit();
+  }
+
+  // ---- Migration: alte Einträge mit Präfix → {cat, text} ----
+  async function ensureCategories(){
+    if(!db) return;
+    const qs=await db.collection("checklistTasks").get();
+    const batch=db.batch();
+    let need=false;
+    qs.forEach(doc=>{
+      const t=doc.data(); if(t.cat) return;
+      let cat="tag", text=t.text||"";
+      const s=(text||"").toLowerCase();
+      if(s.startsWith("morgens:")){ cat="morgens"; text=text.replace(/^Morgens:\s*/i,""); }
+      else if(s.startsWith("im laufe des tages:")||s.startsWith("im laufe des tages")){ cat="tag"; text=text.replace(/^Im Laufe des Tages:? ?/i,""); }
+      else if(s.startsWith("bevor man geht:")||s.startsWith("bevor man geht")){ cat="abend"; text=text.replace(/^Bevor man geht:? ?/i,""); }
+      else { /* belasse text, default 'tag' */ }
+      batch.set(doc.ref,{cat, text},{merge:true}); need=true;
+    });
+    if(need) await batch.commit();
+  }
+
+  // Live-Updates & Start
+  async function init(){
+    updateTabs();
+    const sel=document.getElementById('newTaskCat'); sel.value=showCat;
+
+    if(db){
+      await ensureDefaults();
+      await ensureCategories();
+      db.collection("checklistTasks").onSnapshot(render, ()=>render());
+    }else{
+      document.getElementById("list").innerHTML = `<div class="sub">Offline – Aufgaben können nicht geladen werden.</div>`;
+    }
+    updateFilterButtons();
+  }
 
   if('serviceWorker' in navigator){ navigator.serviceWorker.register('./sw.js').catch(()=>{}); }
-
-  // Initial UI state
-  updateFilterButtons();
+  init();
 </script>
 </body>
 </html>
