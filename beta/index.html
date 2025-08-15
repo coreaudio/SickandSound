@@ -11,30 +11,38 @@
   <link rel="stylesheet" href="style.css" />
   <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;800&display=swap" rel="stylesheet" />
   <style>
-    /* ---- kompakte Onepage-Optimierung (überschreibt style.css minimal) ---- */
+    /* ---- Onepage-Optimierung für Tablet ---- */
     :root{
-      --ring: 44px;        /* wird per JS dynamisch skaliert */
-      --row-pad: 6px;      /* vertikales Padding in Zeilen */
-      --name-size: 16px;   /* Schriftgröße der Namen */
+      --ring: 48px;          /* wird per JS auf verfügbare Höhe skaliert */
+      --row-pad: 6px;        /* vertikales Padding in Zeilen */
+      --name-size: 18px;     /* Schriftgröße Namen */
+      --count-size: 17px;    /* Schriftgröße Zähler */
+      --cell-gap: 10px;
     }
-    .content{ padding-bottom: 96px; } /* Platz für Bottomnav */
-    .card.table-wrap table td, .card.table-wrap table th{ padding-top: var(--row-pad); padding-bottom: var(--row-pad); }
-    .lvl-ring{ width: var(--ring); height: var(--ring); }
-    .lvl-ring .val{ font-size: 11px; font-weight: 800; }
-    .person-cell{ display:flex; align-items:center; gap:8px; }
-    .p-name{ font-size: var(--name-size); font-weight: 800; letter-spacing:.2px; }
-    .section-title{ font-size: 14px; }
-    .drink-chip .drink-name{ font-size: 12px; }
-    .drink-chip .drink-price{ font-size: 11px; opacity:.8 }
-    .plus-btn{ padding:6px 10px; }
-    .footer{ flex-wrap:wrap; gap:8px }
+    .content{ padding-bottom: 88px; } /* Platz für Bottomnav */
     .appbar{ min-height: 52px; }
     .bottomnav{ height: 64px; }
-    /* schmale Zellen */
-    .card.table-wrap table td .cell{ gap:8px }
-    .count{ font-size: 16px; min-width: 22px; }
-    /* Gäste-Trenner dezenter */
+
+    .card.table-wrap table td, .card.table-wrap table th{
+      padding-top: var(--row-pad);
+      padding-bottom: var(--row-pad);
+    }
+    .lvl-ring{ width: var(--ring); height: var(--ring); }
+    .lvl-ring .val{ font-size: 12px; font-weight: 800; }
+    .person-cell{ display:flex; align-items:center; gap:10px; }
+    .p-name{ font-size: var(--name-size); font-weight: 800; letter-spacing:.2px; }
+
+    .drink-chip .drink-name{ font-size: 12px; }
+    .drink-chip .drink-price{ font-size: 11px; opacity:.8 }
+
+    .cell{ display:flex; align-items:center; justify-content:flex-end; gap: var(--cell-gap); }
+    .count{ font-size: var(--count-size); min-width: 24px; text-align:right; }
+    .plus-btn{ padding:8px 12px; }
+
     .section-row td{ font-size:12px; opacity:.7 }
+    .guest-toggle{ margin:10px 0 -2px; display:flex; justify-content:center; }
+    .guest-toggle .btn{ min-width: 200px; }
+    .section-title{ font-size: 14px; }
   </style>
 </head>
 <body>
@@ -63,7 +71,7 @@
 
     <div class="card" style="margin-top:8px">
       <div class="section-title">Aktionen</div>
-      <div class="footer">
+      <div class="footer" style="gap:8px;flex-wrap:wrap">
         <button class="btn warning" id="undoBtn" onclick="undoLast()">↩ Rückgängig</button>
         <button class="btn secondary" id="redoBtn" onclick="redoLast()">↪ Wiederholen</button>
         <button class="btn danger" id="deleteBtn" onclick="toggleDeleteMode()">🗑 Löschen</button>
@@ -146,7 +154,7 @@ const pricesKey="sick_sound_prices", peopleKey="sick_sound_people", dataKey="sic
       xpKey="sick_sound_xp", redoKey="sick_sound_redo";
 let prices={"Cola_Zero":1.0,"Monster":1.5,"Wasser":0.5,"Kaffee":1.0,"Mittagessen":6.0};
 let people=[], data={}, history=[], redoStack=[], bookings=[], columnOrder=Object.keys(prices), xp={};
-let deleteMode=false, hdToday=null;
+let deleteMode=false, hdToday=null, showGuests=false;
 
 /* ===== Sound helpers ===== */
 const makeSound = (src)=> (window.Howl ? new Howl({src:[src]}) : {play:()=>{}});
@@ -177,9 +185,19 @@ function startHold(handler){ stopHold(); handler(); holdT=setTimeout(()=>{holdI=
 function stopHold(){ if(holdT) clearTimeout(holdT); if(holdI) clearInterval(holdI); holdT=holdI=null; }
 window.onmouseup=stopHold; window.onmouseleave=stopHold;
 
+/* ===== Mini-Patch: Auto-Refresh um 00:00 ===== */
+function scheduleMidnightRefresh(cb){
+  const now=new Date();
+  const mid=new Date(now.getFullYear(),now.getMonth(),now.getDate()+1,0,0,2);
+  setTimeout(()=>{ try{ cb(); } finally { scheduleMidnightRefresh(cb); } }, mid-now);
+}
+/* beim Zurückkehren in die App auch aktualisieren */
+document.addEventListener('visibilitychange', () => {
+  if (!document.hidden) { updateTodayBanner(); buildTable(); }
+});
+
 /* ===== Load ===== */
 async function loadState(){
-  // Load Firestore wenn möglich, sonst LocalStorage
   if(db){
     try{
       const snap=await db.collection(STATE_COLLECTION).doc("global").get();
@@ -202,7 +220,6 @@ async function loadState(){
     fallbackLoad();
   }
 
-  // Kernteam immer vorhanden
   CORE.forEach(n=>{ if(!people.includes(n)) people.push(n); });
 
   saveAll();
@@ -211,7 +228,9 @@ async function loadState(){
   subscribeRealtime();
   updateUndoRedoButtons();
   await ensureXpFromExistingStricheAfterLoad();
-  await seedChecklistDefaults();    // Hausdienst-Standardaufgaben einmalig befüllen
+
+  /* Mini-Patch aktivieren */
+  scheduleMidnightRefresh(()=>{ updateTodayBanner(); buildTable(); });
 }
 
 function fallbackLoad(){
@@ -363,7 +382,8 @@ function buildTable(){
     const min = 20*(lvl-1)*(lvl-1);
     const max = 20* lvl   * lvl;
     const p   = Math.max(0, Math.min(1, (x - min) / (max - min) ));
-    const r=22, c=2*Math.PI*r, off=(1-p)*c;
+    const r=parseInt(getComputedStyle(document.documentElement).getPropertyValue('--ring'))/2|0 || 22;
+    const c=2*Math.PI*r, off=(1-p)*c;
     const gid = "grad_" + person.replace(/[^a-z0-9]/gi,'') + "_" + lvl;
 
     return `
@@ -413,37 +433,54 @@ function buildTable(){
   };
 
   core.forEach(p=> html += row(p));
-  if(guests.length){
-    html += `<tr class="section-row"><td colspan="${columnOrder.length+2}">— Gäste —</td></tr>`;
-    guests.forEach(p=> html += row(p));
-  }
-  html += `</tbody></table>
-           <div class="add-row" onclick="openPersonModal()">➕ Person hinzufügen</div>`;
-  const container=document.getElementById("tableContainer");
-  if(container) container.innerHTML = html;
+  html += `</tbody></table>`;
 
-  // --- Onepage-Autofit: Zeilen dynamisch skalieren, damit 10 Kernteam-Zeilen auf eine Seite passen
+  // Gäste optional einklappen
+  let guestHtml = "";
+  const guestsList = people.filter(n=>!CORE.includes(n)).sort((a,b)=>a.localeCompare(b));
+  if(guestsList.length){
+    guestHtml += `<div class="guest-toggle"><button class="btn ghost" onclick="toggleGuests()">
+      ${showGuests ? "Gäste ausblenden" : `Gäste anzeigen (${guestsList.length})`}</button></div>`;
+    if(showGuests){
+      guestHtml += `<div style="margin-top:6px"><table><tbody>
+        <tr class="section-row"><td colspan="${columnOrder.length+2}">— Gäste —</td></tr>
+        ${guestsList.map(p=>row(p)).join("")}
+      </tbody></table></div>`;
+    }
+  }
+
+  document.getElementById("tableContainer").innerHTML = html + guestHtml;
+
+  // Onepage-Autofit nur für Kernteam anwenden
   requestAnimationFrame(adjustToOnePage);
 }
 
+/* Gäste ein/aus */
+function toggleGuests(){ showGuests=!showGuests; buildTable(); }
+
+/* ---- Onepage-Autofit: skaliert Zeilenhöhe/Schrift/Ring damit 10 Kernteam-Zeilen + Header in den Viewport passen ---- */
 function adjustToOnePage(){
   const appbar = document.querySelector('.appbar')?.offsetHeight || 0;
   const bottom = document.querySelector('.bottomnav')?.offsetHeight || 0;
-  const cards = Array.from(document.querySelectorAll('.content .card'))
-                .filter((el,i)=> i!==1 ); // alle Karten außer der Tabelle summieren
-  const other = appbar + bottom + cards.reduce((s,c)=> s + c.offsetHeight, 0) + 24; // + etwas Margin
+  const cards = Array.from(document.querySelectorAll('.content .card')).filter((el,i)=> i!==1 );
+  const other = appbar + bottom + cards.reduce((s,c)=> s + c.offsetHeight, 0) + 20;
+
   const avail = window.innerHeight - other;
-  const coreCount = CORE.length;               // 10
-  const headRows  = 1;                         // Tabellenkopf
-  const rowsTotal = coreCount + headRows + 1;  // +1 für Summenzeile Puffer
+  const headH = 36;              // angenommene Höhe Tabellenkopf
+  const coreCount = 10;          // fix: Kernteam
+  const rowsTotal = coreCount;   // nur Kernteamzeilen sollen passen
 
-  let rowH = Math.max(44, Math.min(68, Math.floor(avail / rowsTotal)));
-  let ring = Math.max(36, Math.min(52, rowH - 14));
-  let name = Math.max(14, Math.min(18, Math.floor(rowH * 0.38)));
+  let rowH = Math.max(42, Math.min(72, Math.floor((avail - headH) / rowsTotal)));
+  let ring = Math.max(36, Math.min(56, rowH - 10));
+  let name = Math.max(18, Math.min(22, Math.floor(rowH * 0.45)));
+  let count= Math.max(16, Math.min(20, Math.floor(rowH * 0.40)));
+  let pad  = Math.max(4, Math.floor((rowH - 34)/2));
 
-  document.documentElement.style.setProperty('--row-pad', Math.max(4, Math.floor((rowH-32)/2))+'px');
+  document.documentElement.style.setProperty('--row-pad', pad+'px');
   document.documentElement.style.setProperty('--ring', ring+'px');
   document.documentElement.style.setProperty('--name-size', name+'px');
+  document.documentElement.style.setProperty('--count-size', count+'px');
+  document.documentElement.style.setProperty('--cell-gap', Math.max(8, Math.floor(rowH*0.22))+'px');
 }
 
 /* ===== Interactions ===== */
@@ -519,44 +556,6 @@ function confirmAddDrink(){
   if(!name||isNaN(price)||price<=0) return alert("Bitte gültige Eingaben");
   const key=name.replace(/\s+/g,'_'); prices[key]=price; if(!columnOrder.includes(key)) columnOrder.push(key);
   saveAll(); buildTable(); closeModal('drinkModal'); document.getElementById("drinkName").value=""; document.getElementById("drinkPrice").value="";
-}
-
-/* ===== Hausdienst Checkliste – Default-Aufgaben einmalig anlegen ===== */
-async function seedChecklistDefaults(){
-  const seededKey="checklist_seeded_v2";
-  if(localStorage.getItem(seededKey)) return; // schon erledigt (lokal)
-  const defaults = [
-    // Morgens
-    "Morgens: Briefkasten leeren",
-    "Morgens: Spülmaschine ausräumen",
-    "Morgens: Toilettenpapier & Zewa auffüllen",
-    "Morgens: Getränke auffüllen",
-    "Morgens: Staubsauger Wasser checken",
-    // Im Laufe des Tages
-    "Im Laufe des Tages: Wäsche an machen & aufhängen",
-    "Im Laufe des Tages: Pakete entgegennehmen",
-    "Im Laufe des Tages: Für Grundordnung sorgen",
-    // Bevor man geht
-    "Bevor man geht: Oberflächen in der Küche + Geräte wischen",
-    "Bevor man geht: Müll rausbringen & mitnehmen"
-  ];
-  try{
-    if(db){
-      const snap=await db.collection("checklistTasks").limit(1).get();
-      if(snap.empty){
-        const batch=db.batch();
-        defaults.forEach(t=>{
-          const ref=db.collection("checklistTasks").doc();
-          batch.set(ref,{text:t, createdAt:Date.now()});
-        });
-        await batch.commit();
-      }
-    }else{
-      // offline: in LocalStorage vormerken (Hausdienst-Seite kann sie einlesen)
-      localStorage.setItem("checklistTasks_offline_seed", JSON.stringify(defaults.map(t=>({text:t, createdAt:Date.now()}))));
-    }
-    localStorage.setItem(seededKey,"1");
-  }catch(_){}
 }
 
 /* SW (PWA) */
