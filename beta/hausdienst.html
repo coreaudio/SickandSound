@@ -258,4 +258,148 @@
 
   async function updateTodayInfo(){
     if(!db){ document.getElementById('todayInfo').textContent="Heute: (offline)"; return; }
-    const d=await db.collection("hausdienst")
+    const d=await db.collection("hausdienst").doc(todayStr()).get();
+    const person = d.exists ? d.data().person : null;
+    document.getElementById('todayInfo').innerHTML = person
+      ? `Heute eingetragener Hausdienst: <span class="badge ok">${person}</span>`
+      : `Heute: <span class="badge none">Noch niemand eingetragen</span>`;
+  }
+
+  /* Checkliste */
+  const CATS = [
+    {key:"all",    label:"Übersicht"},
+    {key:"morgens",label:"Morgens"},
+    {key:"tag",    label:"Im Laufe des Tages"},
+    {key:"abend",  label:"Bevor man geht"},
+  ];
+  let showCat = localStorage.getItem("hausdienst_cat") || "all";
+  let showMode= localStorage.getItem("hausdienst_filter_mode") || "open";
+
+  const CHECKED_KEY="hausdienst_checked_"+todayStr();
+  let checked=JSON.parse(localStorage.getItem(CHECKED_KEY)||"{}");
+  let tasksCache=[];
+
+  function saveChecked(){ localStorage.setItem(CHECKED_KEY,JSON.stringify(checked)); }
+  function setMode(m){ showMode=m; localStorage.setItem("hausdienst_filter_mode",m); updateFilterButtons(); renderTasks(); }
+  function setCat(c){
+    showCat=c; localStorage.setItem("hausdienst_cat",c);
+    const sel=document.getElementById('newTaskCat'); if(sel && c!=="all") sel.value=c;
+    updateCatTabs(); updateFilterButtons(); renderTasks();
+  }
+  function updateCatTabs(){
+    document.getElementById("catTabs").innerHTML = CATS.map(c=>
+      `<button class="tabbtn ${c.key===showCat?'active':''}" onclick="setCat('${c.key}')">${c.label}</button>`
+    ).join("");
+  }
+  function labelOf(cat){ const f=CATS.find(c=>c.key===cat); return f?f.label:cat; }
+  function escapeHtml(s){ return (s||"").replace(/[&<>"']/g, m=>({ "&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#039;" }[m])); }
+  function calcCounts(list){ return { open:list.filter(t=>!checked[t.id]).length, done:list.filter(t=>checked[t.id]).length, all:list.length }; }
+  function updateFilterButtons(){
+    const inCat = (showCat==="all") ? tasksCache : tasksCache.filter(t=>t.cat===showCat);
+    const cnt = calcCounts(inCat);
+    const fOpen=document.getElementById("fOpen"), fDone=document.getElementById("fDone"), fAll=document.getElementById("fAll");
+    fOpen.textContent=`Offen (${cnt.open})`; fDone.textContent=`Erledigt (${cnt.done})`; fAll.textContent=`Alle (${cnt.all})`;
+    fOpen.className="btn small "+(showMode==="open"?"secondary":"ghost");
+    fDone.className="btn small "+(showMode==="done"?"secondary":"ghost");
+    fAll.className ="btn small "+(showMode==="all" ?"secondary":"ghost");
+  }
+
+  async function addTask(){
+    const txt=document.getElementById('newTask').value.trim(); if(!txt) return;
+    const sel=document.getElementById('newTaskCat'); const cat= sel ? (sel.value||"morgens") : "morgens";
+    if(!db) return alert("Offline – kann nicht speichern.");
+    await db.collection("checklistTasks").add({text:txt, cat, createdAt:Date.now()});
+    document.getElementById('newTask').value="";
+  }
+  async function delTask(id){
+    if(!confirm("Aufgabe löschen?")) return;
+    if(!db) return alert("Offline – kann nicht löschen.");
+    await db.collection("checklistTasks").doc(id).delete();
+    delete checked[id]; saveChecked();
+  }
+  function toggleTask(id){ checked[id]=!checked[id]; saveChecked(); renderTasks(); }
+
+  function renderGroup(catKey, label){
+    const base = tasksCache.filter(t=>t.cat===catKey)
+      .sort((a,b)=> (a.createdAt||0)-(b.createdAt||0) || (a.text||"").localeCompare(b.text||""));
+    let list = base;
+    if(showMode==="open") list = base.filter(t=>!checked[t.id]);
+    else if(showMode==="done") list = base.filter(t=>checked[t.id]);
+    const rows = list.map(t=>`
+      <tr>
+        <td style="text-align:left">${escapeHtml(t.text||"")}</td>
+        <td>${checked[t.id] ? "✅" : "⬜️"}</td>
+        <td>
+          <button class="btn small ${checked[t.id]?'warning':''}" onclick="toggleTask('${t.id}')">${checked[t.id] ? "↩️ rückgängig" : "✅ erledigt"}</button>
+          <button class="btn small ghost" style="margin-left:6px" onclick="delTask('${t.id}')">Löschen</button>
+        </td>
+      </tr>
+    `).join("");
+    const head = `<thead><tr><th style="text-align:left">Aufgabe</th><th>Status</th><th>Aktion</th></tr></thead>`;
+    const body = `<tbody>${rows || `<tr><td colspan="3">Keine Aufgaben in „${label}“.</td></tr>`}</tbody>`;
+    return `<h2 class="groupTitle">${label}</h2><table>${head}${body}</table>`;
+  }
+
+  function renderTasks(snap){
+    if(snap && snap.forEach){ tasksCache=[]; snap.forEach(d=>tasksCache.push({id:d.id, ...d.data()})); }
+    updateFilterButtons();
+    document.getElementById("list").innerHTML = (showCat==="all")
+      ? renderGroup("morgens","Morgens")+renderGroup("tag","Im Laufe des Tages")+renderGroup("abend","Bevor man geht")
+      : renderGroup(showCat, labelOf(showCat));
+  }
+
+  function todayString(){ return new Date().toISOString().slice(0,10); }
+  function dateDaysAgo(n){ const d=new Date(); d.setDate(d.getDate()-n); return d.toISOString().slice(0,10); }
+  async function renderHistory(){
+    if(!db){ document.getElementById('histList').textContent="Offline – keine Historie."; return; }
+    try{
+      const snap=await db.collection("hausdienst").get();
+      const all=[]; snap.forEach(doc=>all.push({id:doc.id, person:(doc.data().person||null)}));
+      const from=dateDaysAgo(30);
+      const rows=all
+        .filter(x=>x.id>=from && x.id<=todayString())
+        .sort((a,b)=>b.id.localeCompare(a.id))
+        .map(x=>`<tr><td>${x.id}</td><td>${x.person || "—"}</td></tr>`).join("");
+      document.getElementById('histList').innerHTML = `<table><thead><tr><th>Datum</th><th>Person</th></tr></thead><tbody>${rows || `<tr><td colspan="2">Keine Einträge.</td></tr>`}</tbody></table>`;
+    }catch(_){ document.getElementById('histList').innerHTML = `<div class="sub">Fehler beim Laden.</div>`; }
+  }
+
+  async function init(){
+    renderPeopleRow(); updateSelectionUI();
+    await updateTodayInfo(); await renderNextDays(); await renderHistory();
+
+    scheduleMidnightRefresh(async ()=>{ await updateTodayInfo(); await renderNextDays(); await renderHistory(); });
+
+    // Checkliste Defaults + Live
+    updateCatTabs();
+    const sel=document.getElementById('newTaskCat'); sel.value="morgens";
+    if(db){
+      const s=await db.collection("checklistTasks").limit(1).get();
+      if(s.empty){
+        const defs = [
+          {cat:"morgens", text:"Briefkasten leeren"},
+          {cat:"morgens", text:"Spülmaschine ausräumen"},
+          {cat:"morgens", text:"Toilettenpapier & Zewa auffüllen"},
+          {cat:"morgens", text:"Getränke auffüllen"},
+          {cat:"morgens", text:"Staubsauger Wasser checken"},
+          {cat:"tag",     text:"Wäsche an machen & aufhängen"},
+          {cat:"tag",     text:"Pakete entgegennehmen"},
+          {cat:"tag",     text:"Für Grundordnung sorgen"},
+          {cat:"abend",   text:"Oberflächen in der Küche + Geräte wischen"},
+          {cat:"abend",   text:"Müll rausbringen & mitnehmen"},
+        ];
+        const batch=db.batch(); defs.forEach(d=>batch.set(db.collection("checklistTasks").doc(),{...d,createdAt:Date.now()}));
+        await batch.commit();
+      }
+      db.collection("checklistTasks").onSnapshot(renderTasks, ()=>renderTasks());
+    }else{
+      document.getElementById("list").innerHTML = `<div class="sub">Offline – Aufgaben können nicht geladen werden.</div>`;
+    }
+    updateFilterButtons();
+  }
+
+  if('serviceWorker' in navigator){ navigator.serviceWorker.register('./sw.js').catch(()=>{}); }
+  init();
+</script>
+</body>
+</html>
