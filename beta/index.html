@@ -11,7 +11,6 @@
   <link rel="stylesheet" href="style.css" />
   <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;800&display=swap" rel="stylesheet" />
   <style>
-    /* --- Layout-Feinschliff für iPad Onepager --- */
     .appbar .app-title h1 { font-size: 18px; }
     .people-section { margin-top: 10px; }
     .section-title { margin-bottom: 6px; }
@@ -26,78 +25,38 @@
       border: 1px solid #1f2538;
       margin-bottom: 6px;
     }
-    .name {
-      font-size: 18px;
-      font-weight: 800;
-      letter-spacing: .2px;
-    }
+    .name { font-size: 18px; font-weight: 800; letter-spacing: .2px; }
 
     /* Level-Ring */
-    .avatar {
-      position: relative;
-      width: 56px; height: 56px;
-      display: grid; place-items: center;
-    }
-    .ring {
-      position:absolute; inset: -2px; /* genug Platz, damit nichts abgeschnitten wird */
-      transform: rotate(-90deg);
-    }
-    .ring circle {
-      fill: none;
-      stroke-width: 6;
-      stroke-linecap: round;
-    }
-    .ring .bg { stroke: #22304a; }
-    .ring .fg { stroke: url(#grad); transition: stroke-dashoffset .25s ease; }
+    .avatar { position: relative; width: 56px; height: 56px; display: grid; place-items: center; }
+    .ring { position:absolute; inset:-2px; transform: rotate(-90deg); }
+    .ring circle { fill:none; stroke-width:6; stroke-linecap:round; }
+    .ring .bg { stroke:#22304a; }
+    .ring .fg { stroke:url(#grad); transition:stroke-dashoffset .25s ease; }
+    .lvl { font-size:12px; font-weight:800; color:#aab3cf; position:absolute; bottom:-2px; left:0; right:0; text-align:center; }
 
-    .lvl {
-      font-size: 12px;
-      font-weight: 800;
-      color: #aab3cf;
-      position:absolute;
-      bottom:-2px; left:0; right:0;
-      text-align:center;
-    }
-
-    /* Getränkezeile (Zähler links, +1 rechts) */
-    .drinks { display:flex; gap:8px; flex-wrap: wrap; }
-    .pill {
-      display:flex; align-items:center; gap:8px;
-      padding: 8px;
-      border-radius: 12px;
-      background:#101626;
-      border:1px solid #202a42;
-      min-width: 120px;
-    }
-    .pill .amount { min-width: 28px; text-align:center; font-weight:800; color:#ced5ea; }
+    /* Getränke (Zähler links, +1 rechts) */
+    .drinks { display:flex; gap:8px; flex-wrap:wrap; }
+    .pill { display:flex; align-items:center; gap:8px; padding:8px; border-radius:12px; background:#101626; border:1px solid #202a42; min-width:120px; }
+    .pill .amount { min-width:28px; text-align:center; font-weight:800; color:#ced5ea; }
     .pill .label { font-weight:700; }
-    .pill .add {
-      margin-left:auto;
-      padding:6px 10px;
-      border-radius:10px;
-      background: linear-gradient(135deg, #6ee7ff, #a78bfa);
-      color:#0b0e14; font-weight:800; border:0;
-    }
+    .pill .add { margin-left:auto; padding:6px 10px; border-radius:10px; background:linear-gradient(135deg,#6ee7ff,#a78bfa); color:#0b0e14; font-weight:800; border:0; }
 
-    /* Gäste-Box */
     .guests .row { background:#0d111b; }
-
-    /* Undo-Zeile */
     .actions { display:flex; gap:10px; align-items:center; justify-content:space-between; margin-top:10px; }
 
-    /* QR / PayPal Button Icon */
+    /* PayPal Icon */
     .icon-paypal { width:22px; height:22px; display:block; }
     .btn.dark { color:#e6e8ef; }
 
-    /* Modal (QR) */
+    /* QR Modal */
     .modal { position:fixed; inset:0; display:none; background:rgba(0,0,0,.6); z-index:50; }
     .modal.open { display:grid; place-items:center; }
-    .sheet {
-      width:min(92vw, 460px);
-      background:#0b0e14; border:1px solid #22283a; border-radius:18px;
-      padding:14px;
-    }
+    .sheet { width:min(92vw,460px); background:#0b0e14; border:1px solid #22283a; border-radius:18px; padding:14px; }
     .sheet img { width:100%; height:auto; display:block; border-radius:12px; }
+
+    /* kleine Fehlermeldung */
+    .err { color:#ffb4b4; margin:6px 0 0 2px; }
   </style>
 </head>
 <body>
@@ -108,7 +67,7 @@
       <h1>Sick &amp; Sound – Strichliste</h1>
     </div>
     <div class="appbar-actions">
-      <!-- PayPal Button mit Inline-SVG -->
+      <!-- PayPal-QR Button -->
       <button id="qrBtn" class="btn small dark" title="PayPal QR">
         <svg class="icon-paypal" viewBox="0 0 64 64" aria-hidden="true">
           <path d="M18 10h17c10 0 16 5 16 13s-6 13-16 13h-12l-4 18h-9L18 10z" fill="currentColor"/>
@@ -122,6 +81,8 @@
   </header>
 
   <main class="content">
+    <div id="err" class="err"></div>
+
     <!-- Kernteam -->
     <section class="people-section" id="coreWrap">
       <div class="section-title">Kernteam</div>
@@ -193,25 +154,32 @@
   const K = { people:"sick_sound_people", prices:"sick_sound_prices", data:"sick_sound_data" };
 
   /* ---------- Level / XP ---------- */
-  // 1 Strich = 1 XP; alle 10 XP = +1 Level (Level 1 startet bei 0–9)
-  function levelFromXP(xp){ return Math.floor(xp/10)+1; }
-  function progressToNext(xp){
-    const pct = (xp % 10) / 10; // 0..1
-    return Math.max(0, Math.min(1, pct));
-  }
+  function levelFromXP(xp){ return Math.floor(xp/10)+1; }     // alle 10 XP -> neues Level
+  function progressToNext(xp){ return Math.max(0, Math.min(1, (xp%10)/10 )); }
 
-  /* ---------- UI Helpers ---------- */
-  function €(v){ return Number(v||0).toFixed(2).replace('.', ','); }
+  /* ---------- Helpers ---------- */
+  function euro(v){ return Number(v||0).toFixed(2).replace('.', ','); }
+  const dedupe = arr => Array.from(new Set(arr.filter(Boolean)));
+  function unionCore(people){
+    // CORE immer dabei, Gäste additiv (einmalig)
+    return dedupe([...CORE, ...(people||[])]);
+  }
+  function splitCoreGuests(all){
+    const set = new Set(all||[]);
+    const core  = CORE.filter(n=>set.has(n));             // CORE in definierter Reihenfolge
+    const guests= [...set].filter(n=>!CORE.includes(n)).sort((a,b)=>a.localeCompare(b));
+    return {core, guests};
+  }
   function sumCounts(person, prices, data){
-    let total = 0, euro = 0;
-    Object.keys(prices||{}).forEach(key=>{
-      const c = data[`${person}_${key}`] || 0;
-      total += c;
-      euro  += c * (prices[key]||0);
+    let total=0, sum=0;
+    Object.keys(prices||{}).forEach(d=>{
+      const c = data[`${person}_${d}`]||0;
+      total += c; sum += c*(prices[d]||0);
     });
-    return { total, euro };
+    return {total, euro:sum};
   }
 
+  /* ---------- Ring ---------- */
   function buildRingSVG(pct){
     const R=24, C=2*Math.PI*R, off = C*(1-pct);
     return `
@@ -221,91 +189,85 @@
             <stop offset="0%" stop-color="#6ee7ff"/><stop offset="100%" stop-color="#a78bfa"/>
           </linearGradient>
         </defs>
-        <circle class="bg" cx="30" cy="30" r="${R}" />
-        <circle class="fg" cx="30" cy="30" r="${R}" stroke-dasharray="${C}" stroke-dashoffset="${off}" />
+        <circle class="bg" cx="30" cy="30" r="${R}"/>
+        <circle class="fg" cx="30" cy="30" r="${R}" stroke-dasharray="${C}" stroke-dashoffset="${off}"/>
       </svg>`;
   }
 
   function personRowHTML(person, prices, data){
     const {total} = sumCounts(person, prices, data);
-    const lvl  = levelFromXP(total);
-    const pct  = progressToNext(total);
+    const lvl = levelFromXP(total), pct = progressToNext(total);
 
     const drinks = Object.keys(prices||{}).map(key=>{
       const amount = data[`${person}_${key}`] || 0;
-      return `
-        <div class="pill">
-          <div class="amount" id="amt_${person}_${key}">${amount}</div>
-          <div class="label">${key}</div>
-          <button class="add" onclick="add('${person}','${key}')">+1</button>
-        </div>`;
+      return `<div class="pill">
+        <div class="amount" id="amt_${person}_${key}">${amount}</div>
+        <div class="label">${key}</div>
+        <button class="add" onclick="add('${person}','${key}')">+1</button>
+      </div>`;
     }).join("");
 
-    return `
-      <div class="row" id="row_${person}">
-        <div class="avatar">
-          ${buildRingSVG(pct)}
-          <div class="lvl">Lvl ${lvl}</div>
-        </div>
-        <div>
-          <div class="name">${person}</div>
-          <div class="drinks">${drinks}</div>
-        </div>
-        <div style="text-align:right; font-weight:800; min-width:70px" id="sum_${person}">€ ${€(sumCounts(person, prices, data).euro)}</div>
-      </div>`;
+    return `<div class="row" id="row_${person}">
+      <div class="avatar">${buildRingSVG(pct)}<div class="lvl">Lvl ${lvl}</div></div>
+      <div><div class="name">${person}</div><div class="drinks">${drinks}</div></div>
+      <div style="text-align:right;font-weight:800;min-width:70px" id="sum_${person}">€ ${euro(sumCounts(person, prices, data).euro)}</div>
+    </div>`;
   }
 
   /* ---------- State ---------- */
   let state = { people:[], prices:{}, data:{} };
-  let lastAction = null; // {person, drink}
+  let lastAction = null;
 
   async function loadState(){
-    let sLocal = {
+    const local = {
       people: JSON.parse(localStorage.getItem(K.people)||"[]"),
       prices: JSON.parse(localStorage.getItem(K.prices)||"{}"),
       data  : JSON.parse(localStorage.getItem(K.data)||"{}")
     };
+
+    // Start mit Local Fallback
+    state.people = unionCore(local.people && local.people.length ? local.people : CORE);
+    state.prices = (local.prices && Object.keys(local.prices).length) ? local.prices : {"Bier":2.0,"Mate":1.5,"Wasser":1.0};
+    state.data   = local.data || {};
+
+    // Remote (falls vorhanden) hinein-mergen – aber NIE leere Werte übernehmen
     if(db){
       try{
         const snap = await db.collection(STATE_COLLECTION).doc("global").get();
         if(snap.exists){
-          const remote = snap.data();
-          state.people = remote.people || sLocal.people;
-          state.prices = remote.prices || sLocal.prices;
-          state.data   = remote.data   || sLocal.data;
-        }else{
-          state = sLocal;
+          const r = snap.data()||{};
+          if(Array.isArray(r.people) && r.people.length) state.people = unionCore(r.people);
+          if(r.prices && Object.keys(r.prices).length)   state.prices = r.prices;
+          if(r.data)                                     state.data   = r.data;
         }
-      }catch(_){ state = sLocal; }
-    }else{
-      state = sLocal;
+      }catch(e){ document.getElementById('err').textContent = "Hinweis: Konnte Cloud-State nicht laden ("+(e?.message||e)+")"; }
     }
   }
 
-  function saveStateDebounced(){
+  function persistLocal(){
     localStorage.setItem(K.people, JSON.stringify(state.people||[]));
     localStorage.setItem(K.prices, JSON.stringify(state.prices||{}));
     localStorage.setItem(K.data,   JSON.stringify(state.data||{}));
-    if(!db) return;
-    if(saveStateDebounced._t) clearTimeout(saveStateDebounced._t);
-    saveStateDebounced._t = setTimeout(()=> {
-      db.collection(STATE_COLLECTION).doc("global").set(state, {merge:true});
-    }, 350);
   }
-
-  function splitCoreGuests(all){
-    const core = [], guests=[];
-    (all||[]).forEach(p=> (CORE.includes(p) ? core : guests).push(p));
-    // Feste Reihenfolge im Kernteam
-    core.sort((a,b)=> CORE.indexOf(a)-CORE.indexOf(b));
-    guests.sort((a,b)=> a.localeCompare(b));
-    return {core, guests};
+  function saveCloudDebounced(){
+    persistLocal();
+    if(!db) return;
+    clearTimeout(saveCloudDebounced._t);
+    saveCloudDebounced._t = setTimeout(()=> {
+      db.collection(STATE_COLLECTION).doc("global").set(state,{merge:true});
+    }, 350);
   }
 
   function render(){
     const wrapCore  = document.getElementById("coreList");
     const wrapGuest = document.getElementById("guestList");
     const {core, guests} = splitCoreGuests(state.people);
+
+    if(!core.length && !guests.length){
+      document.getElementById('err').textContent = "Keine Personen gefunden – ich zeige dir das Kernteam, sobald Daten da sind.";
+    }else{
+      document.getElementById('err').textContent = "";
+    }
 
     wrapCore.innerHTML  = core.map(p=>personRowHTML(p, state.prices, state.data)).join("");
     wrapGuest.innerHTML = guests.map(p=>personRowHTML(p, state.prices, state.data)).join("");
@@ -317,35 +279,27 @@
     state.data[key] = (state.data[key]||0) + 1;
     lastAction = {person, drink};
     updatePerson(person);
-    saveStateDebounced();
+    saveCloudDebounced();
   }
-
   function undo(){
     if(!lastAction) return;
     const key = `${lastAction.person}_${lastAction.drink}`;
     const cur = state.data[key]||0;
-    if(cur>0){ state.data[key]=cur-1; updatePerson(lastAction.person); saveStateDebounced(); }
+    if(cur>0){ state.data[key]=cur-1; updatePerson(lastAction.person); saveCloudDebounced(); }
     lastAction = null;
   }
-
   function updatePerson(person){
-    // Betragsanzeige
     const sum = sumCounts(person, state.prices, state.data).euro;
-    const sumEl = document.getElementById(`sum_${person}`);
-    if(sumEl) sumEl.textContent = `€ ${€(sum)}`;
-    // Getränkecounter
+    const sumEl = document.getElementById(`sum_${person}`); if(sumEl) sumEl.textContent = `€ ${euro(sum)}`;
     Object.keys(state.prices||{}).forEach(dr=>{
-      const el=document.getElementById(`amt_${person}_${dr}`);
-      if(el) el.textContent = state.data[`${person}_${dr}`]||0;
+      const el=document.getElementById(`amt_${person}_${dr}`); if(el) el.textContent = state.data[`${person}_${dr}`]||0;
     });
-    // Level-Ring neu berechnen
     const total = sumCounts(person, state.prices, state.data).total;
     const lvl = levelFromXP(total), pct=progressToNext(total);
     const row=document.getElementById(`row_${person}`);
     if(row){
-      const ring = row.querySelector('.ring .fg');
-      const R=24, C=2*Math.PI*R, off = C*(1-pct);
-      if(ring){ ring.setAttribute('stroke-dasharray', C); ring.setAttribute('stroke-dashoffset', off); }
+      const R=24, C=2*Math.PI*R, off=C*(1-pct);
+      const fg=row.querySelector('.ring .fg'); if(fg){ fg.setAttribute('stroke-dasharray', C); fg.setAttribute('stroke-dashoffset', off); }
       const lv=row.querySelector('.lvl'); if(lv) lv.textContent = `Lvl ${lvl}`;
     }
   }
@@ -360,32 +314,26 @@
   /* ---------- Init ---------- */
   async function init(){
     await loadState();
-
-    // Fallback: falls noch keine Personen/Preise vorhanden sind
-    if(!state.people || !state.people.length){
-      state.people = [...CORE]; // Kernteam als Start
-    }
-    if(!state.prices || !Object.keys(state.prices).length){
-      // Standardpreise (kannst du später in buchungen.html anpassen)
-      state.prices = { "Bier":2.0, "Mate":1.5, "Wasser":1.0 };
-    }
-    state.data = state.data || {};
-
     render();
 
-    // Live-Updates von Firestore
+    // Live-Updates aus der Cloud – leere Werte werden ignoriert
     if(db){
       try{
-        firebase.firestore().collection(STATE_COLLECTION).doc("global")
-          .onSnapshot(snap=>{
-            if(!snap.exists) return;
-            const r=snap.data()||{};
-            state.people = r.people || state.people;
-            state.prices = r.prices || state.prices;
-            state.data   = r.data   || state.data;
+        db.collection(STATE_COLLECTION).doc("global").onSnapshot(snap=>{
+          if(!snap.exists) return;
+          const r=snap.data()||{};
+          const prev = {...state};
+          if(Array.isArray(r.people) && r.people.length) state.people = unionCore(r.people);
+          if(r.prices && Object.keys(r.prices).length)   state.prices = r.prices;
+          if(r.data)                                     state.data   = r.data;
+          // Nur neu rendern, wenn sich wirklich was geändert hat
+          if(JSON.stringify(prev.people)!==JSON.stringify(state.people) ||
+             JSON.stringify(prev.prices)!==JSON.stringify(state.prices) ||
+             JSON.stringify(prev.data)!==JSON.stringify(state.data)){
             render();
-          });
-      }catch(_){}
+          }
+        });
+      }catch(e){ document.getElementById('err').textContent = "Live-Update deaktiviert: "+(e?.message||e); }
     }
   }
   if('serviceWorker' in navigator){ navigator.serviceWorker.register('./sw.js').catch(()=>{}); }
