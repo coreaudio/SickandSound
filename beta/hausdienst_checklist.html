@@ -4,23 +4,17 @@
   <meta charset="UTF-8" />
   <title>Hausdienst – Checkliste</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <meta name="theme-color" content="#0b0e14" />
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="stylesheet" href="style.css" />
-  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;800&display=swap" rel="stylesheet" />
   <style>
-    /* Zusatz-UI für Tabs/Filter (leicht, app-like) */
-    .segmented { display:flex; gap:8px; flex-wrap:wrap; }
-    .segmented .tabbtn { padding:8px 12px; border-radius:999px; background:#1c2130; color:#e6e8ef; border:1px solid #2a3042; }
-    .segmented .tabbtn.active { background:linear-gradient(135deg,#6ee7ff,#a78bfa); color:#0b0e14; border-color:transparent; font-weight:800; }
-    .toolbar { display:flex; gap:10px; flex-wrap:wrap; align-items:center; }
-    .toolbar input, .toolbar select { flex:1 1 auto; min-width:160px; }
-    .groupTitle { font-weight:800; letter-spacing:.2px; }
-    @media (max-width: 420px){
-      .toolbar { flex-direction:column; align-items:stretch; }
-    }
+    .tabs{display:flex;gap:8px;margin-bottom:10px}
+    .tabs .btn{padding:8px 12px}
+    .group{margin-bottom:12px}
+    .group h3{margin:0 0 6px 0}
+    .task{display:flex;align-items:center;gap:10px;padding:8px;border-radius:10px;border:1px solid #222a3f;background:#0b0e14;margin-bottom:6px}
+    .task.done{opacity:.6; text-decoration:line-through}
+    .actions{display:flex;gap:8px;margin-top:8px}
+    .subtle{opacity:.8}
   </style>
 </head>
 <body>
@@ -28,255 +22,155 @@
   <header class="appbar">
     <div class="app-title"><div class="brand-dot"></div><h1>Checkliste</h1></div>
     <div class="appbar-actions">
-      <a class="btn small dark" href="hausdienst.html" title="Zur Planung">🏠</a>
+      <a class="btn small" href="hausdienst.html">Zurück</a>
     </div>
   </header>
 
   <main class="content">
-    <div class="card" style="margin-bottom:12px">
-      <div class="section-title">Hausdienst</div>
-      <div class="sub">Aufgaben sind dauerhaft gespeichert · Haken gilt nur heute</div>
-
-      <!-- Reiter/Tabs -->
-      <div class="segmented" id="catTabs" style="margin-top:10px"></div>
-
-      <!-- Eingabe + Filter -->
-      <div class="toolbar" style="margin-top:10px">
-        <input id="newTask" placeholder="Neue Aufgabe hinzufügen…">
-        <select id="newTaskCat" title="Kategorie">
-          <option value="morgens">Morgens</option>
-          <option value="tag">Im Laufe des Tages</option>
-          <option value="abend">Bevor man geht</option>
-        </select>
-        <button class="btn" onclick="addTask()">Hinzufügen</button>
-      </div>
-
-      <div id="filters" style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px">
-        <button id="fOpen" class="btn small secondary" onclick="setMode('open')">Offen</button>
-        <button id="fDone" class="btn small ghost" onclick="setMode('done')">Erledigt</button>
-        <button id="fAll"  class="btn small ghost" onclick="setMode('all')">Alle</button>
+    <div class="card">
+      <div class="section-title">Tag</div>
+      <div id="dateInfo" class="subtle"></div>
+      <div class="tabs">
+        <button class="btn" onclick="setFilter('open')">Nur offen</button>
+        <button class="btn" onclick="setFilter('all')">Alle</button>
+        <button class="btn" onclick="setFilter('done')">Erledigt</button>
       </div>
     </div>
 
-    <div class="card table-wrap" id="list"><div class="sub">Lade Aufgaben…</div></div>
+    <div class="card">
+      <div class="group">
+        <h3>Morgens</h3>
+        <div id="g_morning"></div>
+      </div>
+      <div class="group">
+        <h3>Im Laufe des Tages</h3>
+        <div id="g_day"></div>
+      </div>
+      <div class="group">
+        <h3>Bevor man geht</h3>
+        <div id="g_evening"></div>
+      </div>
+      <div class="actions">
+        <button class="btn" onclick="openAdd()">Aufgabe hinzufügen</button>
+        <button class="btn danger" onclick="clearDone()">Erledigte des Tages ausblenden</button>
+      </div>
+      <div class="subtle" style="margin-top:6px">Aufgabenliste wird dauerhaft gespeichert. Abhaken zählt nur für das heutige Datum.</div>
+    </div>
   </main>
 
   <nav class="bottomnav">
-    <a class="tab" href="index.html">
-      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M4 6h16v2H4zM4 11h16v2H4zM4 16h10v2H4z"/></svg>
-      <span>Liste</span>
-    </a>
-    <a class="tab active" href="hausdienst.html">
-      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 3l9 7-1.2 1.6L18 10.1V20h-5v-6H11v6H6v-9.9L4.2 11.6 3 10z"/></svg>
-      <span>Hausdienst</span>
-    </a>
-    <a class="tab" href="rangliste.html">
-      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M7 17H3V7h4v10zm7 0h-4V3h4v14zm7 0h-4v-8h4v8z"/></svg>
-      <span>Rang</span>
-    </a>
-    <a class="tab" href="buchungen.html">
-      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 2h9l5 5v13a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2zm8 1.5V8h4.5L14 3.5z"/></svg>
-      <span>Buchungen</span>
-    </a>
+    <a class="tab" href="index.html"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M4 6h16v2H4zM4 11h16v2H4zM4 16h10v2H4z"/></svg><span>Liste</span></a>
+    <a class="tab active" href="hausdienst_checklist.html"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 3l9 7-1.2 1.6L18 10.1V20h-5v-6H11v6H6v-9.9L4.2 11.6 3 10z"/></svg><span>Hausdienst</span></a>
+    <a class="tab" href="rangliste.html"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M7 17H3V7h4v10zm7 0h-4V3h4v14zm7 0h-4v-8h4v8z"/></svg><span>Rang</span></a>
+    <a class="tab" href="badges.html"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 1l3.09 6.26L22 8.27l-5 4.87L18.18 22 12 18.56 5.82 22 7 13.14 2 8.27l6.91-1.01L12 1z"/></svg><span>Badges</span></a>
+    <a class="tab" href="buchungen.html"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 2h9l5 5v13a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2zm8 1.5V8h4.5L14 3.5z"/></svg><span>Buchungen</span></a>
   </nav>
 </div>
+
+<!-- Add Modal -->
+<div class="modal" id="addModal"><div class="box">
+  <h2>Aufgabe hinzufügen</h2>
+  <select id="addGroup">
+    <option value="morning">Morgens</option>
+    <option value="day">Im Laufe des Tages</option>
+    <option value="evening">Bevor man geht</option>
+  </select>
+  <input id="addText" placeholder="Aufgabe…" style="margin-top:8px">
+  <div style="display:flex;gap:8px;margin-top:10px">
+    <button class="btn" onclick="confirmAdd()">Speichern</button>
+    <button class="btn dark" onclick="closeAdd()">Abbrechen</button>
+  </div>
+</div></div>
 
 <!-- Firebase -->
 <script src="https://www.gstatic.com/firebasejs/12.0.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/12.0.0/firebase-analytics-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/12.0.0/firebase-firestore-compat.js"></script>
 <script>
-  const firebaseConfig={apiKey:"AIzaSyBFHjGXI5yHyK0DyupS0bnTVAqlu6lvpNw",authDomain:"sickandsound-e9704.firebaseapp.com",projectId:"sickandsound-e9704",storageBucket:"sickandsound-e9704.firebasestorage.app",messagingSenderId:"248197359659",appId:"1:248197359659:web:a8777cbed3f83d6b1ca26e",measurementId:"G-62LH8V7S2E"};
-  // robust init
-  let db=null;
-  try{
-    if(window.firebase){ firebase.initializeApp(firebaseConfig); try{firebase.analytics();}catch(_){ } db=firebase.firestore(); }
-  }catch(_){ db=null; }
+const firebaseConfig={apiKey:"AIzaSyBFHjGXI5yHyK0DyupS0bnTVAqlu6lvpNw",authDomain:"sickandsound-e9704.firebaseapp.com",projectId:"sickandsound-e9704",storageBucket:"sickandsound-e9704.firebasestorage.app",messagingSenderId:"248197359659",appId:"1:248197359659:web:a8777cbed3f83d6b1ca26e",measurementId:"G-62LH8V7S2E"};
+let db=null; try{firebase.initializeApp(firebaseConfig); try{firebase.analytics();}catch(_){ } db=firebase.firestore();}catch(_){db=null;}
+const STATE_COLLECTION = location.search.includes("beta") ? "state_beta" : "state";
+const todayStr=()=>new Date().toISOString().slice(0,10);
 
-  // Kategorien (fixe Reihenfolge)
-  const CATS = [
-    {key:"morgens", label:"Morgens"},
-    {key:"tag",     label:"Im Laufe des Tages"},
-    {key:"abend",   label:"Bevor man geht"},
-  ];
-  let showCat = localStorage.getItem("hausdienst_cat") || "morgens";   // aktiver Reiter
-  let showMode= localStorage.getItem("hausdienst_filter_mode") || "open"; // open|done|all
+const DEFAULTS={
+  morning:["Briefkasten leeren","Spülmaschine ausräumen","Toilettenpapier & Zewa auffüllen","Getränke auffüllen","Staubsauger Wasser checken"],
+  day:["Wäsche an machen & aufhängen","Pakete entgegennehmen","Für Grundordnung sorgen"],
+  evening:["Oberflächen in der Küche + Geräte wischen","Müll rausbringen & mitnehmen"]
+};
+let tasks={...DEFAULTS}; // globale Vorlage
+let done={};            // für HEUTE (Map taskId -> true)
+let filter='open';
 
-  const today=new Date().toISOString().slice(0,10);
-  const CHECKED_KEY="hausdienst_checked_"+today;
-  let checked=JSON.parse(localStorage.getItem(CHECKED_KEY)||"{}");
-  let tasksCache=[]; // {id, text, cat, createdAt}
+function setFilter(f){ filter=f; render(); }
+function openAdd(){ document.getElementById('addModal').classList.add('show'); }
+function closeAdd(){ document.getElementById('addModal').classList.remove('show'); }
+function confirmAdd(){
+  const g=document.getElementById('addGroup').value, t=document.getElementById('addText').value.trim();
+  if(!t) return; tasks[g]=(tasks[g]||[]).concat([t]); saveTasks(); render(); closeAdd(); document.getElementById('addText').value='';
+}
 
-  function saveChecked(){ localStorage.setItem(CHECKED_KEY,JSON.stringify(checked)); }
-  function setMode(m){ showMode=m; localStorage.setItem("hausdienst_filter_mode",m); updateFilterButtons(); render(); }
-  function setCat(c){
-    showCat=c; localStorage.setItem("hausdienst_cat",c);
-    // Select für „neue Aufgabe“ auf aktiven Reiter setzen
-    const sel=document.getElementById('newTaskCat'); if(sel) sel.value=c;
-    updateTabs(); updateFilterButtons(); render();
+function idFor(g,i){ return `${g}_${i}`; }
+
+function renderGroup(key, elId){
+  const wrap=document.getElementById(elId); const list=tasks[key]||[];
+  wrap.innerHTML = list.map((txt,i)=>{
+    const id=idFor(key,i), isDone=!!done[id];
+    if(filter==='open' && isDone) return '';
+    if(filter==='done' && !isDone) return '';
+    return `<div class="task ${isDone?'done':''}">
+      <input type="checkbox" ${isDone?'checked':''} onchange="toggleDone('${id}')">
+      <div style="flex:1">${txt}</div>
+      <button class="btn small danger" onclick="removeTask('${key}',${i})">Löschen</button>
+    </div>`;
+  }).join('');
+}
+
+function render(){
+  document.getElementById('dateInfo').textContent = `Heute: ${todayStr()}`;
+  renderGroup('morning','g_morning');
+  renderGroup('day','g_day');
+  renderGroup('evening','g_evening');
+}
+
+async function load(){
+  // Vorlage aus globalem State
+  if(db){
+    try{
+      const s=await db.collection(STATE_COLLECTION).doc("global").get();
+      if(s.exists && s.data().checklistTasks) tasks=s.data().checklistTasks;
+    }catch(e){}
+    // Done-Map für heute
+    try{
+      const d=await db.collection("hausdienst_checklist").doc(todayStr()).get();
+      if(d.exists && d.data().done) done=d.data().done;
+    }catch(e){}
+  }else{
+    tasks=JSON.parse(localStorage.getItem('checklistTasks')||'null')||tasks;
+    done =JSON.parse(localStorage.getItem('checklistDone_'+todayStr())||'null')||{};
   }
-
-  function updateTabs(){
-    const wrap=document.getElementById("catTabs");
-    wrap.innerHTML = CATS.map(c=>`
-      <button class="tabbtn ${c.key===showCat?'active':''}" onclick="setCat('${c.key}')">${c.label}</button>
-    `).join("");
+  render();
+  if(db){
+    db.collection("hausdienst_checklist").doc(todayStr()).onSnapshot(s=>{ if(s.exists){ done=s.data().done||{}; render(); }});
   }
+}
+function saveTasks(){
+  if(db){ db.collection(STATE_COLLECTION).doc("global").set({checklistTasks:tasks},{merge:true}); }
+  localStorage.setItem('checklistTasks',JSON.stringify(tasks));
+}
+function saveDone(){
+  if(db){ db.collection("hausdienst_checklist").doc(todayStr()).set({done},{merge:true}); }
+  localStorage.setItem('checklistDone_'+todayStr(),JSON.stringify(done));
+}
+function toggleDone(id){ done[id]=!done[id]; if(!done[id]) delete done[id]; saveDone(); render(); }
+function removeTask(group, idx){
+  if(!confirm("Aufgabe wirklich löschen?")) return;
+  (tasks[group]||[]).splice(idx,1); // IDs verschieben sich – done-Map für Sicherheit zurücksetzen
+  done={}; saveTasks(); saveDone(); render();
+}
+function clearDone(){ done={}; saveDone(); render(); }
 
-  function updateFilterButtons(){
-    const byCat = tasksCache.filter(t=>t.cat===showCat);
-    const openCnt = byCat.filter(t=>!checked[t.id]).length;
-    const doneCnt = byCat.filter(t=> checked[t.id]).length;
-    const allCnt  = byCat.length;
-
-    const fOpen=document.getElementById("fOpen"), fDone=document.getElementById("fDone"), fAll=document.getElementById("fAll");
-    fOpen.textContent=`Offen (${openCnt})`; fDone.textContent=`Erledigt (${doneCnt})`; fAll.textContent=`Alle (${allCnt})`;
-    fOpen.className="btn small "+(showMode==="open"?"secondary":"ghost");
-    fDone.className="btn small "+(showMode==="done"?"secondary":"ghost");
-    fAll.className ="btn small "+(showMode==="all" ?"secondary":"ghost");
-  }
-
-  async function addTask(){
-    const txt=document.getElementById('newTask').value.trim(); if(!txt) return;
-    const cat=document.getElementById('newTaskCat').value || showCat;
-    if(!db){ alert("Offline – kann nicht speichern."); return; }
-    await db.collection("checklistTasks").add({text:txt, cat, createdAt:Date.now()});
-    document.getElementById('newTask').value="";
-  }
-  async function delTask(id){
-    if(!confirm("Aufgabe löschen?")) return;
-    if(!db){ alert("Offline – kann nicht löschen."); return; }
-    await db.collection("checklistTasks").doc(id).delete();
-    delete checked[id]; saveChecked();
-  }
-  function toggle(id){
-    checked[id]=!checked[id]; saveChecked(); render();
-  }
-
-  function render(snap){
-    if(snap && snap.forEach){
-      tasksCache=[]; snap.forEach(d=>tasksCache.push({id:d.id, ...d.data()}));
-    }
-    // Filter je Reiter/Modus
-    let list = tasksCache.filter(t=>t.cat===showCat);
-
-    // Sortierung: zuerst createdAt (falls vorhanden), sonst alphabetisch
-    list.sort((a,b)=>{
-      const ac=a.createdAt||0, bc=b.createdAt||0;
-      if(ac!==bc) return ac-bc;
-      return (a.text||"").localeCompare(b.text||"");
-    });
-
-    updateFilterButtons();
-
-    let rows="", headCols="";
-    const openList = list.filter(t=>!checked[t.id]);
-    const doneList = list.filter(t=> checked[t.id]);
-
-    if(showMode==="open"){
-      headCols=`<th style="text-align:left">Aufgabe</th><th>Aktion</th><th>—</th>`;
-      rows = openList.map(t=>`
-        <tr>
-          <td style="text-align:left">${escapeHtml(t.text||"")}</td>
-          <td><button class="btn small" onclick="toggle('${t.id}')">✅ erledigt</button></td>
-          <td><button class="btn small ghost" onclick="delTask('${t.id}')">Löschen</button></td>
-        </tr>`).join("");
-      if(!rows) rows=`<tr><td colspan="3">Alle Aufgaben in „${labelOf(showCat)}“ erledigt 🎉 — „Erledigt“ zeigt Haken.</td></tr>`;
-    }else if(showMode==="done"){
-      headCols=`<th style="text-align:left">Erledigt</th><th>Aktion</th><th>—</th>`;
-      rows = doneList.map(t=>`
-        <tr>
-          <td style="text-align:left">${escapeHtml(t.text||"")}</td>
-          <td><button class="btn small warning" onclick="toggle('${t.id}')">↩️ rückgängig</button></td>
-          <td><button class="btn small ghost" onclick="delTask('${t.id}')">Löschen</button></td>
-        </tr>`).join("");
-      if(!rows) rows=`<tr><td colspan="3">Keine erledigten Aufgaben in „${labelOf(showCat)}“.</td></tr>`;
-    }else{ // all
-      headCols=`<th style="text-align:left">Aufgabe</th><th>Status</th><th>Aktion</th>`;
-      const allList=[...openList.map(t=>({t,done:false})), ...doneList.map(t=>({t,done:true}))];
-      rows = allList.map(({t,done})=>`
-        <tr>
-          <td style="text-align:left">${escapeHtml(t.text||"")}</td>
-          <td>${done?"✅":"⬜️"}</td>
-          <td>
-            <button class="btn small ${done?'warning':''}" onclick="toggle('${t.id}')">
-              ${done ? "↩️ rückgängig" : "✅ erledigt"}
-            </button>
-            <button class="btn small ghost" style="margin-left:6px" onclick="delTask('${t.id}')">Löschen</button>
-          </td>
-        </tr>`).join("");
-      if(!rows) rows=`<tr><td colspan="3">Noch keine Aufgaben in „${labelOf(showCat)}“.</td></tr>`;
-    }
-
-    document.getElementById("list").innerHTML = `
-      <h2 class="groupTitle">${labelOf(showCat)}</h2>
-      <table><thead><tr>${headCols}</tr></thead><tbody>${rows}</tbody></table>`;
-  }
-
-  function labelOf(cat){
-    const f=CATS.find(c=>c.key===cat); return f?f.label:cat;
-  }
-  function escapeHtml(s){ return (s||"").replace(/[&<>"']/g, m=>({ "&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#039;" }[m])); }
-
-  // ---- Defaults nur hier (einmalig) anlegen ----
-  async function ensureDefaults(){
-    if(!db) return;
-    const snap=await db.collection("checklistTasks").limit(1).get();
-    if(!snap.empty) return; // schon Inhalt vorhanden
-
-    const defs = [
-      {cat:"morgens", text:"Briefkasten leeren"},
-      {cat:"morgens", text:"Spülmaschine ausräumen"},
-      {cat:"morgens", text:"Toilettenpapier & Zewa auffüllen"},
-      {cat:"morgens", text:"Getränke auffüllen"},
-      {cat:"morgens", text:"Staubsauger Wasser checken"},
-      {cat:"tag",     text:"Wäsche an machen & aufhängen"},
-      {cat:"tag",     text:"Pakete entgegennehmen"},
-      {cat:"tag",     text:"Für Grundordnung sorgen"},
-      {cat:"abend",   text:"Oberflächen in der Küche + Geräte wischen"},
-      {cat:"abend",   text:"Müll rausbringen & mitnehmen"},
-    ];
-    const batch=db.batch();
-    defs.forEach(d=>{ const ref=db.collection("checklistTasks").doc(); batch.set(ref,{...d, createdAt:Date.now()}); });
-    await batch.commit();
-  }
-
-  // ---- Migration: alte Einträge mit Präfix → {cat, text} ----
-  async function ensureCategories(){
-    if(!db) return;
-    const qs=await db.collection("checklistTasks").get();
-    const batch=db.batch();
-    let need=false;
-    qs.forEach(doc=>{
-      const t=doc.data(); if(t.cat) return;
-      let cat="tag", text=t.text||"";
-      const s=(text||"").toLowerCase();
-      if(s.startsWith("morgens:")){ cat="morgens"; text=text.replace(/^Morgens:\s*/i,""); }
-      else if(s.startsWith("im laufe des tages:")||s.startsWith("im laufe des tages")){ cat="tag"; text=text.replace(/^Im Laufe des Tages:? ?/i,""); }
-      else if(s.startsWith("bevor man geht:")||s.startsWith("bevor man geht")){ cat="abend"; text=text.replace(/^Bevor man geht:? ?/i,""); }
-      else { /* belasse text, default 'tag' */ }
-      batch.set(doc.ref,{cat, text},{merge:true}); need=true;
-    });
-    if(need) await batch.commit();
-  }
-
-  // Live-Updates & Start
-  async function init(){
-    updateTabs();
-    const sel=document.getElementById('newTaskCat'); sel.value=showCat;
-
-    if(db){
-      await ensureDefaults();
-      await ensureCategories();
-      db.collection("checklistTasks").onSnapshot(render, ()=>render());
-    }else{
-      document.getElementById("list").innerHTML = `<div class="sub">Offline – Aufgaben können nicht geladen werden.</div>`;
-    }
-    updateFilterButtons();
-  }
-
-  if('serviceWorker' in navigator){ navigator.serviceWorker.register('./sw.js').catch(()=>{}); }
-  init();
+if('serviceWorker' in navigator){ navigator.serviceWorker.register('./sw.js').catch(()=>{}); }
+load();
 </script>
 </body>
 </html>
