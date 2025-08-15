@@ -10,10 +10,13 @@
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="stylesheet" href="style.css" />
   <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;800&display=swap" rel="stylesheet" />
+
   <style>
+    /* Layout wie zuvor */
     .appbar .app-title h1 { font-size: 18px; }
     .people-section { margin-top: 10px; }
     .section-title { margin-bottom: 6px; }
+
     .row {
       display: grid;
       grid-template-columns: 64px 1fr auto;
@@ -32,20 +35,32 @@
     .ring { position:absolute; inset:-2px; transform: rotate(-90deg); }
     .ring circle { fill:none; stroke-width:6; stroke-linecap:round; }
     .ring .bg { stroke:#22304a; }
-    .ring .fg { stroke:url(#grad); transition:stroke-dashoffset .25s ease; }
+    .ring .fg { stroke:url(#grad); transition: stroke-dashoffset .25s ease; }
     .lvl { font-size:12px; font-weight:800; color:#aab3cf; position:absolute; bottom:-2px; left:0; right:0; text-align:center; }
 
-    /* Getränke (Zähler links, +1 rechts) */
-    .drinks { display:flex; gap:8px; flex-wrap:wrap; }
-    .pill { display:flex; align-items:center; gap:8px; padding:8px; border-radius:12px; background:#101626; border:1px solid #202a42; min-width:120px; }
+    /* Getränkezeile – eine Zeile, horizontal scrollbar (konstante Höhe) */
+    .drinks {
+      display:flex; gap:8px; align-items:center;
+      flex-wrap:nowrap; overflow-x:auto; overflow-y:hidden; white-space:nowrap;
+      padding-bottom:4px; scrollbar-width:thin;
+    }
+    .pill {
+      display:flex; align-items:center; gap:8px;
+      padding:8px; border-radius:12px; background:#101626; border:1px solid #202a42;
+      min-width:120px; flex:0 0 auto;
+    }
     .pill .amount { min-width:28px; text-align:center; font-weight:800; color:#ced5ea; }
     .pill .label { font-weight:700; }
-    .pill .add { margin-left:auto; padding:6px 10px; border-radius:10px; background:linear-gradient(135deg,#6ee7ff,#a78bfa); color:#0b0e14; font-weight:800; border:0; }
+    .pill .add {
+      margin-left:auto; padding:6px 10px; border-radius:10px;
+      background: linear-gradient(135deg, #6ee7ff, #a78bfa);
+      color:#0b0e14; font-weight:800; border:0;
+    }
 
     .guests .row { background:#0d111b; }
     .actions { display:flex; gap:10px; align-items:center; justify-content:space-between; margin-top:10px; }
 
-    /* PayPal Icon */
+    /* PayPal-Icon für den QR-Button */
     .icon-paypal { width:22px; height:22px; display:block; }
     .btn.dark { color:#e6e8ef; }
 
@@ -55,7 +70,6 @@
     .sheet { width:min(92vw,460px); background:#0b0e14; border:1px solid #22283a; border-radius:18px; padding:14px; }
     .sheet img { width:100%; height:auto; display:block; border-radius:12px; }
 
-    /* kleine Fehlermeldung */
     .err { color:#ffb4b4; margin:6px 0 0 2px; }
   </style>
 </head>
@@ -67,7 +81,7 @@
       <h1>Sick &amp; Sound – Strichliste</h1>
     </div>
     <div class="appbar-actions">
-      <!-- PayPal-QR Button -->
+      <!-- Einzige Änderung: QR-Button zeigt PayPal-Icon -->
       <button id="qrBtn" class="btn small dark" title="PayPal QR">
         <svg class="icon-paypal" viewBox="0 0 64 64" aria-hidden="true">
           <path d="M18 10h17c10 0 16 5 16 13s-6 13-16 13h-12l-4 18h-9L18 10z" fill="currentColor"/>
@@ -77,6 +91,7 @@
       </button>
       <a class="btn small dark" href="hausdienst.html" title="Hausdienst">🧹</a>
       <a class="btn small dark" href="rangliste.html" title="Rang">📊</a>
+      <a class="btn small dark" href="badges.html" title="Badges">🏅</a>
     </div>
   </header>
 
@@ -113,6 +128,10 @@
     <a class="tab" href="rangliste.html">
       <svg viewBox="0 0 24 24" fill="currentColor"><path d="M7 17H3V7h4v10zm7 0h-4V3h4v14zm7 0h-4v-8h4v8z"/></svg>
       <span>Rang</span>
+    </a>
+    <a class="tab" href="badges.html">
+      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 1l3.09 6.26L22 8.27l-5 4.87L18.18 22 12 18.56 5.82 22 7 13.14 2 8.27l6.91-1.01L12 1z"/></svg>
+      <span>Badges</span>
     </a>
     <a class="tab" href="buchungen.html">
       <svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 2h9l5 5v13a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2zm8 1.5V8h4.5L14 3.5z"/></svg>
@@ -151,35 +170,32 @@
   try{ if(window.firebase){ firebase.initializeApp(firebaseConfig); try{firebase.analytics();}catch(_){} db=firebase.firestore(); } }catch(_){ db=null; }
 
   const STATE_COLLECTION = location.search.includes("beta") ? "state_beta" : "state";
-  const K = { people:"sick_sound_people", prices:"sick_sound_prices", data:"sick_sound_data" };
+  const K = { people:"sick_sound_people", prices:"sick_sound_prices", data:"sick_sound_data", xp:"sick_sound_xp" };
 
-  /* ---------- Level / XP ---------- */
-  function levelFromXP(xp){ return Math.floor(xp/10)+1; }     // alle 10 XP -> neues Level
+  /* ===== Level / XP ===== */
+  function levelFromXP(xp){ return Math.floor(xp/10)+1; }
   function progressToNext(xp){ return Math.max(0, Math.min(1, (xp%10)/10 )); }
+  function totalDrinkXP(person){
+    return Object.keys(state.prices||{}).reduce((a,d)=>a+(state.data[`${person}_${d}`]||0),0);
+  }
+  function bonusXP(person){ return (state.xp && state.xp[person])||0; }
+  function totalXP(person){ return totalDrinkXP(person)+bonusXP(person); }
 
-  /* ---------- Helpers ---------- */
+  /* ===== Helpers ===== */
   function euro(v){ return Number(v||0).toFixed(2).replace('.', ','); }
   const dedupe = arr => Array.from(new Set(arr.filter(Boolean)));
-  function unionCore(people){
-    // CORE immer dabei, Gäste additiv (einmalig)
-    return dedupe([...CORE, ...(people||[])]);
-  }
+  function unionCore(people){ return dedupe([...CORE, ...(people||[])]); }
   function splitCoreGuests(all){
-    const set = new Set(all||[]);
-    const core  = CORE.filter(n=>set.has(n));             // CORE in definierter Reihenfolge
-    const guests= [...set].filter(n=>!CORE.includes(n)).sort((a,b)=>a.localeCompare(b));
+    const set=new Set(all||[]);
+    const core=CORE.filter(n=>set.has(n));
+    const guests=[...set].filter(n=>!CORE.includes(n)).sort((a,b)=>a.localeCompare(b));
     return {core, guests};
   }
-  function sumCounts(person, prices, data){
-    let total=0, sum=0;
-    Object.keys(prices||{}).forEach(d=>{
-      const c = data[`${person}_${d}`]||0;
-      total += c; sum += c*(prices[d]||0);
-    });
-    return {total, euro:sum};
+  function sumEuro(person, prices, data){
+    return Object.keys(prices||{}).reduce((sum,d)=> sum + ((data[`${person}_${d}`]||0) * (prices[d]||0)), 0);
   }
 
-  /* ---------- Ring ---------- */
+  /* ===== Ring SVG ===== */
   function buildRingSVG(pct){
     const R=24, C=2*Math.PI*R, off = C*(1-pct);
     return `
@@ -195,52 +211,82 @@
   }
 
   function personRowHTML(person, prices, data){
-    const {total} = sumCounts(person, prices, data);
-    const lvl = levelFromXP(total), pct = progressToNext(total);
+    const xp  = totalXP(person);
+    const lvl = levelFromXP(xp), pct = progressToNext(xp);
 
-    const drinks = Object.keys(prices||{}).map(key=>{
-      const amount = data[`${person}_${key}`] || 0;
+    const drinks = Object.keys(prices||{}).map(name=>{
+      const amount = data[`${person}_${name}`] || 0;
       return `<div class="pill">
-        <div class="amount" id="amt_${person}_${key}">${amount}</div>
-        <div class="label">${key}</div>
-        <button class="add" onclick="add('${person}','${key}')">+1</button>
+        <div class="amount" id="amt_${person}_${name}">${amount}</div>
+        <div class="label">${name}</div>
+        <button class="add" onclick="add('${person}','${name}')">+1</button>
       </div>`;
     }).join("");
 
-    return `<div class="row" id="row_${person}">
+    return `<div class="row" id="row_${person}" data-lvl="${lvl}">
       <div class="avatar">${buildRingSVG(pct)}<div class="lvl">Lvl ${lvl}</div></div>
       <div><div class="name">${person}</div><div class="drinks">${drinks}</div></div>
-      <div style="text-align:right;font-weight:800;min-width:70px" id="sum_${person}">€ ${euro(sumCounts(person, prices, data).euro)}</div>
+      <div style="text-align:right;font-weight:800;min-width:70px" id="sum_${person}">€ ${euro(sumEuro(person, prices, data))}</div>
     </div>`;
   }
 
-  /* ---------- State ---------- */
-  let state = { people:[], prices:{}, data:{} };
+  /* ===== Level-Up Effekte ===== */
+  let audioCtx=null;
+  function playLevelUp(){
+    try{
+      audioCtx = audioCtx || new (window.AudioContext||window.webkitAudioContext)();
+      const o=audioCtx.createOscillator(), g=audioCtx.createGain();
+      o.type="triangle"; o.frequency.setValueAtTime(440,audioCtx.currentTime);
+      o.frequency.exponentialRampToValueAtTime(880,audioCtx.currentTime+0.25);
+      g.gain.setValueAtTime(0.0001,audioCtx.currentTime);
+      g.gain.exponentialRampToValueAtTime(0.2,audioCtx.currentTime+0.03);
+      g.gain.exponentialRampToValueAtTime(0.0001,audioCtx.currentTime+0.30);
+      o.connect(g).connect(audioCtx.destination); o.start(); o.stop(audioCtx.currentTime+0.32);
+    }catch(_){}
+  }
+  function confettiAt(el){
+    const n=24, box=el.getBoundingClientRect();
+    for(let i=0;i<n;i++){
+      const c=document.createElement('div');
+      c.style.cssText=`position:fixed;left:${box.left+box.width/2}px;top:${box.top+8}px;width:6px;height:6px;border-radius:2px;background: hsl(${Math.random()*360} 90% 60%);opacity:.9;pointer-events:none;z-index:99;transform:translate(-50%,-50%);`;
+      document.body.appendChild(c);
+      const dx=(Math.random()-0.5)*240, dy=(Math.random()*-160)-40, rot=(Math.random()*360);
+      c.animate([
+        {transform:`translate(-50%,-50%) rotate(0deg)`, opacity:1},
+        {transform:`translate(${dx}px, ${dy}px) rotate(${rot}deg)`, opacity:0}
+      ],{duration:700+Math.random()*300, easing:'cubic-bezier(.22,1,.36,1)'}).onfinish=()=>c.remove();
+    }
+  }
+
+  /* ===== State ===== */
+  let state = { people:[], prices:{}, data:{}, xp:{} };
   let lastAction = null;
 
   async function loadState(){
+    // Lokaler Fallback
     const local = {
       people: JSON.parse(localStorage.getItem(K.people)||"[]"),
       prices: JSON.parse(localStorage.getItem(K.prices)||"{}"),
-      data  : JSON.parse(localStorage.getItem(K.data)||"{}")
+      data  : JSON.parse(localStorage.getItem(K.data)||"{}"),
+      xp    : JSON.parse(localStorage.getItem(K.xp)||"{}"),
     };
-
-    // Start mit Local Fallback
     state.people = unionCore(local.people && local.people.length ? local.people : CORE);
     state.prices = (local.prices && Object.keys(local.prices).length) ? local.prices : {"Bier":2.0,"Mate":1.5,"Wasser":1.0};
     state.data   = local.data || {};
+    state.xp     = local.xp   || {};
 
-    // Remote (falls vorhanden) hinein-mergen – aber NIE leere Werte übernehmen
+    // Cloud mergen – leere Werte ignorieren
     if(db){
       try{
         const snap = await db.collection(STATE_COLLECTION).doc("global").get();
         if(snap.exists){
-          const r = snap.data()||{};
+          const r=snap.data()||{};
           if(Array.isArray(r.people) && r.people.length) state.people = unionCore(r.people);
           if(r.prices && Object.keys(r.prices).length)   state.prices = r.prices;
           if(r.data)                                     state.data   = r.data;
+          if(r.xp)                                       state.xp     = r.xp;
         }
-      }catch(e){ document.getElementById('err').textContent = "Hinweis: Konnte Cloud-State nicht laden ("+(e?.message||e)+")"; }
+      }catch(e){ document.getElementById('err').textContent = "Hinweis: Cloud-State konnte nicht vollständig geladen werden."; }
     }
   }
 
@@ -248,6 +294,7 @@
     localStorage.setItem(K.people, JSON.stringify(state.people||[]));
     localStorage.setItem(K.prices, JSON.stringify(state.prices||{}));
     localStorage.setItem(K.data,   JSON.stringify(state.data||{}));
+    localStorage.setItem(K.xp,     JSON.stringify(state.xp||{}));
   }
   function saveCloudDebounced(){
     persistLocal();
@@ -271,69 +318,84 @@
 
     wrapCore.innerHTML  = core.map(p=>personRowHTML(p, state.prices, state.data)).join("");
     wrapGuest.innerHTML = guests.map(p=>personRowHTML(p, state.prices, state.data)).join("");
+
+    // Long-press o.ä. NICHT aktiv – keine Eastereggs
   }
 
-  /* ---------- Aktionen ---------- */
+  /* ===== Aktionen ===== */
   function add(person, drink){
     const key = `${person}_${drink}`;
     state.data[key] = (state.data[key]||0) + 1;
     lastAction = {person, drink};
+
+    const row = document.getElementById(`row_${person}`);
+    const prevLvl = Number(row?.dataset.lvl||"0");
+
     updatePerson(person);
+
+    const newLvl = Number(document.getElementById(`row_${person}`)?.dataset.lvl||prevLvl);
+    if(newLvl>prevLvl){ playLevelUp(); if(row) confettiAt(row); }
+
     saveCloudDebounced();
   }
   function undo(){
     if(!lastAction) return;
     const key = `${lastAction.person}_${lastAction.drink}`;
     const cur = state.data[key]||0;
-    if(cur>0){ state.data[key]=cur-1; updatePerson(lastAction.person); saveCloudDebounced(); }
+    if(cur>0){
+      state.data[key]=cur-1;
+      updatePerson(lastAction.person);
+      saveCloudDebounced();
+    }
     lastAction = null;
   }
+
   function updatePerson(person){
-    const sum = sumCounts(person, state.prices, state.data).euro;
+    // €-Summe
+    const sum = sumEuro(person, state.prices, state.data);
     const sumEl = document.getElementById(`sum_${person}`); if(sumEl) sumEl.textContent = `€ ${euro(sum)}`;
-    Object.keys(state.prices||{}).forEach(dr=>{
-      const el=document.getElementById(`amt_${person}_${dr}`); if(el) el.textContent = state.data[`${person}_${dr}`]||0;
+    // Getränkecounter
+    Object.keys(state.prices||{}).forEach(name=>{
+      const el=document.getElementById(`amt_${person}_${name}`); if(el) el.textContent = state.data[`${person}_${name}`]||0;
     });
-    const total = sumCounts(person, state.prices, state.data).total;
-    const lvl = levelFromXP(total), pct=progressToNext(total);
+    // Level/Ring
+    const xp = totalXP(person);
+    const lvl = levelFromXP(xp), pct=progressToNext(xp);
     const row=document.getElementById(`row_${person}`);
     if(row){
       const R=24, C=2*Math.PI*R, off=C*(1-pct);
       const fg=row.querySelector('.ring .fg'); if(fg){ fg.setAttribute('stroke-dasharray', C); fg.setAttribute('stroke-dashoffset', off); }
       const lv=row.querySelector('.lvl'); if(lv) lv.textContent = `Lvl ${lvl}`;
+      row.dataset.lvl = String(lvl);
     }
   }
 
-  /* ---------- QR Modal ---------- */
+  /* ===== QR Modal ===== */
   const qrModal = document.getElementById('qrModal');
   document.getElementById('qrBtn').addEventListener('click', ()=>{ qrModal.classList.add('open'); });
   function closeQR(){ qrModal.classList.remove('open'); }
 
   document.getElementById('undoBtn').addEventListener('click', undo);
 
-  /* ---------- Init ---------- */
+  /* ===== Init ===== */
   async function init(){
     await loadState();
     render();
 
-    // Live-Updates aus der Cloud – leere Werte werden ignoriert
+    // Live-Updates (ohne leere Felder zu übernehmen)
     if(db){
       try{
         db.collection(STATE_COLLECTION).doc("global").onSnapshot(snap=>{
           if(!snap.exists) return;
           const r=snap.data()||{};
-          const prev = {...state};
+          const prev = JSON.stringify(state);
           if(Array.isArray(r.people) && r.people.length) state.people = unionCore(r.people);
           if(r.prices && Object.keys(r.prices).length)   state.prices = r.prices;
           if(r.data)                                     state.data   = r.data;
-          // Nur neu rendern, wenn sich wirklich was geändert hat
-          if(JSON.stringify(prev.people)!==JSON.stringify(state.people) ||
-             JSON.stringify(prev.prices)!==JSON.stringify(state.prices) ||
-             JSON.stringify(prev.data)!==JSON.stringify(state.data)){
-            render();
-          }
+          if(r.xp)                                       state.xp     = r.xp;
+          if(prev !== JSON.stringify(state)) render();
         });
-      }catch(e){ document.getElementById('err').textContent = "Live-Update deaktiviert: "+(e?.message||e); }
+      }catch(e){ document.getElementById('err').textContent = "Live-Update deaktiviert."; }
     }
   }
   if('serviceWorker' in navigator){ navigator.serviceWorker.register('./sw.js').catch(()=>{}); }
