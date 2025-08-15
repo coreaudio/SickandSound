@@ -50,15 +50,11 @@
     .bar { height:6px; border-radius:999px; background:linear-gradient(90deg, #6ee7ff, #a78bfa); opacity:.9; }
     .bar-wrap { height:6px; background:#1b2234; border-radius:999px; overflow:hidden; }
 
-    /* kleine Pop-In Animation beim Render */
     .popin { animation:pop .28s ease-out both; }
-    @keyframes pop {
-      from { transform:translateY(6px) scale(.98); opacity:0; }
-      to   { transform:translateY(0)   scale(1);    opacity:1; }
-    }
+    @keyframes pop { from { transform:translateY(6px) scale(.98); opacity:0; } to { transform:translateY(0) scale(1); opacity:1; } }
 
-    /* Tabellen unten beibehalten, aber etwas luftiger */
     .card.table-wrap table th, .card.table-wrap table td { padding:8px 10px; }
+    .err { margin-top:12px; color:#ffb4b4; }
   </style>
 </head>
 <body>
@@ -75,6 +71,7 @@
       </div>
       <div id="podium" class="podium"></div>
       <div id="rest" class="rest"></div>
+      <div id="err" class="err"></div>
     </div>
 
     <div class="card table-wrap" id="hausdienstHistory" style="margin-top:12px"></div>
@@ -115,17 +112,13 @@
   const K = { people:"sick_sound_people", bookings:"sick_sound_bookings", prices:"sick_sound_prices", data:"sick_sound_data" };
 
   /* Helpers */
-  const € = v => Number(v||0).toFixed(2).replace('.', ',');
+  function euro(v){ return Number(v||0).toFixed(2).replace('.', ','); }  // <-- fix statt €()
   const initials = name => (name||'')[0]?.toUpperCase() || '?';
-  function hueFromName(name){
-    let h=0; for(let i=0;i<name.length;i++){ h=(h*31 + name.charCodeAt(i)) % 360; } return h;
-  }
+  function hueFromName(name){ let h=0; for(let i=0;i<name.length;i++){ h=(h*31 + name.charCodeAt(i)) % 360; } return h; }
   function avatarStyle(name, small=false){
-    const h=hueFromName(name);
-    const a= small ? 0.85 : 0.95;
+    const h=hueFromName(name); const a= small ? 0.85 : 0.95;
     return `background: conic-gradient(from 200deg, hsl(${h} 90% 65% / ${a}) 0%, hsl(${(h+35)%360} 90% 60% / ${a}) 50%, hsl(${(h+320)%360} 90% 55% / ${a}) 100%); color:#0b0e14;`;
   }
-
   function valueOfCurrentStriche(person, prices, data){
     return Object.keys(prices||{}).reduce((sum,d)=>sum+((data[`${person}_${d}`]||0)*(prices[d]||0)),0);
   }
@@ -142,26 +135,24 @@
       return;
     }
 
-    // Top 3 -> Podium
     const top = rows.slice(0,3);
     const medals = ['🥇','🥈','🥉'];
     const ranks  = ['rank1','rank2','rank3'];
 
     podium.innerHTML = top.map((r,idx)=>`
-      <div class="podium-card ${ranks[idx]} ${idx===0?'glow':''} popin" style="--delay:${idx*40}ms">
+      <div class="podium-card ${ranks[idx]} ${idx===0?'glow':''} popin">
         <div class="medal">${medals[idx]}</div>
         <div class="place">#${idx+1}</div>
         <div class="avatar" style="${avatarStyle(r.p)}">${initials(r.p)}</div>
         <div class="name">${r.p}</div>
-        <div class="sum">${€(r.summe)} €</div>
+        <div class="sum">${euro(r.summe)} €</div>
       </div>
     `).join('');
 
-    // Rest -> Liste mit Progress-Bar relativ zu #1
     const max = rows[0].summe || 1;
     const others = rows.slice(3);
     rest.innerHTML = others.map((r, i)=>`
-      <div class="rest-row popin" style="--delay:${i*20}ms">
+      <div class="rest-row popin">
         <div class="place">#${i+4}</div>
         <div class="who">
           <div class="avatar-sm" style="${avatarStyle(r.p,true)}">${initials(r.p)}</div>
@@ -170,7 +161,7 @@
             <div class="bar-wrap" aria-hidden="true"><div class="bar" style="width:${Math.max(6,(r.summe/max*100))}%;"></div></div>
           </div>
         </div>
-        <div class="sum">${€(r.summe)} €</div>
+        <div class="sum">${euro(r.summe)} €</div>
       </div>
     `).join('');
   }
@@ -179,20 +170,6 @@
     const h=heads.map(h=>`<th>${h}</th>`).join("");
     const r=rows.length ? rows.map(row=>`<tr>${row.map(c=>`<td>${c}</td>`).join("")}</tr>`).join("") : `<tr><td colspan="${heads.length}">${emptyText||"Keine Daten"}</td></tr>`;
     return `<h2 class="section-title">${title}</h2><table><thead><tr>${h}</tr></thead><tbody>${r}</tbody></table>`;
-  }
-
-  async function loadAllOnce(){
-    let state = {};
-    if(db){
-      try{ const s=await db.collection(STATE_COLLECTION).doc("global").get(); state = s.exists ? s.data() : {}; }catch(_){}
-    }
-    state.people   = state.people   || JSON.parse(localStorage.getItem(K.people))   || [];
-    state.bookings = state.bookings || JSON.parse(localStorage.getItem(K.bookings)) || [];
-    state.prices   = state.prices   || JSON.parse(localStorage.getItem(K.prices))   || {};
-    state.data     = state.data     || JSON.parse(localStorage.getItem(K.data))     || {};
-
-    renderFromState(state);
-    renderHistAndStats();
   }
 
   function renderFromState(state){
@@ -206,7 +183,7 @@
     }).sort((a,b)=>b.summe-a.summe);
 
     renderLive(rowsLive);
-    // Leader-Wechsel Effekt (optional)
+
     const lastLeader = localStorage.getItem("last_leader_name");
     if(rowsLive[0] && rowsLive[0].p !== lastLeader){
       localStorage.setItem("last_leader_name", rowsLive[0].p);
@@ -215,7 +192,7 @@
   }
 
   async function renderHistAndStats(){
-    // Hausdienst Historie (30 Tage)
+    // Historie (30 Tage)
     if(db){
       try{
         const snap=await db.collection("hausdienst").get();
@@ -231,14 +208,14 @@
           rows,
           "Keine Historie vorhanden."
         );
-      }catch(_){
+      }catch(e){
         document.getElementById("hausdienstHistory").innerHTML = `<h2 class="section-title">🧹 Hausdienst – Historie</h2><div class="sub">Fehler beim Laden.</div>`;
       }
     }else{
       document.getElementById("hausdienstHistory").innerHTML = `<h2 class="section-title">🧹 Hausdienst – Historie</h2><div class="sub">Offline: Daten nicht verfügbar.</div>`;
     }
 
-    // Hausdienst Statistik (nur Kernteam, bis heute)
+    // Statistik (nur Kernteam)
     if(db){
       const today=todayStr();
       const cnt={}; CORE.forEach(p=>cnt[p]=0);
@@ -252,7 +229,7 @@
           arrHd.map(([p,v],i)=>[i+1,p,v]),
           "Keine Einträge vorhanden."
         );
-      }catch(_){
+      }catch(e){
         document.getElementById("hausdienstStats").innerHTML = `<h2 class="section-title">📊 Hausdienst – Statistik</h2><div class="sub">Fehler beim Laden.</div>`;
       }
     }
@@ -264,6 +241,24 @@
       if(!snap.exists) return;
       renderFromState(snap.data() || {});
     });
+  }
+
+  async function loadAllOnce(){
+    try{
+      let state = {};
+      if(db){
+        try{ const s=await db.collection(STATE_COLLECTION).doc("global").get(); state = s.exists ? s.data() : {}; }catch(_){}
+      }
+      state.people   = state.people   || JSON.parse(localStorage.getItem(K.people))   || [];
+      state.bookings = state.bookings || JSON.parse(localStorage.getItem(K.bookings)) || [];
+      state.prices   = state.prices   || JSON.parse(localStorage.getItem(K.prices))   || {};
+      state.data     = state.data     || JSON.parse(localStorage.getItem(K.data))     || {};
+
+      renderFromState(state);
+      renderHistAndStats();
+    }catch(e){
+      document.getElementById('err').textContent = 'Fehler beim Rendern: '+(e?.message||e);
+    }
   }
 
   if('serviceWorker' in navigator){ navigator.serviceWorker.register('./sw.js').catch(()=>{}); }
