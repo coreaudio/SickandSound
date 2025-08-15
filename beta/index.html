@@ -27,8 +27,8 @@
       padding-top: var(--row-pad);
       padding-bottom: var(--row-pad);
     }
-    .lvl-ring{ width: var(--ring); height: var(--ring); }
-    .lvl-ring .val{ font-size: 12px; font-weight: 800; }
+    .lvl-ring{ width: var(--ring); height: var(--ring); position:relative; display:inline-grid; place-items:center; }
+    .lvl-ring .val{ position:absolute; font-size: 12px; font-weight: 800; line-height:1; }
     .person-cell{ display:flex; align-items:center; gap:10px; }
     .p-name{ font-size: var(--name-size); font-weight: 800; letter-spacing:.2px; }
 
@@ -36,7 +36,7 @@
     .drink-chip .drink-price{ font-size: 11px; opacity:.8 }
 
     .cell{ display:flex; align-items:center; justify-content:flex-end; gap: var(--cell-gap); }
-    .count{ font-size: var(--count-size); min-width: 24px; text-align:right; }
+    .count{ font-size: var(--count-size); min-width: 26px; text-align:right; }
     .plus-btn{ padding:8px 12px; }
 
     .section-row td{ font-size:12px; opacity:.7 }
@@ -164,7 +164,6 @@ const sLevel = makeSound("https://cdn.jsdelivr.net/gh/jshawl/howler-examples@mas
 /* ===== Math / XP ===== */
 const todayStr=()=>new Date().toISOString().slice(0,10);
 const levelOf=x=>Math.floor(Math.sqrt(x/20))+1;
-const lvlMin=l=>20*(l-1)*(l-1), lvlNext=l=>20*l*l;
 
 // Geldwert der aktuellen Striche einer Person
 function valueOfCurrentStriche(person){
@@ -376,19 +375,22 @@ function buildTable(){
   });
   html += `<th>Gesamt (€)</th></tr></thead><tbody>`;
 
+  // Fortschritts-Ring (fixer, viewBox-sicherer Radius; SVG skaliert mit dem Container)
   const ring = (xpVal, person)=>{
     const x = +xpVal || 0;
     const lvl = Math.max(1, Math.floor(Math.sqrt(x/20)) + 1);
     const min = 20*(lvl-1)*(lvl-1);
     const max = 20* lvl   * lvl;
     const p   = Math.max(0, Math.min(1, (x - min) / (max - min) ));
-    const r=parseInt(getComputedStyle(document.documentElement).getPropertyValue('--ring'))/2|0 || 22;
-    const c=2*Math.PI*r, off=(1-p)*c;
+
+    const r = 22;                  // sicher innerhalb 52x52 @ stroke 6
+    const c = 2*Math.PI*r;
+    const off = (1-p)*c;
     const gid = "grad_" + person.replace(/[^a-z0-9]/gi,'') + "_" + lvl;
 
     return `
       <div class="lvl-ring" role="img" aria-label="Level ${lvl}, ${Math.round(p*100)}%">
-        <svg width="52" height="52" viewBox="0 0 52 52" style="transform:rotate(-90deg)">
+        <svg viewBox="0 0 52 52" width="100%" height="100%" style="transform:rotate(-90deg)">
           <defs>
             <linearGradient id="${gid}" x1="0" y1="0" x2="1" y2="1">
               <stop offset="0%"  stop-color="var(--accent, #6ee7ff)"/>
