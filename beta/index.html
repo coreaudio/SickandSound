@@ -18,22 +18,16 @@
     .appbar{ min-height: 52px; }
     .bottomnav{ height: 64px; }
 
-    .card.table-wrap table td, .card.table-wrap table th{
-      padding-top: var(--row-pad);
-      padding-bottom: var(--row-pad);
-    }
+    .card.table-wrap table td, .card.table-wrap table th{ padding-top: var(--row-pad); padding-bottom: var(--row-pad); }
     .lvl-ring{ width: var(--ring); height: var(--ring); position:relative; display:inline-grid; place-items:center; }
     .lvl-ring .val{ position:absolute; font-size: 12px; font-weight: 800; line-height:1; }
     .person-cell{ display:flex; align-items:center; gap:10px; }
     .p-name{ font-size: var(--name-size); font-weight: 800; letter-spacing:.2px; }
-
     .drink-chip .drink-name{ font-size: 12px; }
     .drink-chip .drink-price{ font-size: 11px; opacity:.8 }
-
     .cell{ display:flex; align-items:center; justify-content:flex-end; gap: var(--cell-gap); }
     .count{ font-size: var(--count-size); min-width: 26px; text-align:right; }
     .plus-btn{ padding:8px 12px; }
-
     .section-row td{ font-size:12px; opacity:.7 }
     .guest-toggle{ margin:10px 0 -2px; display:flex; justify-content:center; }
     .guest-toggle .btn{ min-width: 200px; }
@@ -271,7 +265,7 @@ function subscribeRealtime(){
   });
 }
 
-/* Heute-Banner + große CTA (jetzt Button -> JS Navigationslogik) */
+/* Heute-Banner + CTA */
 async function updateTodayBanner(existing){
   try{
     let person=existing;
@@ -299,18 +293,17 @@ async function updateTodayBanner(existing){
     `;
   }catch(e){
     document.getElementById("todayInfo").textContent="Heute: Status nicht verfügbar (offline?)";
-    document.getElementById("todayCta").innerHTML = `
-      <button class="cta-check" onclick="openChecklist()">Checkliste öffnen</button>`;
+    document.getElementById("todayCta").innerHTML = `<button class="cta-check" onclick="openChecklist()">Checkliste öffnen</button>`;
   }
 }
 
-/* Neu: Navigation zur Checkliste ohne Query – via localStorage Flag */
+/* WICHTIG: Navigation → Hash + localStorage */
 function openChecklist(){
   try{ localStorage.setItem('nav_tab','check'); }catch(_){}
-  location.href = 'hausdienst.html'; // exakt wie der Tab-Link
+  location.href = 'hausdienst.html#check';
 }
 
-/* Undo/Redo */
+/* Undo/Redo + Tabelle + Rest … (unverändert) */
 function updateUndoRedoButtons(){
   const u=document.getElementById("undoBtn"), r=document.getElementById("redoBtn");
   if(!u||!r) return; u.disabled = history.length===0; r.disabled = redoStack.length===0;
@@ -407,7 +400,6 @@ function buildTable(){
   document.getElementById("tableContainer").innerHTML = html + guestHtml;
   requestAnimationFrame(adjustToOnePage);
 }
-
 function toggleGuests(){ showGuests=!showGuests; buildTable(); }
 
 /* Onepage fit (Kernteam) */
@@ -486,7 +478,7 @@ function confirmAddDrink(){
   saveAll(); buildTable(); closeModal('drinkModal'); document.getElementById("drinkName").value=""; document.getElementById("drinkPrice").value="";
 }
 
-/* SW (falls vorhanden) */
+/* SW */
 if('serviceWorker' in navigator){ navigator.serviceWorker.register('./sw-v18.js?v=18', {scope:'./'}).catch(()=>{}); }
 
 window.onload=loadState;
