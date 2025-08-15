@@ -154,7 +154,6 @@
       document.getElementById('tab'+(k==='history'?'Hist':k.charAt(0).toUpperCase()+k.slice(1))).classList.toggle('active', k===key);
     });
   }
-  // URL-Parameter auswerten (check / hist)
   function pickTabFromQuery(){
     const t=new URLSearchParams(location.search).get('tab');
     if(t==='check') showTab('check');
@@ -226,7 +225,7 @@
     document.getElementById('nextList').innerHTML = `<table><thead><tr><th>Datum</th><th>Person</th><th>Aktion</th></tr></thead><tbody>${rows}</tbody></table>`;
   }
 
-  /* Checkliste (Firestore-basiert, pro Tag Status lokal) */
+  /* Checkliste (Firestore) */
   const CATS=[{key:"all",label:"Übersicht"},{key:"morgens",label:"Morgens"},{key:"tag",label:"Im Laufe des Tages"},{key:"abend",label:"Bevor man geht"}];
   let showCat=localStorage.getItem("hausdienst_cat")||"all";
   let showMode=localStorage.getItem("hausdienst_filter_mode")||"open";
@@ -317,7 +316,7 @@
     pickTabFromQuery();
   }
 
-  if('serviceWorker' in navigator){ navigator.serviceWorker.register('./sw.js').catch(()=>{}); }
+  if('serviceWorker' in navigator){ navigator.serviceWorker.register('./sw.js?v=17').catch(()=>{}); }
   init();
 </script>
 </body>
