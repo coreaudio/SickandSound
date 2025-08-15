@@ -21,12 +21,14 @@
     .row { display:flex; gap:10px; flex-wrap:wrap; align-items:center; }
     .row input[type="date"] { min-width: 180px; }
     .badge.big { font-size:14px; padding:6px 10px; }
+
     /* Checklisten-Zusatz */
     .segmented { display:flex; gap:8px; flex-wrap:wrap; }
     .segmented .tabbtn { padding:8px 12px; border-radius:999px; background:#1c2130; color:#e6e8ef; border:1px solid #2a3042; }
     .segmented .tabbtn.active { background:linear-gradient(135deg,#6ee7ff,#a78bfa); color:#0b0e14; border-color:transparent; font-weight:800; }
     .toolbar { display:flex; gap:10px; flex-wrap:wrap; align-items:center; margin-top:10px; }
     .toolbar input, .toolbar select { flex:1 1 auto; min-width:160px; }
+    .groupTitle { font-weight:800; letter-spacing:.2px; margin:6px 0 6px; }
   </style>
 </head>
 <body>
@@ -79,7 +81,7 @@
         <div class="section-title">Checkliste</div>
         <div class="sub">Aufgaben sind dauerhaft gespeichert · Haken gilt nur heute</div>
 
-        <!-- Reiter/Kategorien -->
+        <!-- Reiter/Kategorien (+ Übersicht) -->
         <div id="catTabs" class="segmented" style="margin-top:10px"></div>
 
         <!-- Eingabe + Filter -->
@@ -150,7 +152,6 @@
     const mid=new Date(now.getFullYear(),now.getMonth(),now.getDate()+1,0,0,2);
     setTimeout(()=>{ cb(); scheduleMidnightRefresh(cb); }, mid-now);
   }
-
   function setToday(){ const d=document.getElementById('datePick'); d.value=todayStr(); loadForDate(); }
   function setTomorrow(){ const d=document.getElementById('datePick'); const t=new Date(); t.setDate(t.getDate()+1); d.value=t.toISOString().slice(0,10); loadForDate(); }
 
@@ -168,7 +169,6 @@
     document.getElementById('selectedBadge').innerHTML = person ? `<span class="badge ok big">${person}</span>` : `<span class="badge none big">Frei</span>`;
   }
 
-  // Nur EINE Person pro Tag: wir speichern genau ein Feld "person" im Tages-Dokument
   async function choose(name){
     const date=document.getElementById('datePick').value;
     if(!date) return alert("Kein Datum gewählt.");
@@ -210,13 +210,14 @@
     document.getElementById('nextList').innerHTML = `<table><thead><tr><th>Datum</th><th>Person</th></tr></thead><tbody>${rows}</tbody></table>`;
   }
 
-  // ---- CHECKLISTE (Tabs, Filter, Aufgaben) ----
+  // ---- CHECKLISTE (Tabs, Filter, Aufgaben, Übersicht) ----
   const CATS = [
-    {key:"morgens", label:"Morgens"},
-    {key:"tag",     label:"Im Laufe des Tages"},
-    {key:"abend",   label:"Bevor man geht"},
+    {key:"all",    label:"Übersicht"},
+    {key:"morgens",label:"Morgens"},
+    {key:"tag",    label:"Im Laufe des Tages"},
+    {key:"abend",  label:"Bevor man geht"},
   ];
-  let showCat = localStorage.getItem("hausdienst_cat") || "morgens";
+  let showCat = localStorage.getItem("hausdienst_cat") || "all";
   let showMode= localStorage.getItem("hausdienst_filter_mode") || "open"; // open|done|all
 
   const CHECKED_KEY="hausdienst_checked_"+todayStr();
@@ -227,7 +228,8 @@
   function setMode(m){ showMode=m; localStorage.setItem("hausdienst_filter_mode",m); updateFilterButtons(); renderTasks(); }
   function setCat(c){
     showCat=c; localStorage.setItem("hausdienst_cat",c);
-    const sel=document.getElementById('newTaskCat'); if(sel) sel.value=c;
+    const sel=document.getElementById('newTaskCat'); 
+    if(sel && c!=="all") sel.value=c; // bei Übersicht keine Umstellung
     updateCatTabs(); updateFilterButtons(); renderTasks();
   }
   function updateCatTabs(){
@@ -235,22 +237,31 @@
       `<button class="tabbtn ${c.key===showCat?'active':''}" onclick="setCat('${c.key}')">${c.label}</button>`
     ).join("");
   }
+
+  function labelOf(cat){ const f=CATS.find(c=>c.key===cat); return f?f.label:cat; }
+  function escapeHtml(s){ return (s||"").replace(/[&<>"']/g, m=>({ "&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#039;" }[m])); }
+
+  function calcCounts(list){
+    return {
+      open: list.filter(t=>!checked[t.id]).length,
+      done: list.filter(t=> checked[t.id]).length,
+      all : list.length
+    };
+  }
   function updateFilterButtons(){
-    const byCat = tasksCache.filter(t=>t.cat===showCat);
-    const openCnt = byCat.filter(t=>!checked[t.id]).length;
-    const doneCnt = byCat.filter(t=> checked[t.id]).length;
-    const allCnt  = byCat.length;
+    const inCat = (showCat==="all") ? tasksCache : tasksCache.filter(t=>t.cat===showCat);
+    const cnt = calcCounts(inCat);
     const fOpen=document.getElementById("fOpen"), fDone=document.getElementById("fDone"), fAll=document.getElementById("fAll");
-    fOpen.textContent=`Offen (${openCnt})`; fDone.textContent=`Erledigt (${doneCnt})`; fAll.textContent=`Alle (${allCnt})`;
+    fOpen.textContent=`Offen (${cnt.open})`; fDone.textContent=`Erledigt (${cnt.done})`; fAll.textContent=`Alle (${cnt.all})`;
     fOpen.className="btn small "+(showMode==="open"?"secondary":"ghost");
     fDone.className="btn small "+(showMode==="done"?"secondary":"ghost");
     fAll.className ="btn small "+(showMode==="all" ?"secondary":"ghost");
   }
-  function escapeHtml(s){ return (s||"").replace(/[&<>"']/g, m=>({ "&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#039;" }[m])); }
 
   async function addTask(){
     const txt=document.getElementById('newTask').value.trim(); if(!txt) return;
-    const cat=document.getElementById('newTaskCat').value || showCat;
+    const sel=document.getElementById('newTaskCat');
+    const cat= sel ? (sel.value||"morgens") : "morgens";
     if(!db){ alert("Offline – kann nicht speichern."); return; }
     await db.collection("checklistTasks").add({text:txt, cat, createdAt:Date.now()});
     document.getElementById('newTask').value="";
@@ -265,60 +276,49 @@
     checked[id]=!checked[id]; saveChecked(); renderTasks();
   }
 
+  function renderGroup(catKey, label){
+    const base = tasksCache.filter(t=>t.cat===catKey)
+      .sort((a,b)=> (a.createdAt||0)-(b.createdAt||0) || (a.text||"").localeCompare(b.text||""));
+
+    let list = base;
+    if(showMode==="open") list = base.filter(t=>!checked[t.id]);
+    else if(showMode==="done") list = base.filter(t=>checked[t.id]);
+
+    const rows = list.map(t=>`
+      <tr>
+        <td style="text-align:left">${escapeHtml(t.text||"")}</td>
+        <td>${checked[t.id] ? "✅" : "⬜️"}</td>
+        <td>
+          <button class="btn small ${checked[t.id]?'warning':''}" onclick="toggleTask('${t.id}')">
+            ${checked[t.id] ? "↩️ rückgängig" : "✅ erledigt"}
+          </button>
+          <button class="btn small ghost" style="margin-left:6px" onclick="delTask('${t.id}')">Löschen</button>
+        </td>
+      </tr>
+    `).join("");
+
+    const head = `<thead><tr><th style="text-align:left">Aufgabe</th><th>Status</th><th>Aktion</th></tr></thead>`;
+    const body = `<tbody>${rows || `<tr><td colspan="3">Keine Aufgaben in „${label}“.</td></tr>`}</tbody>`;
+    return `<h2 class="groupTitle">${label}</h2><table>${head}${body}</table>`;
+  }
+
   function renderTasks(snap){
     if(snap && snap.forEach){
       tasksCache=[]; snap.forEach(d=>tasksCache.push({id:d.id, ...d.data()}));
     }
-    const list = tasksCache.filter(t=>t.cat===showCat)
-      .sort((a,b)=> (a.createdAt||0)-(b.createdAt||0) || (a.text||"").localeCompare(b.text||""));
-
     updateFilterButtons();
 
-    const openList = list.filter(t=>!checked[t.id]);
-    const doneList = list.filter(t=> checked[t.id]);
-
-    let headCols="", rows="";
-    if(showMode==="open"){
-      headCols=`<th style="text-align:left">Aufgabe</th><th>Aktion</th><th>—</th>`;
-      rows = openList.map(t=>`
-        <tr>
-          <td style="text-align:left">${escapeHtml(t.text||"")}</td>
-          <td><button class="btn small" onclick="toggleTask('${t.id}')">✅ erledigt</button></td>
-          <td><button class="btn small ghost" onclick="delTask('${t.id}')">Löschen</button></td>
-        </tr>`).join("");
-      if(!rows) rows=`<tr><td colspan="3">Alle Aufgaben in „${labelOf(showCat)}“ erledigt 🎉 — „Erledigt“ zeigt Haken.</td></tr>`;
-    }else if(showMode==="done"){
-      headCols=`<th style="text-align:left">Erledigt</th><th>Aktion</th><th>—</th>`;
-      rows = doneList.map(t=>`
-        <tr>
-          <td style="text-align:left">${escapeHtml(t.text||"")}</td>
-          <td><button class="btn small warning" onclick="toggleTask('${t.id}')">↩️ rückgängig</button></td>
-          <td><button class="btn small ghost" onclick="delTask('${t.id}')">Löschen</button></td>
-        </tr>`).join("");
-      if(!rows) rows=`<tr><td colspan="3">Keine erledigten Aufgaben in „${labelOf(showCat)}“.</td></tr>`;
+    if(showCat==="all"){
+      // Übersicht: alle drei Gruppen untereinander
+      const html = renderGroup("morgens","Morgens")
+                 + renderGroup("tag","Im Laufe des Tages")
+                 + renderGroup("abend","Bevor man geht");
+      document.getElementById("list").innerHTML = html;
     }else{
-      headCols=`<th style="text-align:left">Aufgabe</th><th>Status</th><th>Aktion</th>`;
-      const allList=[...openList.map(t=>({t,done:false})), ...doneList.map(t=>({t,done:true}))];
-      rows = allList.map(({t,done})=>`
-        <tr>
-          <td style="text-align:left">${escapeHtml(t.text||"")}</td>
-          <td>${done?"✅":"⬜️"}</td>
-          <td>
-            <button class="btn small ${done?'warning':''}" onclick="toggleTask('${t.id}')">
-              ${done ? "↩️ rückgängig" : "✅ erledigt"}
-            </button>
-            <button class="btn small ghost" style="margin-left:6px" onclick="delTask('${t.id}')">Löschen</button>
-          </td>
-        </tr>`).join("");
-      if(!rows) rows=`<tr><td colspan="3">Noch keine Aufgaben in „${labelOf(showCat)}“.</td></tr>`;
+      // Einzelkategorie
+      document.getElementById("list").innerHTML = renderGroup(showCat, labelOf(showCat));
     }
-
-    document.getElementById("list").innerHTML = `
-      <h2 style="font-weight:800">${labelOf(showCat)}</h2>
-      <table><thead><tr>${headCols}</tr></thead><tbody>${rows}</tbody></table>`;
   }
-
-  function labelOf(cat){ const f=CATS.find(c=>c.key===cat); return f?f.label:cat; }
 
   // Defaults (nur hier, einmalig) & Migration
   async function ensureDefaults(){
@@ -372,7 +372,7 @@
 
     // Checkliste
     updateCatTabs();
-    const sel=document.getElementById('newTaskCat'); sel.value=showCat;
+    const sel=document.getElementById('newTaskCat'); sel.value= (showCat==="all" ? "morgens" : showCat);
     if(db){
       await ensureDefaults();
       await ensureCategories();
