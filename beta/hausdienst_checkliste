@@ -1,3 +1,0 @@
-<!-- in den Redirect-Dateien -->
-<meta http-equiv="refresh" content="0; url=hausdienst.html">
-<script>localStorage.setItem('nav_tab','check'); location.replace('hausdienst.html');</script>
