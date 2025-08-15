@@ -11,13 +11,10 @@
   <link rel="stylesheet" href="style.css" />
   <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;800&display=swap" rel="stylesheet" />
   <style>
-    :root{
-      --ring: 48px; --row-pad: 6px; --name-size: 18px; --count-size: 17px; --cell-gap: 10px;
-    }
+    :root{ --ring: 48px; --row-pad: 6px; --name-size: 18px; --count-size: 17px; --cell-gap: 10px; }
     .content{ padding-bottom: 88px; }
     .appbar{ min-height: 52px; }
     .bottomnav{ height: 64px; }
-
     .card.table-wrap table td, .card.table-wrap table th{ padding-top: var(--row-pad); padding-bottom: var(--row-pad); }
     .lvl-ring{ width: var(--ring); height: var(--ring); position:relative; display:inline-grid; place-items:center; }
     .lvl-ring .val{ position:absolute; font-size: 12px; font-weight: 800; line-height:1; }
@@ -86,7 +83,7 @@
       <svg viewBox="0 0 24 24" fill="currentColor"><path d="M4 6h16v2H4zM4 11h16v2H4zM4 16h10v2H4z"/></svg>
       <span>Liste</span>
     </a>
-    <a class="tab" href="hausdienst.html" aria-label="Hausdienst">
+    <a class="tab" href="hausdienst.html#plan" aria-label="Hausdienst">
       <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 3l9 7-1.2 1.6L18 10.1V20h-5v-6H11v6H6v-9.9L4.2 11.6 3 10z"/></svg>
       <span>Hausdienst</span>
     </a>
@@ -297,9 +294,8 @@ async function updateTodayBanner(existing){
   }
 }
 
-/* WICHTIG: Navigation → Hash + localStorage */
+/* NUR Hash-Navigation, kein localStorage mehr */
 function openChecklist(){
-  try{ localStorage.setItem('nav_tab','check'); }catch(_){}
   location.href = 'hausdienst.html#check';
 }
 
@@ -479,7 +475,7 @@ function confirmAddDrink(){
 }
 
 /* SW */
-if('serviceWorker' in navigator){ navigator.serviceWorker.register('./sw-v18.js?v=18', {scope:'./'}).catch(()=>{}); }
+if('serviceWorker' in navigator){ navigator.serviceWorker.register('./sw-v19.js?v=19', {scope:'./'}).catch(()=>{}); }
 
 window.onload=loadState;
 window.onresize=()=>requestAnimationFrame(adjustToOnePage);
