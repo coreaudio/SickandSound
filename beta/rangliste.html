@@ -77,21 +77,22 @@
     state.prices   = state.prices   || JSON.parse(localStorage.getItem(K.prices))   || {};
     state.data     = state.data     || JSON.parse(localStorage.getItem(K.data))     || {};
 
-    // --- LIVE Rangliste (gebucht + offen)
+    // --- Summen vorbereiten
     const sumsGebucht={}; (state.people||[]).forEach(p=>sumsGebucht[p]=0);
     (state.bookings||[]).forEach(b=>{ sumsGebucht[b.person]=(sumsGebucht[b.person]||0)+Number(b.sum||0); });
 
+    // --- LIVE Rangliste (Summe = gebucht + offen)
     const rowsLive = (state.people||[]).map(p=>{
       const offen = valueOfCurrentStriche(p, state.prices, state.data);
       const gebucht = sumsGebucht[p]||0;
-      const live = gebucht + offen;
-      return {p, live, offen, gebucht};
-    }).sort((a,b)=>b.live-a.live);
+      const summe = gebucht + offen;
+      return {p, summe, offen, gebucht};
+    }).sort((a,b)=>b.summe-a.summe);
 
     document.getElementById("live").innerHTML = buildTable(
-      "🏆 Live Rangliste (Einzahlungen + offene Striche)",
-      ["Platz","Person","Live €","davon offen €","gebucht €"],
-      rowsLive.map((r,i)=>[i+1, r.p, r.live.toFixed(2), r.offen.toFixed(2), r.gebucht.toFixed(2)]),
+      "🏆 Live Rangliste (Summe aus Gebucht + Offen)",
+      ["Platz","Person","Summe €","Offen €","Gebucht €"],
+      rowsLive.map((r,i)=>[i+1, r.p, r.summe.toFixed(2), r.offen.toFixed(2), r.gebucht.toFixed(2)]),
       "Noch keine Daten."
     );
 
