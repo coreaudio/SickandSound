@@ -235,4 +235,39 @@
         document.getElementById("hausdienstHistory").innerHTML = `<h2 class="section-title">🧹 Hausdienst – Historie</h2><div class="sub">Fehler beim Laden.</div>`;
       }
     }else{
-      document.getElementById("hausdienstHistory").innerHTML = `<h2 class="section-title">🧹 Hausdi
+      document.getElementById("hausdienstHistory").innerHTML = `<h2 class="section-title">🧹 Hausdienst – Historie</h2><div class="sub">Offline: Daten nicht verfügbar.</div>`;
+    }
+
+    // Hausdienst Statistik (nur Kernteam, bis heute)
+    if(db){
+      const today=todayStr();
+      const cnt={}; CORE.forEach(p=>cnt[p]=0);
+      try{
+        const docs=await db.collection("hausdienst").get();
+        docs.forEach(d=>{ if(d.id<=today){ const person=d.data().person; if(CORE.includes(person)) cnt[person]++; } });
+        const arrHd=Object.entries(cnt).sort((a,b)=>b[1]-a[1]);
+        document.getElementById("hausdienstStats").innerHTML = buildTable(
+          "📊 Hausdienst – Statistik (bis heute)",
+          ["Platz","Person","Tage"],
+          arrHd.map(([p,v],i)=>[i+1,p,v]),
+          "Keine Einträge vorhanden."
+        );
+      }catch(_){
+        document.getElementById("hausdienstStats").innerHTML = `<h2 class="section-title">📊 Hausdienst – Statistik</h2><div class="sub">Fehler beim Laden.</div>`;
+      }
+    }
+  }
+
+  function subscribeRealtime(){
+    if(!db) return;
+    db.collection(STATE_COLLECTION).doc("global").onSnapshot(snap=>{
+      if(!snap.exists) return;
+      renderFromState(snap.data() || {});
+    });
+  }
+
+  if('serviceWorker' in navigator){ navigator.serviceWorker.register('./sw.js').catch(()=>{}); }
+  window.onload=()=>{ loadAllOnce(); subscribeRealtime(); };
+</script>
+</body>
+</html>
