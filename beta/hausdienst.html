@@ -172,21 +172,38 @@
       document.getElementById(map[k]).classList.toggle('active', k===key);
       document.getElementById('tab'+(k==='history'?'Hist':k.charAt(0).toUpperCase()+k.slice(1))).classList.toggle('active', k===key);
     });
+    // Hash aktuell halten (nice-to-have)
+    if(history.pushState){
+      const h = key==='plan' ? '' : '#'+key;
+      history.replaceState(null,'', location.pathname + (h? h : ''));
+    }
   }
 
-  /* NEU: Tab aus Query ODER localStorage lesen */
+  /* Neu: Tab aus Query ODER Hash ODER localStorage */
   function pickTabFromQuery(){
     let t = new URLSearchParams(location.search).get('tab');
+
+    if(!t){
+      const hash=(location.hash||'').replace('#','');
+      if(hash==='check' || hash==='history' || hash==='hist' || hash==='plan') t = hash;
+    }
     if(!t){
       try{
         t = localStorage.getItem('nav_tab') || '';
         localStorage.removeItem('nav_tab');
       }catch(_){ t=''; }
     }
-    if(t==='check') showTab('check');
-    else if(t==='hist' || t==='history') showTab('history');
-    else showTab('plan');
+
+    switch(t){
+      case 'check': showTab('check'); break;
+      case 'history':
+      case 'hist': showTab('history'); break;
+      case 'plan':
+      default: showTab('plan'); break;
+    }
   }
+
+  window.addEventListener('hashchange', pickTabFromQuery);
 
   /* Datum & Refresh */
   const todayStr=()=>new Date().toISOString().slice(0,10);
@@ -201,11 +218,8 @@
 
   function renderPeopleRow(){
     const wrap=document.getElementById('peopleRow');
-    wrap.innerHTML = CORE.map(p=>`
-      <button class="pill ${selectedPerson===p?'active':''}" onclick="selectPerson('${p}')">${p}</button>
-    `).join("");
+    wrap.innerHTML = CORE.map(p=>`<button class="pill ${selectedPerson===p?'active':''}" onclick="selectPerson('${p}')">${p}</button>`).join("");
   }
-
   function updateSelectionUI(){
     const badge=document.getElementById('selBadge');
     const has=!!selectedPerson;
@@ -213,13 +227,10 @@
     document.getElementById('btnToday').disabled = !has;
     document.getElementById('btnTomorrow').disabled = !has;
   }
-
   function selectPerson(name){
     if(!CORE.includes(name)) return;
     selectedPerson = (selectedPerson===name ? null : name);
-    renderPeopleRow();
-    updateSelectionUI();
-    renderNextDays();
+    renderPeopleRow(); updateSelectionUI(); renderNextDays();
   }
 
   /* Setzen/Löschen */
@@ -234,7 +245,6 @@
     if(id===todayStr()) await updateTodayInfo();
     await renderNextDays(); await renderHistory();
   }
-
   async function setForDate(date, person){
     if(!db) return alert("Offline – kann nicht speichern.");
     const ex=await db.collection("hausdienst").doc(date).get();
@@ -243,7 +253,6 @@
     if(date===todayStr()) await updateTodayInfo();
     await renderNextDays(); await renderHistory();
   }
-
   async function clearSpecific(date){
     if(!db) return alert("Offline – kann nicht löschen.");
     await db.collection("hausdienst").doc(date).delete();
@@ -412,7 +421,7 @@
       document.getElementById("list").innerHTML = `<div class="sub">Offline – Aufgaben können nicht geladen werden.</div>`;
     }
 
-    // Wichtig: Tab aus Query oder localStorage auswählen
+    // Tab auswählen
     pickTabFromQuery();
   }
 
