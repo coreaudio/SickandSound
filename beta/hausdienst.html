@@ -52,6 +52,7 @@
       <div class="tabs" style="margin-top:10px">
         <button id="tabPlan" class="tabbtn active" onclick="showTab('plan')">Planen</button>
         <button id="tabCheck" class="tabbtn" onclick="showTab('check')">Checkliste</button>
+        <button id="tabHist" class="tabbtn" onclick="showTab('history')">Historie</button>
       </div>
     </div>
 
@@ -70,7 +71,9 @@
       <div class="card">
         <div class="section-title">Person auswählen</div>
         <div id="peopleRow" class="people-row" style="margin-top:8px"></div>
-        <div class="sub muted" id="personHint" style="margin-top:6px">Tipp: Person zuerst wählen und dann Datum — die Auswahl wandert mit.</div>
+        <div class="sub muted" id="personHint" style="margin-top:6px">
+          Tipp: Person wählen, dann Datum (oder unten in der Liste „Belegen“ tippen).
+        </div>
       </div>
 
       <div class="card table-wrap">
@@ -108,6 +111,14 @@
 
       <div class="card table-wrap" id="list"><div class="sub">Lade Aufgaben…</div></div>
     </div>
+
+    <!-- Panel: Historie -->
+    <div id="panelHist" class="panel">
+      <div class="card table-wrap">
+        <div class="section-title">Hausdienst – Historie (letzte 30 Tage)</div>
+        <div id="histList" class="sub">Lade…</div>
+      </div>
+    </div>
   </main>
 
   <nav class="bottomnav">
@@ -141,10 +152,11 @@
   try{ if(window.firebase){ firebase.initializeApp(firebaseConfig); try{firebase.analytics();}catch(_){ } db=firebase.firestore(); } }catch(_){ db=null; }
 
   function showTab(key){
-    document.getElementById('panelPlan').classList.toggle('active', key==='plan');
-    document.getElementById('panelCheck').classList.toggle('active', key==='check');
-    document.getElementById('tabPlan').classList.toggle('active', key==='plan');
-    document.getElementById('tabCheck').classList.toggle('active', key==='check');
+    const map = {plan:'panelPlan', check:'panelCheck', history:'panelHist'};
+    ['plan','check','history'].forEach(k=>{
+      document.getElementById(map[k]).classList.toggle('active', k===key);
+      document.getElementById('tab'+(k==='history'?'Hist':k.charAt(0).toUpperCase()+k.slice(1))).classList.toggle('active', k===key);
+    });
   }
 
   // ---- PLANEN ----
@@ -155,7 +167,7 @@
     setTimeout(()=>{ cb(); scheduleMidnightRefresh(cb); }, mid-now);
   }
 
-  let selectedPerson=null; // aktive Personausswahl
+  let selectedPerson=null; // aktive Personausswahl (überschreibt NICHT automatisch)
 
   function setToday(){
     const d=document.getElementById('datePick'); d.value=todayStr();
@@ -177,8 +189,7 @@
     if(!CORE.includes(name)) return;
     selectedPerson = (selectedPerson===name ? null : name);
     renderPeopleRow();
-    const date=document.getElementById('datePick').value;
-    if(selectedPerson && date){ setForDate(date, selectedPerson); }
+    renderNextDays(); // Buttons „Belegen mit Auswahl“ ein-/ausblenden
   }
 
   async function loadForDate(){
@@ -192,10 +203,11 @@
 
   async function setForDate(date, person){
     if(!db) return alert("Offline – kann nicht speichern.");
+    if(!person) return alert("Bitte zuerst eine Person auswählen.");
     await db.collection("hausdienst").doc(date).set({person, updatedAt:Date.now()});
     await loadForDate();
     if(date===todayStr()){ updateTodayInfo(); }
-    renderNextDays();
+    renderNextDays(); renderHistory();
   }
 
   function updateSelectedBadge(person){
@@ -214,7 +226,7 @@
     });
   }
 
-  // Liste der nächsten 14 Tage inkl. Austragen
+  // 14-Tage-Liste inkl. Austragen & Belegen (mit Auswahl)
   async function renderNextDays(){
     if(!db){ document.getElementById('nextList').textContent="Offline – keine Vorschau."; return; }
     const out=[];
@@ -224,21 +236,27 @@
       const doc=await db.collection("hausdienst").doc(id).get();
       out.push([id, doc.exists ? (doc.data().person||null) : null]);
     }
-    const rows = out.map(([d,p],i)=>`
-      <tr>
-        <td>${i===0?d+" (heute)":d}</td>
-        <td>${p ? p : "—"}</td>
-        <td style="text-align:right">
-          ${p ? `<button class="btn small danger" onclick="clearSpecific('${d}')">Austragen</button>` : `<span class="sub muted">frei</span>`}
-        </td>
-      </tr>`).join("");
+    const rows = out.map(([d,p],i)=>{
+      const isToday = i===0;
+      const action = p
+        ? `<button class="btn small danger" onclick="clearSpecific('${d}')">Austragen</button>`
+        : (selectedPerson
+            ? `<button class="btn small" onclick="setForDate('${d}','${selectedPerson}')">Belegen mit Auswahl</button>`
+            : `<span class="sub muted">frei</span>`);
+      return `<tr>
+        <td>${isToday?d+" (heute)":d}</td>
+        <td>${p ? p : (selectedPerson ? `<span class="muted">–</span>` : "—")}</td>
+        <td style="text-align:right">${action}</td>
+      </tr>`;
+    }).join("");
     document.getElementById('nextList').innerHTML =
       `<table><thead><tr><th>Datum</th><th>Person</th><th>Aktion</th></tr></thead><tbody>${rows}</tbody></table>`;
   }
+
   async function clearSpecific(date){
     if(!db) return alert("Offline – kann nicht löschen.");
     await db.collection("hausdienst").doc(date).delete();
-    renderNextDays();
+    renderNextDays(); renderHistory();
     if(date===todayStr()){ updateTodayInfo(); }
     const cur=document.getElementById('datePick').value;
     if(cur===date) loadForDate();
@@ -365,50 +383,26 @@
     }
   }
 
-  async function ensureDefaults(){
-    if(!db) return;
-    const snap=await db.collection("checklistTasks").limit(1).get();
-    if(!snap.empty) return;
-    const defs = [
-      {cat:"morgens", text:"Briefkasten leeren"},
-      {cat:"morgens", text:"Spülmaschine ausräumen"},
-      {cat:"morgens", text:"Toilettenpapier & Zewa auffüllen"},
-      {cat:"morgens", text:"Getränke auffüllen"},
-      {cat:"morgens", text:"Staubsauger Wasser checken"},
-      {cat:"tag",     text:"Wäsche an machen & aufhängen"},
-      {cat:"tag",     text:"Pakete entgegennehmen"},
-      {cat:"tag",     text:"Für Grundordnung sorgen"},
-      {cat:"abend",   text:"Oberflächen in der Küche + Geräte wischen"},
-      {cat:"abend",   text:"Müll rausbringen & mitnehmen"},
-    ];
-    const batch=db.batch();
-    defs.forEach(d=>{ const ref=db.collection("checklistTasks").doc(); batch.set(ref,{...d, createdAt:Date.now()}); });
-    await batch.commit();
-  }
+  // ---- Historie (30 Tage) ----
+  function todayString(){ return new Date().toISOString().slice(0,10); }
+  function dateDaysAgo(n){ const d=new Date(); d.setDate(d.getDate()-n); return d.toISOString().slice(0,10); }
 
-  async function ensureCategories(){
-    if(!db) return;
-    const qs=await db.collection("checklistTasks").get();
-    const batch=db.batch(); let need=false;
-    qs.forEach(doc=>{
-      const t=doc.data(); if(t.cat) return;
-      let cat="tag", text=t.text||"";
-      const s=(text||"").toLowerCase();
-      if(s.startsWith("morgens:")){ cat="morgens"; text=text.replace(/^Morgens:\s*/i,""); }
-      else if(s.startsWith("im laufe des tages")){ cat="tag"; text=text.replace(/^Im Laufe des Tages:? ?/i,""); }
-      else if(s.startsWith("bevor man geht")){ cat="abend"; text=text.replace(/^Bevor man geht:? ?/i,""); }
-      batch.set(doc.ref,{cat,text},{merge:true}); need=true;
-    });
-    if(need) await batch.commit();
-  }
-
-  async function updateTodayInfo(){
-    if(!db){ document.getElementById('todayInfo').textContent="Heute: (offline)"; return; }
-    const d=await db.collection("hausdienst").doc(todayStr()).get();
-    const person = d.exists ? d.data().person : null;
-    document.getElementById('todayInfo').innerHTML = person
-      ? `Heute eingetragener Hausdienst: <span class="badge ok">${person}</span>`
-      : `Heute: <span class="badge none">Noch niemand eingetragen</span>`;
+  async function renderHistory(){
+    if(!db){ document.getElementById('histList').textContent="Offline – keine Historie."; return; }
+    try{
+      const snap=await db.collection("hausdienst").get();
+      const all=[]; snap.forEach(doc=>all.push({id:doc.id, person:(doc.data().person||null)}));
+      const from=dateDaysAgo(30);
+      const rows=all
+        .filter(x=>x.id>=from && x.id<=todayString())
+        .sort((a,b)=>b.id.localeCompare(a.id))
+        .map(x=>`<tr><td>${x.id}</td><td>${x.person || "—"}</td></tr>`)
+        .join("");
+      document.getElementById('histList').innerHTML =
+        `<table><thead><tr><th>Datum</th><th>Person</th></tr></thead><tbody>${rows || `<tr><td colspan="2">Keine Einträge.</td></tr>`}</tbody></table>`;
+    }catch(_){
+      document.getElementById('histList').innerHTML = `<div class="sub">Fehler beim Laden.</div>`;
+    }
   }
 
   // Start
@@ -421,11 +415,11 @@
     await updateTodayInfo();
     await loadForDate();
     await renderNextDays();
-    scheduleMidnightRefresh(async ()=>{ await updateTodayInfo(); if(dp.value===todayStr()) await loadForDate(); await renderNextDays(); });
+    scheduleMidnightRefresh(async ()=>{ await updateTodayInfo(); if(dp.value===todayStr()) await loadForDate(); await renderNextDays(); await renderHistory(); });
 
     // Checkliste
     updateCatTabs();
-    const sel=document.getElementById('newTaskCat'); sel.value= (showCat==="all" ? "morgens" : showCat);
+    const sel=document.getElementById('newTaskCat'); sel.value="morgens";
     if(db){
       await ensureDefaults();
       await ensureCategories();
@@ -434,6 +428,9 @@
       document.getElementById("list").innerHTML = `<div class="sub">Offline – Aufgaben können nicht geladen werden.</div>`;
     }
     updateFilterButtons();
+
+    // Historie
+    await renderHistory();
   }
 
   if('serviceWorker' in navigator){ navigator.serviceWorker.register('./sw.js').catch(()=>{}); }
