@@ -2,7 +2,7 @@
 <html lang="de">
 <head>
   <meta charset="UTF-8" />
-  <title>Sick & Sound – Strichliste</title>
+  <title>Strichliste</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <meta name="theme-color" content="#0b0e14" />
   <meta name="apple-mobile-web-app-capable" content="yes">
@@ -11,560 +11,385 @@
   <link rel="stylesheet" href="style.css" />
   <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;800&display=swap" rel="stylesheet" />
   <style>
-    /* ---- Onepage-Optimierung für Tablet ---- */
-    :root{
-      --ring: 48px;          /* wird per JS auf verfügbare Höhe skaliert */
-      --row-pad: 6px;        /* vertikales Padding in Zeilen */
-      --name-size: 18px;     /* Schriftgröße Namen */
-      --count-size: 17px;    /* Schriftgröße Zähler */
-      --cell-gap: 10px;
+    /* --- Layout-Feinschliff für iPad Onepager --- */
+    .appbar .app-title h1 { font-size: 18px; }
+    .people-section { margin-top: 10px; }
+    .section-title { margin-bottom: 6px; }
+    .row {
+      display: grid;
+      grid-template-columns: 64px 1fr auto;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 10px;
+      border-radius: 14px;
+      background: #0f1420;
+      border: 1px solid #1f2538;
+      margin-bottom: 6px;
     }
-    .content{ padding-bottom: 88px; } /* Platz für Bottomnav */
-    .appbar{ min-height: 52px; }
-    .bottomnav{ height: 64px; }
-
-    .card.table-wrap table td, .card.table-wrap table th{
-      padding-top: var(--row-pad);
-      padding-bottom: var(--row-pad);
+    .name {
+      font-size: 18px;
+      font-weight: 800;
+      letter-spacing: .2px;
     }
-    .lvl-ring{ width: var(--ring); height: var(--ring); position:relative; display:inline-grid; place-items:center; }
-    .lvl-ring .val{ position:absolute; font-size: 12px; font-weight: 800; line-height:1; }
-    .person-cell{ display:flex; align-items:center; gap:10px; }
-    .p-name{ font-size: var(--name-size); font-weight: 800; letter-spacing:.2px; }
 
-    .drink-chip .drink-name{ font-size: 12px; }
-    .drink-chip .drink-price{ font-size: 11px; opacity:.8 }
+    /* Level-Ring */
+    .avatar {
+      position: relative;
+      width: 56px; height: 56px;
+      display: grid; place-items: center;
+    }
+    .ring {
+      position:absolute; inset: -2px; /* genug Platz, damit nichts abgeschnitten wird */
+      transform: rotate(-90deg);
+    }
+    .ring circle {
+      fill: none;
+      stroke-width: 6;
+      stroke-linecap: round;
+    }
+    .ring .bg { stroke: #22304a; }
+    .ring .fg { stroke: url(#grad); transition: stroke-dashoffset .25s ease; }
 
-    .cell{ display:flex; align-items:center; justify-content:flex-end; gap: var(--cell-gap); }
-    .count{ font-size: var(--count-size); min-width: 26px; text-align:right; }
-    .plus-btn{ padding:8px 12px; }
+    .lvl {
+      font-size: 12px;
+      font-weight: 800;
+      color: #aab3cf;
+      position:absolute;
+      bottom:-2px; left:0; right:0;
+      text-align:center;
+    }
 
-    .section-row td{ font-size:12px; opacity:.7 }
-    .guest-toggle{ margin:10px 0 -2px; display:flex; justify-content:center; }
-    .guest-toggle .btn{ min-width: 200px; }
-    .section-title{ font-size: 14px; }
+    /* Getränkezeile (Zähler links, +1 rechts) */
+    .drinks { display:flex; gap:8px; flex-wrap: wrap; }
+    .pill {
+      display:flex; align-items:center; gap:8px;
+      padding: 8px;
+      border-radius: 12px;
+      background:#101626;
+      border:1px solid #202a42;
+      min-width: 120px;
+    }
+    .pill .amount { min-width: 28px; text-align:center; font-weight:800; color:#ced5ea; }
+    .pill .label { font-weight:700; }
+    .pill .add {
+      margin-left:auto;
+      padding:6px 10px;
+      border-radius:10px;
+      background: linear-gradient(135deg, #6ee7ff, #a78bfa);
+      color:#0b0e14; font-weight:800; border:0;
+    }
+
+    /* Gäste-Box */
+    .guests .row { background:#0d111b; }
+
+    /* Undo-Zeile */
+    .actions { display:flex; gap:10px; align-items:center; justify-content:space-between; margin-top:10px; }
+
+    /* QR / PayPal Button Icon */
+    .icon-paypal { width:22px; height:22px; display:block; }
+    .btn.dark { color:#e6e8ef; }
+
+    /* Modal (QR) */
+    .modal { position:fixed; inset:0; display:none; background:rgba(0,0,0,.6); z-index:50; }
+    .modal.open { display:grid; place-items:center; }
+    .sheet {
+      width:min(92vw, 460px);
+      background:#0b0e14; border:1px solid #22283a; border-radius:18px;
+      padding:14px;
+    }
+    .sheet img { width:100%; height:auto; display:block; border-radius:12px; }
   </style>
 </head>
 <body>
 <div class="app">
-
-  <!-- AppBar -->
   <header class="appbar">
     <div class="app-title">
       <div class="brand-dot"></div>
-      <h1>Sick &amp; Sound</h1>
+      <h1>Sick &amp; Sound – Strichliste</h1>
     </div>
     <div class="appbar-actions">
-      <button class="btn small dark" onclick="togglePayPal()">💸</button>
-      <button class="btn small" onclick="openDrinkModal()">➕</button>
+      <!-- PayPal Button mit Inline-SVG -->
+      <button id="qrBtn" class="btn small dark" title="PayPal QR">
+        <svg class="icon-paypal" viewBox="0 0 64 64" aria-hidden="true">
+          <path d="M18 10h17c10 0 16 5 16 13s-6 13-16 13h-12l-4 18h-9L18 10z" fill="currentColor"/>
+          <path d="M15 27h16c9 0 14 4 14 11s-5 11-14 11h-12l-2 9h-9l6-31z" fill="currentColor" opacity=".55"/>
+        </svg>
+        <span class="sr-only">PayPal QR</span>
+      </button>
+      <a class="btn small dark" href="hausdienst.html" title="Hausdienst">🧹</a>
+      <a class="btn small dark" href="rangliste.html" title="Rang">📊</a>
     </div>
   </header>
 
-  <!-- Content -->
   <main class="content">
-    <div class="card" style="margin-bottom:8px">
-      <div class="section-title">Heute</div>
-      <div id="todayInfo" class="sub">Lade Tagesstatus…</div>
-    </div>
+    <!-- Kernteam -->
+    <section class="people-section" id="coreWrap">
+      <div class="section-title">Kernteam</div>
+      <div id="coreList"></div>
+    </section>
 
-    <div class="card table-wrap" id="tableContainer"></div>
+    <!-- Gäste -->
+    <section class="people-section guests" id="guestWrap">
+      <div class="section-title">Gäste</div>
+      <div id="guestList"></div>
+    </section>
 
-    <div class="card" style="margin-top:8px">
-      <div class="section-title">Aktionen</div>
-      <div class="footer" style="gap:8px;flex-wrap:wrap">
-        <button class="btn warning" id="undoBtn" onclick="undoLast()">↩ Rückgängig</button>
-        <button class="btn secondary" id="redoBtn" onclick="redoLast()">↪ Wiederholen</button>
-        <button class="btn danger" id="deleteBtn" onclick="toggleDeleteMode()">🗑 Löschen</button>
-        <button class="btn dark" onclick="resetAll()">♻ Abrechnen & zurücksetzen</button>
-        <button class="btn ghost" onclick="window.location='buchungen.html'">📖 Buchungen</button>
-      </div>
+    <div class="actions">
+      <button id="undoBtn" class="btn ghost">↩︎ Letzte Aktion rückgängig</button>
+      <a class="btn secondary" href="buchungen.html">📄 Buchungen</a>
     </div>
   </main>
 
-  <!-- BottomNav -->
   <nav class="bottomnav">
-    <a class="tab active" href="index.html" aria-label="Strichliste">
+    <a class="tab active" href="index.html">
       <svg viewBox="0 0 24 24" fill="currentColor"><path d="M4 6h16v2H4zM4 11h16v2H4zM4 16h10v2H4z"/></svg>
       <span>Liste</span>
     </a>
-    <a class="tab" href="hausdienst.html" aria-label="Hausdienst">
+    <a class="tab" href="hausdienst.html">
       <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 3l9 7-1.2 1.6L18 10.1V20h-5v-6H11v6H6v-9.9L4.2 11.6 3 10z"/></svg>
       <span>Hausdienst</span>
     </a>
-    <a class="tab" href="rangliste.html" aria-label="Ranglisten">
+    <a class="tab" href="rangliste.html">
       <svg viewBox="0 0 24 24" fill="currentColor"><path d="M7 17H3V7h4v10zm7 0h-4V3h4v14zm7 0h-4v-8h4v8z"/></svg>
       <span>Rang</span>
     </a>
-    <a class="tab" href="buchungen.html" aria-label="Buchungen">
+    <a class="tab" href="buchungen.html">
       <svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 2h9l5 5v13a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2zm8 1.5V8h4.5L14 3.5z"/></svg>
       <span>Buchungen</span>
     </a>
   </nav>
 </div>
 
-<!-- Modals -->
-<div class="modal" id="paypalModal" onclick="togglePayPal()"><img class="qr" src="frame.png" alt="PayPal QR"></div>
-
-<div class="modal" id="personModal"><div class="box">
-  <h2>➕ Person hinzufügen</h2>
-  <input id="personName" placeholder="Name eintippen" />
-  <div style="display:flex;gap:10px;margin-top:10px">
-    <button class="btn" onclick="confirmAddPerson()">Speichern</button>
-    <button class="btn dark" onclick="closeModal('personModal')">Abbrechen</button>
+<!-- QR Modal -->
+<div id="qrModal" class="modal" role="dialog" aria-modal="true" aria-label="PayPal QR">
+  <div class="sheet">
+    <img src="frame.png" alt="PayPal QR-Code">
+    <div style="display:flex; justify-content:flex-end; margin-top:10px">
+      <button class="btn" onclick="closeQR()">Schließen</button>
+    </div>
   </div>
-</div></div>
+</div>
 
-<div class="modal" id="drinkModal"><div class="box">
-  <h2>🥤 Getränk hinzufügen</h2>
-  <input id="drinkName" placeholder="Name des Getränks">
-  <input id="drinkPrice" type="number" step="0.1" placeholder="Preis (€)">
-  <div style="display:flex;gap:10px;margin-top:10px">
-    <button class="btn" onclick="confirmAddDrink()">Speichern</button>
-    <button class="btn dark" onclick="closeModal('drinkModal')">Abbrechen</button>
-  </div>
-</div></div>
-
-<!-- Firebase + Howler -->
+<!-- Firebase -->
 <script src="https://www.gstatic.com/firebasejs/12.0.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/12.0.0/firebase-analytics-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/12.0.0/firebase-firestore-compat.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/howler@2.2.4/dist/howler.core.min.js"></script>
-
 <script>
-/* ===== Config ===== */
-const CORE = ["Chris","Daniel","Elmi","Florian","Joel","Kevin","Kiste","Marco","Meli","Simon"];
-const firebaseConfig={apiKey:"AIzaSyBFHjGXI5yHyK0DyupS0bnTVAqlu6lvpNw",authDomain:"sickandsound-e9704.firebaseapp.com",projectId:"sickandsound-e9704",storageBucket:"sickandsound-e9704.firebasestorage.app",messagingSenderId:"248197359659",appId:"1:248197359659:web:a8777cbed3f83d6b1ca26e",measurementId:"G-62LH8V7S2E"};
+  const CORE = ["Chris","Daniel","Elmi","Florian","Joel","Kevin","Kiste","Marco","Meli","Simon"];
 
-/* ===== Safe init Firebase (Offline/Blocker tolerant) ===== */
-let db=null;
-try{
-  if(window.firebase){
-    firebase.initializeApp(firebaseConfig);
-    try{ firebase.analytics(); }catch(_){}
-    db=firebase.firestore();
-  }
-}catch(_){ db=null; }
+  const firebaseConfig = {
+    apiKey:"AIzaSyBFHjGXI5yHyK0DyupS0bnTVAqlu6lvpNw",
+    authDomain:"sickandsound-e9704.firebaseapp.com",
+    projectId:"sickandsound-e9704",
+    storageBucket:"sickandsound-e9704.firebasestorage.app",
+    messagingSenderId:"248197359659",
+    appId:"1:248197359659:web:a8777cbed3f83d6b1ca26e",
+    measurementId:"G-62LH8V7S2E"
+  };
+  let db=null;
+  try{ if(window.firebase){ firebase.initializeApp(firebaseConfig); try{firebase.analytics();}catch(_){} db=firebase.firestore(); } }catch(_){ db=null; }
 
-/* Prod/Beta Toggle */
-const STATE_COLLECTION = location.search.includes("beta") ? "state_beta" : "state";
+  const STATE_COLLECTION = location.search.includes("beta") ? "state_beta" : "state";
+  const K = { people:"sick_sound_people", prices:"sick_sound_prices", data:"sick_sound_data" };
 
-/* ===== State ===== */
-const pricesKey="sick_sound_prices", peopleKey="sick_sound_people", dataKey="sick_sound_data",
-      historyKey="sick_sound_history", bookingsKey="sick_sound_bookings", orderKey="sick_sound_order",
-      xpKey="sick_sound_xp", redoKey="sick_sound_redo";
-let prices={"Cola_Zero":1.0,"Monster":1.5,"Wasser":0.5,"Kaffee":1.0,"Mittagessen":6.0};
-let people=[], data={}, history=[], redoStack=[], bookings=[], columnOrder=Object.keys(prices), xp={};
-let deleteMode=false, hdToday=null, showGuests=false;
-
-/* ===== Sound helpers ===== */
-const makeSound = (src)=> (window.Howl ? new Howl({src:[src]}) : {play:()=>{}});
-const sClick = makeSound("https://cdn.jsdelivr.net/gh/jshawl/howler-examples@master/audio/sfx/coin1.wav");
-const sLevel = makeSound("https://cdn.jsdelivr.net/gh/jshawl/howler-examples@master/audio/sfx/powerUp5.wav");
-
-/* ===== Math / XP ===== */
-const todayStr=()=>new Date().toISOString().slice(0,10);
-const levelOf=x=>Math.floor(Math.sqrt(x/20))+1;
-
-// Geldwert der aktuellen Striche einer Person
-function valueOfCurrentStriche(person){
-  return (columnOrder||[]).reduce(
-    (sum, d) => sum + ((data[`${person}_${d}`] || 0) * (prices[d] || 0)), 0
-  );
-}
-// XP für Anzeige = mindestens Strichwert
-function getXpForDisplay(person){
-  const base = +(xp[person] || 0);
-  const cur  = valueOfCurrentStriche(person);
-  return Math.max(base, cur);
-}
-
-/* ===== Long-press for +1 ===== */
-let holdT=null, holdI=null;
-function startHold(handler){ stopHold(); handler(); holdT=setTimeout(()=>{holdI=setInterval(handler,120)},420); }
-function stopHold(){ if(holdT) clearTimeout(holdT); if(holdI) clearInterval(holdI); holdT=holdI=null; }
-window.onmouseup=stopHold; window.onmouseleave=stopHold;
-
-/* ===== Mini-Patch: Auto-Refresh um 00:00 ===== */
-function scheduleMidnightRefresh(cb){
-  const now=new Date();
-  const mid=new Date(now.getFullYear(),now.getMonth(),now.getDate()+1,0,0,2);
-  setTimeout(()=>{ try{ cb(); } finally { scheduleMidnightRefresh(cb); } }, mid-now);
-}
-/* beim Zurückkehren in die App auch aktualisieren */
-document.addEventListener('visibilitychange', () => {
-  if (!document.hidden) { updateTodayBanner(); buildTable(); }
-});
-
-/* ===== Load ===== */
-async function loadState(){
-  if(db){
-    try{
-      const snap=await db.collection(STATE_COLLECTION).doc("global").get();
-      if(snap.exists){
-        const s=snap.data();
-        prices=s.prices||prices;
-        people=s.people||JSON.parse(localStorage.getItem(peopleKey))||[];
-        data=s.data||data;
-        history=s.history||history;
-        redoStack=s.redoStack||JSON.parse(localStorage.getItem(redoKey))||[];
-        bookings=s.bookings||bookings;
-        columnOrder=s.columnOrder||Object.keys(prices);
-        xp=s.xp||xp;
-      }else{
-        people=JSON.parse(localStorage.getItem(peopleKey))||[];
-        redoStack=JSON.parse(localStorage.getItem(redoKey))||[];
-      }
-    }catch(e){ fallbackLoad(); }
-  }else{
-    fallbackLoad();
+  /* ---------- Level / XP ---------- */
+  // 1 Strich = 1 XP; alle 10 XP = +1 Level (Level 1 startet bei 0–9)
+  function levelFromXP(xp){ return Math.floor(xp/10)+1; }
+  function progressToNext(xp){
+    const pct = (xp % 10) / 10; // 0..1
+    return Math.max(0, Math.min(1, pct));
   }
 
-  CORE.forEach(n=>{ if(!people.includes(n)) people.push(n); });
-
-  saveAll();
-  buildTable();
-  updateTodayBanner();
-  subscribeRealtime();
-  updateUndoRedoButtons();
-  await ensureXpFromExistingStricheAfterLoad();
-
-  /* Mini-Patch aktivieren */
-  scheduleMidnightRefresh(()=>{ updateTodayBanner(); buildTable(); });
-}
-
-function fallbackLoad(){
-  prices=JSON.parse(localStorage.getItem(pricesKey))||prices;
-  people=JSON.parse(localStorage.getItem(peopleKey))||[];
-  data=JSON.parse(localStorage.getItem(dataKey))||data;
-  history=JSON.parse(localStorage.getItem(historyKey))||history;
-  redoStack=JSON.parse(localStorage.getItem(redoKey))||[];
-  bookings=JSON.parse(localStorage.getItem(bookingsKey))||bookings;
-  columnOrder=JSON.parse(localStorage.getItem(orderKey))||Object.keys(prices);
-  xp=JSON.parse(localStorage.getItem(xpKey))||xp;
-}
-
-/* ===== Migration: vorhandene Striche -> XP (ohne Doppelzählung) ===== */
-async function ensureXpFromExistingStricheAfterLoad(){
-  const drinks = Object.keys(prices);
-  let changed=false;
-  people.forEach(p=>{
-    let xpFromData=0;
-    drinks.forEach(d=>{
-      const cnt = data[`${p}_${d}`] || 0;
-      xpFromData += cnt * (prices[d]||0);
+  /* ---------- UI Helpers ---------- */
+  function €(v){ return Number(v||0).toFixed(2).replace('.', ','); }
+  function sumCounts(person, prices, data){
+    let total = 0, euro = 0;
+    Object.keys(prices||{}).forEach(key=>{
+      const c = data[`${person}_${key}`] || 0;
+      total += c;
+      euro  += c * (prices[key]||0);
     });
-    if((xp[p]||0) < xpFromData){ xp[p]=xpFromData; changed=true; }
-  });
-  if(changed){ saveAll(); buildTable(); }
-}
-
-/* ===== Save / Realtime ===== */
-function saveAll(){
-  localStorage.setItem(pricesKey,JSON.stringify(prices));
-  localStorage.setItem(peopleKey,JSON.stringify(people));
-  localStorage.setItem(dataKey,JSON.stringify(data));
-  localStorage.setItem(historyKey,JSON.stringify(history));
-  localStorage.setItem(redoKey,JSON.stringify(redoStack));
-  localStorage.setItem(bookingsKey,JSON.stringify(bookings));
-  localStorage.setItem(orderKey,JSON.stringify(columnOrder));
-  localStorage.setItem(xpKey,JSON.stringify(xp));
-  if(db){
-    db.collection(STATE_COLLECTION).doc("global").set(
-      {prices,people,data,history,redoStack,bookings,columnOrder,xp},
-      {merge:true}
-    ).catch(()=>{});
+    return { total, euro };
   }
-}
 
-function subscribeRealtime(){
-  if(!db) return;
-  db.collection(STATE_COLLECTION).doc("global").onSnapshot(snap=>{
-    if(!snap.exists) return;
-    const s=snap.data();
-    prices=s.prices||prices; people=s.people||people; data=s.data||data;
-    history=s.history||history; redoStack=s.redoStack||redoStack;
-    bookings=s.bookings||bookings; columnOrder=s.columnOrder||columnOrder; xp=s.xp||xp;
-    CORE.forEach(n=>{ if(!people.includes(n)) people.push(n); });
-    buildTable(); updateTodayBanner(); updateUndoRedoButtons();
-  });
-  db.collection("hausdienst").doc(todayStr()).onSnapshot(doc=>{
-    hdToday = doc && doc.exists ? doc.data().person : null;
-    updateTodayBanner(hdToday); buildTable();
-  });
-}
-
-/* ===== Heute-Banner ===== */
-async function updateTodayBanner(existing){
-  try{
-    let person=existing;
-    if(person===undefined){
-      if(db){
-        const d=await db.collection("hausdienst").doc(todayStr()).get();
-        person = d.exists ? d.data().person : null;
-      }else{ person=null; }
-    }
-    hdToday=person;
-    const el=document.getElementById("todayInfo");
-    el.innerHTML = person
-      ? `Heute eingetragener Hausdienst: <span class="badge ok">${person}</span> · <a href="hausdienst_checklist.html" class="badge gold" style="text-decoration:none">Checkliste öffnen</a>`
-      : `Heute: <span class="badge none">Noch niemand eingetragen</span>`;
-  }catch(e){
-    document.getElementById("todayInfo").textContent="Heute: Status nicht verfügbar (offline?)";
+  function buildRingSVG(pct){
+    const R=24, C=2*Math.PI*R, off = C*(1-pct);
+    return `
+      <svg class="ring" width="60" height="60" viewBox="0 0 60 60">
+        <defs>
+          <linearGradient id="grad" x1="0%" y1="0%" x2="100%" y2="0%">
+            <stop offset="0%" stop-color="#6ee7ff"/><stop offset="100%" stop-color="#a78bfa"/>
+          </linearGradient>
+        </defs>
+        <circle class="bg" cx="30" cy="30" r="${R}" />
+        <circle class="fg" cx="30" cy="30" r="${R}" stroke-dasharray="${C}" stroke-dashoffset="${off}" />
+      </svg>`;
   }
-}
 
-/* ===== Undo/Redo ===== */
-function updateUndoRedoButtons(){
-  const u=document.getElementById("undoBtn");
-  const r=document.getElementById("redoBtn");
-  if(!u||!r) return;
-  u.disabled = history.length===0;
-  r.disabled = redoStack.length===0;
-}
-function applyAction(a){
-  if(a.type==="inc"){
-    data[a.id] = (a.prev||0) + 1;
-    if(a.person){ xp[a.person] = (xp[a.person]||0) + (a.xpDelta||0); }
-  } else if (a.action==="change"){
-    data[a.id] = (a.prev||0) + 1;
-    const parts=a.id.split('_'); const person=parts[0]; const drink=parts.slice(1).join('_');
-    xp[person] = (xp[person]||0) + (prices[drink]||0);
-  }
-}
-function applyInverse(a){
-  if(a.type==="inc"){
-    data[a.id] = a.prev;
-    if(a.person){ xp[a.person] = Math.max(0, (xp[a.person]||0) - (a.xpDelta||0)); }
-  } else if (a.action==="change"){
-    data[a.id] = a.prev;
-    const parts=a.id.split('_'); const person=parts[0]; const drink=parts.slice(1).join('_');
-    xp[person] = Math.max(0, (xp[person]||0) - (prices[drink]||0));
-  }
-}
-function undoLast(){
-  const last = history.pop();
-  if(!last) return;
-  applyInverse(last);
-  redoStack.push(last);
-  saveAll(); buildTable(); updateUndoRedoButtons();
-}
-function redoLast(){
-  const act = redoStack.pop();
-  if(!act) return;
-  applyAction(act);
-  history.push(act);
-  saveAll(); buildTable(); updateUndoRedoButtons();
-}
+  function personRowHTML(person, prices, data){
+    const {total} = sumCounts(person, prices, data);
+    const lvl  = levelFromXP(total);
+    const pct  = progressToNext(total);
 
-/* ===== Tabelle & Level-Ring ===== */
-function buildTable(){
-  const core = CORE.filter(n=>people.includes(n));
-  const guests = people.filter(n=>!CORE.includes(n)).sort((a,b)=>a.localeCompare(b));
-
-  let html = `<table><thead><tr>
-    <th style="min-width:240px;text-align:left">Person</th>`;
-  columnOrder.forEach(drink=>{
-    if(prices[drink]!==undefined){
-      html += `<th onclick="headerClick('${drink}')">
-        <span class="drink-chip">
-          <span class="drink-name">${drink.replace('_',' ')}</span>
-          <span class="drink-price">${prices[drink]} €</span>
-        </span>
-      </th>`;
-    }
-  });
-  html += `<th>Gesamt (€)</th></tr></thead><tbody>`;
-
-  // Fortschritts-Ring (fixer, viewBox-sicherer Radius; SVG skaliert mit dem Container)
-  const ring = (xpVal, person)=>{
-    const x = +xpVal || 0;
-    const lvl = Math.max(1, Math.floor(Math.sqrt(x/20)) + 1);
-    const min = 20*(lvl-1)*(lvl-1);
-    const max = 20* lvl   * lvl;
-    const p   = Math.max(0, Math.min(1, (x - min) / (max - min) ));
-
-    const r = 22;                  // sicher innerhalb 52x52 @ stroke 6
-    const c = 2*Math.PI*r;
-    const off = (1-p)*c;
-    const gid = "grad_" + person.replace(/[^a-z0-9]/gi,'') + "_" + lvl;
+    const drinks = Object.keys(prices||{}).map(key=>{
+      const amount = data[`${person}_${key}`] || 0;
+      return `
+        <div class="pill">
+          <div class="amount" id="amt_${person}_${key}">${amount}</div>
+          <div class="label">${key}</div>
+          <button class="add" onclick="add('${person}','${key}')">+1</button>
+        </div>`;
+    }).join("");
 
     return `
-      <div class="lvl-ring" role="img" aria-label="Level ${lvl}, ${Math.round(p*100)}%">
-        <svg viewBox="0 0 52 52" width="100%" height="100%" style="transform:rotate(-90deg)">
-          <defs>
-            <linearGradient id="${gid}" x1="0" y1="0" x2="1" y2="1">
-              <stop offset="0%"  stop-color="var(--accent, #6ee7ff)"/>
-              <stop offset="100%" stop-color="var(--accent-2, #a78bfa)"/>
-            </linearGradient>
-          </defs>
-          <circle cx="26" cy="26" r="${r}" stroke="#2a2f3b" stroke-width="6" fill="none"/>
-          <circle cx="26" cy="26" r="${r}" stroke="url(#${gid})" stroke-width="6" stroke-linecap="round"
-                  fill="none" stroke-dasharray="${c}" stroke-dashoffset="${off}"/>
-        </svg>
-        <div class="val">Lv. ${lvl}</div>
+      <div class="row" id="row_${person}">
+        <div class="avatar">
+          ${buildRingSVG(pct)}
+          <div class="lvl">Lvl ${lvl}</div>
+        </div>
+        <div>
+          <div class="name">${person}</div>
+          <div class="drinks">${drinks}</div>
+        </div>
+        <div style="text-align:right; font-weight:800; min-width:70px" id="sum_${person}">€ ${€(sumCounts(person, prices, data).euro)}</div>
       </div>`;
-  };
+  }
 
-  const row = (p)=>{
-    const xpVal=getXpForDisplay(p);
-    const hdClass = (hdToday===p) ? "hd-today" : "";
-    let r = `<tr class="${hdClass}"><th style="text-align:left">
-      <div class="person-cell">
-        ${ring(xpVal, p)}
-        <div class="p-info"><div class="p-name">${p}</div></div>
-      </div>
-    </th>`;
-    columnOrder.forEach(dr=>{
-      if(prices[dr]!==undefined){
-        const id=`${p}_${dr}`, val=data[id]||0;
-        const handler = `()=>inc('${id}','${dr}','${p}')`;
-        r += `<td>
-          <div class="cell" onclick="inc('${id}','${dr}','${p}')">
-            <div class="count" id="${id}">${val}</div>
-            <button class="btn small plus-btn"
-              onclick="event.stopPropagation(); inc('${id}','${dr}','${p}')"
-              onmousedown="startHold(${handler})" onmouseup="stopHold()" onmouseleave="stopHold()"
-              ontouchstart="startHold(${handler})" ontouchend="stopHold()">+1</button>
-          </div>
-        </td>`;
-      }
-    });
-    const total = columnOrder.reduce((s,d)=>s+(data[`${p}_${d}`]||0)*prices[d],0);
-    r += `<td id="${p}_Total">${total.toFixed(2)}</td></tr>`;
-    return r;
-  };
+  /* ---------- State ---------- */
+  let state = { people:[], prices:{}, data:{} };
+  let lastAction = null; // {person, drink}
 
-  core.forEach(p=> html += row(p));
-  html += `</tbody></table>`;
-
-  // Gäste optional einklappen
-  let guestHtml = "";
-  const guestsList = people.filter(n=>!CORE.includes(n)).sort((a,b)=>a.localeCompare(b));
-  if(guestsList.length){
-    guestHtml += `<div class="guest-toggle"><button class="btn ghost" onclick="toggleGuests()">
-      ${showGuests ? "Gäste ausblenden" : `Gäste anzeigen (${guestsList.length})`}</button></div>`;
-    if(showGuests){
-      guestHtml += `<div style="margin-top:6px"><table><tbody>
-        <tr class="section-row"><td colspan="${columnOrder.length+2}">— Gäste —</td></tr>
-        ${guestsList.map(p=>row(p)).join("")}
-      </tbody></table></div>`;
+  async function loadState(){
+    let sLocal = {
+      people: JSON.parse(localStorage.getItem(K.people)||"[]"),
+      prices: JSON.parse(localStorage.getItem(K.prices)||"{}"),
+      data  : JSON.parse(localStorage.getItem(K.data)||"{}")
+    };
+    if(db){
+      try{
+        const snap = await db.collection(STATE_COLLECTION).doc("global").get();
+        if(snap.exists){
+          const remote = snap.data();
+          state.people = remote.people || sLocal.people;
+          state.prices = remote.prices || sLocal.prices;
+          state.data   = remote.data   || sLocal.data;
+        }else{
+          state = sLocal;
+        }
+      }catch(_){ state = sLocal; }
+    }else{
+      state = sLocal;
     }
   }
 
-  document.getElementById("tableContainer").innerHTML = html + guestHtml;
+  function saveStateDebounced(){
+    localStorage.setItem(K.people, JSON.stringify(state.people||[]));
+    localStorage.setItem(K.prices, JSON.stringify(state.prices||{}));
+    localStorage.setItem(K.data,   JSON.stringify(state.data||{}));
+    if(!db) return;
+    if(saveStateDebounced._t) clearTimeout(saveStateDebounced._t);
+    saveStateDebounced._t = setTimeout(()=> {
+      db.collection(STATE_COLLECTION).doc("global").set(state, {merge:true});
+    }, 350);
+  }
 
-  // Onepage-Autofit nur für Kernteam anwenden
-  requestAnimationFrame(adjustToOnePage);
-}
+  function splitCoreGuests(all){
+    const core = [], guests=[];
+    (all||[]).forEach(p=> (CORE.includes(p) ? core : guests).push(p));
+    // Feste Reihenfolge im Kernteam
+    core.sort((a,b)=> CORE.indexOf(a)-CORE.indexOf(b));
+    guests.sort((a,b)=> a.localeCompare(b));
+    return {core, guests};
+  }
 
-/* Gäste ein/aus */
-function toggleGuests(){ showGuests=!showGuests; buildTable(); }
+  function render(){
+    const wrapCore  = document.getElementById("coreList");
+    const wrapGuest = document.getElementById("guestList");
+    const {core, guests} = splitCoreGuests(state.people);
 
-/* ---- Onepage-Autofit: skaliert Zeilenhöhe/Schrift/Ring damit 10 Kernteam-Zeilen + Header in den Viewport passen ---- */
-function adjustToOnePage(){
-  const appbar = document.querySelector('.appbar')?.offsetHeight || 0;
-  const bottom = document.querySelector('.bottomnav')?.offsetHeight || 0;
-  const cards = Array.from(document.querySelectorAll('.content .card')).filter((el,i)=> i!==1 );
-  const other = appbar + bottom + cards.reduce((s,c)=> s + c.offsetHeight, 0) + 20;
+    wrapCore.innerHTML  = core.map(p=>personRowHTML(p, state.prices, state.data)).join("");
+    wrapGuest.innerHTML = guests.map(p=>personRowHTML(p, state.prices, state.data)).join("");
+  }
 
-  const avail = window.innerHeight - other;
-  const headH = 36;              // angenommene Höhe Tabellenkopf
-  const coreCount = 10;          // fix: Kernteam
-  const rowsTotal = coreCount;   // nur Kernteamzeilen sollen passen
+  /* ---------- Aktionen ---------- */
+  function add(person, drink){
+    const key = `${person}_${drink}`;
+    state.data[key] = (state.data[key]||0) + 1;
+    lastAction = {person, drink};
+    updatePerson(person);
+    saveStateDebounced();
+  }
 
-  let rowH = Math.max(42, Math.min(72, Math.floor((avail - headH) / rowsTotal)));
-  let ring = Math.max(36, Math.min(56, rowH - 10));
-  let name = Math.max(18, Math.min(22, Math.floor(rowH * 0.45)));
-  let count= Math.max(16, Math.min(20, Math.floor(rowH * 0.40)));
-  let pad  = Math.max(4, Math.floor((rowH - 34)/2));
+  function undo(){
+    if(!lastAction) return;
+    const key = `${lastAction.person}_${lastAction.drink}`;
+    const cur = state.data[key]||0;
+    if(cur>0){ state.data[key]=cur-1; updatePerson(lastAction.person); saveStateDebounced(); }
+    lastAction = null;
+  }
 
-  document.documentElement.style.setProperty('--row-pad', pad+'px');
-  document.documentElement.style.setProperty('--ring', ring+'px');
-  document.documentElement.style.setProperty('--name-size', name+'px');
-  document.documentElement.style.setProperty('--count-size', count+'px');
-  document.documentElement.style.setProperty('--cell-gap', Math.max(8, Math.floor(rowH*0.22))+'px');
-}
+  function updatePerson(person){
+    // Betragsanzeige
+    const sum = sumCounts(person, state.prices, state.data).euro;
+    const sumEl = document.getElementById(`sum_${person}`);
+    if(sumEl) sumEl.textContent = `€ ${€(sum)}`;
+    // Getränkecounter
+    Object.keys(state.prices||{}).forEach(dr=>{
+      const el=document.getElementById(`amt_${person}_${dr}`);
+      if(el) el.textContent = state.data[`${person}_${dr}`]||0;
+    });
+    // Level-Ring neu berechnen
+    const total = sumCounts(person, state.prices, state.data).total;
+    const lvl = levelFromXP(total), pct=progressToNext(total);
+    const row=document.getElementById(`row_${person}`);
+    if(row){
+      const ring = row.querySelector('.ring .fg');
+      const R=24, C=2*Math.PI*R, off = C*(1-pct);
+      if(ring){ ring.setAttribute('stroke-dasharray', C); ring.setAttribute('stroke-dashoffset', off); }
+      const lv=row.querySelector('.lvl'); if(lv) lv.textContent = `Lvl ${lvl}`;
+    }
+  }
 
-/* ===== Interactions ===== */
-function headerClick(drink){ if(deleteMode) deleteColumn(drink); }
+  /* ---------- QR Modal ---------- */
+  const qrModal = document.getElementById('qrModal');
+  document.getElementById('qrBtn').addEventListener('click', ()=>{ qrModal.classList.add('open'); });
+  function closeQR(){ qrModal.classList.remove('open'); }
 
-function inc(id,drink,person){
-  const el=document.getElementById(id);
-  const cur=parseInt(el?.textContent||'0'); const next=cur+1;
-  if(el){ el.textContent=next; el.classList.remove('bump'); void el.offsetWidth; el.classList.add('bump'); }
+  document.getElementById('undoBtn').addEventListener('click', undo);
 
-  const xpDelta = prices[drink]||0;
-  history.push({type:"inc", id, prev:cur, person, xpDelta});
-  redoStack = [];
-  data[id]=next;
+  /* ---------- Init ---------- */
+  async function init(){
+    await loadState();
 
-  const before=levelOf((xp[person]||0));
-  xp[person]=(xp[person]||0)+xpDelta;
-  const after=levelOf(xp[person]);
-  (after>before ? sLevel : sClick).play();
+    // Fallback: falls noch keine Personen/Preise vorhanden sind
+    if(!state.people || !state.people.length){
+      state.people = [...CORE]; // Kernteam als Start
+    }
+    if(!state.prices || !Object.keys(state.prices).length){
+      // Standardpreise (kannst du später in buchungen.html anpassen)
+      state.prices = { "Bier":2.0, "Mate":1.5, "Wasser":1.0 };
+    }
+    state.data = state.data || {};
 
-  updateTotalsFor(person); saveAll(); updateUndoRedoButtons();
-}
+    render();
 
-function updateTotalsFor(person){
-  const tot = columnOrder.reduce((s,d)=>s+(data[`${person}_${d}`]||0)*prices[d],0);
-  const el=document.getElementById(`${person}_Total`);
-  if(el) el.textContent=tot.toFixed(2);
-  buildTable(); // Ring neu zeichnen & Autofit
-}
-
-/* Delete mode (global) */
-function toggleDeleteMode(){
-  deleteMode=!deleteMode; const btn=document.getElementById("deleteBtn");
-  btn.textContent = deleteMode ? "❌ Abbrechen" : "🗑 Löschen";
-  btn.classList.toggle("ghost", deleteMode);
-}
-function deletePerson(p){
-  if(!deleteMode) return; if(CORE.includes(p)){ alert("Kernteam kann nicht gelöscht werden."); toggleDeleteMode(); return; }
-  if(!confirm(`${p} wirklich löschen?`)) return;
-  people=people.filter(x=>x!==p); saveAll(); buildTable(); toggleDeleteMode();
-}
-function deleteColumn(drink){
-  if(!deleteMode) return; if(!confirm(`Getränk "${drink}" löschen?`)) return;
-  delete prices[drink]; columnOrder=columnOrder.filter(d=>d!==drink); saveAll(); buildTable(); toggleDeleteMode();
-}
-
-/* Abrechnen */
-function resetAll(){
-  const pw=prompt("Passwort eingeben:"); if(pw!=="1379"){alert("Falsches Passwort");return;}
-  if(!confirm("Alle Striche abrechnen und zurücksetzen?")) return;
-  people.forEach(p=>{
-    const sum = columnOrder.reduce((s,d)=>s+(data[`${p}_${d}`]||0)*prices[d],0);
-    if(sum>0) bookings.push({date:new Date().toLocaleDateString("de-DE"), person:p, sum});
-    xp[p]=(xp[p]||0)+sum; columnOrder.forEach(d=>data[`${p}_${d}`]=0);
-  });
-  history=[]; redoStack=[];
-  saveAll(); buildTable(); updateUndoRedoButtons();
-}
-
-/* Modals & helpers */
-function openDrinkModal(){ document.getElementById("drinkModal").classList.add("show"); }
-function openPersonModal(){ document.getElementById("personModal").classList.add("show"); }
-function closeModal(id){ document.getElementById(id).classList.remove("show"); }
-function togglePayPal(){ document.getElementById("paypalModal").classList.toggle("show"); }
-
-function confirmAddPerson(){
-  const name=document.getElementById("personName").value.trim(); if(!name) return alert("Bitte Namen eingeben");
-  if(people.includes(name)) return alert("Person existiert bereits");
-  people.push(name); saveAll(); buildTable(); closeModal('personModal'); document.getElementById("personName").value="";
-}
-function confirmAddDrink(){
-  const name=document.getElementById("drinkName").value.trim(), price=parseFloat(document.getElementById("drinkPrice").value);
-  if(!name||isNaN(price)||price<=0) return alert("Bitte gültige Eingaben");
-  const key=name.replace(/\s+/g,'_'); prices[key]=price; if(!columnOrder.includes(key)) columnOrder.push(key);
-  saveAll(); buildTable(); closeModal('drinkModal'); document.getElementById("drinkName").value=""; document.getElementById("drinkPrice").value="";
-}
-
-/* SW (PWA) */
-if('serviceWorker' in navigator){ navigator.serviceWorker.register('./sw.js').catch(()=>{}); }
-
-window.onload=loadState;
-window.onresize=()=>requestAnimationFrame(adjustToOnePage);
+    // Live-Updates von Firestore
+    if(db){
+      try{
+        firebase.firestore().collection(STATE_COLLECTION).doc("global")
+          .onSnapshot(snap=>{
+            if(!snap.exists) return;
+            const r=snap.data()||{};
+            state.people = r.people || state.people;
+            state.prices = r.prices || state.prices;
+            state.data   = r.data   || state.data;
+            render();
+          });
+      }catch(_){}
+    }
+  }
+  if('serviceWorker' in navigator){ navigator.serviceWorker.register('./sw.js').catch(()=>{}); }
+  init();
 </script>
 </body>
 </html>
