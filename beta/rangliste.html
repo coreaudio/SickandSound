@@ -91,6 +91,10 @@
       <svg viewBox="0 0 24 24" fill="currentColor"><path d="M7 17H3V7h4v10zm7 0h-4V3h4v14zm7 0h-4v-8h4v8z"/></svg>
       <span>Rang</span>
     </a>
+    <a class="tab" href="badges.html">
+      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 1l3.09 6.26L22 8.27l-5 4.87L18.18 22 12 18.56 5.82 22 7 13.14 2 8.27l6.91-1.01L12 1z"/></svg>
+      <span>Badges</span>
+    </a>
     <a class="tab" href="buchungen.html">
       <svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 2h9l5 5v13a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2zm8 1.5V8h4.5L14 3.5z"/></svg>
       <span>Buchungen</span>
@@ -112,7 +116,7 @@
   const K = { people:"sick_sound_people", bookings:"sick_sound_bookings", prices:"sick_sound_prices", data:"sick_sound_data" };
 
   /* Helpers */
-  function euro(v){ return Number(v||0).toFixed(2).replace('.', ','); }  // <-- fix statt €()
+  function euro(v){ return Number(v||0).toFixed(2).replace('.', ','); }
   const initials = name => (name||'')[0]?.toUpperCase() || '?';
   function hueFromName(name){ let h=0; for(let i=0;i<name.length;i++){ h=(h*31 + name.charCodeAt(i)) % 360; } return h; }
   function avatarStyle(name, small=false){
@@ -173,11 +177,15 @@
   }
 
   function renderFromState(state){
-    const sumsGebucht={}; (state.people||[]).forEach(p=>sumsGebucht[p]=0);
+    const set = new Set(state.people || []);
+    CORE.forEach(n=>set.add(n)); // sicherstellen, dass Kernteam immer dabei ist
+
+    const sumsGebucht={};
+    [...set].forEach(p=>sumsGebucht[p]=0);
     (state.bookings||[]).forEach(b=>{ sumsGebucht[b.person]=(sumsGebucht[b.person]||0)+Number(b.sum||0); });
 
-    const rowsLive = (state.people||[]).map(p=>{
-      const offen = valueOfCurrentStriche(p, state.prices, state.data);
+    const rowsLive = [...set].map(p=>{
+      const offen = valueOfCurrentStriche(p, state.prices||{}, state.data||{});
       const gebucht = sumsGebucht[p]||0;
       return {p, summe: gebucht + offen};
     }).sort((a,b)=>b.summe-a.summe);
@@ -215,7 +223,7 @@
       document.getElementById("hausdienstHistory").innerHTML = `<h2 class="section-title">🧹 Hausdienst – Historie</h2><div class="sub">Offline: Daten nicht verfügbar.</div>`;
     }
 
-    // Statistik (nur Kernteam)
+    // Statistik (nur Kernteam, bis heute)
     if(db){
       const today=todayStr();
       const cnt={}; CORE.forEach(p=>cnt[p]=0);
