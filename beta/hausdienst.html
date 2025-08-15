@@ -2,7 +2,7 @@
 <html lang="de">
 <head>
   <meta charset="UTF-8" />
-  <title>Hausdienst planen</title>
+  <title>Hausdienst</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <meta name="theme-color" content="#0b0e14" />
   <meta name="apple-mobile-web-app-capable" content="yes">
@@ -10,29 +10,98 @@
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="stylesheet" href="style.css" />
   <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;800&display=swap" rel="stylesheet" />
+  <style>
+    .tabs { display:flex; gap:8px; margin-top:8px; flex-wrap:wrap; }
+    .tabs .tabbtn { padding:8px 12px; border-radius:999px; background:#1c2130; color:#e6e8ef; border:1px solid #2a3042; }
+    .tabs .tabbtn.active { background:linear-gradient(135deg,#6ee7ff,#a78bfa); color:#0b0e14; border-color:transparent; font-weight:800; }
+    .panel { display:none; }
+    .panel.active { display:block; }
+    .grid-people { display:grid; grid-template-columns:repeat(auto-fit,minmax(140px,1fr)); gap:10px; }
+    .grid-people .btn { width:100%; }
+    .row { display:flex; gap:10px; flex-wrap:wrap; align-items:center; }
+    .row input[type="date"] { min-width: 180px; }
+    .badge.big { font-size:14px; padding:6px 10px; }
+    /* Checklisten-Zusatz */
+    .segmented { display:flex; gap:8px; flex-wrap:wrap; }
+    .segmented .tabbtn { padding:8px 12px; border-radius:999px; background:#1c2130; color:#e6e8ef; border:1px solid #2a3042; }
+    .segmented .tabbtn.active { background:linear-gradient(135deg,#6ee7ff,#a78bfa); color:#0b0e14; border-color:transparent; font-weight:800; }
+    .toolbar { display:flex; gap:10px; flex-wrap:wrap; align-items:center; margin-top:10px; }
+    .toolbar input, .toolbar select { flex:1 1 auto; min-width:160px; }
+  </style>
 </head>
 <body>
 <div class="app">
   <header class="appbar">
     <div class="app-title"><div class="brand-dot"></div><h1>Hausdienst</h1></div>
     <div class="appbar-actions">
-      <a class="btn small dark" href="hausdienst_checklist.html">📋</a>
+      <a class="btn small dark" href="index.html" title="Zur Liste">🧾</a>
     </div>
   </header>
 
   <main class="content">
-    <div class="card" style="margin-bottom:12px">
-      <div class="section-title">Planung</div>
-      <div class="sub">Pro Datum genau eine Person · nur Kernteam</div>
-      <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:8px">
-        <select id="personSel" style="max-width:300px"></select>
-        <input type="date" id="dateSel">
-        <button class="btn" onclick="saveAssignment()">Eintragen</button>
-        <button class="btn ghost" onclick="removeAssignment()">Austragen</button>
+    <div class="card">
+      <div class="section-title">Heute</div>
+      <div id="todayInfo" class="sub">Lade…</div>
+      <div class="tabs" style="margin-top:10px">
+        <button id="tabPlan" class="tabbtn active" onclick="showTab('plan')">Planen</button>
+        <button id="tabCheck" class="tabbtn" onclick="showTab('check')">Checkliste</button>
       </div>
     </div>
 
-    <div class="card table-wrap" id="calendar"></div>
+    <!-- Panel: Planen -->
+    <div id="panelPlan" class="panel active">
+      <div class="card">
+        <div class="section-title">Hausdienst planen</div>
+        <div class="row" style="margin-top:6px">
+          <input id="datePick" type="date">
+          <button class="btn small" onclick="setToday()">Heute</button>
+          <button class="btn small" onclick="setTomorrow()">Morgen</button>
+          <span id="selectedBadge" class="badge big">–</span>
+          <button class="btn danger" onclick="clearForDate()">Freigeben</button>
+        </div>
+        <div class="sub" style="margin-top:6px">Pro Tag ist maximal <b>eine</b> Person als Hausdienst eingetragen. Um 00:00 wird automatisch der neue Tag freigeschaltet.</div>
+      </div>
+
+      <div class="card">
+        <div class="section-title">Kernteam auswählen</div>
+        <div id="peopleGrid" class="grid-people" style="margin-top:8px"></div>
+      </div>
+
+      <div class="card table-wrap">
+        <div class="section-title">Geplante Hausdienste (nächste 14 Tage)</div>
+        <div id="nextList" class="sub">Lade…</div>
+      </div>
+    </div>
+
+    <!-- Panel: Checkliste -->
+    <div id="panelCheck" class="panel">
+      <div class="card">
+        <div class="section-title">Checkliste</div>
+        <div class="sub">Aufgaben sind dauerhaft gespeichert · Haken gilt nur heute</div>
+
+        <!-- Reiter/Kategorien -->
+        <div id="catTabs" class="segmented" style="margin-top:10px"></div>
+
+        <!-- Eingabe + Filter -->
+        <div class="toolbar">
+          <input id="newTask" placeholder="Neue Aufgabe hinzufügen…">
+          <select id="newTaskCat" title="Kategorie">
+            <option value="morgens">Morgens</option>
+            <option value="tag">Im Laufe des Tages</option>
+            <option value="abend">Bevor man geht</option>
+          </select>
+          <button class="btn" onclick="addTask()">Hinzufügen</button>
+        </div>
+
+        <div id="filters" style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px">
+          <button id="fOpen" class="btn small secondary" onclick="setMode('open')">Offen</button>
+          <button id="fDone" class="btn small ghost" onclick="setMode('done')">Erledigt</button>
+          <button id="fAll"  class="btn small ghost" onclick="setMode('all')">Alle</button>
+        </div>
+      </div>
+
+      <div class="card table-wrap" id="list"><div class="sub">Lade Aufgaben…</div></div>
+    </div>
   </main>
 
   <nav class="bottomnav">
@@ -55,68 +124,267 @@
   </nav>
 </div>
 
+<!-- Firebase -->
 <script src="https://www.gstatic.com/firebasejs/12.0.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/12.0.0/firebase-analytics-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/12.0.0/firebase-firestore-compat.js"></script>
 <script>
   const CORE=["Chris","Daniel","Elmi","Florian","Joel","Kevin","Kiste","Marco","Meli","Simon"];
   const firebaseConfig={apiKey:"AIzaSyBFHjGXI5yHyK0DyupS0bnTVAqlu6lvpNw",authDomain:"sickandsound-e9704.firebaseapp.com",projectId:"sickandsound-e9704",storageBucket:"sickandsound-e9704.firebasestorage.app",messagingSenderId:"248197359659",appId:"1:248197359659:web:a8777cbed3f83d6b1ca26e",measurementId:"G-62LH8V7S2E"};
-  firebase.initializeApp(firebaseConfig); firebase.analytics(); const db=firebase.firestore();
-  const today=new Date().toISOString().slice(0,10);
+  // robust init
+  let db=null;
+  try{ if(window.firebase){ firebase.initializeApp(firebaseConfig); try{firebase.analytics();}catch(_){ } db=firebase.firestore(); } }catch(_){ db=null; }
 
-  function buildSelectors(){
-    const sel=document.getElementById("personSel"); sel.innerHTML="";
-    CORE.forEach(p=>{ const o=document.createElement("option"); o.value=o.textContent=p; sel.appendChild(o); });
-    document.getElementById("dateSel").value=today;
-  }
-  function ymd(d){ return new Date(d).toISOString().slice(0,10); }
-
-  async function saveAssignment(){
-    const person=document.getElementById("personSel").value;
-    const date=document.getElementById("dateSel").value;
-    if(!person||!date) return alert("Bitte Person und Datum wählen");
-    const ref=db.collection("hausdienst").doc(date);
-    const ex=await ref.get();
-    if(ex.exists && !confirm(`Für ${date} ist bereits ${ex.data().person} eingetragen. Überschreiben?`)) return;
-    await ref.set({person,ts:Date.now()});
-    if(date===today) window.location='hausdienst_checklist.html';
-  }
-  async function removeAssignment(){
-    const date=document.getElementById("dateSel").value;
-    const ref=db.collection("hausdienst").doc(date);
-    const ex=await ref.get(); if(!ex.exists) return alert("Für dieses Datum ist niemand eingetragen.");
-    if(!confirm(`Eintrag für ${date} entfernen?`)) return; await ref.delete();
+  // Tabs
+  function showTab(key){
+    document.getElementById('panelPlan').classList.toggle('active', key==='plan');
+    document.getElementById('panelCheck').classList.toggle('active', key==='check');
+    document.getElementById('tabPlan').classList.toggle('active', key==='plan');
+    document.getElementById('tabCheck').classList.toggle('active', key==='check');
   }
 
-  async function renderCalendar(){
-    const start=new Date(); start.setDate(start.getDate()-5);
-    const end=new Date(); end.setDate(end.getDate()+30);
-    const rows=[]; let cur=new Date(start);
-    while(cur<=end){
-      const d=ymd(cur);
-      // eslint-disable-next-line no-await-in-loop
-      const doc=await db.collection("hausdienst").doc(d).get();
-      rows.push({date:d,person:doc.exists?doc.data().person:null});
-      cur.setDate(cur.getDate()+1);
+  // ---- PLANEN ----
+  const todayStr=()=>new Date().toISOString().slice(0,10);
+  function scheduleMidnightRefresh(cb){
+    const now=new Date();
+    const mid=new Date(now.getFullYear(),now.getMonth(),now.getDate()+1,0,0,2);
+    setTimeout(()=>{ cb(); scheduleMidnightRefresh(cb); }, mid-now);
+  }
+
+  function setToday(){ const d=document.getElementById('datePick'); d.value=todayStr(); loadForDate(); }
+  function setTomorrow(){ const d=document.getElementById('datePick'); const t=new Date(); t.setDate(t.getDate()+1); d.value=t.toISOString().slice(0,10); loadForDate(); }
+
+  function renderPeopleButtons(){
+    const wrap=document.getElementById('peopleGrid');
+    wrap.innerHTML = CORE.map(p=>`<button class="btn" onclick="choose('${p}')">${p}</button>`).join("");
+  }
+
+  async function loadForDate(){
+    const date = document.getElementById('datePick').value;
+    if(!date) return;
+    if(!db){ document.getElementById('selectedBadge').textContent="(offline)"; return; }
+    const doc=await db.collection("hausdienst").doc(date).get();
+    const person = doc.exists ? (doc.data().person||null) : null;
+    document.getElementById('selectedBadge').innerHTML = person ? `<span class="badge ok big">${person}</span>` : `<span class="badge none big">Frei</span>`;
+  }
+
+  // Nur EINE Person pro Tag: wir speichern genau ein Feld "person" im Tages-Dokument
+  async function choose(name){
+    const date=document.getElementById('datePick').value;
+    if(!date) return alert("Kein Datum gewählt.");
+    if(!CORE.includes(name)) return alert("Nur Kernteam kann Hausdienst sein.");
+    if(!db) return alert("Offline – kann nicht speichern.");
+    await db.collection("hausdienst").doc(date).set({person:name, updatedAt:Date.now()});
+    await loadForDate();
+    if(date===todayStr()){ updateTodayInfo(); }
+  }
+
+  async function clearForDate(){
+    const date=document.getElementById('datePick').value;
+    if(!date) return;
+    if(!db) return alert("Offline – kann nicht löschen.");
+    await db.collection("hausdienst").doc(date).delete();
+    await loadForDate();
+    if(date===todayStr()){ updateTodayInfo(); }
+  }
+
+  async function updateTodayInfo(){
+    if(!db){ document.getElementById('todayInfo').textContent="Heute: (offline)"; return; }
+    const d=await db.collection("hausdienst").doc(todayStr()).get();
+    const person = d.exists ? d.data().person : null;
+    document.getElementById('todayInfo').innerHTML = person
+      ? `Heute eingetragener Hausdienst: <span class="badge ok">${person}</span>`
+      : `Heute: <span class="badge none">Noch niemand eingetragen</span>`;
+  }
+
+  async function loadNextDays(){
+    if(!db){ document.getElementById('nextList').textContent="Offline – keine Vorschau."; return; }
+    const out=[];
+    for(let i=0;i<14;i++){
+      const dt=new Date(); dt.setDate(dt.getDate()+i);
+      const id=dt.toISOString().slice(0,10);
+      const doc=await db.collection("hausdienst").doc(id).get();
+      out.push([id, doc.exists ? (doc.data().person||"—") : "—"]);
     }
-    let html=`<table><thead><tr><th>Datum</th><th>Status</th><th>Aktion</th></tr></thead><tbody>`;
-    rows.forEach(r=>{
-      const badge=r.person?`<span class="badge ok">${r.person}</span>`:`<span class="badge none">frei</span>`;
-      const btn=r.person
-        ? `<button class="btn small ghost" onclick="document.getElementById('dateSel').value='${r.date}'; removeAssignment()">Austragen</button>`
-        : `<button class="btn small" onclick="document.getElementById('dateSel').value='${r.date}'; saveAssignment()">Eintragen</button>`;
-      html+=`<tr><td>${r.date}</td><td>${badge}</td><td>${btn}</td></tr>`;
-    });
-    html+=`</tbody></table>`;
-    document.getElementById("calendar").innerHTML=html;
+    const rows = out.map(([d,p],i)=>`<tr><td>${i===0?d+" (heute)":d}</td><td>${p}</td></tr>`).join("");
+    document.getElementById('nextList').innerHTML = `<table><thead><tr><th>Datum</th><th>Person</th></tr></thead><tbody>${rows}</tbody></table>`;
   }
 
-  function init(){
-    buildSelectors(); renderCalendar(); db.collection("hausdienst").onSnapshot(renderCalendar);
+  // ---- CHECKLISTE (Tabs, Filter, Aufgaben) ----
+  const CATS = [
+    {key:"morgens", label:"Morgens"},
+    {key:"tag",     label:"Im Laufe des Tages"},
+    {key:"abend",   label:"Bevor man geht"},
+  ];
+  let showCat = localStorage.getItem("hausdienst_cat") || "morgens";
+  let showMode= localStorage.getItem("hausdienst_filter_mode") || "open"; // open|done|all
+
+  const CHECKED_KEY="hausdienst_checked_"+todayStr();
+  let checked=JSON.parse(localStorage.getItem(CHECKED_KEY)||"{}");
+  let tasksCache=[];
+
+  function saveChecked(){ localStorage.setItem(CHECKED_KEY,JSON.stringify(checked)); }
+  function setMode(m){ showMode=m; localStorage.setItem("hausdienst_filter_mode",m); updateFilterButtons(); renderTasks(); }
+  function setCat(c){
+    showCat=c; localStorage.setItem("hausdienst_cat",c);
+    const sel=document.getElementById('newTaskCat'); if(sel) sel.value=c;
+    updateCatTabs(); updateFilterButtons(); renderTasks();
   }
-  // SW optional
+  function updateCatTabs(){
+    document.getElementById("catTabs").innerHTML = CATS.map(c=>
+      `<button class="tabbtn ${c.key===showCat?'active':''}" onclick="setCat('${c.key}')">${c.label}</button>`
+    ).join("");
+  }
+  function updateFilterButtons(){
+    const byCat = tasksCache.filter(t=>t.cat===showCat);
+    const openCnt = byCat.filter(t=>!checked[t.id]).length;
+    const doneCnt = byCat.filter(t=> checked[t.id]).length;
+    const allCnt  = byCat.length;
+    const fOpen=document.getElementById("fOpen"), fDone=document.getElementById("fDone"), fAll=document.getElementById("fAll");
+    fOpen.textContent=`Offen (${openCnt})`; fDone.textContent=`Erledigt (${doneCnt})`; fAll.textContent=`Alle (${allCnt})`;
+    fOpen.className="btn small "+(showMode==="open"?"secondary":"ghost");
+    fDone.className="btn small "+(showMode==="done"?"secondary":"ghost");
+    fAll.className ="btn small "+(showMode==="all" ?"secondary":"ghost");
+  }
+  function escapeHtml(s){ return (s||"").replace(/[&<>"']/g, m=>({ "&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#039;" }[m])); }
+
+  async function addTask(){
+    const txt=document.getElementById('newTask').value.trim(); if(!txt) return;
+    const cat=document.getElementById('newTaskCat').value || showCat;
+    if(!db){ alert("Offline – kann nicht speichern."); return; }
+    await db.collection("checklistTasks").add({text:txt, cat, createdAt:Date.now()});
+    document.getElementById('newTask').value="";
+  }
+  async function delTask(id){
+    if(!confirm("Aufgabe löschen?")) return;
+    if(!db){ alert("Offline – kann nicht löschen."); return; }
+    await db.collection("checklistTasks").doc(id).delete();
+    delete checked[id]; saveChecked();
+  }
+  function toggleTask(id){
+    checked[id]=!checked[id]; saveChecked(); renderTasks();
+  }
+
+  function renderTasks(snap){
+    if(snap && snap.forEach){
+      tasksCache=[]; snap.forEach(d=>tasksCache.push({id:d.id, ...d.data()}));
+    }
+    const list = tasksCache.filter(t=>t.cat===showCat)
+      .sort((a,b)=> (a.createdAt||0)-(b.createdAt||0) || (a.text||"").localeCompare(b.text||""));
+
+    updateFilterButtons();
+
+    const openList = list.filter(t=>!checked[t.id]);
+    const doneList = list.filter(t=> checked[t.id]);
+
+    let headCols="", rows="";
+    if(showMode==="open"){
+      headCols=`<th style="text-align:left">Aufgabe</th><th>Aktion</th><th>—</th>`;
+      rows = openList.map(t=>`
+        <tr>
+          <td style="text-align:left">${escapeHtml(t.text||"")}</td>
+          <td><button class="btn small" onclick="toggleTask('${t.id}')">✅ erledigt</button></td>
+          <td><button class="btn small ghost" onclick="delTask('${t.id}')">Löschen</button></td>
+        </tr>`).join("");
+      if(!rows) rows=`<tr><td colspan="3">Alle Aufgaben in „${labelOf(showCat)}“ erledigt 🎉 — „Erledigt“ zeigt Haken.</td></tr>`;
+    }else if(showMode==="done"){
+      headCols=`<th style="text-align:left">Erledigt</th><th>Aktion</th><th>—</th>`;
+      rows = doneList.map(t=>`
+        <tr>
+          <td style="text-align:left">${escapeHtml(t.text||"")}</td>
+          <td><button class="btn small warning" onclick="toggleTask('${t.id}')">↩️ rückgängig</button></td>
+          <td><button class="btn small ghost" onclick="delTask('${t.id}')">Löschen</button></td>
+        </tr>`).join("");
+      if(!rows) rows=`<tr><td colspan="3">Keine erledigten Aufgaben in „${labelOf(showCat)}“.</td></tr>`;
+    }else{
+      headCols=`<th style="text-align:left">Aufgabe</th><th>Status</th><th>Aktion</th>`;
+      const allList=[...openList.map(t=>({t,done:false})), ...doneList.map(t=>({t,done:true}))];
+      rows = allList.map(({t,done})=>`
+        <tr>
+          <td style="text-align:left">${escapeHtml(t.text||"")}</td>
+          <td>${done?"✅":"⬜️"}</td>
+          <td>
+            <button class="btn small ${done?'warning':''}" onclick="toggleTask('${t.id}')">
+              ${done ? "↩️ rückgängig" : "✅ erledigt"}
+            </button>
+            <button class="btn small ghost" style="margin-left:6px" onclick="delTask('${t.id}')">Löschen</button>
+          </td>
+        </tr>`).join("");
+      if(!rows) rows=`<tr><td colspan="3">Noch keine Aufgaben in „${labelOf(showCat)}“.</td></tr>`;
+    }
+
+    document.getElementById("list").innerHTML = `
+      <h2 style="font-weight:800">${labelOf(showCat)}</h2>
+      <table><thead><tr>${headCols}</tr></thead><tbody>${rows}</tbody></table>`;
+  }
+
+  function labelOf(cat){ const f=CATS.find(c=>c.key===cat); return f?f.label:cat; }
+
+  // Defaults (nur hier, einmalig) & Migration
+  async function ensureDefaults(){
+    if(!db) return;
+    const snap=await db.collection("checklistTasks").limit(1).get();
+    if(!snap.empty) return;
+    const defs = [
+      {cat:"morgens", text:"Briefkasten leeren"},
+      {cat:"morgens", text:"Spülmaschine ausräumen"},
+      {cat:"morgens", text:"Toilettenpapier & Zewa auffüllen"},
+      {cat:"morgens", text:"Getränke auffüllen"},
+      {cat:"morgens", text:"Staubsauger Wasser checken"},
+      {cat:"tag",     text:"Wäsche an machen & aufhängen"},
+      {cat:"tag",     text:"Pakete entgegennehmen"},
+      {cat:"tag",     text:"Für Grundordnung sorgen"},
+      {cat:"abend",   text:"Oberflächen in der Küche + Geräte wischen"},
+      {cat:"abend",   text:"Müll rausbringen & mitnehmen"},
+    ];
+    const batch=db.batch();
+    defs.forEach(d=>{ const ref=db.collection("checklistTasks").doc(); batch.set(ref,{...d, createdAt:Date.now()}); });
+    await batch.commit();
+  }
+
+  async function ensureCategories(){
+    if(!db) return;
+    const qs=await db.collection("checklistTasks").get();
+    const batch=db.batch(); let need=false;
+    qs.forEach(doc=>{
+      const t=doc.data(); if(t.cat) return;
+      let cat="tag", text=t.text||"";
+      const s=(text||"").toLowerCase();
+      if(s.startsWith("morgens:")){ cat="morgens"; text=text.replace(/^Morgens:\s*/i,""); }
+      else if(s.startsWith("im laufe des tages")){ cat="tag"; text=text.replace(/^Im Laufe des Tages:? ?/i,""); }
+      else if(s.startsWith("bevor man geht")){ cat="abend"; text=text.replace(/^Bevor man geht:? ?/i,""); }
+      batch.set(doc.ref,{cat,text},{merge:true}); need=true;
+    });
+    if(need) await batch.commit();
+  }
+
+  // Start
+  async function init(){
+    // Planen
+    renderPeopleButtons();
+    const dp=document.getElementById('datePick');
+    dp.value=todayStr();
+    dp.addEventListener('change', loadForDate);
+    await updateTodayInfo();
+    await loadForDate();
+    await loadNextDays();
+    scheduleMidnightRefresh(async ()=>{ await updateTodayInfo(); if(dp.value===todayStr()) await loadForDate(); await loadNextDays(); });
+
+    // Checkliste
+    updateCatTabs();
+    const sel=document.getElementById('newTaskCat'); sel.value=showCat;
+    if(db){
+      await ensureDefaults();
+      await ensureCategories();
+      db.collection("checklistTasks").onSnapshot(renderTasks, ()=>renderTasks());
+    }else{
+      document.getElementById("list").innerHTML = `<div class="sub">Offline – Aufgaben können nicht geladen werden.</div>`;
+    }
+    updateFilterButtons();
+  }
+
   if('serviceWorker' in navigator){ navigator.serviceWorker.register('./sw.js').catch(()=>{}); }
-  window.onload=init;
+  init();
 </script>
 </body>
 </html>
