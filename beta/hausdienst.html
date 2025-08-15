@@ -23,8 +23,8 @@
     .people-row .pill.active { background:linear-gradient(135deg,#6ee7ff,#a78bfa); color:#0b0e14; border-color:transparent; font-weight:800; }
 
     .row { display:flex; gap:10px; flex-wrap:wrap; align-items:center; }
-    .row input[type="date"] { min-width: 180px; }
     .badge.big { font-size:14px; padding:6px 10px; }
+    .muted { opacity:.7 }
 
     /* Checkliste */
     .segmented { display:flex; gap:8px; flex-wrap:wrap; }
@@ -33,7 +33,6 @@
     .toolbar { display:flex; gap:10px; flex-wrap:wrap; align-items:center; margin-top:10px; }
     .toolbar input, .toolbar select { flex:1 1 auto; min-width:160px; }
     .groupTitle { font-weight:800; letter-spacing:.2px; margin:6px 0 6px; }
-    .muted { opacity:.7 }
   </style>
 </head>
 <body>
@@ -61,18 +60,17 @@
       <div class="card">
         <div class="section-title">Hausdienst planen</div>
         <div class="row" style="margin-top:6px">
-          <input id="datePick" type="date">
-          <button class="btn small" onclick="setToday()">Heute</button>
-          <button class="btn small" onclick="setTomorrow()">Morgen</button>
-          <span id="selectedBadge" class="badge big">–</span>
+          <button id="btnToday" class="btn small" onclick="setFor('today')" disabled>Heute belegen</button>
+          <button id="btnTomorrow" class="btn small" onclick="setFor('tomorrow')" disabled>Morgen belegen</button>
+          <span id="selBadge" class="badge big">Auswahl: –</span>
         </div>
       </div>
 
       <div class="card">
         <div class="section-title">Person auswählen</div>
         <div id="peopleRow" class="people-row" style="margin-top:8px"></div>
-        <div class="sub muted" id="personHint" style="margin-top:6px">
-          Tipp: Person wählen, dann Datum (oder unten in der Liste „Belegen“ tippen).
+        <div class="sub muted" style="margin-top:6px">
+          Tipp: Person wählen, dann „Heute/Morgen“ oder unten in der Liste „Belegen“ tippen.
         </div>
       </div>
 
@@ -144,7 +142,7 @@
 <!-- Firebase -->
 <script src="https://www.gstatic.com/firebasejs/12.0.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/12.0.0/firebase-analytics-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/12.0.0/firebase-firestore-compat.js"></script>
+script src="https://www.gstatic.com/firebasejs/12.0.0/firebase-firestore-compat.js"></script>
 <script>
   const CORE=["Chris","Daniel","Elmi","Florian","Joel","Kevin","Kiste","Marco","Meli","Simon"];
   const firebaseConfig={apiKey:"AIzaSyBFHjGXI5yHyK0DyupS0bnTVAqlu6lvpNw",authDomain:"sickandsound-e9704.firebaseapp.com",projectId:"sickandsound-e9704",storageBucket:"sickandsound-e9704.firebasestorage.app",messagingSenderId:"248197359659",appId:"1:248197359659:web:a8777cbed3f83d6b1ca26e",measurementId:"G-62LH8V7S2E"};
@@ -167,16 +165,7 @@
     setTimeout(()=>{ cb(); scheduleMidnightRefresh(cb); }, mid-now);
   }
 
-  let selectedPerson=null; // aktive Personausswahl (überschreibt NICHT automatisch)
-
-  function setToday(){
-    const d=document.getElementById('datePick'); d.value=todayStr();
-    onDateChanged(true);
-  }
-  function setTomorrow(){
-    const d=document.getElementById('datePick'); const t=new Date(); t.setDate(t.getDate()+1); d.value=t.toISOString().slice(0,10);
-    onDateChanged(true);
-  }
+  let selectedPerson=null;
 
   function renderPeopleRow(){
     const wrap=document.getElementById('peopleRow');
@@ -185,48 +174,44 @@
     `).join("");
   }
 
+  function updateSelectionUI(){
+    const badge=document.getElementById('selBadge');
+    const has=!!selectedPerson;
+    badge.innerHTML = has ? `Auswahl: <b>${selectedPerson}</b>` : "Auswahl: –";
+    document.getElementById('btnToday').disabled = !has;
+    document.getElementById('btnTomorrow').disabled = !has;
+  }
+
   function selectPerson(name){
     if(!CORE.includes(name)) return;
     selectedPerson = (selectedPerson===name ? null : name);
     renderPeopleRow();
-    renderNextDays(); // Buttons „Belegen mit Auswahl“ ein-/ausblenden
+    updateSelectionUI();
+    renderNextDays(); // „Belegen mit Auswahl“-Buttons je nach Auswahl zeigen
   }
 
-  async function loadForDate(){
-    const date = document.getElementById('datePick').value;
-    if(!date) return;
-    if(!db){ document.getElementById('selectedBadge').textContent="(offline)"; return; }
-    const doc=await db.collection("hausdienst").doc(date).get();
-    const person = doc.exists ? (doc.data().person||null) : null;
-    updateSelectedBadge(person);
-  }
-
-  async function setForDate(date, person){
+  async function setFor(day){
+    if(!selectedPerson) return alert("Bitte zuerst eine Person auswählen.");
     if(!db) return alert("Offline – kann nicht speichern.");
-    if(!person) return alert("Bitte zuerst eine Person auswählen.");
-    await db.collection("hausdienst").doc(date).set({person, updatedAt:Date.now()});
-    await loadForDate();
-    if(date===todayStr()){ updateTodayInfo(); }
-    renderNextDays(); renderHistory();
-  }
 
-  function updateSelectedBadge(person){
-    const badge=document.getElementById('selectedBadge');
-    if(person){
-      badge.innerHTML = `<span class="badge ok big">${person}</span>`;
-    }else{
-      badge.innerHTML = `<span class="badge none big">Frei</span>`;
+    const dt=new Date(); if(day==='tomorrow') dt.setDate(dt.getDate()+1);
+    const id=dt.toISOString().slice(0,10);
+
+    // Verhindere Überschreiben: nur wenn frei
+    const ex=await db.collection("hausdienst").doc(id).get();
+    const current = ex.exists ? ex.data().person : null;
+    if(current){
+      alert(`Bereits belegt: ${current}. Bitte in der Übersicht erst „Austragen“.`);
+      return;
     }
+
+    await db.collection("hausdienst").doc(id).set({person:selectedPerson, updatedAt:Date.now()});
+    if(id===todayStr()) await updateTodayInfo();
+    await renderNextDays();
+    await renderHistory();
   }
 
-  function onDateChanged(applySelection){
-    loadForDate().then(()=>{
-      const date=document.getElementById('datePick').value;
-      if(applySelection && selectedPerson && date){ setForDate(date, selectedPerson); }
-    });
-  }
-
-  // 14-Tage-Liste inkl. Austragen & Belegen (mit Auswahl)
+  // Liste der nächsten 14 Tage inkl. Austragen & Belegen (mit Auswahl)
   async function renderNextDays(){
     if(!db){ document.getElementById('nextList').textContent="Offline – keine Vorschau."; return; }
     const out=[];
@@ -253,13 +238,26 @@
       `<table><thead><tr><th>Datum</th><th>Person</th><th>Aktion</th></tr></thead><tbody>${rows}</tbody></table>`;
   }
 
+  // Direkter Set-Helper für die Liste (ohne Überschreiben)
+  async function setForDate(date, person){
+    if(!db) return alert("Offline – kann nicht speichern.");
+    if(!person) return alert("Bitte zuerst eine Person auswählen.");
+    const ex=await db.collection("hausdienst").doc(date).get();
+    const current = ex.exists ? ex.data().person : null;
+    if(current){
+      alert(`Bereits belegt: ${current}. Bitte erst „Austragen“.`);
+      return;
+    }
+    await db.collection("hausdienst").doc(date).set({person, updatedAt:Date.now()});
+    if(date===todayStr()) await updateTodayInfo();
+    await renderNextDays(); await renderHistory();
+  }
+
   async function clearSpecific(date){
     if(!db) return alert("Offline – kann nicht löschen.");
     await db.collection("hausdienst").doc(date).delete();
-    renderNextDays(); renderHistory();
-    if(date===todayStr()){ updateTodayInfo(); }
-    const cur=document.getElementById('datePick').value;
-    if(cur===date) loadForDate();
+    if(date===todayStr()) await updateTodayInfo();
+    await renderNextDays(); await renderHistory();
   }
 
   async function updateTodayInfo(){
@@ -302,16 +300,12 @@
   function labelOf(cat){ const f=CATS.find(c=>c.key===cat); return f?f.label:cat; }
   function escapeHtml(s){
     return (s||"").replace(/[&<>"']/g, m=>({
-      "&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#039;"
+      "&":"&amp;","<":"&lt;","&gt;":"&gt;","\"":"&quot;","'":"&#039;"
     }[m]));
   }
 
   function calcCounts(list){
-    return {
-      open: list.filter(t=>!checked[t.id]).length,
-      done: list.filter(t=> checked[t.id]).length,
-      all : list.length
-    };
+    return { open:list.filter(t=>!checked[t.id]).length, done:list.filter(t=>checked[t.id]).length, all:list.length };
   }
   function updateFilterButtons(){
     const inCat = (showCat==="all") ? tasksCache : tasksCache.filter(t=>t.cat===showCat);
@@ -407,30 +401,42 @@
 
   // Start
   async function init(){
-    // Planen
     renderPeopleRow();
-    const dp=document.getElementById('datePick');
-    dp.value=todayStr();
-    dp.addEventListener('change', ()=>onDateChanged(true));
+    updateSelectionUI();
     await updateTodayInfo();
-    await loadForDate();
     await renderNextDays();
-    scheduleMidnightRefresh(async ()=>{ await updateTodayInfo(); if(dp.value===todayStr()) await loadForDate(); await renderNextDays(); await renderHistory(); });
+    await renderHistory();
+
+    scheduleMidnightRefresh(async ()=>{ await updateTodayInfo(); await renderNextDays(); await renderHistory(); });
 
     // Checkliste
     updateCatTabs();
     const sel=document.getElementById('newTaskCat'); sel.value="morgens";
     if(db){
-      await ensureDefaults();
-      await ensureCategories();
+      await db.collection("checklistTasks").get().then(s=>{
+        if(s.empty){
+          const defs = [
+            {cat:"morgens", text:"Briefkasten leeren"},
+            {cat:"morgens", text:"Spülmaschine ausräumen"},
+            {cat:"morgens", text:"Toilettenpapier & Zewa auffüllen"},
+            {cat:"morgens", text:"Getränke auffüllen"},
+            {cat:"morgens", text:"Staubsauger Wasser checken"},
+            {cat:"tag",     text:"Wäsche an machen & aufhängen"},
+            {cat:"tag",     text:"Pakete entgegennehmen"},
+            {cat:"tag",     text:"Für Grundordnung sorgen"},
+            {cat:"abend",   text:"Oberflächen in der Küche + Geräte wischen"},
+            {cat:"abend",   text:"Müll rausbringen & mitnehmen"},
+          ];
+          const batch=db.batch();
+          defs.forEach(d=>{ const ref=db.collection("checklistTasks").doc(); batch.set(ref,{...d, createdAt:Date.now()}); });
+          return batch.commit();
+        }
+      }).catch(()=>{});
       db.collection("checklistTasks").onSnapshot(renderTasks, ()=>renderTasks());
     }else{
       document.getElementById("list").innerHTML = `<div class="sub">Offline – Aufgaben können nicht geladen werden.</div>`;
     }
     updateFilterButtons();
-
-    // Historie
-    await renderHistory();
   }
 
   if('serviceWorker' in navigator){ navigator.serviceWorker.register('./sw.js').catch(()=>{}); }
