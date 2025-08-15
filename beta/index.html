@@ -11,53 +11,35 @@
   <link rel="stylesheet" href="style.css" />
   <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;800&display=swap" rel="stylesheet" />
   <style>
-    /* ---- Onepage-Optimierung für Tablet ---- */
-    :root{
-      --ring: 48px;          /* wird per JS auf verfügbare Höhe skaliert */
-      --row-pad: 6px;        /* vertikales Padding in Zeilen */
-      --name-size: 18px;     /* Schriftgröße Namen */
-      --count-size: 17px;    /* Schriftgröße Zähler */
-      --cell-gap: 10px;
-    }
-    .content{ padding-bottom: 88px; } /* Platz für Bottomnav */
+    :root{ --ring:48px; --row-pad:6px; --name-size:18px; --count-size:17px; --cell-gap:10px; }
+    .content{ padding-bottom: 88px; }
     .appbar{ min-height: 52px; }
     .bottomnav{ height: 64px; }
-
-    .card.table-wrap table td, .card.table-wrap table th{
-      padding-top: var(--row-pad);
-      padding-bottom: var(--row-pad);
-    }
-    .lvl-ring{ width: var(--ring); height: var(--ring); position:relative; display:inline-grid; place-items:center; }
-    .lvl-ring .val{ position:absolute; font-size: 12px; font-weight: 800; line-height:1; }
+    .card.table-wrap table td, .card.table-wrap table th{ padding-top:var(--row-pad); padding-bottom:var(--row-pad);}
+    .lvl-ring{ width:var(--ring); height:var(--ring); position:relative; display:inline-grid; place-items:center; }
+    .lvl-ring .val{ position:absolute; font-size:12px; font-weight:800; line-height:1; }
     .person-cell{ display:flex; align-items:center; gap:10px; }
-    .p-name{ font-size: var(--name-size); font-weight: 800; letter-spacing:.2px; }
-
-    .drink-chip .drink-name{ font-size: 12px; }
-    .drink-chip .drink-price{ font-size: 11px; opacity:.8 }
-
-    .cell{ display:flex; align-items:center; justify-content:flex-end; gap: var(--cell-gap); }
-    .count{ font-size: var(--count-size); min-width: 26px; text-align:right; }
+    .p-name{ font-size:var(--name-size); font-weight:800; letter-spacing:.2px; }
+    .drink-chip .drink-name{ font-size:12px; } .drink-chip .drink-price{ font-size:11px; opacity:.8 }
+    .cell{ display:flex; align-items:center; justify-content:flex-end; gap:var(--cell-gap); }
+    .count{ font-size:var(--count-size); min-width:26px; text-align:right; }
     .plus-btn{ padding:8px 12px; }
-
     .section-row td{ font-size:12px; opacity:.7 }
     .guest-toggle{ margin:10px 0 -2px; display:flex; justify-content:center; }
-    .guest-toggle .btn{ min-width: 200px; }
-    .section-title{ font-size: 14px; }
-    /* PayPal Icon */
-    .icon-paypal { width:20px; height:20px; display:block; }
+    .guest-toggle .btn{ min-width:200px; }
+    .section-title{ font-size:14px; }
+    .icon-paypal{ width:20px; height:20px; display:block; }
   </style>
 </head>
 <body>
 <div class="app">
 
-  <!-- AppBar -->
   <header class="appbar">
     <div class="app-title">
       <div class="brand-dot"></div>
       <h1>Sick &amp; Sound</h1>
     </div>
     <div class="appbar-actions">
-      <!-- Nur hier geändert: statt 💸 jetzt ein PayPal-SVG -->
       <button class="btn small dark" onclick="togglePayPal()" title="PayPal QR" aria-label="PayPal QR">
         <svg class="icon-paypal" viewBox="0 0 64 64" aria-hidden="true">
           <path d="M18 10h17c10 0 16 5 16 13s-6 13-16 13h-12l-4 18h-9L18 10z" fill="currentColor"/>
@@ -68,7 +50,6 @@
     </div>
   </header>
 
-  <!-- Content -->
   <main class="content">
     <div class="card" style="margin-bottom:8px">
       <div class="section-title">Heute</div>
@@ -89,7 +70,6 @@
     </div>
   </main>
 
-  <!-- BottomNav -->
   <nav class="bottomnav">
     <a class="tab active" href="index.html" aria-label="Strichliste">
       <svg viewBox="0 0 24 24" fill="currentColor"><path d="M4 6h16v2H4zM4 11h16v2H4zM4 16h10v2H4z"/></svg>
@@ -102,6 +82,10 @@
     <a class="tab" href="rangliste.html" aria-label="Ranglisten">
       <svg viewBox="0 0 24 24" fill="currentColor"><path d="M7 17H3V7h4v10zm7 0h-4V3h4v14zm7 0h-4v-8h4v8z"/></svg>
       <span>Rang</span>
+    </a>
+    <a class="tab" href="badges.html" aria-label="Badges">
+      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 1l3.09 6.26L22 8.27l-5 4.87L18.18 22 12 18.56 5.82 22 7 13.14 2 8.27l6.91-1.01L12 1z"/></svg>
+      <span>Badges</span>
     </a>
     <a class="tab" href="buchungen.html" aria-label="Buchungen">
       <svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 2h9l5 5v13a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2zm8 1.5V8h4.5L14 3.5z"/></svg>
@@ -140,20 +124,11 @@
 
 <script>
 /* ===== Config ===== */
-const CORE = ["Chris","Daniel","Elmi","Florian","Joel","Kevin","Kiste","Marco","Meli","Simon"];
+const CORE=["Chris","Daniel","Elmi","Florian","Joel","Kevin","Kiste","Marco","Meli","Simon"];
 const firebaseConfig={apiKey:"AIzaSyBFHjGXI5yHyK0DyupS0bnTVAqlu6lvpNw",authDomain:"sickandsound-e9704.firebaseapp.com",projectId:"sickandsound-e9704",storageBucket:"sickandsound-e9704.firebasestorage.app",messagingSenderId:"248197359659",appId:"1:248197359659:web:a8777cbed3f83d6b1ca26e",measurementId:"G-62LH8V7S2E"};
 
-/* ===== Safe init Firebase (Offline/Blocker tolerant) ===== */
-let db=null;
-try{
-  if(window.firebase){
-    firebase.initializeApp(firebaseConfig);
-    try{ firebase.analytics(); }catch(_){}
-    db=firebase.firestore();
-  }
-}catch(_){ db=null; }
-
-/* Prod/Beta Toggle */
+/* ===== Firebase ===== */
+let db=null; try{ if(window.firebase){ firebase.initializeApp(firebaseConfig); try{firebase.analytics();}catch(_){ } db=firebase.firestore(); } }catch(_){ db=null; }
 const STATE_COLLECTION = location.search.includes("beta") ? "state_beta" : "state";
 
 /* ===== State ===== */
@@ -164,44 +139,39 @@ let prices={"Cola_Zero":1.0,"Monster":1.5,"Wasser":0.5,"Kaffee":1.0,"Mittagessen
 let people=[], data={}, history=[], redoStack=[], bookings=[], columnOrder=Object.keys(prices), xp={};
 let deleteMode=false, hdToday=null, showGuests=false;
 
-/* ===== Sound helpers ===== */
+/* ===== Sounds ===== */
 const makeSound = (src)=> (window.Howl ? new Howl({src:[src]}) : {play:()=>{}});
 const sClick = makeSound("https://cdn.jsdelivr.net/gh/jshawl/howler-examples@master/audio/sfx/coin1.wav");
 const sLevel = makeSound("https://cdn.jsdelivr.net/gh/jshawl/howler-examples@master/audio/sfx/powerUp5.wav");
 
-/* ===== Math / XP ===== */
+/* ===== Level / XP (langsamer) ===== */
 const todayStr=()=>new Date().toISOString().slice(0,10);
-const levelOf=x=>Math.floor(Math.sqrt(x/20))+1;
+const LVL_K = 75;                                 // <— langsameres Leveln
+const levelOf = x => Math.floor(Math.sqrt(x / LVL_K)) + 1;
 
 // Geldwert der aktuellen Striche einer Person
 function valueOfCurrentStriche(person){
-  return (columnOrder||[]).reduce(
-    (sum, d) => sum + ((data[`${person}_${d}`] || 0) * (prices[d] || 0)), 0
-  );
+  return (columnOrder||[]).reduce((sum,d)=> sum + ((data[`${person}_${d}`]||0) * (prices[d]||0)), 0);
 }
-// XP für Anzeige = mindestens Strichwert
+// XP-Anzeige = mindestens Strichwert
 function getXpForDisplay(person){
   const base = +(xp[person] || 0);
   const cur  = valueOfCurrentStriche(person);
   return Math.max(base, cur);
 }
 
-/* ===== Long-press for +1 ===== */
+/* ===== Long-press +1 ===== */
 let holdT=null, holdI=null;
 function startHold(handler){ stopHold(); handler(); holdT=setTimeout(()=>{holdI=setInterval(handler,120)},420); }
 function stopHold(){ if(holdT) clearTimeout(holdT); if(holdI) clearInterval(holdI); holdT=holdI=null; }
 window.onmouseup=stopHold; window.onmouseleave=stopHold;
 
-/* ===== Mini-Patch: Auto-Refresh um 00:00 ===== */
+/* ===== Auto-Refresh um 00:00 ===== */
 function scheduleMidnightRefresh(cb){
-  const now=new Date();
-  const mid=new Date(now.getFullYear(),now.getMonth(),now.getDate()+1,0,0,2);
+  const now=new Date(); const mid=new Date(now.getFullYear(),now.getMonth(),now.getDate()+1,0,0,2);
   setTimeout(()=>{ try{ cb(); } finally { scheduleMidnightRefresh(cb); } }, mid-now);
 }
-/* beim Zurückkehren in die App auch aktualisieren */
-document.addEventListener('visibilitychange', () => {
-  if (!document.hidden) { updateTodayBanner(); buildTable(); }
-});
+document.addEventListener('visibilitychange',()=>{ if(!document.hidden){ updateTodayBanner(); buildTable(); }});
 
 /* ===== Load ===== */
 async function loadState(){
@@ -223,20 +193,12 @@ async function loadState(){
         redoStack=JSON.parse(localStorage.getItem(redoKey))||[];
       }
     }catch(e){ fallbackLoad(); }
-  }else{
-    fallbackLoad();
-  }
+  }else{ fallbackLoad(); }
 
   CORE.forEach(n=>{ if(!people.includes(n)) people.push(n); });
 
-  saveAll();
-  buildTable();
-  updateTodayBanner();
-  subscribeRealtime();
-  updateUndoRedoButtons();
+  saveAll(); buildTable(); updateTodayBanner(); subscribeRealtime(); updateUndoRedoButtons();
   await ensureXpFromExistingStricheAfterLoad();
-
-  /* Mini-Patch aktivieren */
   scheduleMidnightRefresh(()=>{ updateTodayBanner(); buildTable(); });
 }
 
@@ -251,16 +213,12 @@ function fallbackLoad(){
   xp=JSON.parse(localStorage.getItem(xpKey))||xp;
 }
 
-/* ===== Migration: vorhandene Striche -> XP (ohne Doppelzählung) ===== */
+/* Migration: vorhandene Striche => min. XP */
 async function ensureXpFromExistingStricheAfterLoad(){
-  const drinks = Object.keys(prices);
-  let changed=false;
+  const drinks = Object.keys(prices); let changed=false;
   people.forEach(p=>{
     let xpFromData=0;
-    drinks.forEach(d=>{
-      const cnt = data[`${p}_${d}`] || 0;
-      xpFromData += cnt * (prices[d]||0);
-    });
+    drinks.forEach(d=>{ const cnt=data[`${p}_${d}`]||0; xpFromData += cnt*(prices[d]||0); });
     if((xp[p]||0) < xpFromData){ xp[p]=xpFromData; changed=true; }
   });
   if(changed){ saveAll(); buildTable(); }
@@ -309,32 +267,27 @@ async function updateTodayBanner(existing){
       if(db){
         const d=await db.collection("hausdienst").doc(todayStr()).get();
         person = d.exists ? d.data().person : null;
-      }else{ person=null; }
+      } else { person=null; }
     }
     hdToday=person;
     const el=document.getElementById("todayInfo");
     el.innerHTML = person
       ? `Heute eingetragener Hausdienst: <span class="badge ok">${person}</span> · <a href="hausdienst_checklist.html" class="badge gold" style="text-decoration:none">Checkliste öffnen</a>`
       : `Heute: <span class="badge none">Noch niemand eingetragen</span>`;
-  }catch(e){
-    document.getElementById("todayInfo").textContent="Heute: Status nicht verfügbar (offline?)";
-  }
+  }catch(e){ document.getElementById("todayInfo").textContent="Heute: Status nicht verfügbar (offline?)"; }
 }
 
 /* ===== Undo/Redo ===== */
 function updateUndoRedoButtons(){
-  const u=document.getElementById("undoBtn");
-  const r=document.getElementById("redoBtn");
-  if(!u||!r) return;
-  u.disabled = history.length===0;
-  r.disabled = redoStack.length===0;
+  const u=document.getElementById("undoBtn"), r=document.getElementById("redoBtn");
+  if(!u||!r) return; u.disabled = history.length===0; r.disabled = redoStack.length===0;
 }
 function applyAction(a){
   if(a.type==="inc"){
-    data[a.id] = (a.prev||0) + 1;
+    data[a.id] = (a.prev||0)+1;
     if(a.person){ xp[a.person] = (xp[a.person]||0) + (a.xpDelta||0); }
   } else if (a.action==="change"){
-    data[a.id] = (a.prev||0) + 1;
+    data[a.id] = (a.prev||0)+1;
     const parts=a.id.split('_'); const person=parts[0]; const drink=parts.slice(1).join('_');
     xp[person] = (xp[person]||0) + (prices[drink]||0);
   }
@@ -349,20 +302,8 @@ function applyInverse(a){
     xp[person] = Math.max(0, (xp[person]||0) - (prices[drink]||0));
   }
 }
-function undoLast(){
-  const last = history.pop();
-  if(!last) return;
-  applyInverse(last);
-  redoStack.push(last);
-  saveAll(); buildTable(); updateUndoRedoButtons();
-}
-function redoLast(){
-  const act = redoStack.pop();
-  if(!act) return;
-  applyAction(act);
-  history.push(act);
-  saveAll(); buildTable(); updateUndoRedoButtons();
-}
+function undoLast(){ const last=history.pop(); if(!last) return; applyInverse(last); redoStack.push(last); saveAll(); buildTable(); updateUndoRedoButtons(); }
+function redoLast(){ const act=redoStack.pop(); if(!act) return; applyAction(act); history.push(act); saveAll(); buildTable(); updateUndoRedoButtons(); }
 
 /* ===== Tabelle & Level-Ring ===== */
 function buildTable(){
@@ -383,28 +324,20 @@ function buildTable(){
   });
   html += `<th>Gesamt (€)</th></tr></thead><tbody>`;
 
-  // Fortschritts-Ring
   const ring = (xpVal, person)=>{
     const x = +xpVal || 0;
-    const lvl = Math.max(1, Math.floor(Math.sqrt(x/20)) + 1);
-    const min = 20*(lvl-1)*(lvl-1);
-    const max = 20* lvl   * lvl;
+    const lvl = Math.max(1, levelOf(x));
+    const min = LVL_K * (lvl-1) * (lvl-1);    // <— angepasst an langsames Leveln
+    const max = LVL_K *  lvl    *  lvl;
     const p   = Math.max(0, Math.min(1, (x - min) / (max - min) ));
-
-    const r = 22;                  // sicher innerhalb 52x52 @ stroke 6
-    const c = 2*Math.PI*r;
-    const off = (1-p)*c;
-    const gid = "grad_" + person.replace(/[^a-z0-9]/gi,'') + "_" + lvl;
-
+    const r=22, c=2*Math.PI*r, off=(1-p)*c;
+    const gid="grad_"+person.replace(/[^a-z0-9]/gi,'')+"_"+lvl;
     return `
       <div class="lvl-ring" role="img" aria-label="Level ${lvl}, ${Math.round(p*100)}%">
         <svg viewBox="0 0 52 52" width="100%" height="100%" style="transform:rotate(-90deg)">
-          <defs>
-            <linearGradient id="${gid}" x1="0" y1="0" x2="1" y2="1">
-              <stop offset="0%"  stop-color="var(--accent, #6ee7ff)"/>
-              <stop offset="100%" stop-color="var(--accent-2, #a78bfa)"/>
-            </linearGradient>
-          </defs>
+          <defs><linearGradient id="${gid}" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0%" stop-color="var(--accent,#6ee7ff)"/><stop offset="100%" stop-color="var(--accent-2,#a78bfa)"/>
+          </linearGradient></defs>
           <circle cx="26" cy="26" r="${r}" stroke="#2a2f3b" stroke-width="6" fill="none"/>
           <circle cx="26" cy="26" r="${r}" stroke="url(#${gid})" stroke-width="6" stroke-linecap="round"
                   fill="none" stroke-dasharray="${c}" stroke-dashoffset="${off}"/>
@@ -413,46 +346,37 @@ function buildTable(){
       </div>`;
   };
 
-  const row = (p)=>{
+  const row=(p)=>{
     const xpVal=getXpForDisplay(p);
-    const hdClass = (hdToday===p) ? "hd-today" : "";
-    let r = `<tr class="${hdClass}"><th style="text-align:left">
-      <div class="person-cell">
-        ${ring(xpVal, p)}
-        <div class="p-info"><div class="p-name">${p}</div></div>
-      </div>
-    </th>`;
+    const hdClass=(hdToday===p)?"hd-today":"";
+    let r=`<tr class="${hdClass}"><th style="text-align:left">
+      <div class="person-cell">${ring(xpVal,p)}<div class="p-info"><div class="p-name">${p}</div></div></div></th>`;
     columnOrder.forEach(dr=>{
       if(prices[dr]!==undefined){
-        const id=`${p}_${dr}`, val=data[id]||0;
-        const handler = `()=>inc('${id}','${dr}','${p}')`;
-        r += `<td>
-          <div class="cell" onclick="inc('${id}','${dr}','${p}')">
-            <div class="count" id="${id}">${val}</div>
-            <button class="btn small plus-btn"
-              onclick="event.stopPropagation(); inc('${id}','${dr}','${p}')"
-              onmousedown="startHold(${handler})" onmouseup="stopHold()" onmouseleave="stopHold()"
-              ontouchstart="startHold(${handler})" ontouchend="stopHold()">+1</button>
-          </div>
-        </td>`;
+        const id=`${p}_${dr}`, val=data[id]||0, handler=`()=>inc('${id}','${dr}','${p}')`;
+        r+=`<td><div class="cell" onclick="inc('${id}','${dr}','${p}')">
+          <div class="count" id="${id}">${val}</div>
+          <button class="btn small plus-btn"
+            onclick="event.stopPropagation(); inc('${id}','${dr}','${p}')"
+            onmousedown="startHold(${handler})" onmouseup="stopHold()" onmouseleave="stopHold()"
+            ontouchstart="startHold(${handler})" ontouchend="stopHold()">+1</button>
+        </div></td>`;
       }
     });
-    const total = columnOrder.reduce((s,d)=>s+(data[`${p}_${d}`]||0)*prices[d],0);
-    r += `<td id="${p}_Total">${total.toFixed(2)}</td></tr>`;
-    return r;
+    const total=columnOrder.reduce((s,d)=>s+(data[`${p}_${d}`]||0)*prices[d],0);
+    r+=`<td id="${p}_Total">${total.toFixed(2)}</td></tr>`; return r;
   };
 
   core.forEach(p=> html += row(p));
   html += `</tbody></table>`;
 
-  // Gäste optional einklappen
-  let guestHtml = "";
-  const guestsList = people.filter(n=>!CORE.includes(n)).sort((a,b)=>a.localeCompare(b));
+  let guestHtml="";
+  const guestsList=people.filter(n=>!CORE.includes(n)).sort((a,b)=>a.localeCompare(b));
   if(guestsList.length){
-    guestHtml += `<div class="guest-toggle"><button class="btn ghost" onclick="toggleGuests()">
+    guestHtml+=`<div class="guest-toggle"><button class="btn ghost" onclick="toggleGuests()">
       ${showGuests ? "Gäste ausblenden" : `Gäste anzeigen (${guestsList.length})`}</button></div>`;
     if(showGuests){
-      guestHtml += `<div style="margin-top:6px"><table><tbody>
+      guestHtml+=`<div style="margin-top:6px"><table><tbody>
         <tr class="section-row"><td colspan="${columnOrder.length+2}">— Gäste —</td></tr>
         ${guestsList.map(p=>row(p)).join("")}
       </tbody></table></div>`;
@@ -460,68 +384,55 @@ function buildTable(){
   }
 
   document.getElementById("tableContainer").innerHTML = html + guestHtml;
-
-  // Onepage-Autofit nur für Kernteam anwenden
   requestAnimationFrame(adjustToOnePage);
 }
 
 /* Gäste ein/aus */
 function toggleGuests(){ showGuests=!showGuests; buildTable(); }
 
-/* ---- Onepage-Autofit ---- */
+/* Onepage-Fit */
 function adjustToOnePage(){
-  const appbar = document.querySelector('.appbar')?.offsetHeight || 0;
-  const bottom = document.querySelector('.bottomnav')?.offsetHeight || 0;
-  const cards = Array.from(document.querySelectorAll('.content .card')).filter((el,i)=> i!==1 );
-  const other = appbar + bottom + cards.reduce((s,c)=> s + c.offsetHeight, 0) + 20;
-
-  const avail = window.innerHeight - other;
-  const headH = 36;              // angenommene Höhe Tabellenkopf
-  const coreCount = 10;          // fix: Kernteam
-  const rowsTotal = coreCount;   // nur Kernteamzeilen sollen passen
-
-  let rowH = Math.max(42, Math.min(72, Math.floor((avail - headH) / rowsTotal)));
-  let ring = Math.max(36, Math.min(56, rowH - 10));
-  let name = Math.max(18, Math.min(22, Math.floor(rowH * 0.45)));
-  let count= Math.max(16, Math.min(20, Math.floor(rowH * 0.40)));
-  let pad  = Math.max(4, Math.floor((rowH - 34)/2));
-
+  const appbar=document.querySelector('.appbar')?.offsetHeight||0;
+  const bottom=document.querySelector('.bottomnav')?.offsetHeight||0;
+  const cards=Array.from(document.querySelectorAll('.content .card')).filter((el,i)=> i!==1);
+  const other=appbar+bottom+cards.reduce((s,c)=>s+c.offsetHeight,0)+20;
+  const avail=window.innerHeight-other, headH=36, coreCount=10, rowsTotal=coreCount;
+  let rowH=Math.max(42,Math.min(72,Math.floor((avail-headH)/rowsTotal)));
+  let ring=Math.max(36,Math.min(56,rowH-10));
+  let name=Math.max(18,Math.min(22,Math.floor(rowH*0.45)));
+  let count=Math.max(16,Math.min(20,Math.floor(rowH*0.40)));
+  let pad=Math.max(4,Math.floor((rowH-34)/2));
   document.documentElement.style.setProperty('--row-pad', pad+'px');
   document.documentElement.style.setProperty('--ring', ring+'px');
   document.documentElement.style.setProperty('--name-size', name+'px');
   document.documentElement.style.setProperty('--count-size', count+'px');
-  document.documentElement.style.setProperty('--cell-gap', Math.max(8, Math.floor(rowH*0.22))+'px');
+  document.documentElement.style.setProperty('--cell-gap', Math.max(8,Math.floor(rowH*0.22))+'px');
 }
 
-/* ===== Interactions ===== */
+/* Interactions */
 function headerClick(drink){ if(deleteMode) deleteColumn(drink); }
 
 function inc(id,drink,person){
   const el=document.getElementById(id);
   const cur=parseInt(el?.textContent||'0'); const next=cur+1;
   if(el){ el.textContent=next; el.classList.remove('bump'); void el.offsetWidth; el.classList.add('bump'); }
-
-  const xpDelta = prices[drink]||0;
-  history.push({type:"inc", id, prev:cur, person, xpDelta});
-  redoStack = [];
+  const xpDelta=prices[drink]||0;
+  history.push({type:"inc", id, prev:cur, person, xpDelta}); redoStack=[];
   data[id]=next;
 
   const before=levelOf((xp[person]||0));
   xp[person]=(xp[person]||0)+xpDelta;
-  const after=levelOf(xp[person]);
-  (after>before ? sLevel : sClick).play();
+  const after=levelOf(xp[person]); (after>before ? sLevel : sClick).play();
 
   updateTotalsFor(person); saveAll(); updateUndoRedoButtons();
 }
-
 function updateTotalsFor(person){
-  const tot = columnOrder.reduce((s,d)=>s+(data[`${person}_${d}`]||0)*prices[d],0);
-  const el=document.getElementById(`${person}_Total`);
-  if(el) el.textContent=tot.toFixed(2);
-  buildTable(); // Ring neu zeichnen & Autofit
+  const tot=columnOrder.reduce((s,d)=>s+(data[`${person}_${d}`]||0)*prices[d],0);
+  const el=document.getElementById(`${person}_Total`); if(el) el.textContent=tot.toFixed(2);
+  buildTable();
 }
 
-/* Delete mode (global) */
+/* Delete mode */
 function toggleDeleteMode(){
   deleteMode=!deleteMode; const btn=document.getElementById("deleteBtn");
   btn.textContent = deleteMode ? "❌ Abbrechen" : "🗑 Löschen";
@@ -542,15 +453,14 @@ function resetAll(){
   const pw=prompt("Passwort eingeben:"); if(pw!=="1379"){alert("Falsches Passwort");return;}
   if(!confirm("Alle Striche abrechnen und zurücksetzen?")) return;
   people.forEach(p=>{
-    const sum = columnOrder.reduce((s,d)=>s+(data[`${p}_${d}`]||0)*prices[d],0);
+    const sum=columnOrder.reduce((s,d)=>s+(data[`${p}_${d}`]||0)*prices[d],0);
     if(sum>0) bookings.push({date:new Date().toLocaleDateString("de-DE"), person:p, sum});
     xp[p]=(xp[p]||0)+sum; columnOrder.forEach(d=>data[`${p}_${d}`]=0);
   });
-  history=[]; redoStack=[];
-  saveAll(); buildTable(); updateUndoRedoButtons();
+  history=[]; redoStack=[]; saveAll(); buildTable(); updateUndoRedoButtons();
 }
 
-/* Modals & helpers */
+/* Modals */
 function openDrinkModal(){ document.getElementById("drinkModal").classList.add("show"); }
 function openPersonModal(){ document.getElementById("personModal").classList.add("show"); }
 function closeModal(id){ document.getElementById(id).classList.remove("show"); }
@@ -568,11 +478,9 @@ function confirmAddDrink(){
   saveAll(); buildTable(); closeModal('drinkModal'); document.getElementById("drinkName").value=""; document.getElementById("drinkPrice").value="";
 }
 
-/* SW (PWA) */
+/* SW */
 if('serviceWorker' in navigator){ navigator.serviceWorker.register('./sw.js').catch(()=>{}); }
-
-window.onload=loadState;
-window.onresize=()=>requestAnimationFrame(adjustToOnePage);
+window.onload=loadState; window.onresize=()=>requestAnimationFrame(adjustToOnePage);
 </script>
 </body>
 </html>
