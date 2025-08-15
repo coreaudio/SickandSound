@@ -19,8 +19,8 @@
 
   <main class="content">
     <div class="card table-wrap" id="live"></div>
-    <div class="card table-wrap" id="money" style="margin-top:12px"></div>
-    <div class="card table-wrap" id="hausdienst" style="margin-top:12px"></div>
+    <div class="card table-wrap" id="hausdienstHistory" style="margin-top:12px"></div>
+    <div class="card table-wrap" id="hausdienstStats" style="margin-top:12px"></div>
   </main>
 
   <nav class="bottomnav">
@@ -66,6 +66,9 @@
     return Object.keys(prices||{}).reduce((sum,d)=>sum+((data[`${person}_${d}`]||0)*(prices[d]||0)),0);
   }
 
+  function todayStr(){ return new Date().toISOString().slice(0,10); }
+  function dateDaysAgo(n){ const d=new Date(); d.setDate(d.getDate()-n); return d.toISOString().slice(0,10); }
+
   async function load(){
     // --- State laden
     let state = {};
@@ -81,49 +84,62 @@
     const sumsGebucht={}; (state.people||[]).forEach(p=>sumsGebucht[p]=0);
     (state.bookings||[]).forEach(b=>{ sumsGebucht[b.person]=(sumsGebucht[b.person]||0)+Number(b.sum||0); });
 
-    // --- LIVE Rangliste (Summe = gebucht + offen)
+    // --- LIVE Rangliste (nur Person + Summe)
     const rowsLive = (state.people||[]).map(p=>{
       const offen = valueOfCurrentStriche(p, state.prices, state.data);
       const gebucht = sumsGebucht[p]||0;
       const summe = gebucht + offen;
-      return {p, summe, offen, gebucht};
+      return {p, summe};
     }).sort((a,b)=>b.summe-a.summe);
 
     document.getElementById("live").innerHTML = buildTable(
-      "🏆 Live Rangliste (Summe aus Gebucht + Offen)",
-      ["Platz","Person","Summe €","Offen €","Gebucht €"],
-      rowsLive.map((r,i)=>[i+1, r.p, r.summe.toFixed(2), r.offen.toFixed(2), r.gebucht.toFixed(2)]),
+      "🏆 Live Rangliste",
+      ["Platz","Person","Summe €"],
+      rowsLive.map((r,i)=>[i+1, r.p, r.summe.toFixed(2)]),
       "Noch keine Daten."
     );
 
-    // --- Einzahlungen (nur gebucht)
-    const arrMoney=Object.entries(sumsGebucht).sort((a,b)=>b[1]-a[1]);
-    document.getElementById("money").innerHTML = buildTable(
-      "💰 Einzahlungen (gebucht)",
-      ["Platz","Person","Summe €"],
-      arrMoney.map(([p,v],i)=>[i+1,p,(+v).toFixed(2)]),
-      "Noch keine Buchungen vorhanden."
-    );
-
-    // --- Hausdienst (nur Kernteam, bis heute)
-    const today=new Date().toISOString().slice(0,10);
+    // --- Hausdienst Historie (letzte 30 Tage)
     if(db){
+      try{
+        const snap=await db.collection("hausdienst").get();
+        const all=[];
+        snap.forEach(doc=>{ all.push({id:doc.id, person:(doc.data().person||null)}); });
+        const from=dateDaysAgo(30);
+        const rows=all
+          .filter(x=>x.id>=from && x.id<=todayStr())
+          .sort((a,b)=>b.id.localeCompare(a.id)) // neueste zuerst
+          .map(x=>[x.id, x.person || "—"]);
+        document.getElementById("hausdienstHistory").innerHTML = buildTable(
+          "🧹 Hausdienst – Historie (letzte 30 Tage)",
+          ["Datum","Person"],
+          rows,
+          "Keine Historie vorhanden."
+        );
+      }catch(_){
+        document.getElementById("hausdienstHistory").innerHTML = `<h2 class="section-title">🧹 Hausdienst – Historie</h2><div class="sub">Fehler beim Laden.</div>`;
+      }
+    }else{
+      document.getElementById("hausdienstHistory").innerHTML = `<h2 class="section-title">🧹 Hausdienst – Historie</h2><div class="sub">Offline: Daten nicht verfügbar.</div>`;
+    }
+
+    // --- (Optional) kompakte Hausdienst-Statistik (nur Kernteam, bis heute)
+    if(db){
+      const today=todayStr();
       const cnt={}; CORE.forEach(p=>cnt[p]=0);
       try{
         const docs=await db.collection("hausdienst").get();
         docs.forEach(d=>{ if(d.id<=today){ const person=d.data().person; if(CORE.includes(person)) cnt[person]++; } });
         const arrHd=Object.entries(cnt).sort((a,b)=>b[1]-a[1]);
-        document.getElementById("hausdienst").innerHTML = buildTable(
-          "🧹 Hausdienst",
+        document.getElementById("hausdienstStats").innerHTML = buildTable(
+          "📊 Hausdienst – Statistik (bis heute)",
           ["Platz","Person","Tage"],
           arrHd.map(([p,v],i)=>[i+1,p,v]),
           "Keine Einträge vorhanden."
         );
       }catch(_){
-        document.getElementById("hausdienst").innerHTML = `<h2 class="section-title">🧹 Hausdienst</h2><div class="sub">Fehler beim Laden.</div>`;
+        document.getElementById("hausdienstStats").innerHTML = `<h2 class="section-title">📊 Hausdienst – Statistik</h2><div class="sub">Fehler beim Laden.</div>`;
       }
-    }else{
-      document.getElementById("hausdienst").innerHTML = `<h2 class="section-title">🧹 Hausdienst</h2><div class="sub">Offline: Daten nicht verfügbar.</div>`;
     }
   }
 
