@@ -1,3 +1,16 @@
-<!-- in den Redirect-Dateien -->
-<meta http-equiv="refresh" content="0; url=hausdienst.html">
-<script>localStorage.setItem('nav_tab','check'); location.replace('hausdienst.html');</script>
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <title>Weiterleitung…</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="refresh" content="0; url=hausdienst.html">
+</head>
+<body>
+<script>
+  try{ localStorage.setItem('nav_tab','check'); }catch(_){}
+  location.replace('hausdienst.html');
+</script>
+<p>Weiterleitung… <a href="hausdienst.html">hier klicken</a></p>
+</body>
+</html>
