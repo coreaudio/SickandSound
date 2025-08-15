@@ -17,7 +17,7 @@
     .panel { display:none; }
     .panel.active { display:block; }
 
-    /* Personenauswahl: eine Reihe, scrollbar */
+    /* Personenauswahl */
     .people-row { display:flex; gap:8px; overflow-x:auto; padding-bottom:4px; scrollbar-width:thin; }
     .people-row .pill { flex:0 0 auto; padding:8px 12px; border-radius:999px; background:#1c2130; border:1px solid #2a3042; color:#e6e8ef; }
     .people-row .pill.active { background:linear-gradient(135deg,#6ee7ff,#a78bfa); color:#0b0e14; border-color:transparent; font-weight:800; }
@@ -33,6 +33,8 @@
     .toolbar { display:flex; gap:10px; flex-wrap:wrap; align-items:center; margin-top:10px; }
     .toolbar input, .toolbar select { flex:1 1 auto; min-width:160px; }
     .groupTitle { font-weight:800; letter-spacing:.2px; margin:6px 0 6px; }
+    .statusdot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px;background:#ffadad}
+    .statusok{background:#7CFC9A}
   </style>
 </head>
 <body>
@@ -53,6 +55,7 @@
         <button id="tabCheck" class="tabbtn" onclick="showTab('check')">Checkliste</button>
         <button id="tabHist" class="tabbtn" onclick="showTab('history')">Historie</button>
       </div>
+      <div class="sub" id="connInfo" style="margin-top:6px"><span class="statusdot" id="dot"></span><span id="connTxt">Verbinde…</span></div>
     </div>
 
     <!-- Panel: Planen -->
@@ -86,10 +89,8 @@
         <div class="section-title">Checkliste</div>
         <div class="sub">Aufgaben sind dauerhaft gespeichert · Haken gilt nur heute</div>
 
-        <!-- Reiter/Kategorien (+ Übersicht) -->
         <div id="catTabs" class="segmented" style="margin-top:10px"></div>
 
-        <!-- Eingabe + Filter -->
         <div class="toolbar">
           <input id="newTask" placeholder="Neue Aufgabe hinzufügen…">
           <select id="newTaskCat" title="Kategorie">
@@ -139,15 +140,26 @@
   </nav>
 </div>
 
-<!-- Firebase -->
+<!-- Firebase (FIX: alle drei Skripte korrekt eingebunden) -->
 <script src="https://www.gstatic.com/firebasejs/12.0.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/12.0.0/firebase-analytics-compat.js"></script>
-script src="https://www.gstatic.com/firebasejs/12.0.0/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/12.0.0/firebase-firestore-compat.js"></script>
 <script>
   const CORE=["Chris","Daniel","Elmi","Florian","Joel","Kevin","Kiste","Marco","Meli","Simon"];
   const firebaseConfig={apiKey:"AIzaSyBFHjGXI5yHyK0DyupS0bnTVAqlu6lvpNw",authDomain:"sickandsound-e9704.firebaseapp.com",projectId:"sickandsound-e9704",storageBucket:"sickandsound-e9704.firebasestorage.app",messagingSenderId:"248197359659",appId:"1:248197359659:web:a8777cbed3f83d6b1ca26e",measurementId:"G-62LH8V7S2E"};
   let db=null;
-  try{ if(window.firebase){ firebase.initializeApp(firebaseConfig); try{firebase.analytics();}catch(_){ } db=firebase.firestore(); } }catch(_){ db=null; }
+  try{
+    if(window.firebase){
+      firebase.initializeApp(firebaseConfig);
+      try{firebase.analytics();}catch(_){}
+      db=firebase.firestore();
+      document.getElementById('dot').classList.add('statusok');
+      document.getElementById('connTxt').textContent='Online (Firestore verbunden)';
+    }
+  }catch(e){
+    db=null;
+    document.getElementById('connTxt').textContent='Offline – Firebase konnte nicht initialisiert werden.';
+  }
 
   function showTab(key){
     const map = {plan:'panelPlan', check:'panelCheck', history:'panelHist'};
@@ -157,7 +169,6 @@ script src="https://www.gstatic.com/firebasejs/12.0.0/firebase-firestore-compat.
     });
   }
 
-  // ---- PLANEN ----
   const todayStr=()=>new Date().toISOString().slice(0,10);
   function scheduleMidnightRefresh(cb){
     const now=new Date();
@@ -187,31 +198,22 @@ script src="https://www.gstatic.com/firebasejs/12.0.0/firebase-firestore-compat.
     selectedPerson = (selectedPerson===name ? null : name);
     renderPeopleRow();
     updateSelectionUI();
-    renderNextDays(); // „Belegen mit Auswahl“-Buttons je nach Auswahl zeigen
+    renderNextDays();
   }
 
   async function setFor(day){
     if(!selectedPerson) return alert("Bitte zuerst eine Person auswählen.");
     if(!db) return alert("Offline – kann nicht speichern.");
-
     const dt=new Date(); if(day==='tomorrow') dt.setDate(dt.getDate()+1);
     const id=dt.toISOString().slice(0,10);
-
-    // Verhindere Überschreiben: nur wenn frei
     const ex=await db.collection("hausdienst").doc(id).get();
-    const current = ex.exists ? ex.data().person : null;
-    if(current){
-      alert(`Bereits belegt: ${current}. Bitte in der Übersicht erst „Austragen“.`);
-      return;
-    }
-
+    const cur = ex.exists ? ex.data().person : null;
+    if(cur){ alert(`Bereits belegt: ${cur}. Bitte in der Übersicht austragen.`); return; }
     await db.collection("hausdienst").doc(id).set({person:selectedPerson, updatedAt:Date.now()});
     if(id===todayStr()) await updateTodayInfo();
-    await renderNextDays();
-    await renderHistory();
+    await renderNextDays(); await renderHistory();
   }
 
-  // Liste der nächsten 14 Tage inkl. Austragen & Belegen (mit Auswahl)
   async function renderNextDays(){
     if(!db){ document.getElementById('nextList').textContent="Offline – keine Vorschau."; return; }
     const out=[];
@@ -238,16 +240,10 @@ script src="https://www.gstatic.com/firebasejs/12.0.0/firebase-firestore-compat.
       `<table><thead><tr><th>Datum</th><th>Person</th><th>Aktion</th></tr></thead><tbody>${rows}</tbody></table>`;
   }
 
-  // Direkter Set-Helper für die Liste (ohne Überschreiben)
   async function setForDate(date, person){
     if(!db) return alert("Offline – kann nicht speichern.");
-    if(!person) return alert("Bitte zuerst eine Person auswählen.");
     const ex=await db.collection("hausdienst").doc(date).get();
-    const current = ex.exists ? ex.data().person : null;
-    if(current){
-      alert(`Bereits belegt: ${current}. Bitte erst „Austragen“.`);
-      return;
-    }
+    if(ex.exists && ex.data().person){ alert(`Bereits belegt: ${ex.data().person}`); return; }
     await db.collection("hausdienst").doc(date).set({person, updatedAt:Date.now()});
     if(date===todayStr()) await updateTodayInfo();
     await renderNextDays(); await renderHistory();
@@ -262,185 +258,4 @@ script src="https://www.gstatic.com/firebasejs/12.0.0/firebase-firestore-compat.
 
   async function updateTodayInfo(){
     if(!db){ document.getElementById('todayInfo').textContent="Heute: (offline)"; return; }
-    const d=await db.collection("hausdienst").doc(todayStr()).get();
-    const person = d.exists ? d.data().person : null;
-    document.getElementById('todayInfo').innerHTML = person
-      ? `Heute eingetragener Hausdienst: <span class="badge ok">${person}</span>`
-      : `Heute: <span class="badge none">Noch niemand eingetragen</span>`;
-  }
-
-  // ---- CHECKLISTE (Tabs, Filter, Aufgaben, Übersicht) ----
-  const CATS = [
-    {key:"all",    label:"Übersicht"},
-    {key:"morgens",label:"Morgens"},
-    {key:"tag",    label:"Im Laufe des Tages"},
-    {key:"abend",  label:"Bevor man geht"},
-  ];
-  let showCat = localStorage.getItem("hausdienst_cat") || "all";
-  let showMode= localStorage.getItem("hausdienst_filter_mode") || "open"; // open|done|all
-
-  const CHECKED_KEY="hausdienst_checked_"+todayStr();
-  let checked=JSON.parse(localStorage.getItem(CHECKED_KEY)||"{}");
-  let tasksCache=[];
-
-  function saveChecked(){ localStorage.setItem(CHECKED_KEY,JSON.stringify(checked)); }
-  function setMode(m){ showMode=m; localStorage.setItem("hausdienst_filter_mode",m); updateFilterButtons(); renderTasks(); }
-  function setCat(c){
-    showCat=c; localStorage.setItem("hausdienst_cat",c);
-    const sel=document.getElementById('newTaskCat'); 
-    if(sel && c!=="all") sel.value=c;
-    updateCatTabs(); updateFilterButtons(); renderTasks();
-  }
-  function updateCatTabs(){
-    document.getElementById("catTabs").innerHTML = CATS.map(c=>
-      `<button class="tabbtn ${c.key===showCat?'active':''}" onclick="setCat('${c.key}')">${c.label}</button>`
-    ).join("");
-  }
-
-  function labelOf(cat){ const f=CATS.find(c=>c.key===cat); return f?f.label:cat; }
-  function escapeHtml(s){
-    return (s||"").replace(/[&<>"']/g, m=>({
-      "&":"&amp;","<":"&lt;","&gt;":"&gt;","\"":"&quot;","'":"&#039;"
-    }[m]));
-  }
-
-  function calcCounts(list){
-    return { open:list.filter(t=>!checked[t.id]).length, done:list.filter(t=>checked[t.id]).length, all:list.length };
-  }
-  function updateFilterButtons(){
-    const inCat = (showCat==="all") ? tasksCache : tasksCache.filter(t=>t.cat===showCat);
-    const cnt = calcCounts(inCat);
-    const fOpen=document.getElementById("fOpen"), fDone=document.getElementById("fDone"), fAll=document.getElementById("fAll");
-    fOpen.textContent=`Offen (${cnt.open})`; fDone.textContent=`Erledigt (${cnt.done})`; fAll.textContent=`Alle (${cnt.all})`;
-    fOpen.className="btn small "+(showMode==="open"?"secondary":"ghost");
-    fDone.className="btn small "+(showMode==="done"?"secondary":"ghost");
-    fAll.className ="btn small "+(showMode==="all" ?"secondary":"ghost");
-  }
-
-  async function addTask(){
-    const txt=document.getElementById('newTask').value.trim(); if(!txt) return;
-    const sel=document.getElementById('newTaskCat');
-    const cat= sel ? (sel.value||"morgens") : "morgens";
-    if(!db){ alert("Offline – kann nicht speichern."); return; }
-    await db.collection("checklistTasks").add({text:txt, cat, createdAt:Date.now()});
-    document.getElementById('newTask').value="";
-  }
-  async function delTask(id){
-    if(!confirm("Aufgabe löschen?")) return;
-    if(!db){ alert("Offline – kann nicht löschen."); return; }
-    await db.collection("checklistTasks").doc(id).delete();
-    delete checked[id]; saveChecked();
-  }
-  function toggleTask(id){
-    checked[id]=!checked[id]; saveChecked(); renderTasks();
-  }
-
-  function renderGroup(catKey, label){
-    const base = tasksCache.filter(t=>t.cat===catKey)
-      .sort((a,b)=> (a.createdAt||0)-(b.createdAt||0) || (a.text||"").localeCompare(b.text||""));
-
-    let list = base;
-    if(showMode==="open") list = base.filter(t=>!checked[t.id]);
-    else if(showMode==="done") list = base.filter(t=>checked[t.id]);
-
-    const rows = list.map(t=>`
-      <tr>
-        <td style="text-align:left">${escapeHtml(t.text||"")}</td>
-        <td>${checked[t.id] ? "✅" : "⬜️"}</td>
-        <td>
-          <button class="btn small ${checked[t.id]?'warning':''}" onclick="toggleTask('${t.id}')">
-            ${checked[t.id] ? "↩️ rückgängig" : "✅ erledigt"}
-          </button>
-          <button class="btn small ghost" style="margin-left:6px" onclick="delTask('${t.id}')">Löschen</button>
-        </td>
-      </tr>
-    `).join("");
-
-    const head = `<thead><tr><th style="text-align:left">Aufgabe</th><th>Status</th><th>Aktion</th></tr></thead>`;
-    const body = `<tbody>${rows || `<tr><td colspan="3">Keine Aufgaben in „${label}“.</td></tr>`}</tbody>`;
-    return `<h2 class="groupTitle">${label}</h2><table>${head}${body}</table>`;
-  }
-
-  function renderTasks(snap){
-    if(snap && snap.forEach){
-      tasksCache=[]; snap.forEach(d=>tasksCache.push({id:d.id, ...d.data()}));
-    }
-    updateFilterButtons();
-
-    if(showCat==="all"){
-      const html = renderGroup("morgens","Morgens")
-                 + renderGroup("tag","Im Laufe des Tages")
-                 + renderGroup("abend","Bevor man geht");
-      document.getElementById("list").innerHTML = html;
-    }else{
-      document.getElementById("list").innerHTML = renderGroup(showCat, labelOf(showCat));
-    }
-  }
-
-  // ---- Historie (30 Tage) ----
-  function todayString(){ return new Date().toISOString().slice(0,10); }
-  function dateDaysAgo(n){ const d=new Date(); d.setDate(d.getDate()-n); return d.toISOString().slice(0,10); }
-
-  async function renderHistory(){
-    if(!db){ document.getElementById('histList').textContent="Offline – keine Historie."; return; }
-    try{
-      const snap=await db.collection("hausdienst").get();
-      const all=[]; snap.forEach(doc=>all.push({id:doc.id, person:(doc.data().person||null)}));
-      const from=dateDaysAgo(30);
-      const rows=all
-        .filter(x=>x.id>=from && x.id<=todayString())
-        .sort((a,b)=>b.id.localeCompare(a.id))
-        .map(x=>`<tr><td>${x.id}</td><td>${x.person || "—"}</td></tr>`)
-        .join("");
-      document.getElementById('histList').innerHTML =
-        `<table><thead><tr><th>Datum</th><th>Person</th></tr></thead><tbody>${rows || `<tr><td colspan="2">Keine Einträge.</td></tr>`}</tbody></table>`;
-    }catch(_){
-      document.getElementById('histList').innerHTML = `<div class="sub">Fehler beim Laden.</div>`;
-    }
-  }
-
-  // Start
-  async function init(){
-    renderPeopleRow();
-    updateSelectionUI();
-    await updateTodayInfo();
-    await renderNextDays();
-    await renderHistory();
-
-    scheduleMidnightRefresh(async ()=>{ await updateTodayInfo(); await renderNextDays(); await renderHistory(); });
-
-    // Checkliste
-    updateCatTabs();
-    const sel=document.getElementById('newTaskCat'); sel.value="morgens";
-    if(db){
-      await db.collection("checklistTasks").get().then(s=>{
-        if(s.empty){
-          const defs = [
-            {cat:"morgens", text:"Briefkasten leeren"},
-            {cat:"morgens", text:"Spülmaschine ausräumen"},
-            {cat:"morgens", text:"Toilettenpapier & Zewa auffüllen"},
-            {cat:"morgens", text:"Getränke auffüllen"},
-            {cat:"morgens", text:"Staubsauger Wasser checken"},
-            {cat:"tag",     text:"Wäsche an machen & aufhängen"},
-            {cat:"tag",     text:"Pakete entgegennehmen"},
-            {cat:"tag",     text:"Für Grundordnung sorgen"},
-            {cat:"abend",   text:"Oberflächen in der Küche + Geräte wischen"},
-            {cat:"abend",   text:"Müll rausbringen & mitnehmen"},
-          ];
-          const batch=db.batch();
-          defs.forEach(d=>{ const ref=db.collection("checklistTasks").doc(); batch.set(ref,{...d, createdAt:Date.now()}); });
-          return batch.commit();
-        }
-      }).catch(()=>{});
-      db.collection("checklistTasks").onSnapshot(renderTasks, ()=>renderTasks());
-    }else{
-      document.getElementById("list").innerHTML = `<div class="sub">Offline – Aufgaben können nicht geladen werden.</div>`;
-    }
-    updateFilterButtons();
-  }
-
-  if('serviceWorker' in navigator){ navigator.serviceWorker.register('./sw.js').catch(()=>{}); }
-  init();
-</script>
-</body>
-</html>
+    const d=await db.collection("hausdienst")
