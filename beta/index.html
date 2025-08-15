@@ -11,7 +11,9 @@
   <link rel="stylesheet" href="style.css" />
   <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;800&display=swap" rel="stylesheet" />
   <style>
-    :root{ --ring:48px; --row-pad:6px; --name-size:18px; --count-size:17px; --cell-gap:10px; }
+    :root{
+      --ring: 48px; --row-pad: 6px; --name-size: 18px; --count-size: 17px; --cell-gap: 10px;
+    }
     .content{ padding-bottom: 88px; } .appbar{ min-height: 52px; } .bottomnav{ height: 64px; }
     .card.table-wrap table td, .card.table-wrap table th{ padding-top:var(--row-pad); padding-bottom:var(--row-pad); }
     .lvl-ring{ width:var(--ring); height:var(--ring); position:relative; display:inline-grid; place-items:center; }
@@ -26,6 +28,15 @@
     .guest-toggle{ margin:10px 0 -2px; display:flex; justify-content:center; }
     .guest-toggle .btn{ min-width: 200px; }
     .section-title{ font-size: 14px; }
+
+    /* Sichtbare CTA für Checkliste */
+    .cta-wrap{ display:flex; flex-wrap:wrap; gap:10px; align-items:center; margin-top:8px; }
+    .cta-check{ display:inline-flex; align-items:center; gap:10px; padding:12px 16px; border-radius:14px;
+      background: linear-gradient(135deg,#6ee7ff,#a78bfa); color:#0b0e14; font-weight:900; letter-spacing:.2px;
+      text-decoration:none; border:none; box-shadow:0 8px 24px rgba(0,0,0,.25);
+    }
+    .cta-check svg{ width:20px; height:20px; }
+    .cta-sub{ font-size:12px; opacity:.85; }
   </style>
 </head>
 <body>
@@ -48,6 +59,7 @@
     <div class="card" style="margin-bottom:8px">
       <div class="section-title">Heute</div>
       <div id="todayInfo" class="sub">Lade Tagesstatus…</div>
+      <div class="cta-wrap" id="todayCta"></div>
     </div>
 
     <div class="card table-wrap" id="tableContainer"></div>
@@ -242,7 +254,7 @@ function subscribeRealtime(){
   });
 }
 
-/* Heute-Banner (Link -> hausdienst.html?tab=check) */
+/* Heute-Banner + große CTA */
 async function updateTodayBanner(existing){
   try{
     let person=existing;
@@ -253,12 +265,26 @@ async function updateTodayBanner(existing){
       }else{ person=null; }
     }
     hdToday=person;
-    const el=document.getElementById("todayInfo");
-    el.innerHTML = person
-      ? `Heute eingetragener Hausdienst: <span class="badge ok">${person}</span> · <a href="/SickandSound/hausdienst.html?tab=check" class="badge gold" style="text-decoration:none">Checkliste öffnen</a>`
-      : `Heute: <span class="badge none">Noch niemand eingetragen</span> · <a href="/SickandSound/hausdienst.html?tab=plan" class="badge" style="text-decoration:none">Jetzt planen</a>`;
+
+    const infoEl=document.getElementById("todayInfo");
+    const ctaEl=document.getElementById("todayCta");
+
+    infoEl.innerHTML = person
+      ? `Heute eingetragener Hausdienst: <span class="badge ok">${person}</span>`
+      : `Heute: <span class="badge none">Noch niemand eingetragen</span>`;
+
+    // Deutliche CTA
+    ctaEl.innerHTML = `
+      <a class="cta-check" href="/SickandSound/hausdienst.html?tab=check&v=17">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M9 16.2l-3.5-3.5-1.4 1.4L9 19 20.3 7.7l-1.4-1.4z"/></svg>
+        Checkliste öffnen
+      </a>
+      <span class="cta-sub">Direkt zur Aufgabenübersicht</span>
+    `;
   }catch(e){
     document.getElementById("todayInfo").textContent="Heute: Status nicht verfügbar (offline?)";
+    document.getElementById("todayCta").innerHTML = `
+      <a class="cta-check" href="/SickandSound/hausdienst.html?tab=check&v=17">Checkliste öffnen</a>`;
   }
 }
 
@@ -438,8 +464,8 @@ function confirmAddDrink(){
   saveAll(); buildTable(); closeModal('drinkModal'); document.getElementById("drinkName").value=""; document.getElementById("drinkPrice").value="";
 }
 
-/* SW (PWA) */
-if('serviceWorker' in navigator){ navigator.serviceWorker.register('./sw.js').catch(()=>{}); }
+/* SW (PWA) mit Versions-Query */
+if('serviceWorker' in navigator){ navigator.serviceWorker.register('./sw.js?v=17').catch(()=>{}); }
 
 window.onload=loadState;
 window.onresize=()=>requestAnimationFrame(adjustToOnePage);
