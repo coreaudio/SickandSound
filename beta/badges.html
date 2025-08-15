@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <title>Badges & Achievements</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="stylesheet" href="style.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;800&display=swap" rel="stylesheet" />
+  <style>
+    .people-row{display:flex;gap:8px;overflow-x:auto;padding:6px 2px 2px}
+    .pill{flex:0 0 auto;padding:8px 12px;border-radius:999px;background:#1c2130;border:1px solid #2a3042;color:#e6e8ef}
+    .pill.active{background:linear-gradient(135deg,#6ee7ff,#a78bfa);color:#0b0e14;border-color:transparent;font-weight:800}
+    .summary{display:grid;grid-template-columns:70px 1fr;gap:12px;align-items:center}
+    .avatar{position:relative;width:64px;height:64px;display:grid;place-items:center}
+    .ring{position:absolute;inset:-2px;transform:rotate(-90deg)}
+    .ring circle{fill:none;stroke-width:6;stroke-linecap:round}
+    .ring .bg{stroke:#22304a}
+    .ring .fg{stroke:url(#grad)}
+    .summary grid{display:flex;gap:12px}
+    .stats{display:flex;gap:12px;flex-wrap:wrap}
+    .stat{background:#0f1420;border:1px solid #22273a;border-radius:12px;padding:8px 10px;font-weight:700}
+    .badge-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:10px}
+    .bcard{border-radius:14px;border:1px solid #22273a;background:#0f1420;padding:12px}
+    .btitle{font-weight:800}
+    .bdesc{opacity:.8;font-size:13px;margin-top:2px}
+    .won{background:linear-gradient(135deg,#1f2937,#0f172a);border-color:#2a3753;box-shadow:0 8px 28px rgba(0,0,0,.25) inset, 0 0 0 2px rgba(255,255,255,.04) inset}
+    .won .btitle{background:linear-gradient(135deg,#FFE259,#FFA751);-webkit-background-clip:text;background-clip:text;color:transparent}
+    .barwrap{margin-top:8px;height:8px;border-radius:999px;background:#1b2234;overflow:hidden}
+    .bar{height:8px;border-radius:999px;background:linear-gradient(90deg,#6ee7ff,#a78bfa)}
+    .hint{opacity:.8;font-size:13px;margin-top:8px}
+  </style>
+</head>
+<body>
+<div class="app">
+  <header class="appbar">
+    <div class="app-title"><div class="brand-dot"></div><h1>Badges & Achievements</h1></div>
+  </header>
+
+  <main class="content">
+    <div class="card">
+      <div class="section-title">Person wählen</div>
+      <div id="peopleRow" class="people-row"></div>
+    </div>
+
+    <div class="card">
+      <div class="summary">
+        <div class="avatar" id="avatar"></div>
+        <div>
+          <div class="section-title" id="headline">–</div>
+          <div class="stats">
+            <div class="stat">Level <span id="lvl">–</span></div>
+            <div class="stat">XP <span id="xp">–</span></div>
+            <div class="stat">Hausdienst <span id="hd">–</span></div>
+            <div class="stat">€ Summe <span id="sum">–</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="section-title">Freigeschaltet</div>
+      <div id="won" class="badge-grid"></div>
+    </div>
+
+    <div class="card">
+      <div class="section-title">Noch zu knacken</div>
+      <div id="locked" class="badge-grid"></div>
+      <div class="hint">Fortschritt bezieht offene + gebuchte € ein sowie Hausdienst-Tage der Vergangenheit.</div>
+    </div>
+  </main>
+
+  <nav class="bottomnav">
+    <a class="tab" href="index.html"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M4 6h16v2H4zM4 11h16v2H4zM4 16h10v2H4z"/></svg><span>Liste</span></a>
+    <a class="tab" href="hausdienst.html"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 3l9 7-1.2 1.6L18 10.1V20h-5v-6H11v6H6v-9.9L4.2 11.6 3 10z"/></svg><span>Hausdienst</span></a>
+    <a class="tab" href="rangliste.html"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M7 17H3V7h4v10zm7 0h-4V3h4v14zm7 0h-4v-8h4v8z"/></svg><span>Rang</span></a>
+    <a class="tab active" href="badges.html"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 1l3.09 6.26L22 8.27l-5 4.87L18.18 22 12 18.56 5.82 22 7 13.14 2 8.27l6.91-1.01L12 1z"/></svg><span>Badges</span></a>
+    <a class="tab" href="buchungen.html"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 2h9l5 5v13a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2zm8 1.5V8h4.5L14 3.5z"/></svg><span>Buchungen</span></a>
+  </nav>
+</div>
+
+<!-- Firebase -->
+<script src="https://www.gstatic.com/firebasejs/12.0.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/12.0.0/firebase-analytics-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/12.0.0/firebase-firestore-compat.js"></script>
+<script>
+  const CORE=["Chris","Daniel","Elmi","Florian","Joel","Kevin","Kiste","Marco","Meli","Simon"];
+  const firebaseConfig={apiKey:"AIzaSyBFHjGXI5yHyK0DyupS0bnTVAqlu6lvpNw",authDomain:"sickandsound-e9704.firebaseapp.com",projectId:"sickandsound-e9704",storageBucket:"sickandsound-e9704.firebasestorage.app",messagingSenderId:"248197359659",appId:"1:248197359659:web:a8777cbed3f83d6b1ca26e",measurementId:"G-62LH8V7S2E"};
+  const STATE_COLLECTION = location.search.includes("beta") ? "state_beta" : "state";
+  let db=null; try{firebase.initializeApp(firebaseConfig); try{firebase.analytics();}catch(_){ } db=firebase.firestore();}catch(_){db=null;}
+
+  const K={people:"sick_sound_people",bookings:"sick_sound_bookings",prices:"sick_sound_prices",data:"sick_sound_data",xp:"sick_sound_xp"};
+  const euro=v=>Number(v||0).toFixed(2).replace('.',',');
+  function levelFromXP(xp){ return Math.floor(xp/10)+1; }
+  function progressToNext(xp){ return Math.max(0,Math.min(1,(xp%10)/10)); }
+
+  const ACHIEVEMENTS=[
+    {id:"first_stripe", name:"Erster Strich", desc:"Mach deinen ersten Strich.", goal:1,  kind:"drinkXP"},
+    {id:"stripes_10",   name:"10 Striche",    desc:"10 Getränke registrieren.", goal:10, kind:"drinkXP"},
+    {id:"stripes_100",  name:"100 Striche",   desc:"100 Getränke registrieren.", goal:100, kind:"drinkXP"},
+    {id:"hd_first",     name:"Erster Hausdienst", desc:"Mindestens 1 Tag Hausdienst.", goal:1, kind:"hd"},
+    {id:"hd_10",        name:"Hausdienst Pro",    desc:"10 Tage Hausdienst.", goal:10, kind:"hd"},
+    {id:"spender_100",  name:"100 € Umsatz",      desc:"Bringe 100 € in die Kasse.", goal:100, kind:"euro"},
+    {id:"spender_500",  name:"500 € Umsatz",      desc:"Bringe 500 € in die Kasse.", goal:500, kind:"euro"},
+    {id:"lvl_5",        name:"Level 5",           desc:"Erreiche Level 5.",  goal:5, kind:"level"},
+    {id:"lvl_10",       name:"Level 10",          desc:"Erreiche Level 10.", goal:10, kind:"level"},
+  ];
+
+  let state={people:[],prices:{},data:{},xp:{},bookings:[]};
+  let hdDocs=[]; // {id:YYYY-MM-DD, person}
+
+  function unionPeople(arr){ const set=new Set([...(arr||[]), ...CORE]); return [...set]; }
+  function splitCoreGuests(all){ const set=new Set(all||[]); return { core:CORE.filter(n=>set.has(n)), guests:[...set].filter(n=>!CORE.includes(n)).sort((a,b)=>a.localeCompare(b)) }; }
+
+  function totalDrinkXP(person){ return Object.keys(state.prices||{}).reduce((a,d)=>a+(state.data[`${person}_${d}`]||0),0); }
+  function bonusXP(person){ return (state.xp && state.xp[person])||0; }
+  function totalXP(person){ return totalDrinkXP(person)+bonusXP(person); }
+  function euroSum(person){
+    const offen=Object.keys(state.prices||{}).reduce((sum,d)=>sum+((state.data[`${person}_${d}`]||0)*(state.prices[d]||0)),0);
+    const gebucht=(state.bookings||[]).filter(b=>b.person===person).reduce((s,b)=>s+Number(b.sum||0),0);
+    return offen+gebucht;
+  }
+  async function loadAll(){
+    // state
+    let s={}; if(db){ try{ const snap=await db.collection(STATE_COLLECTION).doc("global").get(); if(snap.exists) s=snap.data()||{}; }catch(e){} }
+    state.people = unionPeople( s.people || JSON.parse(localStorage.getItem(K.people)||"[]") );
+    state.prices = s.prices || JSON.parse(localStorage.getItem(K.prices)||"{}") || {};
+    state.data   = s.data   || JSON.parse(localStorage.getItem(K.data)||"{}")   || {};
+    state.xp     = s.xp     || JSON.parse(localStorage.getItem(K.xp)||"{}")     || {};
+    state.bookings = s.bookings || JSON.parse(localStorage.getItem(K.bookings)||"[]") || [];
+
+    // hausdienst
+    if(db){ try{ const c=await db.collection("hausdienst").get(); hdDocs=[]; c.forEach(d=>hdDocs.push({id:d.id, person:d.data().person||null})); }catch(e){} }
+  }
+
+  function countHD(person){ return hdDocs.filter(d=>d.person===person).length; }
+  function buildRing(pct){
+    const R=26, C=2*Math.PI*R, off=C*(1-pct);
+    return `<svg class="ring" width="68" height="68" viewBox="0 0 68 68">
+      <defs><linearGradient id="grad" x1="0%" y1="0%" x2="100%" y2="0%">
+        <stop offset="0%" stop-color="#6ee7ff"/><stop offset="100%" stop-color="#a78bfa"/></linearGradient></defs>
+      <circle class="bg" cx="34" cy="34" r="${R}"/>
+      <circle class="fg" cx="34" cy="34" r="${R}" stroke-dasharray="${C}" stroke-dashoffset="${off}"/></svg>`;
+  }
+
+  let currentPerson=null;
+
+  function renderPersonPills(){
+    const list = unionPeople(state.people);
+    const {core, guests} = splitCoreGuests(list);
+    const row=document.getElementById("peopleRow");
+    const pills = [...core, ...guests].map(n=>`<button class="pill ${n===currentPerson?'active':''}" onclick="selectPerson('${n}')">${n}</button>`).join("");
+    row.innerHTML = pills;
+  }
+
+  function selectPerson(name){
+    currentPerson=name;
+    renderPersonPills();
+    renderForPerson();
+  }
+
+  function renderForPerson(){
+    if(!currentPerson) return;
+    const xp=totalXP(currentPerson);
+    const lvl=levelFromXP(xp);
+    const pct=progressToNext(xp);
+    const hd=countHD(currentPerson);
+    const sum=euroSum(currentPerson);
+
+    document.getElementById("avatar").innerHTML = buildRing(pct);
+    document.getElementById("headline").textContent=currentPerson;
+    document.getElementById("lvl").textContent=lvl;
+    document.getElementById("xp").textContent=xp;
+    document.getElementById("hd").textContent=hd;
+    document.getElementById("sum").textContent=euro(sum)+" €";
+
+    const metrics={ drinkXP: totalDrinkXP(currentPerson), xp, level:lvl, hd, euro:sum };
+    const won=ACHIEVEMENTS.filter(a=>{
+      if(a.kind==="drinkXP") return metrics.drinkXP>=a.goal;
+      if(a.kind==="hd")      return metrics.hd>=a.goal;
+      if(a.kind==="euro")    return metrics.euro>=a.goal;
+      if(a.kind==="level")   return metrics.level>=a.goal;
+    });
+    const locked=ACHIEVEMENTS.filter(a=>!won.includes(a));
+
+    document.getElementById("won").innerHTML = won.map(a=>`
+      <div class="bcard won">
+        <div class="btitle">🏅 ${a.name}</div>
+        <div class="bdesc">${a.desc}</div>
+      </div>`).join("") || `<div class="sub">Noch keine Badges – leg los!</div>`;
+
+    document.getElementById("locked").innerHTML = locked.map(a=>{
+      let cur=0, goal=a.goal;
+      if(a.kind==="drinkXP") cur=metrics.drinkXP;
+      if(a.kind==="hd")      cur=metrics.hd;
+      if(a.kind==="euro")    cur=metrics.euro;
+      if(a.kind==="level")   cur=metrics.level;
+      const pct=Math.max(0,Math.min(1, cur/goal))*100;
+      return `<div class="bcard">
+        <div class="btitle">🔒 ${a.name}</div>
+        <div class="bdesc">${a.desc}</div>
+        <div class="barwrap"><div class="bar" style="width:${pct}%"></div></div>
+        <div class="bdesc" style="margin-top:6px">${(a.kind==="euro")?euro(cur)+" €":cur} / ${goal}</div>
+      </div>`;
+    }).join("");
+  }
+
+  async function init(){
+    await loadAll();
+    renderPersonPills();
+    // default: erster im Kernteam oder erster in der Liste
+    currentPerson = CORE.find(n=>unionPeople(state.people).includes(n)) || unionPeople(state.people)[0] || null;
+    if(currentPerson) renderForPerson();
+    if(db){
+      db.collection(STATE_COLLECTION).doc("global").onSnapshot(snap=>{
+        if(!snap.exists) return;
+        const s=snap.data()||{};
+        if(s.people) state.people=s.people;
+        if(s.prices) state.prices=s.prices;
+        if(s.data)   state.data=s.data;
+        if(s.xp)     state.xp=s.xp;
+        if(s.bookings) state.bookings=s.bookings;
+        renderPersonPills(); if(currentPerson) renderForPerson();
+      });
+      db.collection("hausdienst").onSnapshot(_=>{ loadAll().then(()=>{ if(currentPerson) renderForPerson(); }); });
+    }
+  }
+  if('serviceWorker' in navigator){ navigator.serviceWorker.register('./sw.js').catch(()=>{}); }
+  init();
+</script>
+</body>
+</html>
