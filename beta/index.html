@@ -11,7 +11,10 @@
   <link rel="stylesheet" href="style.css" />
   <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;800&display=swap" rel="stylesheet" />
   <style>
-    :root{ --ring: 48px; --row-pad: 6px; --name-size: 18px; --count-size: 17px; --cell-gap: 10px; }
+    :root{
+      --ring: 48px; --row-pad: 6px; --name-size: 18px; --count-size: 17px; --cell-gap: 10px;
+      --sticky-top: 56px; /* Höhe Appbar ca. */
+    }
     .content{ padding-bottom: 88px; }
     .appbar{ min-height: 52px; }
     .bottomnav{ height: 64px; }
@@ -26,11 +29,9 @@
     .count{ font-size: var(--count-size); min-width: 26px; text-align:right; }
     .plus-btn{ padding:8px 12px; }
     .section-row td{ font-size:12px; opacity:.7 }
-    .guest-toggle{ margin:10px 0 -2px; display:flex; justify-content:center; }
-    .guest-toggle .btn{ min-width: 200px; }
     .section-title{ font-size: 14px; }
 
-    /* Sichtbare CTA für Checkliste */
+    /* CTA Checkliste */
     .cta-wrap{ display:flex; flex-wrap:wrap; gap:10px; align-items:center; margin-top:8px; }
     .cta-check{ display:inline-flex; align-items:center; gap:10px; padding:12px 16px; border-radius:14px;
       background: linear-gradient(135deg,#6ee7ff,#a78bfa); color:#0b0e14; font-weight:900; letter-spacing:.2px;
@@ -38,6 +39,15 @@
     }
     .cta-check svg{ width:20px; height:20px; }
     .cta-sub{ font-size:12px; opacity:.85; }
+
+    /* Sticky Header */
+    .card.table-wrap thead th{
+      position: sticky;
+      top: var(--sticky-top);
+      z-index: 2;
+      background: #111827; /* dunkler Hintergrund für Lesbarkeit */
+      box-shadow: 0 2px 0 rgba(0,0,0,.25);
+    }
 
     /* Hinweis im Löschmodus */
     .delete-hint{ opacity:.75; font-size:12px; margin-top:4px }
@@ -56,6 +66,7 @@
     <div class="appbar-actions">
       <button class="btn small dark" onclick="togglePayPal()" title="PayPal">💸</button>
       <button class="btn small" onclick="openDrinkModal()" title="Getränk hinzufügen">➕</button>
+      <button class="btn small" onclick="openPersonModal()" title="Person hinzufügen">👤+</button>
     </div>
   </header>
 
@@ -76,6 +87,7 @@
         <button class="btn warning" id="undoBtn" onclick="undoLast()">↩ Rückgängig</button>
         <button class="btn secondary" id="redoBtn" onclick="redoLast()">↪ Wiederholen</button>
         <button class="btn danger" id="deleteBtn" onclick="toggleDeleteMode()">🗑 Löschen</button>
+        <button class="btn" onclick="openPersonModal()">👤 Person hinzufügen</button>
         <button class="btn dark" onclick="resetAll()">♻ Abrechnen & zurücksetzen</button>
         <button class="btn ghost" onclick="window.location='buchungen.html'">📖 Buchungen</button>
       </div>
@@ -101,7 +113,7 @@
       <span>Badges</span>
     </a>
     <a class="tab" href="buchungen.html" aria-label="Buchungen">
-      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 2h9l5 5v13a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2zm8 1.5-V8h4.5L14 3.5z"/></svg>
+      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 2h9l5 5v13a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2zm8 1.5V8h4.5L14 3.5z"/></svg>
       <span>Buchungen</span>
     </a>
   </nav>
@@ -139,7 +151,7 @@
 /* ===== Config ===== */
 const CORE = ["Chris","Daniel","Elmi","Florian","Joel","Kevin","Kiste","Marco","Meli","Simon"];
 
-// ✅ Richtiges Firebase-Projekt
+// Firebase sickandsound-8a15f
 const firebaseConfig = {
   apiKey: "AIzaSyBtZsr4QPHQbvO2qae6MoBoxJF5dNP2vh0",
   authDomain: "sickandsound-8a15f.firebaseapp.com",
@@ -157,9 +169,7 @@ try{
     db = firebase.firestore();
     try { db.settings({ experimentalAutoDetectLongPolling:true, merge:true }); } catch(_) {}
   }
-}catch(_){
-  db = null;
-}
+}catch(_){ db = null; }
 
 /* Prod/Beta Toggle */
 const STATE_COLLECTION = location.search.includes("beta") ? "state_beta" : "state";
@@ -168,9 +178,9 @@ const STATE_COLLECTION = location.search.includes("beta") ? "state_beta" : "stat
 const pricesKey="sick_sound_prices", peopleKey="sick_sound_people", dataKey="sick_sound_data",
       historyKey="sick_sound_history", bookingsKey="sick_sound_bookings", orderKey="sick_sound_order",
       xpKey="sick_sound_xp", redoKey="sick_sound_redo";
-let prices={"Cola_Zero":1.0,"Monster":1.5,"Wasser":0.5,"Kaffee":1.0,"Mittagessen":6.0};
+let prices={"Getränk":1.5,"Mittagessen":6.0};
 let people=[], data={}, history=[], redoStack=[], bookings=[], columnOrder=Object.keys(prices), xp={};
-let deleteMode=false, hdToday=null, showGuests=false;
+let deleteMode=false, hdToday=null;
 
 /* ===== Sounds ===== */
 const makeSound = (src)=> (window.Howl ? new Howl({src:[src]}) : {play:()=>{}});
@@ -179,8 +189,7 @@ const sLevel = makeSound("https://cdn.jsdelivr.net/gh/jshawl/howler-examples@mas
 
 /* ===== Helpers / XP ===== */
 const todayStr=()=>new Date().toISOString().slice(0,10);
-const levelOf=x=>Math.floor(Math.sqrt(x/75))+1; // langsameres Leveln
-
+const levelOf=x=>Math.floor(Math.sqrt(x/75))+1;
 function valueOfCurrentStriche(person){
   return (columnOrder||[]).reduce((sum,d)=> sum + ((data[`${person}_${d}`]||0)*(prices[d]||0)), 0);
 }
@@ -196,7 +205,7 @@ function startHold(handler){ stopHold(); handler(); holdT=setTimeout(()=>{holdI=
 function stopHold(){ if(holdT) clearTimeout(holdT); if(holdI) clearInterval(holdI); holdT=holdI=null; }
 window.onmouseup=stopHold; window.onmouseleave=stopHold;
 
-/* Mini-Patch: 00:00 Refresh */
+/* 00:00 Refresh */
 function scheduleMidnightRefresh(cb){
   const now=new Date(); const mid=new Date(now.getFullYear(),now.getMonth(),now.getDate()+1,0,0,2);
   setTimeout(()=>{ try{ cb(); } finally{ scheduleMidnightRefresh(cb);} }, mid-now);
@@ -237,7 +246,6 @@ function fallbackLoad(){
   xp=JSON.parse(localStorage.getItem(xpKey))||xp;
 }
 
-/* Migration: vorhandene Striche -> XP (ohne Doppelzählung) */
 async function ensureXpFromExistingStricheAfterLoad(){
   const drinks=Object.keys(prices); let changed=false;
   people.forEach(p=>{
@@ -311,13 +319,9 @@ async function updateTodayBanner(existing){
     document.getElementById("todayCta").innerHTML = `<button class="cta-check" onclick="openChecklist()">Checkliste öffnen</button>`;
   }
 }
+function openChecklist(){ location.href = 'hausdienst.html#check'; }
 
-/* NUR Hash-Navigation, kein localStorage mehr */
-function openChecklist(){
-  location.href = 'hausdienst.html#check';
-}
-
-/* Undo/Redo + Tabelle + Rest … */
+/* Undo/Redo */
 function updateUndoRedoButtons(){
   const u=document.getElementById("undoBtn"), r=document.getElementById("redoBtn");
   if(!u||!r) return; u.disabled = history.length===0; r.disabled = redoStack.length===0;
@@ -345,7 +349,7 @@ function applyInverse(a){
 function undoLast(){ const last=history.pop(); if(!last) return; applyInverse(last); redoStack.push(last); saveAll(); buildTable(); updateUndoRedoButtons(); }
 function redoLast(){ const act=redoStack.pop(); if(!act) return; applyAction(act); history.push(act); saveAll(); buildTable(); updateUndoRedoButtons(); }
 
-/* Delete mode (erweitert: Personen löschen per Klick auf Namen) */
+/* Delete mode inkl. Personen löschen */
 function toggleDeleteMode(){
   deleteMode=!deleteMode;
   const btn=document.getElementById("deleteBtn");
@@ -354,7 +358,7 @@ function toggleDeleteMode(){
   document.body.classList.toggle('delete-mode', deleteMode);
   const hint=document.getElementById('delInfo');
   if(hint) hint.style.display = deleteMode ? 'block' : 'none';
-  buildTable(); // UI neu rendern (Clickable Personenzelle, Title etc.)
+  buildTable();
 }
 function personCellClick(p){
   if(!deleteMode) return;
@@ -417,28 +421,27 @@ function buildTable(){
     return rhtml;
   };
 
-  core.forEach(p=> html += row(p));
-  html += `</tbody></table>`;
-
-  let guestHtml="";
-  const guestsList=people.filter(n=>!CORE.includes(n)).sort((a,b)=>a.localeCompare(b));
-  if(guestsList.length){
-    guestHtml += `<div class="guest-toggle"><button class="btn ghost" onclick="toggleGuests()">
-      ${showGuests ? "Gäste ausblenden" : `Gäste anzeigen (${guestsList.length})`}</button></div>`;
-    if(showGuests){
-      guestHtml += `<div style="margin-top:6px"><table><tbody>
-        <tr class="section-row"><td colspan="${columnOrder.length+2}">— Gäste —</td></tr>
-        ${guestsList.map(p=>row(p)).join("")}</tbody></table></div>`;
-    }
+  /* Kernteam */
+  if(core.length){
+    html += `<tr class="section-row"><td colspan="${columnOrder.length+2}">— Kernteam —</td></tr>`;
+    core.forEach(p=> html += row(p));
   }
-  document.getElementById("tableContainer").innerHTML = html + guestHtml;
+
+  /* Gäste immer anzeigen */
+  if(guests.length){
+    html += `<tr class="section-row"><td colspan="${columnOrder.length+2}">— Gäste —</td></tr>`;
+    guests.forEach(p=> html += row(p));
+  }
+
+  html += `</tbody></table>`;
+  document.getElementById("tableContainer").innerHTML = html;
   requestAnimationFrame(adjustToOnePage);
 }
-function toggleGuests(){ showGuests=!showGuests; buildTable(); }
 
-/* Onepage fit (Kernteam) */
+/* Onepage fit (für Kernteam-Spaltenhöhen) */
 function adjustToOnePage(){
   const appbar=document.querySelector('.appbar')?.offsetHeight||0;
+  document.documentElement.style.setProperty('--sticky-top', Math.max(40, appbar)+4+'px');
   const bottom=document.querySelector('.bottomnav')?.offsetHeight||0;
   const cards=Array.from(document.querySelectorAll('.content .card')).filter((el,i)=> i!==1 );
   const other=appbar+bottom+cards.reduce((s,c)=>s+c.offsetHeight,0)+20;
@@ -482,7 +485,6 @@ function deletePerson(p){
   if(CORE.includes(p)){ alert("Kernteam kann nicht gelöscht werden."); toggleDeleteMode(); return; }
   if(!confirm(`${p} wirklich löschen?`)) return;
   people=people.filter(x=>x!==p);
-  // Datenfelder der Person optional entfernen
   Object.keys(data).forEach(k=>{ if(k.startsWith(p+"_")) delete data[k]; });
   delete xp[p];
   saveAll(); buildTable(); toggleDeleteMode();
@@ -491,7 +493,6 @@ function deleteColumn(drink){
   if(!deleteMode) return;
   if(!confirm(`Getränk "${drink}" löschen?`)) return;
   delete prices[drink]; columnOrder=columnOrder.filter(d=>d!==drink);
-  // Werte aus data entfernen
   Object.keys(data).forEach(k=>{ if(k.endsWith("_"+drink)) delete data[k]; });
   saveAll(); buildTable(); toggleDeleteMode();
 }
@@ -509,6 +510,7 @@ function resetAll(){
 }
 
 /* Modals & helpers */
+function openPersonModal(){ document.getElementById("personModal").classList.add("show"); }
 function openDrinkModal(){ document.getElementById("drinkModal").classList.add("show"); }
 function closeModal(id){ document.getElementById(id).classList.remove("show"); }
 function togglePayPal(){ document.getElementById("paypalModal").classList.toggle("show"); }
