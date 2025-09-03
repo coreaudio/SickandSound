@@ -26,15 +26,32 @@
     .count{ font-size: var(--count-size); min-width: 26px; text-align:right; }
     .plus-btn{ padding:8px 12px; }
     .section-row td{ font-size:12px; opacity:.7 }
-    .guest-toggle{ margin:10px 0 -2px; display:flex; justify-content:center; }
-    .guest-toggle .btn{ min-width: 200px; }
     .section-title{ font-size: 14px; }
-    /* Head immer sticky (überschreibt style.css) */
+
+    /* ✅ Head immer sticky (überschreibt style.css Media-Query) */
     thead th{position:sticky; top:0; background:linear-gradient(180deg,#141926,#101521); z-index:2}
-    /* Drag-Visual */
+
+    /* ✅ Drag-Visual für Spalten */
     th[draggable="true"]{cursor:grab}
     th.drag-over{outline:2px dashed rgba(255,255,255,.3); outline-offset:-6px}
-    /* kleine Helfer */
+
+    /* ✅ „Gerade“ Tabelle auf Tablet hochkant */
+    table{ table-layout:auto; }
+    th:first-child, td:first-child{ min-width:160px; text-align:left; }
+    th, td{ text-align:center; vertical-align:middle; }
+
+    /* ✅ Kompakter CTA zur Checkliste (kein Riesenhaken) */
+    .cta-wrap{ display:flex; flex-wrap:wrap; gap:10px; align-items:center; margin-top:8px; }
+    .cta-check{
+      display:flex; align-items:center; gap:12px; padding:12px 16px; border-radius:14px;
+      background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.09);
+      color:#e9eefb; font-weight:800; letter-spacing:.2px; text-decoration:none; cursor:pointer;
+      box-shadow:0 6px 18px rgba(0,0,0,.2);
+    }
+    .cta-check svg{ width:22px; height:22px; }
+    .cta-sub{ font-size:12px; opacity:.85; }
+
+    /* Kleine Helfer */
     .pill{display:inline-flex; align-items:center; gap:8px; padding:8px 12px; border-radius:999px; background:#1c2130; border:1px solid #2a3042; color:#e6e8ef}
     .pill input{transform:translateY(1px)}
     .grid{display:grid; gap:10px}
@@ -180,14 +197,13 @@ const K = {
   xp:"sick_sound_xp",
   redo:"sick_sound_redo"
 };
-let prices={"Cola_Zero":1.0,"Monster":1.5,"Wasser":0.5,"Kaffee":1.0,"Mittagessen":6.0};
+let prices={"Mittagessen":6.0,"Getränk":1.5}; /* Beispiel – Firestore überschreibt ggf. */
 let people=[], data={}, history=[], redoStack=[], bookings=[], columnOrder=Object.keys(prices), xp={};
-let deleteMode=false, hdToday=null, showGuests=false;
+let deleteMode=false, hdToday=null;
 
 /* ===== Sounds ===== */
 const makeSound = (src)=> (window.Howl ? new Howl({src:[src]}) : {play:()=>{}});
 const sClick = makeSound("https://cdn.jsdelivr.net/gh/jshawl/howler-examples@master/audio/sfx/coin1.wav");
-const sLevel = makeSound("https://cdn.jsdelivr.net/gh/jshawl/howler-examples@master/audio/sfx/powerUp5.wav");
 
 /* ===== Helpers ===== */
 const todayStr=()=>new Date().toISOString().slice(0,10);
@@ -208,7 +224,7 @@ function startHold(handler){ stopHold(); handler(); holdT=setTimeout(()=>{holdI=
 function stopHold(){ if(holdT) clearTimeout(holdT); if(holdI) clearInterval(holdI); holdT=holdI=null; }
 window.onmouseup=stopHold; window.onmouseleave=stopHold;
 
-/* Mini-Patch: 00:00 Refresh */
+/* 00:00 Refresh */
 function scheduleMidnightRefresh(cb){
   const now=new Date(); const mid=new Date(now.getFullYear(),now.getMonth(),now.getDate()+1,0,0,2);
   setTimeout(()=>{ try{ cb(); } finally{ scheduleMidnightRefresh(cb);} }, mid-now);
@@ -347,7 +363,7 @@ function applyInverse(a){
   } else if (a.action==="change"){
     data[a.id] = a.prev;
     const parts=a.id.split('_'); const person=parts[0]; const drink=parts.slice(1).join('_');
-    xp[person] = Math.max(0,(xp[person]||0) - (prices[drink]||0));
+    xp[person] = Math.max(0,(xp[a.person]||0) - (prices[drink]||0));
   }
 }
 function undoLast(){ const last=history.pop(); if(!last) return; applyInverse(last); redoStack.push(last); saveAll(); buildTable(); updateUndoRedoButtons(); }
@@ -360,14 +376,8 @@ function dragStart(ev, drink){
   ev.dataTransfer.setData('text/plain', drink);
   ev.dataTransfer.effectAllowed='move';
 }
-function allowDrop(ev){
-  ev.preventDefault();
-  const th = ev.currentTarget;
-  th.classList.add('drag-over');
-}
-function leaveDrop(ev){
-  ev.currentTarget.classList.remove('drag-over');
-}
+function allowDrop(ev){ ev.preventDefault(); ev.currentTarget.classList.add('drag-over'); }
+function leaveDrop(ev){ ev.currentTarget.classList.remove('drag-over'); }
 function dropCol(ev, targetDrink){
   ev.preventDefault();
   ev.currentTarget.classList.remove('drag-over');
@@ -387,7 +397,6 @@ function inc(person, drink){
   data[id] = prev + 1;
   history.push({type:'inc', id, prev, person, xpDelta:(prices[drink]||0)});
   redoStack = [];
-  // Buchung für Verlauf
   bookings.unshift({user:person, drink, createdAt:Date.now()});
   if(bookings.length>200) bookings.pop();
   xp[person]=(xp[person]||0)+(prices[drink]||0);
@@ -399,7 +408,7 @@ function dec(person, drink){
   const prev=data[id]||0;
   if(prev<=0) return;
   data[id]=prev-1;
-  history.push({type:'inc', id, prev:prev, person, xpDelta:-(prices[drink]||0)}); // inverse speichern
+  history.push({type:'inc', id, prev:prev, person, xpDelta:-(prices[drink]||0)}); // inverse
   redoStack=[];
   xp[person]=Math.max(0,(xp[person]||0)-(prices[drink]||0));
   saveAll(); buildTable(); updateUndoRedoButtons();
@@ -411,7 +420,7 @@ function buildTable(){
   const core=CORE.filter(n=>people.includes(n));
   const guests=people.filter(n=>!CORE.includes(n)).sort((a,b)=>a.localeCompare(b));
 
-  let html = `<table><thead><tr><th style="min-width:240px;text-align:left">Person</th>`;
+  let html = `<table><thead><tr><th>Person</th>`;
   columnOrder.forEach(drink=>{
     if(prices[drink]!==undefined){
       html += `<th draggable="true"
@@ -437,7 +446,7 @@ function buildTable(){
           <div class="count" id="c_${name}_${d}">${v}</div>
           <div style="display:flex; gap:6px">
             <button class="btn small plus-btn" onmousedown="startHold(()=>inc('${name}','${d}'))" onclick="inc('${name}','${d}')">＋</button>
-            <button class="btn small dark plus-btn" onclick="${deleteMode?'dec':'dec'}('${name}','${d}')">－</button>
+            <button class="btn small dark plus-btn" onclick="dec('${name}','${d}')">－</button>
           </div>
         </div>
       </td>`;
@@ -473,14 +482,12 @@ function buildTable(){
     guests.forEach(n=> html += rowFor(n));
   }
 
-  /* Letzte Zeile: Person hinzufügen */
+  /* ✅ Letzte Zeile: Nur Textfeld + „➕ Hinzufügen“ */
   html += `<tr>
     <td colspan="${columnOrder.length+2}" style="text-align:center">
       <div style="display:inline-flex; gap:8px; align-items:center; flex-wrap:wrap">
         <input id="newPersonInline" placeholder="Neue Person…" style="min-width:200px">
         <button class="btn small" onclick="addPersonInline()">➕ Hinzufügen</button>
-        <span class="sub">oder</span>
-        <button class="btn small dark" onclick="openModal('personModal')">Modal öffnen</button>
       </div>
     </td>
   </tr>`;
@@ -527,9 +534,7 @@ function togglePayPal(){ document.getElementById("paypalModal").classList.toggle
 const RESET_PASSWORD = "changeme"; // <— HIER dein Passwort eintragen!
 function openResetModal(){
   const wrap=document.getElementById('resetPeople');
-  wrap.innerHTML = people.map(p=>
-    `<label class="pill"><input type="checkbox" value="${p}"> ${p}</label>`
-  ).join('');
+  wrap.innerHTML = people.map(p=>`<label class="pill"><input type="checkbox" value="${p}"> ${p}</label>`).join('');
   document.getElementById('resetPassword').value='';
   openModal('resetModal');
 }
@@ -538,15 +543,9 @@ function performReset(){
   if(!checked.length){ alert('Bitte mindestens eine Person auswählen.'); return; }
   const pw=document.getElementById('resetPassword').value;
   if(pw!==RESET_PASSWORD){ alert('Falsches Passwort.'); return; }
-
-  checked.forEach(p=>{
-    columnOrder.forEach(d=>{ data[`${p}_${d}`]=0; });
-  });
-
-  // Buchung protokollieren
+  checked.forEach(p=>{ columnOrder.forEach(d=>{ data[`${p}_${d}`]=0; }); });
   bookings.unshift({user:'SYSTEM', action:'reset', people:checked, createdAt:Date.now()});
   if(bookings.length>200) bookings.pop();
-
   saveAll(); buildTable(); closeModal('resetModal');
   alert('Abgerechnet: '+checked.join(', '));
 }
@@ -558,7 +557,7 @@ loadState();
 <!-- Service Worker -->
 <script>
   if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('./sw.js?v=21', { scope: './' }).catch(()=>{});
+    navigator.serviceWorker.register('./sw.js?v=22', { scope: './' }).catch(()=>{});
   }
 </script>
 </body>
