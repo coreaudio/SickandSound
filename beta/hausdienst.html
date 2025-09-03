@@ -158,6 +158,10 @@
       firebase.initializeApp(firebaseConfig);
       try{firebase.analytics();}catch(_){}
       db=firebase.firestore();
+
+      /* 🛜 Long-Polling für mobile Netze (Step 2, Teil 1) */
+      try { db.settings({ experimentalAutoDetectLongPolling:true, merge:true }); } catch(_) {}
+
       document.getElementById('dot').classList.add('statusok');
       document.getElementById('connTxt').textContent='Online (Firestore verbunden)';
     }
@@ -165,6 +169,21 @@
     db=null;
     document.getElementById('connTxt').textContent='Offline – Firebase konnte nicht initialisiert werden.';
   }
+
+  /* 🔎 Diagnose-Funktion (Step 2, Teil 2) */
+  async function diagFirestore(){
+    const el = document.getElementById('todayInfo');
+    el.textContent = 'Teste Firestore…';
+    try {
+      const test = await db.collection('hausdienst').limit(1).get();
+      el.textContent = 'Firestore OK (' + test.size + ' Docs gefunden)';
+    } catch(e) {
+      el.textContent = 'Firestore-Fehler: ' + (e.code || e.message);
+      console.error('Diag:', e);
+    }
+  }
+  // einmalig nach Init ausführen
+  diagFirestore();
 
   /* Tabs */
   function showTab(key){
