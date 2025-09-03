@@ -2,7 +2,7 @@
 <html lang="de">
 <head>
   <meta charset="UTF-8" />
-  <title>Ranglisten</title>
+  <title>Sick & Sound – Rangliste</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <meta name="theme-color" content="#0b0e14" />
   <meta name="apple-mobile-web-app-capable" content="yes">
@@ -11,71 +11,32 @@
   <link rel="stylesheet" href="style.css" />
   <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;800&display=swap" rel="stylesheet" />
   <style>
-    /* ==== Game-Style Leaderboard ==== */
-    .leader-card { padding:14px 14px 10px; background:#0f1420; border:1px solid #22273a; border-radius:18px; box-shadow:0 6px 24px rgba(0,0,0,.25); }
-    .leader-title { display:flex; align-items:center; gap:10px; margin-bottom:8px; }
-    .leader-title .trophy { font-size:20px; }
-    .podium { display:grid; grid-template-columns:1fr 1fr 1fr; gap:12px; align-items:stretch; }
-    .podium-card {
-      position:relative; border-radius:18px; padding:14px; text-align:center; color:#0b0e14;
-      display:flex; flex-direction:column; align-items:center; justify-content:flex-end; gap:8px;
-      min-height:170px; overflow:hidden;
-    }
-    .podium-card .medal { position:absolute; top:10px; right:10px; font-size:20px; filter:drop-shadow(0 2px 4px rgba(0,0,0,.35)); }
-    .podium-card .place { position:absolute; left:10px; top:10px; font-weight:800; font-size:14px; opacity:.85; }
-    .podium-card .avatar {
-      width:72px; height:72px; border-radius:50%;
-      display:grid; place-items:center; font-weight:800; font-size:26px; color:#0b0e14;
-      box-shadow:inset 0 0 0 3px rgba(255,255,255,.35), 0 8px 24px rgba(0,0,0,.35);
-    }
-    .podium-card .name { font-weight:800; letter-spacing:.2px; color:#0b0e14; filter:drop-shadow(0 1px 0 rgba(255,255,255,.25)); }
-    .podium-card .sum { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-weight:800; font-size:22px; }
-    .rank1 { background:linear-gradient(135deg, #FFE259, #FFA751); }
-    .rank2 { background:linear-gradient(135deg, #D7DDE8, #757F9A); }
-    .rank3 { background:linear-gradient(135deg, #D1913C, #FFD194); }
-    .rank1 .sum, .rank2 .sum, .rank3 .sum { color:#0b0e14; }
-    .glow { box-shadow:0 0 0 4px rgba(255,230,120,.25), 0 10px 40px rgba(255,220,120,.45); }
-
-    /* Restliche Plätze */
-    .rest { margin-top:12px; }
-    .rest-row {
-      display:grid; grid-template-columns:44px 1fr auto; align-items:center; gap:10px;
-      padding:10px 12px; border-radius:14px; background:#101626; border:1px solid #202a42; margin-bottom:8px;
-    }
-    .rest-row .place { font-weight:800; font-size:16px; color:#9aa4c2; }
-    .rest-row .who { display:flex; align-items:center; gap:10px; }
-    .rest-row .avatar-sm { width:36px; height:36px; border-radius:50%; display:grid; place-items:center; font-weight:800; }
-    .rest-row .name { font-weight:800; }
-    .rest-row .sum { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-weight:800; }
-    .bar { height:6px; border-radius:999px; background:linear-gradient(90deg, #6ee7ff, #a78bfa); opacity:.9; }
-    .bar-wrap { height:6px; background:#1b2234; border-radius:999px; overflow:hidden; }
-
-    .popin { animation:pop .28s ease-out both; }
-    @keyframes pop { from { transform:translateY(6px) scale(.98); opacity:0; } to { transform:translateY(0) scale(1); opacity:1; } }
-
-    .card.table-wrap table th, .card.table-wrap table td { padding:8px 10px; }
-    .err { margin-top:12px; color:#ffb4b4; }
+    .rank-table td,.rank-table th{ padding:10px 8px; }
+    .lvl-ring{ width:46px; height:46px; position:relative; display:inline-grid; place-items:center; }
+    .lvl-ring .val{ position:absolute; font-size:11px; font-weight:800; line-height:1; }
+    .subtle{ opacity:.75 }
+    .pill{ padding:6px 10px; border-radius:999px; background:#1c2130; border:1px solid #2a3042; }
+    .ok{ color:#7CFC9A }
   </style>
 </head>
 <body>
 <div class="app">
   <header class="appbar">
-    <div class="app-title"><div class="brand-dot"></div><h1>Ranglisten</h1></div>
+    <div class="app-title"><div class="brand-dot"></div><h1>Rangliste</h1></div>
+    <div class="appbar-actions">
+      <span class="sub"><span class="statusdot" id="dot"></span><span id="connTxt">Verbinde…</span></span>
+    </div>
   </header>
 
   <main class="content">
-    <div class="leader-card" id="liveCard">
-      <div class="leader-title">
-        <span class="trophy">🏆</span>
-        <div class="section-title" style="margin:0">Live Rangliste</div>
-      </div>
-      <div id="podium" class="podium"></div>
-      <div id="rest" class="rest"></div>
-      <div id="err" class="err"></div>
+    <div class="card">
+      <div class="section-title">Übersicht</div>
+      <div class="sub subtle">Level basiert auf Gesamt-XP. „Heute“ ist der aktuelle Warenwert deiner Striche (live).</div>
     </div>
 
-    <div class="card table-wrap" id="hausdienstHistory" style="margin-top:12px"></div>
-    <div class="card table-wrap" id="hausdienstStats" style="margin-top:12px"></div>
+    <div class="card table-wrap" id="rankWrap">
+      <div class="sub">Lade Rangliste…</div>
+    </div>
   </main>
 
   <nav class="bottomnav">
@@ -83,7 +44,7 @@
       <svg viewBox="0 0 24 24" fill="currentColor"><path d="M4 6h16v2H4zM4 11h16v2H4zM4 16h10v2H4z"/></svg>
       <span>Liste</span>
     </a>
-    <a class="tab" href="hausdienst.html">
+    <a class="tab" href="hausdienst.html#plan">
       <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 3l9 7-1.2 1.6L18 10.1V20h-5v-6H11v6H6v-9.9L4.2 11.6 3 10z"/></svg>
       <span>Hausdienst</span>
     </a>
@@ -104,175 +65,107 @@
 
 <!-- Firebase -->
 <script src="https://www.gstatic.com/firebasejs/12.0.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/12.0.0/firebase-analytics-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/12.0.0/firebase-firestore-compat.js"></script>
 <script>
   const CORE=["Chris","Daniel","Elmi","Florian","Joel","Kevin","Kiste","Marco","Meli","Simon"];
-  const firebaseConfig={apiKey:"AIzaSyBFHjGXI5yHyK0DyupS0bnTVAqlu6lvpNw",authDomain:"sickandsound-e9704.firebaseapp.com",projectId:"sickandsound-e9704",storageBucket:"sickandsound-e9704.firebasestorage.app",messagingSenderId:"248197359659",appId:"1:248197359659:web:a8777cbed3f83d6b1ca26e",measurementId:"G-62LH8V7S2E"};
-  let db=null;
-  try{ if(window.firebase){ firebase.initializeApp(firebaseConfig); try{firebase.analytics();}catch(_){ } db=firebase.firestore(); } }catch(_){ db=null; }
+  const firebaseConfig = {
+    apiKey: "AIzaSyBtZsr4QPHQbvO2qae6MoBoxJF5dNP2vh0",
+    authDomain: "sickandsound-8a15f.firebaseapp.com",
+    projectId: "sickandsound-8a15f",
+    storageBucket: "sickandsound-8a15f.appspot.com",
+    messagingSenderId: "32138160959",
+    appId: "1:32138160959:web:a65c7f4ad7d44e757fc18a"
+  };
 
+  let db=null, prices={}, data={}, xp={}, people=[];
   const STATE_COLLECTION = location.search.includes("beta") ? "state_beta" : "state";
-  const K = { people:"sick_sound_people", bookings:"sick_sound_bookings", prices:"sick_sound_prices", data:"sick_sound_data" };
 
-  /* Helpers */
-  function euro(v){ return Number(v||0).toFixed(2).replace('.', ','); }
-  const initials = name => (name||'')[0]?.toUpperCase() || '?';
-  function hueFromName(name){ let h=0; for(let i=0;i<name.length;i++){ h=(h*31 + name.charCodeAt(i)) % 360; } return h; }
-  function avatarStyle(name, small=false){
-    const h=hueFromName(name); const a= small ? 0.85 : 0.95;
-    return `background: conic-gradient(from 200deg, hsl(${h} 90% 65% / ${a}) 0%, hsl(${(h+35)%360} 90% 60% / ${a}) 50%, hsl(${(h+320)%360} 90% 55% / ${a}) 100%); color:#0b0e14;`;
+  function levelOf(x){ x = +x||0; return Math.max(1, Math.floor(Math.sqrt(x/75))+1); }
+
+  function ring(xpVal, label){
+    const x=+xpVal||0, lvl=levelOf(x);
+    const min=75*(lvl-1)*(lvl-1), max=75*lvl*lvl, p=Math.max(0,Math.min(1,(x-min)/(max-min)));
+    const r=20, c=2*Math.PI*r, off=(1-p)*c, gid="g"+(label||"x")+lvl;
+    return `<div class="lvl-ring" title="Level ${lvl}">
+      <svg viewBox="0 0 48 48" style="transform:rotate(-90deg)" width="100%" height="100%">
+        <defs><linearGradient id="${gid}" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0%" stop-color="#6ee7ff"/><stop offset="100%" stop-color="#a78bfa"/></linearGradient></defs>
+        <circle cx="24" cy="24" r="${r}" stroke="#2a3042" stroke-width="6" fill="none"></circle>
+        <circle cx="24" cy="24" r="${r}" stroke="url(#${gid})" stroke-width="6" stroke-linecap="round" fill="none"
+                stroke-dasharray="${c}" stroke-dashoffset="${off}"></circle>
+      </svg>
+      <div class="val">Lv.${lvl}</div>
+    </div>`;
   }
-  function valueOfCurrentStriche(person, prices, data){
-    return Object.keys(prices||{}).reduce((sum,d)=>sum+((data[`${person}_${d}`]||0)*(prices[d]||0)),0);
+
+  function currentValueOf(person){
+    const keys = Object.keys(prices||{});
+    return keys.reduce((sum,k)=> sum + ( (data[`${person}_${k}`]||0) * (Number(prices[k])||0) ), 0);
   }
-  function todayStr(){ return new Date().toISOString().slice(0,10); }
-  function dateDaysAgo(n){ const d=new Date(); d.setDate(d.getDate()-n); return d.toISOString().slice(0,10); }
 
-  function renderLive(rows){
-    const podium = document.getElementById('podium');
-    const rest   = document.getElementById('rest');
-    podium.innerHTML = ''; rest.innerHTML='';
+  function render(){
+    const wrap=document.getElementById('rankWrap');
+    const names = [...new Set([...(people||[]), ...Object.keys(xp||{})])];
+    if(!names.length){ wrap.innerHTML = '<div class="sub">Keine Daten.</div>'; return; }
 
-    if(!rows.length){
-      podium.innerHTML = `<div class="sub">Noch keine Daten.</div>`;
+    const rows = names
+      .filter(n=>CORE.includes(n) || !n.startsWith('_'))
+      .map(n=>{
+        const base = Number(xp[n]||0);
+        const today = currentValueOf(n);
+        const total = base + today;
+        return { n, base, today, total, lvl: levelOf(total) };
+      })
+      .sort((a,b)=> b.total - a.total)
+      .map((r,i)=>`
+        <tr>
+          <td class="subtle">#${i+1}</td>
+          <td style="display:flex;align-items:center;gap:10px">
+            ${ring(r.total, r.n)} <b>${r.n}</b>
+          </td>
+          <td class="right">${r.base.toFixed(2)}€</td>
+          <td class="right">${r.today.toFixed(2)}€</td>
+          <td class="right"><b>${r.total.toFixed(2)}€</b></td>
+        </tr>
+      `).join('');
+
+    wrap.innerHTML = `
+      <table class="rank-table">
+        <thead>
+          <tr><th></th><th>Person</th><th class="right">XP bisher</th><th class="right">Heute</th><th class="right">Gesamt</th></tr>
+        </thead>
+        <tbody>${rows}</tbody>
+      </table>`;
+  }
+
+  (function init(){
+    try{
+      firebase.initializeApp(firebaseConfig);
+      db = firebase.firestore();
+      try{ db.settings({ experimentalAutoDetectLongPolling:true, merge:true }); }catch(_){}
+      document.getElementById('dot').classList.add('statusok');
+      document.getElementById('connTxt').textContent='Online (Firestore verbunden)';
+    }catch(e){
+      document.getElementById('connTxt').textContent='Offline – Firebase konnte nicht initialisiert werden.';
       return;
     }
 
-    const top = rows.slice(0,3);
-    const medals = ['🥇','🥈','🥉'];
-    const ranks  = ['rank1','rank2','rank3'];
-
-    podium.innerHTML = top.map((r,idx)=>`
-      <div class="podium-card ${ranks[idx]} ${idx===0?'glow':''} popin">
-        <div class="medal">${medals[idx]}</div>
-        <div class="place">#${idx+1}</div>
-        <div class="avatar" style="${avatarStyle(r.p)}">${initials(r.p)}</div>
-        <div class="name">${r.p}</div>
-        <div class="sum">${euro(r.summe)} €</div>
-      </div>
-    `).join('');
-
-    const max = rows[0].summe || 1;
-    const others = rows.slice(3);
-    rest.innerHTML = others.map((r, i)=>`
-      <div class="rest-row popin">
-        <div class="place">#${i+4}</div>
-        <div class="who">
-          <div class="avatar-sm" style="${avatarStyle(r.p,true)}">${initials(r.p)}</div>
-          <div style="flex:1">
-            <div class="name">${r.p}</div>
-            <div class="bar-wrap" aria-hidden="true"><div class="bar" style="width:${Math.max(6,(r.summe/max*100))}%;"></div></div>
-          </div>
-        </div>
-        <div class="sum">${euro(r.summe)} €</div>
-      </div>
-    `).join('');
-  }
-
-  function buildTable(title,heads,rows,emptyText){
-    const h=heads.map(h=>`<th>${h}</th>`).join("");
-    const r=rows.length ? rows.map(row=>`<tr>${row.map(c=>`<td>${c}</td>`).join("")}</tr>`).join("") : `<tr><td colspan="${heads.length}">${emptyText||"Keine Daten"}</td></tr>`;
-    return `<h2 class="section-title">${title}</h2><table><thead><tr>${h}</tr></thead><tbody>${r}</tbody></table>`;
-  }
-
-  function renderFromState(state){
-    const set = new Set(state.people || []);
-    CORE.forEach(n=>set.add(n)); // sicherstellen, dass Kernteam immer dabei ist
-
-    const sumsGebucht={};
-    [...set].forEach(p=>sumsGebucht[p]=0);
-    (state.bookings||[]).forEach(b=>{ sumsGebucht[b.person]=(sumsGebucht[b.person]||0)+Number(b.sum||0); });
-
-    const rowsLive = [...set].map(p=>{
-      const offen = valueOfCurrentStriche(p, state.prices||{}, state.data||{});
-      const gebucht = sumsGebucht[p]||0;
-      return {p, summe: gebucht + offen};
-    }).sort((a,b)=>b.summe-a.summe);
-
-    renderLive(rowsLive);
-
-    const lastLeader = localStorage.getItem("last_leader_name");
-    if(rowsLive[0] && rowsLive[0].p !== lastLeader){
-      localStorage.setItem("last_leader_name", rowsLive[0].p);
-      const c=document.getElementById('liveCard'); c.classList.remove('popin'); void c.offsetWidth; c.classList.add('popin');
-    }
-  }
-
-  async function renderHistAndStats(){
-    // Historie (30 Tage)
-    if(db){
-      try{
-        const snap=await db.collection("hausdienst").get();
-        const all=[]; snap.forEach(doc=>all.push({id:doc.id, person:(doc.data().person||null)}));
-        const from=dateDaysAgo(30);
-        const rows=all
-          .filter(x=>x.id>=from && x.id<=todayStr())
-          .sort((a,b)=>b.id.localeCompare(a.id))
-          .map(x=>[x.id, x.person || "—"]);
-        document.getElementById("hausdienstHistory").innerHTML = buildTable(
-          "🧹 Hausdienst – Historie (letzte 30 Tage)",
-          ["Datum","Person"],
-          rows,
-          "Keine Historie vorhanden."
-        );
-      }catch(e){
-        document.getElementById("hausdienstHistory").innerHTML = `<h2 class="section-title">🧹 Hausdienst – Historie</h2><div class="sub">Fehler beim Laden.</div>`;
-      }
-    }else{
-      document.getElementById("hausdienstHistory").innerHTML = `<h2 class="section-title">🧹 Hausdienst – Historie</h2><div class="sub">Offline: Daten nicht verfügbar.</div>`;
-    }
-
-    // Statistik (nur Kernteam, bis heute)
-    if(db){
-      const today=todayStr();
-      const cnt={}; CORE.forEach(p=>cnt[p]=0);
-      try{
-        const docs=await db.collection("hausdienst").get();
-        docs.forEach(d=>{ if(d.id<=today){ const person=d.data().person; if(CORE.includes(person)) cnt[person]++; } });
-        const arrHd=Object.entries(cnt).sort((a,b)=>b[1]-a[1]);
-        document.getElementById("hausdienstStats").innerHTML = buildTable(
-          "📊 Hausdienst – Statistik (bis heute)",
-          ["Platz","Person","Tage"],
-          arrHd.map(([p,v],i)=>[i+1,p,v]),
-          "Keine Einträge vorhanden."
-        );
-      }catch(e){
-        document.getElementById("hausdienstStats").innerHTML = `<h2 class="section-title">📊 Hausdienst – Statistik</h2><div class="sub">Fehler beim Laden.</div>`;
-      }
-    }
-  }
-
-  function subscribeRealtime(){
-    if(!db) return;
-    db.collection(STATE_COLLECTION).doc("global").onSnapshot(snap=>{
+    db.collection(STATE_COLLECTION).doc('global').onSnapshot(snap=>{
       if(!snap.exists) return;
-      renderFromState(snap.data() || {});
+      const s=snap.data()||{};
+      prices = s.prices || {};
+      data   = s.data   || {};
+      xp     = s.xp     || {};
+      people = s.people || [];
+      render();
     });
-  }
+  })();
+</script>
 
-  async function loadAllOnce(){
-    try{
-      let state = {};
-      if(db){
-        try{ const s=await db.collection(STATE_COLLECTION).doc("global").get(); state = s.exists ? s.data() : {}; }catch(_){}
-      }
-      state.people   = state.people   || JSON.parse(localStorage.getItem(K.people))   || [];
-      state.bookings = state.bookings || JSON.parse(localStorage.getItem(K.bookings)) || [];
-      state.prices   = state.prices   || JSON.parse(localStorage.getItem(K.prices))   || {};
-      state.data     = state.data     || JSON.parse(localStorage.getItem(K.data))     || {};
-
-      renderFromState(state);
-      renderHistAndStats();
-    }catch(e){
-      document.getElementById('err').textContent = 'Fehler beim Rendern: '+(e?.message||e);
-    }
-  }
-
+<!-- Service Worker -->
 <script>
   if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('./sw.js?v=20', { scope: './' })
-      .catch(() => {});
+    navigator.serviceWorker.register('./sw.js?v=21', { scope: './' }).catch(()=>{});
   }
 </script>
 </body>
