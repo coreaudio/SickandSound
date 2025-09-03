@@ -3,415 +3,135 @@
 <head>
   <meta charset="UTF-8" />
   <title>Hausdienst</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <meta name="theme-color" content="#0b0e14" />
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <link rel="manifest" href="manifest.webmanifest">
-  <link rel="stylesheet" href="style.css" />
-  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;800&display=swap" rel="stylesheet" />
   <style>
-    .tabs { display:flex; gap:8px; margin-top:8px; flex-wrap:wrap; }
-    .tabs .tabbtn { padding:8px 12px; border-radius:999px; background:#1c2130; color:#e6e8ef; border:1px solid #2a3042; }
-    .tabs .tabbtn.active { background:linear-gradient(135deg,#6ee7ff,#a78bfa); color:#0b0e14; border-color:transparent; font-weight:800; }
-    .panel { display:none; }
-    .panel.active { display:block; }
-
-    .people-row { display:flex; gap:8px; overflow-x:auto; padding-bottom:4px; scrollbar-width:thin; }
-    .people-row .pill { flex:0 0 auto; padding:8px 12px; border-radius:999px; background:#1c2130; border:1px solid #2a3042; color:#e6e8ef; }
-    .people-row .pill.active { background:linear-gradient(135deg,#6ee7ff,#a78bfa); color:#0b0e14; border-color:transparent; font-weight:800; }
-
-    .row { display:flex; gap:10px; flex-wrap:wrap; align-items:center; }
-    .badge.big { font-size:14px; padding:6px 10px; }
-    .muted { opacity:.7 }
-
-    .segmented { display:flex; gap:8px; flex-wrap:wrap; }
-    .segmented .tabbtn { padding:8px 12px; border-radius:999px; background:#1c2130; color:#e6e8ef; border:1px solid #2a3042; }
-    .segmented .tabbtn.active { background:linear-gradient(135deg,#6ee7ff,#a78bfa); color:#0b0e14; border-color:transparent; font-weight:800; }
-
-    .toolbar { display:flex; gap:10px; flex-wrap:wrap; align-items:center; margin-top:10px; }
-    .toolbar input, .toolbar select { flex:1 1 auto; min-width:160px; }
-    .groupTitle { font-weight:800; letter-spacing:.2px; margin:6px 0 6px; }
-
-    .statusdot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px;background:#ffadad}
-    .statusok{background:#7CFC9A}
+    body { font-family: sans-serif; margin: 1rem; }
+    .badge { padding: 2px 6px; border-radius: 4px; }
+    .ok { background: #cfc; }
+    .none { background: #fcc; }
+    .sub { color: #666; font-size: 0.9em; }
   </style>
 </head>
 <body>
-<div class="app">
-  <header class="appbar">
-    <div class="app-title"><div class="brand-dot"></div><h1>Hausdienst</h1></div>
-    <div class="appbar-actions">
-      <a class="btn small dark" href="index.html" title="Zur Liste">🧾</a>
-    </div>
-  </header>
+  <h1>Hausdienst</h1>
+  <div id="connTxt">Verbinde...</div>
 
-  <main class="content">
-    <div class="card">
-      <div class="section-title">Heute</div>
-      <div id="todayInfo" class="sub">Lade…</div>
-      <div class="tabs" style="margin-top:10px">
-        <button id="tabPlan" class="tabbtn active" onclick="showTab('plan')">Planen</button>
-        <button id="tabCheck" class="tabbtn" onclick="showTab('check')">Checkliste</button>
-        <button id="tabHist" class="tabbtn" onclick="showTab('history')">Historie</button>
-      </div>
-      <div class="sub" id="connInfo" style="margin-top:6px"><span class="statusdot" id="dot"></span><span id="connTxt">Verbinde…</span></div>
-    </div>
+  <h2>Heute</h2>
+  <div id="todayInfo">Lade…</div>
 
-    <!-- Panel: Planen -->
-    <div id="panelPlan" class="panel active">
-      <div class="card">
-        <div class="section-title">Hausdienst planen</div>
-        <div class="row" style="margin-top:6px">
-          <button id="btnToday" class="btn small" onclick="setFor('today')" disabled>Heute belegen</button>
-          <button id="btnTomorrow" class="btn small" onclick="setFor('tomorrow')" disabled>Morgen belegen</button>
-          <span id="selBadge" class="badge big">Auswahl: –</span>
-        </div>
-      </div>
+  <h2>Nächste 14 Tage</h2>
+  <div id="nextList">Lade…</div>
 
-      <div class="card">
-        <div class="section-title">Person auswählen</div>
-        <div id="peopleRow" class="people-row" style="margin-top:8px"></div>
-        <div class="sub muted" style="margin-top:6px">
-          Tipp: Person wählen, dann „Heute/Morgen“ oder unten in der Liste „Belegen“ tippen.
-        </div>
-      </div>
+  <h2>Checkliste</h2>
+  <div id="checklist">Lade…</div>
 
-      <div class="card table-wrap">
-        <div class="section-title">Geplante Hausdienste (nächste 14 Tage)</div>
-        <div id="nextList" class="sub">Lade…</div>
-      </div>
-    </div>
+  <!-- Firebase SDKs -->
+  <script src="https://www.gstatic.com/firebasejs/12.0.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/12.0.0/firebase-firestore-compat.js"></script>
 
-    <!-- Panel: Checkliste -->
-    <div id="panelCheck" class="panel">
-      <div class="card">
-        <div class="section-title">Checkliste</div>
-        <div class="sub">Aufgaben sind dauerhaft gespeichert · Haken gilt nur heute</div>
+  <script>
+    // === Firebase Config ===
+    const firebaseConfig = {
+      apiKey: "DEIN_KEY",
+      authDomain: "DEIN_PROJEKT.firebaseapp.com",
+      projectId: "DEIN_PROJEKT",
+      storageBucket: "DEIN_PROJEKT.appspot.com",
+      messagingSenderId: "DEIN_SENDER_ID",
+      appId: "DEINE_APP_ID"
+    };
 
-        <div id="catTabs" class="segmented" style="margin-top:10px"></div>
+    let db = null;
 
-        <div class="toolbar">
-          <input id="newTask" placeholder="Neue Aufgabe hinzufügen…">
-          <select id="newTaskCat" title="Kategorie">
-            <option value="morgens">Morgens</option>
-            <option value="tag">Im Laufe des Tages</option>
-            <option value="abend">Bevor man geht</option>
-          </select>
-          <button class="btn" onclick="addTask()">Hinzufügen</button>
-        </div>
-
-        <div id="filters" style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px">
-          <button id="fOpen" class="btn small secondary" onclick="setMode('open')">Offen</button>
-          <button id="fDone" class="btn small ghost" onclick="setMode('done')">Erledigt</button>
-          <button id="fAll"  class="btn small ghost" onclick="setMode('all')">Alle</button>
-        </div>
-      </div>
-
-      <div class="card table-wrap" id="list"><div class="sub">Lade Aufgaben…</div></div>
-    </div>
-
-    <!-- Panel: Historie -->
-    <div id="panelHist" class="panel">
-      <div class="card table-wrap">
-        <div class="section-title">Hausdienst – Historie (letzte 30 Tage)</div>
-        <div id="histList" class="sub">Lade…</div>
-      </div>
-    </div>
-  </main>
-
-  <nav class="bottomnav">
-    <a class="tab" href="index.html">
-      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M4 6h16v2H4zM4 11h16v2H4zM4 16h10v2H4z"/></svg>
-      <span>Liste</span>
-    </a>
-    <a class="tab active" href="hausdienst.html">
-      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 3l9 7-1.2 1.6L18 10.1V20h-5v-6H11v6H6v-9.9L4.2 11.6 3 10z"/></svg>
-      <span>Hausdienst</span>
-    </a>
-    <a class="tab" href="hausdienst.html#plan" style="display:none"></a><!-- Reserve -->
-    <a class="tab" href="rangliste.html">
-      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M7 17H3V7h4v10zm7 0h-4V3h4v14zm7 0h-4v-8h4v8z"/></svg>
-      <span>Rang</span>
-    </a>
-    <a class="tab" href="badges.html">
-      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 1l3.09 6.26L22 8.27l-5 4.87L18.18 22 12 18.56 5.82 22 7 13.14 2 8.27l6.91-1.01L12 1z"/></svg>
-      <span>Badges</span>
-    </a>
-    <a class="tab" href="buchungen.html">
-      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 2h9l5 5v13a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2zm8 1.5V8h4.5L14 3.5z"/></svg>
-      <span>Buchungen</span>
-    </a>
-  </nav>
-</div>
-
-<!-- Firebase -->
-<script src="https://www.gstatic.com/firebasejs/12.0.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/12.0.0/firebase-analytics-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/12.0.0/firebase-firestore-compat.js"></script>
-<script>
-  const CORE=["Chris","Daniel","Elmi","Florian","Joel","Kevin","Kiste","Marco","Meli","Simon"];
-  const firebaseConfig={apiKey:"AIzaSyBFHjGXI5yHyK0DyupS0bnTVAqlu6lvpNw",authDomain:"sickandsound-e9704.firebaseapp.com",projectId:"sickandsound-e9704",storageBucket:"sickandsound-e9704.firebasestorage.app",messagingSenderId:"248197359659",appId:"1:248197359659:web:a8777cbed3f83d6b1ca26e",measurementId:"G-62LH8V7S2E"};
-  let db=null;
-  try{
-    if(window.firebase){
+    try {
       firebase.initializeApp(firebaseConfig);
-      try{firebase.analytics();}catch(_){}
-      db=firebase.firestore();
-      document.getElementById('dot').classList.add('statusok');
-      document.getElementById('connTxt').textContent='Online (Firestore verbunden)';
+      db = firebase.firestore();
+      document.getElementById('connTxt').textContent = 'Online (Firestore verbunden)';
+      init();
+    } catch (e) {
+      console.error(e);
+      document.getElementById('connTxt').textContent = 'Offline – Firebase konnte nicht initialisiert werden.';
     }
-  }catch(e){
-    db=null;
-    document.getElementById('connTxt').textContent='Offline – Firebase konnte nicht initialisiert werden.';
-  }
 
-  /* Tabs */
-  function showTab(key){
-    const map={plan:'panelPlan', check:'panelCheck', history:'panelHist'};
-    ['plan','check','history'].forEach(k=>{
-      document.getElementById(map[k]).classList.toggle('active', k===key);
-      document.getElementById('tab'+(k==='history'?'Hist':k.charAt(0).toUpperCase()+k.slice(1))).classList.toggle('active', k===key);
-    });
-    // Hash synchronisieren (plan = leerer Hash)
-    if(history.pushState){
-      const h = key==='plan' ? '' : '#'+key;
-      history.replaceState(null,'', location.pathname + (h? h : ''));
+    function todayStr() {
+      const dt = new Date();
+      return dt.toISOString().slice(0, 10);
     }
-  }
 
-  // Nur Query/Hash – KEIN localStorage
-  function pickTabFromQuery(){
-    let t = new URLSearchParams(location.search).get('tab');
-    if(!t){
-      const hash=(location.hash||'').replace('#','');
-      if(['check','history','plan'].includes(hash)) t = hash;
+    // === Heute anzeigen (live) ===
+    function listenTodayInfo() {
+      const el = document.getElementById('todayInfo');
+      db.collection("hausdienst").doc(todayStr())
+        .onSnapshot(doc => {
+          if (doc.exists) {
+            const person = doc.data().person;
+            el.innerHTML = `Heute eingetragener Hausdienst: <span class="badge ok">${person}</span>`;
+          } else {
+            el.innerHTML = `Heute: <span class="badge none">Noch niemand eingetragen</span>`;
+          }
+        }, err => {
+          console.error(err);
+          el.innerHTML = `<span class="sub">Fehler beim Laden (${err?.code || 'unbekannt'})</span>`;
+        });
     }
-    showTab(t || 'plan');
-  }
-  window.addEventListener('hashchange', pickTabFromQuery);
 
-  /* Datum & Refresh */
-  const todayStr=()=>new Date().toISOString().slice(0,10);
-  function scheduleMidnightRefresh(cb){
-    const now=new Date();
-    const mid=new Date(now.getFullYear(),now.getMonth(),now.getDate()+1,0,0,2);
-    setTimeout(()=>{ cb(); scheduleMidnightRefresh(cb); }, mid-now);
-  }
-
-  /* Auswahl */
-  let selectedPerson=null;
-
-  function renderPeopleRow(){
-    const wrap=document.getElementById('peopleRow');
-    wrap.innerHTML = CORE.map(p=>`<button class="pill ${selectedPerson===p?'active':''}" onclick="selectPerson('${p}')">${p}</button>`).join("");
-  }
-  function updateSelectionUI(){
-    const badge=document.getElementById('selBadge');
-    const has=!!selectedPerson;
-    badge.innerHTML = has ? `Auswahl: <b>${selectedPerson}</b>` : "Auswahl: –";
-    document.getElementById('btnToday').disabled = !has;
-    document.getElementById('btnTomorrow').disabled = !has;
-  }
-  function selectPerson(name){
-    if(!CORE.includes(name)) return;
-    selectedPerson = (selectedPerson===name ? null : name);
-    renderPeopleRow(); updateSelectionUI(); renderNextDays();
-  }
-
-  /* Setzen/Löschen */
-  async function setFor(day){
-    if(!selectedPerson) return alert("Bitte zuerst eine Person auswählen.");
-    if(!db) return alert("Offline – kann nicht speichern.");
-    const dt=new Date(); if(day==='tomorrow') dt.setDate(dt.getDate()+1);
-    const id=dt.toISOString().slice(0,10);
-    const ex=await db.collection("hausdienst").doc(id).get();
-    if(ex.exists && ex.data().person){ alert(`Bereits belegt: ${ex.data().person}. Bitte in der Übersicht austragen.`); return; }
-    await db.collection("hausdienst").doc(id).set({person:selectedPerson, updatedAt:Date.now()});
-    if(id===todayStr()) await updateTodayInfo();
-    await renderNextDays(); await renderHistory();
-  }
-  async function setForDate(date, person){
-    if(!db) return alert("Offline – kann nicht speichern.");
-    const ex=await db.collection("hausdienst").doc(date).get();
-    if(ex.exists && ex.data().person){ alert(`Bereits belegt: ${ex.data().person}`); return; }
-    await db.collection("hausdienst").doc(date).set({person, updatedAt:Date.now()});
-    if(date===todayStr()) await updateTodayInfo();
-    await renderNextDays(); await renderHistory();
-  }
-  async function clearSpecific(date){
-    if(!db) return alert("Offline – kann nicht löschen.");
-    await db.collection("hausdienst").doc(date).delete();
-    if(date===todayStr()) await updateTodayInfo();
-    await renderNextDays(); await renderHistory();
-  }
-
-  /* Heute + Liste */
-  async function updateTodayInfo(){
-    if(!db){ document.getElementById('todayInfo').textContent="Heute: (offline)"; return; }
-    const d=await db.collection("hausdienst").doc(todayStr()).get();
-    const person = d.exists ? d.data().person : null;
-    document.getElementById('todayInfo').innerHTML = person
-      ? `Heute eingetragener Hausdienst: <span class="badge ok">${person}</span>`
-      : `Heute: <span class="badge none">Noch niemand eingetragen</span>`;
-  }
-
-  async function renderNextDays(){
-    if(!db){ document.getElementById('nextList').textContent="Offline – keine Vorschau."; return; }
-    const out=[];
-    for(let i=0;i<14;i++){
-      const dt=new Date(); dt.setDate(dt.getDate()+i);
-      const id=dt.toISOString().slice(0,10);
-      const doc=await db.collection("hausdienst").doc(id).get();
-      out.push([id, doc.exists ? (doc.data().person||null) : null, i===0]);
-    }
-    const rows = out.map(([d,p,isToday])=>{
-      const action = p
-        ? `<button class="btn small danger" onclick="clearSpecific('${d}')">Austragen</button>`
-        : (selectedPerson ? `<button class="btn small" onclick="setForDate('${d}','${selectedPerson}')">Belegen mit Auswahl</button>` : `<span class="sub muted">frei</span>`);
-      return `<tr><td>${isToday?d+" (heute)":d}</td><td>${p ? p : (selectedPerson ? `<span class="muted">–</span>` : "—")}</td><td style="text-align:right">${action}</td></tr>`;
-    }).join("");
-    document.getElementById('nextList').innerHTML = `<table><thead><tr><th>Datum</th><th>Person</th><th>Aktion</th></tr></thead><tbody>${rows}</tbody></table>`;
-  }
-
-  /* Checkliste (Firestore) */
-  const CATS = [
-    {key:"all",    label:"Übersicht"},
-    {key:"morgens",label:"Morgens"},
-    {key:"tag",    label:"Im Laufe des Tages"},
-    {key:"abend",  label:"Bevor man geht"},
-  ];
-  let showCat = localStorage.getItem("hausdienst_cat") || "all";
-  let showMode= localStorage.getItem("hausdienst_filter_mode") || "open";
-
-  const CHECKED_KEY="hausdienst_checked_"+todayStr();
-  let checked=JSON.parse(localStorage.getItem(CHECKED_KEY)||"{}");
-  let tasksCache=[];
-
-  function saveChecked(){ localStorage.setItem(CHECKED_KEY,JSON.stringify(checked)); }
-  function setMode(m){ showMode=m; localStorage.setItem("hausdienst_filter_mode",m); updateFilterButtons(); renderTasks(); }
-  function setCat(c){
-    showCat=c; localStorage.setItem("hausdienst_cat",c);
-    const sel=document.getElementById('newTaskCat'); if(sel && c!=="all") sel.value=c;
-    updateCatTabs(); updateFilterButtons(); renderTasks();
-  }
-  function updateCatTabs(){
-    document.getElementById("catTabs").innerHTML = CATS.map(c=>
-      `<button class="tabbtn ${c.key===showCat?'active':''}" onclick="setCat('${c.key}')">${c.label}</button>`
-    ).join("");
-  }
-  function labelOf(cat){ const f=CATS.find(c=>c.key===cat); return f?f.label:cat; }
-  function escapeHtml(s){ return (s||"").replace(/[&<>"']/g, m=>({ "&":"&amp;","<":"&lt;"," >":"&gt;","\"":"&quot;","'":"&#039;" }[m])); }
-  function calcCounts(list){ return { open:list.filter(t=>!checked[t.id]).length, done:list.filter(t=>checked[t.id]).length, all:list.length }; }
-  function updateFilterButtons(){
-    const inCat = (showCat==="all") ? tasksCache : tasksCache.filter(t=>t.cat===showCat);
-    const cnt = calcCounts(inCat);
-    const fOpen=document.getElementById("fOpen"), fDone=document.getElementById("fDone"), fAll=document.getElementById("fAll");
-    fOpen.textContent=`Offen (${cnt.open})`; fDone.textContent=`Erledigt (${cnt.done})`; fAll.textContent=`Alle (${cnt.all})`;
-    fOpen.className="btn small "+(showMode==="open"?"secondary":"ghost");
-    fDone.className="btn small "+(showMode==="done"?"secondary":"ghost");
-    fAll.className ="btn small "+(showMode==="all" ?"secondary":"ghost");
-  }
-
-  async function addTask(){
-    const txt=document.getElementById('newTask').value.trim(); if(!txt) return;
-    const sel=document.getElementById('newTaskCat'); const cat= sel ? (sel.value||"morgens") : "morgens";
-    if(!db) return alert("Offline – kann nicht speichern.");
-    await db.collection("checklistTasks").add({text:txt, cat, createdAt:Date.now()});
-    document.getElementById('newTask').value="";
-  }
-  async function delTask(id){
-    if(!confirm("Aufgabe löschen?")) return;
-    if(!db) return alert("Offline – kann nicht löschen.");
-    await db.collection("checklistTasks").doc(id).delete();
-    delete checked[id]; saveChecked();
-  }
-  function toggleTask(id){ checked[id]=!checked[id]; saveChecked(); renderTasks(); }
-
-  function renderGroup(catKey, label){
-    const base = tasksCache.filter(t=>t.cat===catKey)
-      .sort((a,b)=> (a.createdAt||0)-(b.createdAt||0) || (a.text||"").localeCompare(b.text||""));
-    let list = base;
-    if(showMode==="open") list = base.filter(t=>!checked[t.id]);
-    else if(showMode==="done") list = base.filter(t=>checked[t.id]);
-    const rows = list.map(t=>`
-      <tr>
-        <td style="text-align:left">${escapeHtml(t.text||"")}</td>
-        <td>${checked[t.id] ? "✅" : "⬜️"}</td>
-        <td>
-          <button class="btn small ${checked[t.id]?'warning':''}" onclick="toggleTask('${t.id}')">${checked[t.id] ? "↩️ rückgängig" : "✅ erledigt"}</button>
-          <button class="btn small ghost" style="margin-left:6px" onclick="delTask('${t.id}')">Löschen</button>
-        </td>
-      </tr>
-    `).join("");
-    const head = `<thead><tr><th style="text-align:left">Aufgabe</th><th>Status</th><th>Aktion</th></tr></thead>`;
-    const body = `<tbody>${rows || `<tr><td colspan="3">Keine Aufgaben in „${label}“.</td></tr>`}</tbody>`;
-    return `<h2 class="groupTitle">${label}</h2><table>${head}${body}</table>`;
-  }
-
-  function renderTasks(snap){
-    if(snap && snap.forEach){ tasksCache=[]; snap.forEach(d=>tasksCache.push({id:d.id, ...d.data()})); }
-    updateFilterButtons();
-    document.getElementById("list").innerHTML = (showCat==="all")
-      ? renderGroup("morgens","Morgens")+renderGroup("tag","Im Laufe des Tages")+renderGroup("abend","Bevor man geht")
-      : renderGroup(showCat, labelOf(showCat));
-  }
-
-  function todayString(){ return new Date().toISOString().slice(0,10); }
-  function dateDaysAgo(n){ const d=new Date(); d.setDate(d.getDate()-n); return d.toISOString().slice(0,10); }
-  async function renderHistory(){
-    if(!db){ document.getElementById('histList').textContent="Offline – keine Historie."; return; }
-    try{
-      const snap=await db.collection("hausdienst").get();
-      const all=[]; snap.forEach(doc=>all.push({id:doc.id, person:(doc.data().person||null)}));
-      const from=dateDaysAgo(30);
-      const rows=all
-        .filter(x=>x.id>=from && x.id<=todayString())
-        .sort((a,b)=>b.id.localeCompare(a.id))
-        .map(x=>`<tr><td>${x.id}</td><td>${x.person || "—"}</td></tr>`).join("");
-      document.getElementById('histList').innerHTML = `<table><thead><tr><th>Datum</th><th>Person</th></tr></thead><tbody>${rows || `<tr><td colspan="2">Keine Einträge.</td></tr>`}</tbody></table>`;
-    }catch(_){
-      document.getElementById('histList').innerHTML = `<div class="sub">Fehler beim Laden.</div>`;
-    }
-  }
-
-  async function init(){
-    renderPeopleRow(); updateSelectionUI();
-    await updateTodayInfo(); await renderNextDays(); await renderHistory();
-    scheduleMidnightRefresh(async ()=>{ await updateTodayInfo(); await renderNextDays(); await renderHistory(); });
-
-    // Checkliste Defaults + Live
-    updateCatTabs();
-    const sel=document.getElementById('newTaskCat'); sel.value="morgens";
-    if(db){
-      const s=await db.collection("checklistTasks").limit(1).get();
-      if(s.empty){
-        const defs = [
-          {cat:"morgens", text:"Briefkasten leeren"},
-          {cat:"morgens", text:"Spülmaschine ausräumen"},
-          {cat:"morgens", text:"Toilettenpapier & Zewa auffüllen"},
-          {cat:"morgens", text:"Getränke auffüllen"},
-          {cat:"morgens", text:"Staubsauger Wasser checken"},
-          {cat:"tag",     text:"Wäsche an machen & aufhängen"},
-          {cat:"tag",     text:"Pakete entgegennehmen"},
-          {cat:"tag",     text:"Für Grundordnung sorgen"},
-          {cat:"abend",   text:"Oberflächen in der Küche + Geräte wischen"},
-          {cat:"abend",   text:"Müll rausbringen & mitnehmen"},
-        ];
-        const batch=db.batch(); defs.forEach(d=>batch.set(db.collection("checklistTasks").doc(),{...d,createdAt:Date.now()}));
-        await batch.commit();
+    // === Nächste 14 Tage anzeigen (live) ===
+    async function renderNextDays() {
+      const el = document.getElementById('nextList');
+      try {
+        const out = [];
+        for (let i = 0; i < 14; i++) {
+          const dt = new Date(); dt.setDate(dt.getDate() + i);
+          const id = dt.toISOString().slice(0, 10);
+          const doc = await db.collection("hausdienst").doc(id).get();
+          out.push([id, doc.exists ? (doc.data().person || null) : null, i === 0]);
+        }
+        el.innerHTML = "<ul>" + out.map(([id, person, isToday]) =>
+          `<li>${isToday ? "<b>" + id + " (heute)</b>" : id}: ${person || "frei"}</li>`
+        ).join("") + "</ul>";
+      } catch (err) {
+        console.error(err);
+        el.innerHTML = `<div class="sub">Fehler beim Laden (${err?.code || 'unbekannt'})</div>`;
       }
-      db.collection("checklistTasks").onSnapshot(renderTasks, ()=>renderTasks());
-    }else{
-      document.getElementById("list").innerHTML = `<div class="sub">Offline – Aufgaben können nicht geladen werden.</div>`;
     }
 
-    // Tab auswählen
-    pickTabFromQuery();
-  }
+    function listenNextDays() {
+      // Wir hören auf Änderungen an allen hausdienst-Dokumenten der nächsten 14 Tage
+      const ids = [];
+      for (let i = 0; i < 14; i++) {
+        const dt = new Date(); dt.setDate(dt.getDate() + i);
+        ids.push(dt.toISOString().slice(0, 10));
+      }
+      ids.forEach(id => {
+        db.collection("hausdienst").doc(id).onSnapshot(() => {
+          renderNextDays(); // neu rendern, wenn sich etwas ändert
+        });
+      });
+    }
 
-  if('serviceWorker' in navigator){ navigator.serviceWorker.register('./sw-v19.js?v=19', {scope:'./'}).catch(()=>{}); }
-  init();
-</script>
+    // === Checkliste (live) ===
+    function listenChecklist() {
+      const el = document.getElementById('checklist');
+      db.collection("checklistTasks").onSnapshot(snapshot => {
+        if (snapshot.empty) {
+          el.textContent = "Keine Aufgaben.";
+          return;
+        }
+        const items = snapshot.docs.map(doc => {
+          const d = doc.data();
+          return `<li>[${d.cat}] ${d.text} ${d.done ? "✔️" : ""}</li>`;
+        });
+        el.innerHTML = "<ul>" + items.join("") + "</ul>";
+      }, err => {
+        console.error(err);
+        el.innerHTML = `<div class="sub">Fehler beim Laden (${err?.code || 'unbekannt'})</div>`;
+      });
+    }
+
+    function init() {
+      listenTodayInfo();
+      renderNextDays();
+      listenNextDays();
+      listenChecklist();
+    }
+  </script>
 </body>
 </html>
