@@ -269,8 +269,11 @@
     }
   }
 
-  if('serviceWorker' in navigator){ navigator.serviceWorker.register('./sw.js').catch(()=>{}); }
-  window.onload=()=>{ loadAllOnce(); subscribeRealtime(); };
+<script>
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('./sw.js?v=20', { scope: './' })
+      .catch(() => {});
+  }
 </script>
 </body>
 </html>
