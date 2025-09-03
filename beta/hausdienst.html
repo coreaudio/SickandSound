@@ -131,7 +131,7 @@
     </a>
     <a class="tab" href="hausdienst.html#plan" style="display:none"></a><!-- Reserve -->
     <a class="tab" href="rangliste.html">
-      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M7 17H3V7h4v10zm7 0h-4V3h4v14zm7 0h-4v-8h4v8z"/></svg>
+      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M7 17H3V7h4v10zm7 0h-4V3h4v14zm7 0h-4v-8h4 v8z"/></svg>
       <span>Rang</span>
     </a>
     <a class="tab" href="badges.html">
@@ -151,7 +151,17 @@
 <script src="https://www.gstatic.com/firebasejs/12.0.0/firebase-firestore-compat.js"></script>
 <script>
   const CORE=["Chris","Daniel","Elmi","Florian","Joel","Kevin","Kiste","Marco","Meli","Simon"];
-  const firebaseConfig={apiKey:"AIzaSyBFHjGXI5yHyK0DyupS0bnTVAqlu6lvpNw",authDomain:"sickandsound-e9704.firebaseapp.com",projectId:"sickandsound-e9704",storageBucket:"sickandsound-e9704.firebasestorage.app",messagingSenderId:"248197359659",appId:"1:248197359659:web:a8777cbed3f83d6b1ca26e",measurementId:"G-62LH8V7S2E"};
+
+  /* ✅ Richtiges Firebase-Config für sickandsound-8a15f */
+  const firebaseConfig = {
+    apiKey: "AIzaSyBtZsr4QPHQbvO2qae6MoBoxJF5dNP2vh0",
+    authDomain: "sickandsound-8a15f.firebaseapp.com",
+    projectId: "sickandsound-8a15f",
+    storageBucket: "sickandsound-8a15f.appspot.com",
+    messagingSenderId: "32138160959",
+    appId: "1:32138160959:web:a65c7f4ad7d44e757fc18a"
+  };
+
   let db=null;
   try{
     if(window.firebase){
@@ -159,7 +169,7 @@
       try{firebase.analytics();}catch(_){}
       db=firebase.firestore();
 
-      /* 🛜 Long-Polling für mobile Netze (Step 2, Teil 1) */
+      /* 🛜 Long-Polling für mobile Netze */
       try { db.settings({ experimentalAutoDetectLongPolling:true, merge:true }); } catch(_) {}
 
       document.getElementById('dot').classList.add('statusok');
@@ -170,19 +180,18 @@
     document.getElementById('connTxt').textContent='Offline – Firebase konnte nicht initialisiert werden.';
   }
 
-  /* 🔎 Diagnose-Funktion (Step 2, Teil 2) */
+  /* 🔎 Diagnose – zeigt sofort Projekt & Zugriff */
   async function diagFirestore(){
     const el = document.getElementById('todayInfo');
-    el.textContent = 'Teste Firestore…';
+    el.textContent = 'Teste Firestore… (Project: ' + (firebase.app()?.options?.projectId||'?') + ')';
     try {
       const test = await db.collection('hausdienst').limit(1).get();
-      el.textContent = 'Firestore OK (' + test.size + ' Docs gefunden)';
+      el.textContent = 'Firestore OK (' + test.size + ' Docs gefunden) – Project: ' + firebase.app().options.projectId;
     } catch(e) {
-      el.textContent = 'Firestore-Fehler: ' + (e.code || e.message);
+      el.textContent = 'Firestore-Fehler: ' + (e.code || e.message) + ' – Project: ' + (firebase.app()?.options?.projectId||'?');
       console.error('Diag:', e);
     }
   }
-  // einmalig nach Init ausführen
   diagFirestore();
 
   /* Tabs */
@@ -407,10 +416,10 @@
   init();
 </script>
 
-<!-- ✅ Service Worker Registrierung (neu) -->
+<!-- ✅ Service Worker Registrierung -->
 <script>
   if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('./sw.js?v=20', { scope: './' })
+    navigator.serviceWorker.register('./sw.js?v=21', { scope: './' })
       .catch(() => {});
   }
 </script>
