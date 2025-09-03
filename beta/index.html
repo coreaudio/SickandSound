@@ -475,7 +475,10 @@ function confirmAddDrink(){
 }
 
 /* SW */
-if('serviceWorker' in navigator){ navigator.serviceWorker.register('./sw-v19.js?v=19', {scope:'./'}).catch(()=>{}); }
+if('serviceWorker' in navigator){
+  navigator.serviceWorker.register('./sw.js?v=20', {scope:'./'}).catch(()=>{});
+}
+
 
 window.onload=loadState;
 window.onresize=()=>requestAnimationFrame(adjustToOnePage);
