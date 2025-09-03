@@ -5,6 +5,7 @@
   <title>Hausdienst</title>
   <style>
     body { font-family: sans-serif; margin: 1rem; }
+    h1 { margin-bottom: 0.5rem; }
     .badge { padding: 2px 6px; border-radius: 4px; }
     .ok { background: #cfc; }
     .none { background: #fcc; }
@@ -29,26 +30,33 @@
   <script src="https://www.gstatic.com/firebasejs/12.0.0/firebase-firestore-compat.js"></script>
 
   <script>
-    // === Firebase Config ===
+    // === Dein Firebase Projekt ===
     const firebaseConfig = {
-      apiKey: "DEIN_KEY",
-      authDomain: "DEIN_PROJEKT.firebaseapp.com",
-      projectId: "DEIN_PROJEKT",
-      storageBucket: "DEIN_PROJEKT.appspot.com",
-      messagingSenderId: "DEIN_SENDER_ID",
-      appId: "DEINE_APP_ID"
+      apiKey: "AIzaSyBtpzar4QPH0y02qaedM0BxxJ5FdNP2vhE",
+      authDomain: "sickandsound-8a15f.firebaseapp.com",
+      projectId: "sickandsound-8a15f",
+      storageBucket: "sickandsound-8a15f.appspot.com",
+      messagingSenderId: "32138160959",
+      appId: "1:32138160959:web:a65c7f4ad7d44e757fc18a"
     };
 
     let db = null;
-
     try {
       firebase.initializeApp(firebaseConfig);
+
+      // hilft bei blockierten Websocket-Verbindungen (z. B. Adblocker/Netzwerk)
+      firebase.firestore().settings({
+        experimentalAutoDetectLongPolling: true,
+        useFetchStreams: false
+      });
+
       db = firebase.firestore();
       document.getElementById('connTxt').textContent = 'Online (Firestore verbunden)';
       init();
     } catch (e) {
       console.error(e);
-      document.getElementById('connTxt').textContent = 'Offline – Firebase konnte nicht initialisiert werden.';
+      document.getElementById('connTxt').textContent =
+        'Offline – Firebase konnte nicht initialisiert werden.';
     }
 
     function todayStr() {
@@ -56,16 +64,17 @@
       return dt.toISOString().slice(0, 10);
     }
 
-    // === Heute anzeigen (live) ===
+    // === Heute (live) ===
     function listenTodayInfo() {
       const el = document.getElementById('todayInfo');
       db.collection("hausdienst").doc(todayStr())
         .onSnapshot(doc => {
           if (doc.exists) {
-            const person = doc.data().person;
-            el.innerHTML = `Heute eingetragener Hausdienst: <span class="badge ok">${person}</span>`;
+            el.innerHTML =
+              `Heute eingetragener Hausdienst: <span class="badge ok">${doc.data().person}</span>`;
           } else {
-            el.innerHTML = `Heute: <span class="badge none">Noch niemand eingetragen</span>`;
+            el.innerHTML =
+              `Heute: <span class="badge none">Noch niemand eingetragen</span>`;
           }
         }, err => {
           console.error(err);
@@ -73,7 +82,7 @@
         });
     }
 
-    // === Nächste 14 Tage anzeigen (live) ===
+    // === Nächste 14 Tage ===
     async function renderNextDays() {
       const el = document.getElementById('nextList');
       try {
@@ -94,7 +103,6 @@
     }
 
     function listenNextDays() {
-      // Wir hören auf Änderungen an allen hausdienst-Dokumenten der nächsten 14 Tage
       const ids = [];
       for (let i = 0; i < 14; i++) {
         const dt = new Date(); dt.setDate(dt.getDate() + i);
@@ -102,7 +110,7 @@
       }
       ids.forEach(id => {
         db.collection("hausdienst").doc(id).onSnapshot(() => {
-          renderNextDays(); // neu rendern, wenn sich etwas ändert
+          renderNextDays();
         });
       });
     }
