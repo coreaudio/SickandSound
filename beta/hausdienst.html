@@ -3,13 +3,16 @@
 <head>
   <meta charset="UTF-8" />
   <title>Hausdienst</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <style>
-    body { font-family: sans-serif; margin: 1rem; }
+    body { font-family: sans-serif; margin: 1rem; background: #fafafa; }
     h1 { margin-bottom: 0.5rem; }
+    h2 { margin-top: 1.5rem; }
     .badge { padding: 2px 6px; border-radius: 4px; }
     .ok { background: #cfc; }
     .none { background: #fcc; }
     .sub { color: #666; font-size: 0.9em; }
+    ul { padding-left: 1.2rem; }
   </style>
 </head>
 <body>
@@ -44,14 +47,14 @@
     try {
       firebase.initializeApp(firebaseConfig);
 
-      // hilft bei blockierten Websocket-Verbindungen (z. B. Adblocker/Netzwerk)
       firebase.firestore().settings({
         experimentalAutoDetectLongPolling: true,
         useFetchStreams: false
       });
 
       db = firebase.firestore();
-      document.getElementById('connTxt').textContent = 'Online (Firestore verbunden)';
+      document.getElementById('connTxt').textContent =
+        'Online (Firestore verbunden)';
       init();
     } catch (e) {
       console.error(e);
@@ -59,9 +62,22 @@
         'Offline – Firebase konnte nicht initialisiert werden.';
     }
 
+    // === Datumshilfen (lokal, nicht UTC) ===
     function todayStr() {
-      const dt = new Date();
-      return dt.toISOString().slice(0, 10);
+      const d = new Date();
+      const y = d.getFullYear();
+      const m = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      return `${y}-${m}-${day}`;
+    }
+
+    function ymdLocal(offsetDays = 0) {
+      const d = new Date();
+      d.setDate(d.getDate() + offsetDays);
+      const y = d.getFullYear();
+      const m = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      return `${y}-${m}-${day}`;
     }
 
     // === Heute (live) ===
@@ -78,7 +94,8 @@
           }
         }, err => {
           console.error(err);
-          el.innerHTML = `<span class="sub">Fehler beim Laden (${err?.code || 'unbekannt'})</span>`;
+          el.innerHTML =
+            `<span class="sub">Fehler beim Laden (${err?.code || 'unbekannt'})</span>`;
         });
     }
 
@@ -88,8 +105,7 @@
       try {
         const out = [];
         for (let i = 0; i < 14; i++) {
-          const dt = new Date(); dt.setDate(dt.getDate() + i);
-          const id = dt.toISOString().slice(0, 10);
+          const id = ymdLocal(i);
           const doc = await db.collection("hausdienst").doc(id).get();
           out.push([id, doc.exists ? (doc.data().person || null) : null, i === 0]);
         }
@@ -98,15 +114,15 @@
         ).join("") + "</ul>";
       } catch (err) {
         console.error(err);
-        el.innerHTML = `<div class="sub">Fehler beim Laden (${err?.code || 'unbekannt'})</div>`;
+        el.innerHTML =
+          `<div class="sub">Fehler beim Laden (${err?.code || 'unbekannt'})</div>`;
       }
     }
 
     function listenNextDays() {
       const ids = [];
       for (let i = 0; i < 14; i++) {
-        const dt = new Date(); dt.setDate(dt.getDate() + i);
-        ids.push(dt.toISOString().slice(0, 10));
+        ids.push(ymdLocal(i));
       }
       ids.forEach(id => {
         db.collection("hausdienst").doc(id).onSnapshot(() => {
@@ -130,10 +146,12 @@
         el.innerHTML = "<ul>" + items.join("") + "</ul>";
       }, err => {
         console.error(err);
-        el.innerHTML = `<div class="sub">Fehler beim Laden (${err?.code || 'unbekannt'})</div>`;
+        el.innerHTML =
+          `<div class="sub">Fehler beim Laden (${err?.code || 'unbekannt'})</div>`;
       });
     }
 
+    // === Start ===
     function init() {
       listenTodayInfo();
       renderNextDays();
