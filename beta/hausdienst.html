@@ -131,7 +131,7 @@
     </a>
     <a class="tab" href="hausdienst.html#plan" style="display:none"></a><!-- Reserve -->
     <a class="tab" href="rangliste.html">
-      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M7 17H3V7h4v10zm7 0h-4V3h4v14zm7 0h-4v-8h4 v8z"/></svg>
+      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M7 17H3V7h4v10zm7 0h-4V3h4v14zm7 0h-4v-8h4v8z"/></svg>
       <span>Rang</span>
     </a>
     <a class="tab" href="badges.html">
@@ -262,11 +262,12 @@
   async function setForDate(date, person){
     if(!db) return alert("Offline – kann nicht speichern.");
     const ex=await db.collection("hausdienst").doc(date).get();
-    if(ex.exists && ex.data().person){ alert(`Bereits belegt: ${ex.data().person}`); return; }
+    if(exists(ex)){ alert(`Bereits belegt: ${ex.data().person}`); return; }
     await db.collection("hausdienst").doc(date).set({person, updatedAt:Date.now()});
     if(date===todayStr()) await updateTodayInfo();
     await renderNextDays(); await renderHistory();
   }
+  function exists(d){ return d && d.exists; }
   async function clearSpecific(date){
     if(!db) return alert("Offline – kann nicht löschen.");
     await db.collection("hausdienst").doc(date).delete();
@@ -278,7 +279,7 @@
   async function updateTodayInfo(){
     if(!db){ document.getElementById('todayInfo').textContent="Heute: (offline)"; return; }
     const d=await db.collection("hausdienst").doc(todayStr()).get();
-    const person = d.exists ? d.data().person : null;
+    const person = exists(d) ? d.data().person : null;
     document.getElementById('todayInfo').innerHTML = person
       ? `Heute eingetragener Hausdienst: <span class="badge ok">${person}</span>`
       : `Heute: <span class="badge none">Noch niemand eingetragen</span>`;
@@ -291,7 +292,7 @@
       const dt=new Date(); dt.setDate(dt.getDate()+i);
       const id=dt.toISOString().slice(0,10);
       const doc=await db.collection("hausdienst").doc(id).get();
-      out.push([id, doc.exists ? (doc.data().person||null) : null, i===0]);
+      out.push([id, exists(doc) ? (doc.data().person||null) : null, i===0]);
     }
     const rows = out.map(([d,p,isToday])=>{
       const action = p
@@ -340,7 +341,7 @@
   function toggleCheck(id){
     checked[id] = !checked[id];
     localStorage.setItem(CHECKED_KEY, JSON.stringify(checked));
-    renderTasks(); // re-render for filters
+    renderTasks(); // re-render für Filter
   }
 
   async function addTask(){
@@ -351,6 +352,13 @@
     if(!txt) return;
     await db.collection('hausdienst_tasks').add({ text: txt, cat, createdAt: Date.now() });
     inp.value='';
+    await renderTasks(true);
+  }
+
+  async function deleteTask(id){
+    if(!db) return alert("Offline – kann nicht löschen.");
+    if(!confirm("Willst du diese Aufgabe wirklich löschen?")) return;
+    await db.collection('hausdienst_tasks').doc(id).delete();
     await renderTasks(true);
   }
 
@@ -382,9 +390,10 @@
       return `<tr>
         <td style="width:32px"><input type="checkbox" ${isDone?'checked':''} onclick="toggleCheck('${t.id}')"></td>
         <td>${t.text} ${t.cat!=='all'?`<span class="badge">${t.cat}</span>`:''}</td>
+        <td style="text-align:right"><button class="btn small danger" onclick="deleteTask('${t.id}')">Löschen</button></td>
       </tr>`;
     }).join('');
-    list.innerHTML = `<table><thead><tr><th></th><th>Aufgabe</th></tr></thead><tbody>${rows}</tbody></table>`;
+    list.innerHTML = `<table><thead><tr><th></th><th>Aufgabe</th><th>Aktion</th></tr></thead><tbody>${rows}</tbody></table>`;
   }
 
   /* Historie (letzte 30 Tage) */
@@ -396,7 +405,7 @@
       const dt=new Date(); dt.setDate(dt.getDate()-i);
       const id=dt.toISOString().slice(0,10);
       const doc=await db.collection("hausdienst").doc(id).get();
-      const person = doc.exists ? (doc.data().person||'—') : '—';
+      const person = exists(doc) ? (doc.data().person||'—') : '—';
       rows.push(`<tr><td>${id}</td><td>${person}</td></tr>`);
     }
     el.innerHTML = `<table><thead><tr><th>Datum</th><th>Person</th></tr></thead><tbody>${rows.join('')}</tbody></table>`;
