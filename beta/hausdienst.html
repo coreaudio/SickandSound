@@ -2,220 +2,287 @@
 <html lang="de">
 <head>
   <meta charset="UTF-8" />
-  <title>Hausdienst Rangliste</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Hausdienst</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#0b0e14" />
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="stylesheet" href="style.css" />
   <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;800&display=swap" rel="stylesheet" />
   <style>
-    body { background:#0f1117; color:#f1f1f1; font-family:'Orbitron',sans-serif; margin:20px; }
-    h2 { text-align:center; }
-    h3 { margin-top:30px; }
-    table { width:100%; border-collapse:collapse; background:#1a1d24; margin-bottom:20px; }
-    th, td { padding:8px; text-align:center; border-bottom:1px solid #2a2d34; }
-    th { font-size:1em; font-weight:600; }
-    .gold { color:gold; } .silver { color:silver; } .bronze { color:#cd7f32; }
-    .footer { margin-top:20px; display:flex; flex-wrap:wrap; justify-content:center; gap:15px; }
-    .btn { padding:10px 16px; border:none; border-radius:8px; cursor:pointer; font-weight:bold; }
-    .select { background:#00c9a7; color:#000; }
-    .undo   { background:#ffa500; color:#000; }
-    .reset  { background:#ff4444; color:#fff; }
-    .back   { background:#444;   color:#fff; }
-    .hausdienstAktuell { background:#00c9a7; color:#000; font-weight:bold; border-radius:6px; padding:2px 6px; }
+    .tabs { display:flex; gap:8px; margin-top:8px; flex-wrap:wrap; }
+    .tabs .tabbtn { padding:8px 12px; border-radius:999px; background:#1c2130; color:#e6e8ef; border:1px solid #2a3042; }
+    .tabs .tabbtn.active { background:linear-gradient(135deg,#6ee7ff,#a78bfa); color:#0b0e14; border-color:transparent; font-weight:800; }
+    .panel { display:none; }
+    .panel.active { display:block; }
+
+    .people-row { display:flex; gap:8px; overflow-x:auto; padding-bottom:4px; scrollbar-width:thin; }
+    .people-row .pill { flex:0 0 auto; padding:8px 12px; border-radius:999px; background:#1c2130; border:1px solid #2a3042; color:#e6e8ef; }
+    .people-row .pill.active { background:linear-gradient(135deg,#6ee7ff,#a78bfa); color:#0b0e14; border-color:transparent; font-weight:800; }
+
+    .row { display:flex; gap:10px; flex-wrap:wrap; align-items:center; }
+    .badge.big { font-size:14px; padding:6px 10px; }
+    .muted { opacity:.7 }
+
+    .segmented { display:flex; gap:8px; flex-wrap:wrap; }
+    .segmented .tabbtn { padding:8px 12px; border-radius:999px; background:#1c2130; color:#e6e8ef; border:1px solid #2a3042; }
+    .segmented .tabbtn.active { background:linear-gradient(135deg,#6ee7ff,#a78bfa); color:#0b0e14; border-color:transparent; font-weight:800; }
+
+    .toolbar { display:flex; gap:10px; flex-wrap:wrap; align-items:center; margin-top:10px; }
+    .toolbar input, .toolbar select { flex:1 1 auto; min-width:160px; }
+    .groupTitle { font-weight:800; letter-spacing:.2px; margin:6px 0 6px; }
+
+    .statusdot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px;background:#ffadad}
+    .statusok{background:#7CFC9A}
   </style>
 </head>
 <body>
-  <h2>🏆 Hausdienst Rangliste</h2>
-  <div id="hausdienstTable"></div>
+<div class="app">
+  <header class="appbar">
+    <div class="app-title"><div class="brand-dot"></div><h1>Hausdienst</h1></div>
+    <div class="appbar-actions">
+      <a class="btn small dark" href="index.html" title="Zur Liste">🧾</a>
+    </div>
+  </header>
 
-  <h3>📅 Monatsübersicht</h3>
-  <div id="monthlyTable"></div>
+  <main class="content">
+    <div class="card">
+      <div class="section-title">Heute</div>
+      <div id="todayInfo" class="sub">Lade…</div>
+      <div class="tabs" style="margin-top:10px">
+        <button id="tabPlan" class="tabbtn active" onclick="showTab('plan')">Planen</button>
+        <button id="tabCheck" class="tabbtn" onclick="showTab('check')">Checkliste</button>
+        <button id="tabHist" class="tabbtn" onclick="showTab('history')">Historie</button>
+      </div>
+      <div class="sub" id="connInfo" style="margin-top:6px"><span class="statusdot" id="dot"></span><span id="connTxt">Verbinde…</span></div>
+    </div>
 
-  <div class="footer">
-    <button class="btn select" onclick="setRandomHausdienst()">🎲 Zufällig auswählen</button>
-    <button class="btn undo"   onclick="undoHausdienst()">↩ Rückgängig</button>
-    <button class="btn reset"  onclick="resetHausdienst()">♻ Reset</button>
-    <button class="btn back"   onclick="window.location='index.html'">⬅ Zurück</button>
-  </div>
+    <!-- Panel: Planen -->
+    <div id="panelPlan" class="panel active">
+      <div class="card">
+        <div class="section-title">Hausdienst planen</div>
+        <div class="row" style="margin-top:6px">
+          <button id="btnToday" class="btn small" onclick="setFor('today')" disabled>Heute belegen</button>
+          <button id="btnTomorrow" class="btn small" onclick="setFor('tomorrow')" disabled>Morgen belegen</button>
+          <span id="selBadge" class="badge big">Auswahl: –</span>
+        </div>
+      </div>
 
-  <!-- Firebase-Compat-SDKs -->
-  <script src="https://www.gstatic.com/firebasejs/12.0.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/12.0.0/firebase-analytics-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/12.0.0/firebase-firestore-compat.js"></script>
+      <div class="card">
+        <div class="section-title">Person auswählen</div>
+        <div id="peopleRow" class="people-row" style="margin-top:8px"></div>
+        <div class="sub muted" style="margin-top:6px">
+          Tipp: Person wählen, dann „Heute/Morgen“ oder unten in der Liste „Belegen“ tippen.
+        </div>
+      </div>
 
-  <script>
-    // Firebase initialisieren
-    const firebaseConfig = {
-      apiKey: "AIzaSyBFHjGXI5yHyK0DyupS0bnTVAqlu6lvpNw",
-      authDomain: "sickandsound-e9704.firebaseapp.com",
-      projectId: "sickandsound-e9704",
-      storageBucket: "sickandsound-e9704.firebasestorage.app",
-      messagingSenderId: "248197359659",
-      appId: "1:248197359659:web:a8777cbed3f83d6b1ca26e",
-      measurementId: "G-62LH8V7S2E"
-    };
-    firebase.initializeApp(firebaseConfig);
-    firebase.analytics();
-    const db = firebase.firestore();
+      <div class="card table-wrap">
+        <div class="section-title">Geplante Hausdienste (nächste 14 Tage)</div>
+        <div id="nextList" class="sub">Lade…</div>
+      </div>
+    </div>
 
-    // Keys & Default-State
-    const hausdienstKey = "sick_sound_hausdienst";
-    const peopleKey     = "sick_sound_people";
-    let hausdienst = { current:null, stats:{}, history:[] };
-    let people     = [];
+    <!-- Panel: Checkliste -->
+    <div id="panelCheck" class="panel">
+      <div class="card">
+        <div class="section-title">Checkliste</div>
+        <div class="sub">Aufgaben sind dauerhaft gespeichert · Haken gilt nur heute</div>
 
-    // Hilfs-Array deutscher Monatsnamen
-    const monthNames = [
-      "Januar","Februar","März","April","Mai","Juni",
-      "Juli","August","September","Oktober","November","Dezember"
-    ];
+        <div id="catTabs" class="segmented" style="margin-top:10px"></div>
 
-    // State laden (Firestore → Fallback localStorage)
-    async function loadState() {
-      try {
-        const snap = await db.collection("state").doc("global").get();
-        if (snap.exists) {
-          const s = snap.data();
-          hausdienst = s.hausdienst || hausdienst;
-          people     = s.people     || JSON.parse(localStorage.getItem(peopleKey)) || [];
-        } else {
-          people = JSON.parse(localStorage.getItem(peopleKey)) || [];
-        }
-      } catch (e) {
-        console.warn("Firestore laden fehlgeschlagen, nutze localStorage:", e);
-        hausdienst = JSON.parse(localStorage.getItem(hausdienstKey)) || hausdienst;
-        people     = JSON.parse(localStorage.getItem(peopleKey))     || [];
-      }
-      buildHausdienstTable();
-      buildMonthlySummary();
+        <div class="toolbar">
+          <input id="newTask" placeholder="Neue Aufgabe hinzufügen…">
+          <select id="newTaskCat" title="Kategorie">
+            <option value="morgens">Morgens</option>
+            <option value="tag">Im Laufe des Tages</option>
+            <option value="abend">Bevor man geht</option>
+          </select>
+          <button class="btn" onclick="addTask()">Hinzufügen</button>
+        </div>
+
+        <div id="filters" style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px">
+          <button id="fOpen" class="btn small secondary" onclick="setMode('open')">Offen</button>
+          <button id="fDone" class="btn small ghost" onclick="setMode('done')">Erledigt</button>
+          <button id="fAll"  class="btn small ghost" onclick="setMode('all')">Alle</button>
+        </div>
+      </div>
+
+      <div class="card table-wrap" id="list"><div class="sub">Lade Aufgaben…</div></div>
+    </div>
+
+    <!-- Panel: Historie -->
+    <div id="panelHist" class="panel">
+      <div class="card table-wrap">
+        <div class="section-title">Hausdienst – Historie (letzte 30 Tage)</div>
+        <div id="histList" class="sub">Lade…</div>
+      </div>
+    </div>
+  </main>
+
+  <nav class="bottomnav">
+    <a class="tab" href="index.html">
+      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M4 6h16v2H4zM4 11h16v2H4zM4 16h10v2H4z"/></svg>
+      <span>Liste</span>
+    </a>
+    <a class="tab active" href="hausdienst.html">
+      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 3l9 7-1.2 1.6L18 10.1V20h-5v-6H11v6H6v-9.9L4.2 11.6 3 10z"/></svg>
+      <span>Hausdienst</span>
+    </a>
+    <a class="tab" href="hausdienst.html#plan" style="display:none"></a><!-- Reserve -->
+    <a class="tab" href="rangliste.html">
+      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M7 17H3V7h4v10zm7 0h-4V3h4v14zm7 0h-4v-8h4v8z"/></svg>
+      <span>Rang</span>
+    </a>
+    <a class="tab" href="badges.html">
+      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 1l3.09 6.26L22 8.27l-5 4.87L18.18 22 12 18.56 5.82 22 7 13.14 2 8.27l6.91-1.01L12 1z"/></svg>
+      <span>Badges</span>
+    </a>
+    <a class="tab" href="buchungen.html">
+      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 2h9l5 5v13a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V4a2 0 0 1 2-2zm8 1.5V8h4.5L14 3.5z"/></svg>
+      <span>Buchungen</span>
+    </a>
+  </nav>
+</div>
+
+<!-- Firebase -->
+<script src="https://www.gstatic.com/firebasejs/12.0.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/12.0.0/firebase-analytics-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/12.0.0/firebase-firestore-compat.js"></script>
+<script>
+  const CORE=["Chris","Daniel","Elmi","Florian","Joel","Kevin","Kiste","Marco","Meli","Simon"];
+  const firebaseConfig={apiKey:"AIzaSyBFHjGXI5yHyK0DyupS0bnTVAqlu6lvpNw",authDomain:"sickandsound-e9704.firebaseapp.com",projectId:"sickandsound-e9704",storageBucket:"sickandsound-e9704.firebasestorage.app",messagingSenderId:"248197359659",appId:"1:248197359659:web:a8777cbed3f83d6b1ca26e",measurementId:"G-62LH8V7S2E"};
+  let db=null;
+  try{
+    if(window.firebase){
+      firebase.initializeApp(firebaseConfig);
+      try{firebase.analytics();}catch(_){}
+      db=firebase.firestore();
+      document.getElementById('dot').classList.add('statusok');
+      document.getElementById('connTxt').textContent='Online (Firestore verbunden)';
     }
+  }catch(e){
+    db=null;
+    document.getElementById('connTxt').textContent='Offline – Firebase konnte nicht initialisiert werden.';
+  }
 
-    // State speichern (localStorage + Firestore)
-    function save() {
-      localStorage.setItem(hausdienstKey, JSON.stringify(hausdienst));
-      localStorage.setItem(peopleKey,     JSON.stringify(people));
-      db.collection("state").doc("global")
-        .set({ hausdienst }, { merge: true })
-        .catch(e => console.error("Firestore speichern fehlgeschlagen:", e));
+  /* Tabs */
+  function showTab(key){
+    const map={plan:'panelPlan', check:'panelCheck', history:'panelHist'};
+    ['plan','check','history'].forEach(k=>{
+      document.getElementById(map[k]).classList.toggle('active', k===key);
+      document.getElementById('tab'+(k==='history'?'Hist':k.charAt(0).toUpperCase()+k.slice(1))).classList.toggle('active', k===key);
+    });
+    // Hash synchronisieren (plan = leerer Hash)
+    if(history.pushState){
+      const h = key==='plan' ? '' : '#'+key;
+      history.replaceState(null,'', location.pathname + (h? h : ''));
     }
+  }
 
-    // 1) Haupt-Tabelle
-    function buildHausdienstTable() {
-      // Gesamtauswertung
-      const stats = {};
-      people.forEach(p=>stats[p]=0);
-      Object.entries(hausdienst.stats).forEach(([p,v])=>stats[p]=v);
-
-      const arr = Object.entries(stats)
-        .sort((a,b)=>b[1]-a[1]||a[0].localeCompare(b[0]));
-
-      let html = `<table><thead>
-        <tr><th>Platz</th><th>Person</th><th>Punkte</th><th>Aktion</th></tr>
-      </thead><tbody>`;
-      arr.forEach(([person,punkte], i)=>{
-        const cls = i===0?"gold":i===1?"silver":i===2?"bronze":"";
-        const mark = hausdienst.current===person
-          ? `<span class="hausdienstAktuell">Aktuell</span>` : "";
-        html += `<tr>
-          <td>${i+1}</td>
-          <td class="${cls}">${person} ${mark}</td>
-          <td>${punkte}</td>
-          <td>
-            <button class="btn select" onclick="setHausdienst('${person}')">
-              Auswählen
-            </button>
-          </td>
-        </tr>`;
-      });
-      html += `</tbody></table>`;
-      document.getElementById("hausdienstTable").innerHTML = html;
+  // Nur Query/Hash – KEIN localStorage
+  function pickTabFromQuery(){
+    let t = new URLSearchParams(location.search).get('tab');
+    if(!t){
+      const hash=(location.hash||'').replace('#','');
+      if(['check','history','plan'].includes(hash)) t = hash;
     }
+    showTab(t || 'plan');
+  }
+  window.addEventListener('hashchange', pickTabFromQuery);
 
-    // 2) Monatsübersicht pro abgeschlossenem Monat
-    function buildMonthlySummary() {
-      // History nach Jahr-Monat gruppieren
-      const groups = {};
-      hausdienst.history.forEach(e=>{
-        const d = new Date(e.date);
-        // nur abgeschlossene Monate: < aktueller Monat?
-        const now = new Date();
-        if (d.getFullYear()===now.getFullYear() && d.getMonth()===now.getMonth()) {
-          // aktuellen Monat überspringen
-          return;
-        }
-        const key = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
-        groups[key] = groups[key] || [];
-        groups[key].push(e.person);
-      });
+  /* Datum & Refresh */
+  const todayStr=()=>new Date().toISOString().slice(0,10);
+  function scheduleMidnightRefresh(cb){
+    const now=new Date();
+    const mid=new Date(now.getFullYear(),now.getMonth(),now.getDate()+1,0,0,2);
+    setTimeout(()=>{ cb(); scheduleMidnightRefresh(cb); }, mid-now);
+  }
 
-      // nach Datum sortieren (absteigend)
-      const keys = Object.keys(groups).sort().reverse();
+  /* Auswahl */
+  let selectedPerson=null;
 
-      let html = "";
-      keys.forEach(key=>{
-        const [year, mon] = key.split("-");
-        const persons = groups[key];
-        // Statistik pro Person
-        const stats = {};
-        people.forEach(p=>stats[p]=0);
-        persons.forEach(p=>stats[p]++);
-        // sortieren
-        const arr = Object.entries(stats)
-          .sort((a,b)=>b[1]-a[1]||a[0].localeCompare(b[0]));
-        // Monatsüberschrift
-        html += `<h3>${monthNames[Number(mon)-1]} ${year}</h3>`;
-        // Tabelle
-        html += `<table><thead>
-          <tr><th>Platz</th><th>Person</th><th>Anzahl</th></tr>
-        </thead><tbody>`;
-        arr.forEach(([person,count], i)=>{
-          if (count===0) return; // Personen ohne Hausdienst überspringen
-          const cls = i===0?"gold":i===1?"silver":i===2?"bronze":"";
-          html += `<tr>
-            <td>${i+1}</td>
-            <td class="${cls}">${person}</td>
-            <td>${count}</td>
-          </tr>`;
-        });
-        html += `</tbody></table>`;
-      });
+  function renderPeopleRow(){
+    const wrap=document.getElementById('peopleRow');
+    wrap.innerHTML = CORE.map(p=>`<button class="pill ${selectedPerson===p?'active':''}" onclick="selectPerson('${p}')">${p}</button>`).join("");
+  }
+  function updateSelectionUI(){
+    const badge=document.getElementById('selBadge');
+    const has=!!selectedPerson;
+    badge.innerHTML = has ? `Auswahl: <b>${selectedPerson}</b>` : "Auswahl: –";
+    document.getElementById('btnToday').disabled = !has;
+    document.getElementById('btnTomorrow').disabled = !has;
+  }
+  function selectPerson(name){
+    if(!CORE.includes(name)) return;
+    selectedPerson = (selectedPerson===name ? null : name);
+    renderPeopleRow(); updateSelectionUI(); renderNextDays();
+  }
 
-      document.getElementById("monthlyTable").innerHTML = html || "<p>Noch keine abgeschlossenen Monate.</p>";
+  /* Setzen/Löschen */
+  async function setFor(day){
+    if(!selectedPerson) return alert("Bitte zuerst eine Person auswählen.");
+    if(!db) return alert("Offline – kann nicht speichern.");
+    const dt=new Date(); if(day==='tomorrow') dt.setDate(dt.getDate()+1);
+    const id=dt.toISOString().slice(0,10);
+    const ex=await db.collection("hausdienst").doc(id).get();
+    if(ex.exists && ex.data().person){ alert(`Bereits belegt: ${ex.data().person}. Bitte in der Übersicht austragen.`); return; }
+    await db.collection("hausdienst").doc(id).set({person:selectedPerson, updatedAt:Date.now()});
+    if(id===todayStr()) await updateTodayInfo();
+    await renderNextDays(); await renderHistory();
+  }
+  async function setForDate(date, person){
+    if(!db) return alert("Offline – kann nicht speichern.");
+    const ex=await db.collection("hausdienst").doc(date).get();
+    if(ex.exists && ex.data().person){ alert(`Bereits belegt: ${ex.data().person}`); return; }
+    await db.collection("hausdienst").doc(date).set({person, updatedAt:Date.now()});
+    if(date===todayStr()) await updateTodayInfo();
+    await renderNextDays(); await renderHistory();
+  }
+  async function clearSpecific(date){
+    if(!db) return alert("Offline – kann nicht löschen.");
+    await db.collection("hausdienst").doc(date).delete();
+    if(date===todayStr()) await updateTodayInfo();
+    await renderNextDays(); await renderHistory();
+  }
+
+  /* Heute + Liste */
+  async function updateTodayInfo(){
+    if(!db){ document.getElementById('todayInfo').textContent="Heute: (offline)"; return; }
+    const d=await db.collection("hausdienst").doc(todayStr()).get();
+    const person = d.exists ? d.data().person : null;
+    document.getElementById('todayInfo').innerHTML = person
+      ? `Heute eingetragener Hausdienst: <span class="badge ok">${person}</span>`
+      : `Heute: <span class="badge none">Noch niemand eingetragen</span>`;
+  }
+
+  async function renderNextDays(){
+    if(!db){ document.getElementById('nextList').textContent="Offline – keine Vorschau."; return; }
+    const out=[];
+    for(let i=0;i<14;i++){
+      const dt=new Date(); dt.setDate(dt.getDate()+i);
+      const id=dt.toISOString().slice(0,10);
+      const doc=await db.collection("hausdienst").doc(id).get();
+      out.push([id, doc.exists ? (doc.data().person||null) : null, i===0]);
     }
+    const rows = out.map(([d,p,isToday])=>{
+      const action = p
+        ? `<button class="btn small danger" onclick="clearSpecific('${d}')">Austragen</button>`
+        : (selectedPerson ? `<button class="btn small" onclick="setForDate('${d}','${selectedPerson}')">Belegen mit Auswahl</button>` : `<span class="sub muted">frei</span>`);
+      return `<tr><td>${isToday?d+" (heute)":d}</td><td>${p ? p : (selectedPerson ? `<span class="muted">–</span>` : "—")}</td><td style="text-align:right">${action}</td></tr>`;
+    }).join("");
+    document.getElementById('nextList').innerHTML = `<table><thead><tr><th>Datum</th><th>Person</th><th>Aktion</th></tr></thead><tbody>${rows}</tbody></table>`;
+  }
 
-    // Auswahl-/Manipulations-Funktionen
-    function setHausdienst(person) {
-      hausdienst.current = person;
-      hausdienst.stats[person] = (hausdienst.stats[person]||0) + 1;
-      hausdienst.history.push({ person, date: new Date().toISOString() });
-      save();
-      buildHausdienstTable();
-      buildMonthlySummary();
-    }
+  /* Checkliste (Firestore) */
+  const CATS = [
+    {key:"all",    label:"Übersicht"},
+    {key:"morgens",label:"Morgens"},
+    {key:"tag",    label:"Im Laufe des Tages"},
+    {key:"abend",  label:"Bevor man geht"},
+  ];
+  let showCat = localStorage.getItem("hausdienst_cat") || "all";
+  let showMode= localStorage.getItem("hausdienst_filter_mode") || "open";
 
-    function setRandomHausdienst() {
-      if (!people.length) return;
-      const rand = people[Math.floor(Math.random()*people.length)];
-      setHausdienst(rand);
-    }
-
-    function undoHausdienst() {
-      if (!hausdienst.history.length) return;
-      const last = hausdienst.history.pop();
-      if (hausdienst.stats[last.person] > 0) hausdienst.stats[last.person]--;
-      if (hausdienst.current===last.person) hausdienst.current = null;
-      save();
-      buildHausdienstTable();
-      buildMonthlySummary();
-    }
-
-    function resetHausdienst() {
-      if (!confirm("⚠️ Willst du wirklich alle Punkte zurücksetzen?")) return;
-      hausdienst = { current:null, stats:{}, history:[] };
-      save();
-      buildHausdienstTable();
-      buildMonthlySummary();
-    }
-
-    window.onload = loadState;
-  </script>
-</body>
-</html>
+  const CHECKED_KEY="hausdienst_checked_"+todayStr();
+  let checked=JSON.parse
