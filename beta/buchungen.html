@@ -1,124 +1,58 @@
 <!DOCTYPE html>
 <html lang="de">
 <head>
-  <meta charset="UTF-8" />
-  <title>Buchungen – Historie</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <meta name="theme-color" content="#0b0e14" />
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta charset="UTF-8">
+  <title>Buchungen</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <link rel="manifest" href="manifest.webmanifest">
-  <link rel="stylesheet" href="style.css" />
-  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;800&display=swap" rel="stylesheet" />
-  <style>
-    .hint { opacity:.85; margin-top:6px }
-    .card.table-wrap table th, .card.table-wrap table td { padding:10px 12px; }
-    .sum { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-weight:800; }
-    .total { margin-top:8px; display:flex; justify-content:flex-end; font-weight:800; }
-  </style>
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
-<div class="app">
-  <header class="appbar">
-    <div class="app-title"><div class="brand-dot"></div><h1>Buchungen</h1></div>
-  </header>
+  <div class="app">
+    <header class="appbar">
+      <div class="app-title"><h1>Buchungen</h1></div>
+      <div class="appbar-actions">
+        <a class="btn small dark" href="index.html" title="Zurück">⬅️</a>
+      </div>
+    </header>
 
-  <main class="content">
-    <div class="card table-wrap">
-      <div class="section-title">Historie</div>
-      <div id="table"></div>
-      <div id="total" class="total"></div>
-      <div class="hint">Diese Liste ist eine reine Historie. Einträge entstehen automatisch über „Abrechnen &amp; zurücksetzen“ in der Strichliste.</div>
-    </div>
-  </main>
+    <main class="content">
+      <div class="card table-wrap">
+        <div class="section-title">Letzte Buchungen</div>
+        <div id="bookList" class="sub">Lade…</div>
+      </div>
+    </main>
 
-  <nav class="bottomnav">
-    <a class="tab" href="index.html" aria-label="Strichliste">
-      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M4 6h16v2H4zM4 11h16v2H4zM4 16h10v2H4z"/></svg>
-      <span>Liste</span>
-    </a>
-    <a class="tab" href="hausdienst.html" aria-label="Hausdienst">
-      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 3l9 7-1.2 1.6L18 10.1V20h-5v-6H11v6H6v-9.9L4.2 11.6 3 10z"/></svg>
-      <span>Hausdienst</span>
-    </a>
-    <a class="tab" href="rangliste.html" aria-label="Ranglisten">
-      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M7 17H3V7h4v10zm7 0h-4V3h4v14zm7 0h-4v-8h4v8z"/></svg>
-      <span>Rang</span>
-    </a>
-    <a class="tab" href="badges.html" aria-label="Badges">
-      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 1l3.09 6.26L22 8.27l-5 4.87L18.18 22 12 18.56 5.82 22 7 13.14 2 8.27l6.91-1.01L12 1z"/></svg>
-      <span>Badges</span>
-    </a>
-    <a class="tab active" href="buchungen.html" aria-label="Buchungen">
-      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 2h9l5 5v13a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2zm8 1.5V8h4.5L14 3.5z"/></svg>
-      <span>Buchungen</span>
-    </a>
-  </nav>
-</div>
+    <nav class="bottomnav">
+      <a class="tab" href="index.html">Liste</a>
+      <a class="tab" href="hausdienst.html">Hausdienst</a>
+      <a class="tab" href="rangliste.html">Rang</a>
+      <a class="tab" href="badges.html">Badges</a>
+      <a class="tab active" href="buchungen.html">Buchungen</a>
+    </nav>
+  </div>
 
-<!-- Firebase -->
-<script src="https://www.gstatic.com/firebasejs/12.0.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/12.0.0/firebase-analytics-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/12.0.0/firebase-firestore-compat.js"></script>
-<script>
-  const firebaseConfig={apiKey:"AIzaSyBFHjGXI5yHyK0DyupS0bnTVAqlu6lvpNw",authDomain:"sickandsound-e9704.firebaseapp.com",projectId:"sickandsound-e9704",storageBucket:"sickandsound-e9704.firebasestorage.app",messagingSenderId:"248197359659",appId:"1:248197359659:web:a8777cbed3f83d6b1ca26e",measurementId:"G-62LH8V7S2E"};
-  let db=null; try{ if(window.firebase){ firebase.initializeApp(firebaseConfig); try{firebase.analytics();}catch(_){ } db=firebase.firestore(); } }catch(_){ db=null; }
-  const STATE_COLLECTION = location.search.includes("beta") ? "state_beta" : "state";
+  <!-- Firebase -->
+  <script src="https://www.gstatic.com/firebasejs/12.0.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/12.0.0/firebase-firestore-compat.js"></script>
+  <script>
+    const firebaseConfig={ /* deine Config */ };
+    firebase.initializeApp(firebaseConfig);
+    const db=firebase.firestore();
 
-  function euro(v){ return Number(v||0).toFixed(2).replace('.', ','); }
-
-  function render(bookings){
-    const tbl = document.getElementById('table');
-    const totalEl = document.getElementById('total');
-    const rows = (bookings||[]).slice().sort((a,b)=>{
-      // sortiere nach Datum desc (de-DE gespeichert) + Fallback
-      return (new Date(b.date?.split('.').reverse().join('-')||0)) - (new Date(a.date?.split('.').reverse().join('-')||0));
-    });
-    if(!rows.length){
-      tbl.innerHTML = `<div class="sub">Noch keine Buchungen vorhanden.</div>`;
-      totalEl.textContent = '';
-      return;
+    async function loadBookings() {
+      const snap = await db.collection("buchungen").orderBy("createdAt","desc").limit(20).get();
+      const rows = snap.docs.map(d=>`<tr><td>${d.data().user}</td><td>${new Date(d.data().createdAt).toLocaleString()}</td></tr>`).join('');
+      document.getElementById('bookList').innerHTML = `<table><thead><tr><th>User</th><th>Datum</th></tr></thead><tbody>${rows}</tbody></table>`;
     }
-    const head = `<thead><tr><th>Datum</th><th>Person</th><th style="text-align:right">Betrag (€)</th></tr></thead>`;
-    const body = `<tbody>${rows.map(r=>`
-      <tr>
-        <td>${r.date||'–'}</td>
-        <td>${r.person||'–'}</td>
-        <td class="sum" style="text-align:right">${euro(r.sum||0)}</td>
-      </tr>`).join('')}
-    </tbody>`;
-    tbl.innerHTML = `<table>${head}${body}</table>`;
+    loadBookings();
+  </script>
 
-    const total = rows.reduce((s,r)=>s+Number(r.sum||0),0);
-    totalEl.textContent = `Gesamtsumme: ${euro(total)} €`;
-  }
-
-  async function load(){
-    let bookings = [];
-    // 1) Versuche Firestore (state/global)
-    if(db){
-      try{
-        const s = await db.collection(STATE_COLLECTION).doc("global").get();
-        if(s.exists){ bookings = s.data().bookings || []; }
-      }catch(_){}
+  <!-- Service Worker -->
+  <script>
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('./sw.js?v=20', { scope: './' }).catch(()=>{});
     }
-    // 2) Fallback LocalStorage
-    if(!bookings.length){
-      try{ bookings = JSON.parse(localStorage.getItem("sick_sound_bookings")||"[]"); }catch(_){}
-    }
-    render(bookings);
-
-    // Live-Updates (nur Firestore)
-    if(db){
-      db.collection(STATE_COLLECTION).doc("global").onSnapshot(snap=>{
-        if(!snap.exists) return;
-        render(snap.data().bookings || []);
-      });
-    }
-  }
-
-  if('serviceWorker' in navigator){ navigator.serviceWorker.register('./sw.js').catch(()=>{}); }
-  window.onload = load;
-</script>
+  </script>
 </body>
 </html>
