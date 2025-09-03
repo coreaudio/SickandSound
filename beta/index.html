@@ -133,15 +133,35 @@
 <script>
 /* ===== Config ===== */
 const CORE = ["Chris","Daniel","Elmi","Florian","Joel","Kevin","Kiste","Marco","Meli","Simon"];
-const firebaseConfig={apiKey:"AIzaSyBFHjGXI5yHyK0DyupS0bnTVAqlu6lvpNw",authDomain:"sickandsound-e9704.firebaseapp.com",projectId:"sickandsound-e9704",storageBucket:"sickandsound-e9704.firebasestorage.app",messagingSenderId:"248197359659",appId:"1:248197359659:web:a8777cbed3f83d6b1ca26e",measurementId:"G-62LH8V7S2E"};
-let db=null;
+
+// ✅ Richtiges Firebase-Projekt
+const firebaseConfig = {
+  apiKey: "AIzaSyBtZsr4QPHQbvO2qae6MoBoxJF5dNP2vh0",
+  authDomain: "sickandsound-8a15f.firebaseapp.com",
+  projectId: "sickandsound-8a15f",
+  storageBucket: "sickandsound-8a15f.appspot.com",
+  messagingSenderId: "32138160959",
+  appId: "1:32138160959:web:a65c7f4ad7d44e757fc18a"
+};
+
+let db = null;
 try{
   if(window.firebase){
     firebase.initializeApp(firebaseConfig);
     try{ firebase.analytics(); }catch(_){}
-    db=firebase.firestore();
+    db = firebase.firestore();
+    // 🛜 Stabiler auf Handy/Tablet
+    try { db.settings({ experimentalAutoDetectLongPolling:true, merge:true }); } catch(_) {}
+    // optionales UI-Feedback (nur wenn Elemente existieren)
+    const dot=document.getElementById('dot'), txt=document.getElementById('connTxt');
+    if(dot) dot.classList.add('statusok');
+    if(txt) txt.textContent='Online (Firestore verbunden)';
   }
-}catch(_){ db=null; }
+}catch(_){
+  db = null;
+  const txt=document.getElementById('connTxt');
+  if(txt) txt.textContent='Offline – Firebase konnte nicht initialisiert werden.';
+}
 
 /* Prod/Beta Toggle */
 const STATE_COLLECTION = location.search.includes("beta") ? "state_beta" : "state";
@@ -475,7 +495,9 @@ function confirmAddDrink(){
 }
 
 /* SW */
-if('serviceWorker' in navigator){ navigator.serviceWorker.register('./sw-v19.js?v=19', {scope:'./'}).catch(()=>{}); }
+if('serviceWorker' in navigator){
+  navigator.serviceWorker.register('./sw.js?v=21', { scope: './' }).catch(()=>{});
+}
 
 window.onload=loadState;
 window.onresize=()=>requestAnimationFrame(adjustToOnePage);
