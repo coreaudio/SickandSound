@@ -274,7 +274,7 @@
     document.getElementById('nextList').innerHTML = `<table><thead><tr><th>Datum</th><th>Person</th><th>Aktion</th></tr></thead><tbody>${rows}</tbody></table>`;
   }
 
-  /* Checkliste (Firestore) */
+  /* Checkliste */
   const CATS = [
     {key:"all",    label:"Übersicht"},
     {key:"morgens",label:"Morgens"},
@@ -285,4 +285,115 @@
   let showMode= localStorage.getItem("hausdienst_filter_mode") || "open";
 
   const CHECKED_KEY="hausdienst_checked_"+todayStr();
-  let checked=JSON.parse
+  let checked = {};
+  try { checked = JSON.parse(localStorage.getItem(CHECKED_KEY) || "{}"); } catch(_) { checked = {}; }
+
+  function setMode(m){
+    showMode = m;
+    localStorage.setItem("hausdienst_filter_mode", m);
+    renderTasks();
+    document.getElementById('fOpen').className = 'btn small ' + (m==='open'?'secondary':'ghost');
+    document.getElementById('fDone').className = 'btn small ' + (m==='done'?'secondary':'ghost');
+    document.getElementById('fAll').className  = 'btn small ' + (m==='all' ?'secondary':'ghost');
+  }
+
+  function setCat(cat){
+    showCat = cat;
+    localStorage.setItem("hausdienst_cat", cat);
+    renderTasks();
+    renderCatTabs();
+  }
+
+  function renderCatTabs(){
+    const wrap=document.getElementById('catTabs');
+    wrap.innerHTML = CATS.map(c=>`<button class="tabbtn ${showCat===c.key?'active':''}" onclick="setCat('${c.key}')">${c.label}</button>`).join('');
+  }
+
+  function toggleCheck(id){
+    checked[id] = !checked[id];
+    localStorage.setItem(CHECKED_KEY, JSON.stringify(checked));
+    renderTasks(); // re-render for filters
+  }
+
+  async function addTask(){
+    if(!db) return alert("Offline – kann nicht speichern.");
+    const inp=document.getElementById('newTask');
+    const txt=inp.value.trim();
+    const cat=(document.getElementById('newTaskCat').value||'tag');
+    if(!txt) return;
+    await db.collection('hausdienst_tasks').add({ text: txt, cat, createdAt: Date.now() });
+    inp.value='';
+    await renderTasks(true);
+  }
+
+  let _tasks = [];
+  async function loadTasks(){
+    if(!db){ _tasks=[]; renderTasks(); return; }
+    const snap = await db.collection('hausdienst_tasks').orderBy('createdAt','asc').get();
+    _tasks = snap.docs.map(d=>({id:d.id, ...d.data()}));
+  }
+
+  function filteredTasks(){
+    let arr = [..._tasks];
+    if(showCat!=='all') arr = arr.filter(t=>t.cat===showCat);
+    if(showMode==='open') arr = arr.filter(t=>!checked[t.id]);
+    if(showMode==='done') arr = arr.filter(t=>!!checked[t.id]);
+    return arr;
+  }
+
+  async function renderTasks(reload=false){
+    if(reload) await loadTasks();
+    const list=document.getElementById('list');
+    const arr = filteredTasks();
+    if(!arr.length){
+      list.innerHTML = `<div class="sub">Keine Aufgaben in dieser Ansicht.</div>`;
+      return;
+    }
+    const rows = arr.map(t=>{
+      const isDone = !!checked[t.id];
+      return `<tr>
+        <td style="width:32px"><input type="checkbox" ${isDone?'checked':''} onclick="toggleCheck('${t.id}')"></td>
+        <td>${t.text} ${t.cat!=='all'?`<span class="badge">${t.cat}</span>`:''}</td>
+      </tr>`;
+    }).join('');
+    list.innerHTML = `<table><thead><tr><th></th><th>Aufgabe</th></tr></thead><tbody>${rows}</tbody></table>`;
+  }
+
+  /* Historie (letzte 30 Tage) */
+  async function renderHistory(){
+    const el = document.getElementById('histList');
+    if(!db){ el.textContent="Offline – keine Historie."; return; }
+    const rows=[];
+    for(let i=0;i<30;i++){
+      const dt=new Date(); dt.setDate(dt.getDate()-i);
+      const id=dt.toISOString().slice(0,10);
+      const doc=await db.collection("hausdienst").doc(id).get();
+      const person = doc.exists ? (doc.data().person||'—') : '—';
+      rows.push(`<tr><td>${id}</td><td>${person}</td></tr>`);
+    }
+    el.innerHTML = `<table><thead><tr><th>Datum</th><th>Person</th></tr></thead><tbody>${rows.join('')}</tbody></table>`;
+  }
+
+  /* Initialisierung */
+  async function init(){
+    pickTabFromQuery();
+    renderPeopleRow();
+    updateSelectionUI();
+    setMode(showMode);
+    renderCatTabs();
+    await loadTasks();
+    await Promise.all([updateTodayInfo(), renderNextDays(), renderTasks(), renderHistory()]);
+    scheduleMidnightRefresh(async ()=>{ localStorage.removeItem(CHECKED_KEY); checked={}; await updateTodayInfo(); await renderTasks(true); await renderNextDays(); renderHistory(); });
+  }
+  init();
+</script>
+
+<!-- ✅ Service Worker Registrierung (neu) -->
+<script>
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('./sw.js?v=20', { scope: './' })
+      .catch(() => {});
+  }
+</script>
+</body>
+</html>
