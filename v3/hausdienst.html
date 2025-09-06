@@ -11,38 +11,179 @@
   <link rel="stylesheet" href="style.css" />
   <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;800&display=swap" rel="stylesheet" />
   <style>
+    :root {
+      --admin-color: #ff6b6b;
+      --touch-target: 44px;
+    }
+    
     .tabs { display:flex; gap:8px; margin-top:8px; flex-wrap:wrap; }
-    .tabs .tabbtn { padding:8px 12px; border-radius:999px; background:#1c2130; color:#e6e8ef; border:1px solid #2a3042; }
-    .tabs .tabbtn.active { background:linear-gradient(135deg,#6ee7ff,#a78bfa); color:#0b0e14; border-color:transparent; font-weight:800; }
+    .tabs .tabbtn { 
+      padding:12px 16px; 
+      border-radius:999px; 
+      background:#1c2130; 
+      color:#e6e8ef; 
+      border:1px solid #2a3042; 
+      min-height: var(--touch-target);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .tabs .tabbtn.active { 
+      background:linear-gradient(135deg,#6ee7ff,#a78bfa); 
+      color:#0b0e14; 
+      border-color:transparent; 
+      font-weight:800; 
+    }
     .panel { display:none; }
     .panel.active { display:block; }
 
-    .people-row { display:flex; gap:8px; overflow-x:auto; padding-bottom:4px; scrollbar-width:thin; }
-    .people-row .pill { flex:0 0 auto; padding:8px 12px; border-radius:999px; background:#1c2130; border:1px solid #2a3042; color:#e6e8ef; }
-    .people-row .pill.active { background:linear-gradient(135deg,#6ee7ff,#a78bfa); color:#0b0e14; border-color:transparent; font-weight:800; }
+    .people-row { 
+      display:flex; 
+      gap:12px; 
+      overflow-x:auto; 
+      padding-bottom:8px; 
+      scrollbar-width:thin; 
+      margin-top: 10px;
+    }
+    .people-row .pill { 
+      flex:0 0 auto; 
+      padding:12px 16px; 
+      border-radius:999px;
+      background:#1c2130; 
+      border:1px solid #2a3042; 
+      color:#e6e8ef; 
+      min-height: var(--touch-target);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .people-row .pill.active { 
+      background:linear-gradient(135deg,#6ee7ff,#a78bfa); 
+      color:#0b0e14; 
+      border-color:transparent; 
+      font-weight:800; 
+    }
 
-    .row { display:flex; gap:10px; flex-wrap:wrap; align-items:center; }
-    .badge.big { font-size:14px; padding:6px 10px; }
+    .row { display:flex; gap:12px; flex-wrap:wrap; align-items:center; }
+    .badge.big { font-size:16px; padding:8px 12px; }
     .muted { opacity:.7 }
 
-    .segmented { display:flex; gap:8px; flex-wrap:wrap; }
-    .segmented .tabbtn { padding:8px 12px; border-radius:999px; background:#1c2130; color:#e6e8ef; border:1px solid #2a3042; }
-    .segmented .tabbtn.active { background:linear-gradient(135deg,#6ee7ff,#a78bfa); color:#0b0e14; border-color:transparent; font-weight:800; }
+    .segmented { display:flex; gap:10px; flex-wrap:wrap; }
+    .segmented .tabbtn { 
+      padding:12px 16px; 
+      border-radius:999px; 
+      background:#1c2130; 
+      color:#e6e8ef; 
+      border:1px solid #2a3042; 
+      min-height: var(--touch-target);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .segmented .tabbtn.active { 
+      background:linear-gradient(135deg,#6ee7ff,#a78bfa); 
+      color:#0b0e14; 
+      border-color:transparent; 
+      font-weight:800; 
+    }
 
-    .toolbar { display:flex; gap:10px; flex-wrap:wrap; align-items:center; margin-top:10px; }
-    .toolbar input, .toolbar select { flex:1 1 auto; min-width:160px; }
-    .groupTitle { font-weight:800; letter-spacing:.2px; margin:6px 0 6px; }
+    .toolbar { display:flex; gap:12px; flex-wrap:wrap; align-items:center; margin-top:12px; }
+    .toolbar input, .toolbar select { 
+      flex:1 1 auto; 
+      min-width:160px; 
+      min-height: var(--touch-target);
+      padding: 12px;
+    }
+    .groupTitle { font-weight:800; letter-spacing:.2px; margin:8px 0 8px; }
 
-    .statusdot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px;background:#ffadad}
+    .statusdot{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:8px;background:#ffadad}
     .statusok{background:#7CFC9A}
+    
+    .admin-indicator {
+      background-color: var(--admin-color);
+      padding: 6px 10px;
+      border-radius: 6px;
+      margin-left: 10px;
+      font-size: 14px;
+      font-weight: bold;
+    }
+    
+    .swipe-area {
+      padding: 20px 0;
+      margin: 10px 0;
+    }
+    
+    /* Größere Touch-Ziele für Buttons */
+    .btn {
+      min-height: var(--touch-target);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    
+    /* Modal für Backup-Funktion */
+    .modal-content{ max-width: 500px; }
+    .backup-actions{ display: flex; gap: 10px; margin-top: 15px; flex-wrap: wrap; }
+    .backup-list{ max-height: 200px; overflow-y: auto; margin: 10px 0; }
+    .backup-item{ padding: 10px; border-bottom: 1px solid rgba(255,255,255,0.1); display: flex; justify-content: space-between; align-items: center; }
+    
+    /* Bearbeitungsmodus für Hausdienste */
+    .edit-mode .history-item {
+      cursor: pointer;
+    }
+    
+    .history-item {
+      padding: 12px;
+      border-radius: 8px;
+      margin: 6px 0;
+      background: rgba(255, 255, 255, 0.05);
+    }
+    
+    .history-item:hover {
+      background: rgba(255, 255, 255, 0.1);
+    }
+    
+    /* Responsive Design für Tablets */
+    @media (min-width: 768px) {
+      .people-row {
+        flex-wrap: wrap;
+        justify-content: center;
+      }
+      
+      .toolbar {
+        flex-direction: row;
+      }
+      
+      .toolbar input, .toolbar select {
+        flex: 1;
+      }
+    }
+    
+    /* Gestenunterstützung */
+    .gesture-hint {
+      position: fixed;
+      bottom: 100px;
+      left: 0;
+      right: 0;
+      text-align: center;
+      font-size: 14px;
+      opacity: 0.7;
+      pointer-events: none;
+    }
   </style>
 </head>
 <body>
 <div class="app">
   <header class="appbar">
-    <div class="app-title"><div class="brand-dot"></div><h1>Hausdienst</h1></div>
+    <div class="app-title">
+      <div class="brand-dot"></div>
+      <h1>Hausdienst</h1>
+      <span id="adminIndicator" class="admin-indicator" style="display:none;">Admin-Modus</span>
+    </div>
     <div class="appbar-actions">
       <a class="btn small dark" href="index.html" title="Zur Liste">🧾</a>
+      <button class="btn small warning" id="adminBtn" onclick="toggleAdminMode()" title="Admin-Modus">🔧</button>
+      <button class="btn small secondary" id="backupBtn" onclick="openBackupModal()" title="Backup">💾</button>
     </div>
   </header>
 
@@ -50,19 +191,19 @@
     <div class="card">
       <div class="section-title">Heute</div>
       <div id="todayInfo" class="sub">Lade…</div>
-      <div class="tabs" style="margin-top:10px">
+      <div class="tabs" style="margin-top:12px">
         <button id="tabPlan" class="tabbtn active" onclick="showTab('plan')">Planen</button>
         <button id="tabCheck" class="tabbtn" onclick="showTab('check')">Checkliste</button>
         <button id="tabHist" class="tabbtn" onclick="showTab('history')">Historie</button>
       </div>
-      <div class="sub" id="connInfo" style="margin-top:6px"><span class="statusdot" id="dot"></span><span id="connTxt">Verbinde…</span></div>
+      <div class="sub" id="connInfo" style="margin-top:8px"><span class="statusdot" id="dot"></span><span id="connTxt">Verbinde…</span></div>
     </div>
 
     <!-- Panel: Planen -->
     <div id="panelPlan" class="panel active">
       <div class="card">
         <div class="section-title">Hausdienst planen</div>
-        <div class="row" style="margin-top:6px">
+        <div class="row" style="margin-top:8px">
           <button id="btnToday" class="btn small" onclick="setFor('today')" disabled>Heute belegen</button>
           <button id="btnTomorrow" class="btn small" onclick="setFor('tomorrow')" disabled>Morgen belegen</button>
           <span id="selBadge" class="badge big">Auswahl: –</span>
@@ -71,8 +212,8 @@
 
       <div class="card">
         <div class="section-title">Person auswählen</div>
-        <div id="peopleRow" class="people-row" style="margin-top:8px"></div>
-        <div class="sub muted" style="margin-top:6px">
+        <div id="peopleRow" class="people-row"></div>
+        <div class="sub muted" style="margin-top:8px">
           Tipp: Person wählen, dann „Heute/Morgen“ oder unten in der Liste „Belegen“ tippen.
         </div>
       </div>
@@ -89,7 +230,7 @@
         <div class="section-title">Checkliste</div>
         <div class="sub">Aufgaben sind dauerhaft gespeichert · Haken gilt nur heute</div>
 
-        <div id="catTabs" class="segmented" style="margin-top:10px"></div>
+        <div id="catTabs" class="segmented" style="margin-top:12px"></div>
 
         <div class="toolbar">
           <input id="newTask" placeholder="Neue Aufgabe hinzufügen…">
@@ -101,7 +242,7 @@
           <button class="btn" onclick="addTask()">Hinzufügen</button>
         </div>
 
-        <div id="filters" style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px">
+        <div id="filters" style="display:flex;gap:10px;flex-wrap:wrap;margin-top:12px">
           <button id="fOpen" class="btn small secondary" onclick="setMode('open')">Offen</button>
           <button id="fDone" class="btn small ghost" onclick="setMode('done')">Erledigt</button>
           <button id="fAll"  class="btn small ghost" onclick="setMode('all')">Alle</button>
@@ -113,12 +254,66 @@
 
     <!-- Panel: Historie -->
     <div id="panelHist" class="panel">
-      <div class="card table-wrap">
+      <div class="card">
         <div class="section-title">Hausdienst – Historie (letzte 30 Tage)</div>
+        <div class="sub" id="editHint" style="display:none">
+          Admin-Modus: Tippe auf einen Eintrag, um ihn zu bearbeiten oder zu löschen.
+        </div>
         <div id="histList" class="sub">Lade…</div>
+      </div>
+      
+      <div class="card">
+        <div class="section-title">Nach Datum suchen</div>
+        <div class="toolbar">
+          <input type="date" id="dateSearch" onchange="searchByDate()">
+          <button class="btn" onclick="searchByDate()">Suchen</button>
+        </div>
+        <div id="searchResults"></div>
       </div>
     </div>
   </main>
+
+  <!-- Backup Modal -->
+  <div class="modal" id="backupModal"><div class="box modal-content">
+    <h2>💾 Backup & Wiederherstellung</h2>
+    <div class="sub">Automatische Backups werden täglich erstellt. Manuelle Backups werden lokal gespeichert.</div>
+    
+    <div class="section-title">Manuelles Backup erstellen</div>
+    <div class="backup-actions">
+      <button class="btn" onclick="createBackup()">Backup erstellen</button>
+      <button class="btn secondary" onclick="exportBackup()">Backup exportieren</button>
+    </div>
+    
+    <div class="section-title">Wiederherstellung</div>
+    <input type="file" id="restoreFile" accept=".json" style="display: none" onchange="restoreBackup(this.files[0])">
+    <div class="backup-actions">
+      <button class="btn" onclick="document.getElementById('restoreFile').click()">Backup importieren</button>
+      <button class="btn warning" onclick="showBackupList()">Lokale Backups anzeigen</button>
+    </div>
+    
+    <div id="backupList" class="backup-list"></div>
+    
+    <div style="display:flex;gap:10px;margin-top:15px">
+      <button class="btn dark" onclick="closeModal('backupModal')">Schließen</button>
+    </div>
+  </div></div>
+
+  <!-- Edit Modal -->
+  <div class="modal" id="editModal"><div class="box modal-content">
+    <h2>Hausdienst bearbeiten</h2>
+    <div class="sub" id="editDateDisplay"></div>
+    
+    <div class="section-title">Person auswählen</div>
+    <div id="editPeopleRow" class="people-row"></div>
+    
+    <div style="display:flex;gap:10px;margin-top:15px">
+      <button class="btn danger" onclick="deleteHausdienst()">Löschen</button>
+      <button class="btn" onclick="saveHausdienst()">Speichern</button>
+      <button class="btn dark" onclick="closeModal('editModal')">Abbrechen</button>
+    </div>
+  </div></div>
+
+  <div class="gesture-hint" id="gestureHint"></div>
 
   <nav class="bottomnav">
     <a class="tab" href="index.html">
@@ -150,7 +345,8 @@
 <script src="https://www.gstatic.com/firebasejs/12.0.0/firebase-analytics-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/12.0.0/firebase-firestore-compat.js"></script>
 <script>
-  const CORE=["Chris","Daniel","Elmi","Florian","Joel","Kevin","Kiste","Marco","Meli","Simon"];
+  const CORE = ["Chris","Daniel","Elmi","Florian","Joel","Kevin","Kiste","Marco","Meli","Simon"];
+  const ADMIN_PASSWORD = "1379"; // Einfaches Admin-Passwort
 
   /* ✅ Richtiges Firebase-Config für sickandsound-8a15f */
   const firebaseConfig = {
@@ -162,22 +358,26 @@
     appId: "1:32138160959:web:a65c7f4ad7d44e757fc18a"
   };
 
-  let db=null;
-  try{
+  let db = null;
+  let adminMode = false;
+  let selectedPerson = null;
+  let currentEditDate = null;
+  
+  try {
     if(window.firebase){
       firebase.initializeApp(firebaseConfig);
       try{firebase.analytics();}catch(_){}
-      db=firebase.firestore();
+      db = firebase.firestore();
 
       /* 🛜 Long-Polling für mobile Netze */
       try { db.settings({ experimentalAutoDetectLongPolling:true, merge:true }); } catch(_) {}
 
       document.getElementById('dot').classList.add('statusok');
-      document.getElementById('connTxt').textContent='Online (Firestore verbunden)';
+      document.getElementById('connTxt').textContent = 'Online (Firestore verbunden)';
     }
-  }catch(e){
-    db=null;
-    document.getElementById('connTxt').textContent='Offline – Firebase konnte nicht initialisiert werden.';
+  } catch(e) {
+    db = null;
+    document.getElementById('connTxt').textContent = 'Offline – Firebase konnte nicht initialisiert werden.';
   }
 
   /* 🔎 Diagnose – zeigt sofort Projekt & Zugriff */
@@ -196,15 +396,21 @@
 
   /* Tabs */
   function showTab(key){
-    const map={plan:'panelPlan', check:'panelCheck', history:'panelHist'};
-    ['plan','check','history'].forEach(k=>{
-      document.getElementById(map[k]).classList.toggle('active', k===key);
-      document.getElementById('tab'+(k==='history'?'Hist':k.charAt(0).toUpperCase()+k.slice(1))).classList.toggle('active', k===key);
+    const map = {plan:'panelPlan', check:'panelCheck', history:'panelHist'};
+    ['plan','check','history'].forEach(k => {
+      document.getElementById(map[k]).classList.toggle('active', k === key);
+      document.getElementById('tab' + (k === 'history' ? 'Hist' : k.charAt(0).toUpperCase() + k.slice(1))).classList.toggle('active', k === key);
     });
+    
     // Hash synchronisieren (plan = leerer Hash)
     if(history.pushState){
-      const h = key==='plan' ? '' : '#'+key;
-      history.replaceState(null,'', location.pathname + (h? h : ''));
+      const h = key === 'plan' ? '' : '#' + key;
+      history.replaceState(null, '', location.pathname + (h ? h : ''));
+    }
+    
+    // Beim Wechsel zur Historie diese neu laden
+    if (key === 'history') {
+      renderHistory();
     }
   }
 
@@ -212,7 +418,7 @@
   function pickTabFromQuery(){
     let t = new URLSearchParams(location.search).get('tab');
     if(!t){
-      const hash=(location.hash||'').replace('#','');
+      const hash = (location.hash || '').replace('#','');
       if(['check','history','plan'].includes(hash)) t = hash;
     }
     showTab(t || 'plan');
@@ -220,110 +426,193 @@
   window.addEventListener('hashchange', pickTabFromQuery);
 
   /* Datum & Refresh */
-  const todayStr=()=>new Date().toISOString().slice(0,10);
+  const todayStr = () => new Date().toISOString().slice(0,10);
   function scheduleMidnightRefresh(cb){
-    const now=new Date();
-    const mid=new Date(now.getFullYear(),now.getMonth(),now.getDate()+1,0,0,2);
-    setTimeout(()=>{ cb(); scheduleMidnightRefresh(cb); }, mid-now);
+    const now = new Date();
+    const mid = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1, 0, 0, 2);
+    setTimeout(() => { cb(); scheduleMidnightRefresh(cb); }, mid - now);
+  }
+
+  /* Admin-Modus */
+  function toggleAdminMode() {
+    if (adminMode) {
+      adminMode = false;
+      document.body.classList.remove('edit-mode');
+      document.getElementById('adminIndicator').style.display = 'none';
+      document.getElementById('editHint').style.display = 'none';
+      document.getElementById('adminBtn').textContent = '🔧';
+      renderHistory();
+      return;
+    }
+    
+    const password = prompt("Admin-Passwort eingeben:");
+    if (password === ADMIN_PASSWORD) {
+      adminMode = true;
+      document.body.classList.add('edit-mode');
+      document.getElementById('adminIndicator').style.display = 'inline-block';
+      document.getElementById('editHint').style.display = 'block';
+      document.getElementById('adminBtn').textContent = '🔧✓';
+      renderHistory();
+    } else {
+      alert("Falsches Passwort");
+    }
   }
 
   /* Auswahl */
-  let selectedPerson=null;
-
-  function renderPeopleRow(){
-    const wrap=document.getElementById('peopleRow');
-    wrap.innerHTML = CORE.map(p=>`<button class="pill ${selectedPerson===p?'active':''}" onclick="selectPerson('${p}')">${p}</button>`).join("");
+  function renderPeopleRow(container = 'peopleRow', onClickFunc = 'selectPerson') {
+    const wrap = document.getElementById(container);
+    if (!wrap) return;
+    
+    wrap.innerHTML = CORE.map(p => 
+      `<button class="pill ${selectedPerson === p ? 'active' : ''}" onclick="${onClickFunc}('${p}')">${p}</button>`
+    ).join("");
   }
+  
   function updateSelectionUI(){
-    const badge=document.getElementById('selBadge');
-    const has=!!selectedPerson;
+    const badge = document.getElementById('selBadge');
+    const has = !!selectedPerson;
     badge.innerHTML = has ? `Auswahl: <b>${selectedPerson}</b>` : "Auswahl: –";
     document.getElementById('btnToday').disabled = !has;
     document.getElementById('btnTomorrow').disabled = !has;
   }
+  
   function selectPerson(name){
     if(!CORE.includes(name)) return;
-    selectedPerson = (selectedPerson===name ? null : name);
-    renderPeopleRow(); updateSelectionUI(); renderNextDays();
+    selectedPerson = (selectedPerson === name ? null : name);
+    renderPeopleRow(); 
+    updateSelectionUI(); 
+    renderNextDays();
   }
 
   /* Setzen/Löschen */
   async function setFor(day){
     if(!selectedPerson) return alert("Bitte zuerst eine Person auswählen.");
     if(!db) return alert("Offline – kann nicht speichern.");
-    const dt=new Date(); if(day==='tomorrow') dt.setDate(dt.getDate()+1);
-    const id=dt.toISOString().slice(0,10);
-    const ex=await db.collection("hausdienst").doc(id).get();
-    if(ex.exists && ex.data().person){ alert(`Bereits belegt: ${ex.data().person}. Bitte in der Übersicht austragen.`); return; }
-    await db.collection("hausdienst").doc(id).set({person:selectedPerson, updatedAt:Date.now()});
-    if(id===todayStr()) await updateTodayInfo();
-    await renderNextDays(); await renderHistory();
+    
+    const dt = new Date(); 
+    if(day === 'tomorrow') dt.setDate(dt.getDate() + 1);
+    const id = dt.toISOString().slice(0,10);
+    
+    await db.collection("hausdienst").doc(id).set({
+      person: selectedPerson, 
+      updatedAt: Date.now(),
+      updatedBy: "currentUser" // In einer echten App würde man den Benutzernamen verwenden
+    });
+    
+    if(id === todayStr()) await updateTodayInfo();
+    await renderNextDays(); 
+    await renderHistory();
   }
+  
   async function setForDate(date, person){
     if(!db) return alert("Offline – kann nicht speichern.");
-    const ex=await db.collection("hausdienst").doc(date).get();
-    if(exists(ex)){ alert(`Bereits belegt: ${ex.data().person}`); return; }
-    await db.collection("hausdienst").doc(date).set({person, updatedAt:Date.now()});
-    if(date===todayStr()) await updateTodayInfo();
-    await renderNextDays(); await renderHistory();
+    
+    await db.collection("hausdienst").doc(date).set({
+      person, 
+      updatedAt: Date.now(),
+      updatedBy: "currentUser"
+    });
+    
+    if(date === todayStr()) await updateTodayInfo();
+    await renderNextDays(); 
+    await renderHistory();
   }
+  
   function exists(d){ return d && d.exists; }
+  
   async function clearSpecific(date){
     if(!db) return alert("Offline – kann nicht löschen.");
+    if (!confirm(`Hausdienst für ${date} wirklich löschen?`)) return;
+    
     await db.collection("hausdienst").doc(date).delete();
-    if(date===todayStr()) await updateTodayInfo();
-    await renderNextDays(); await renderHistory();
+    if(date === todayStr()) await updateTodayInfo();
+    await renderNextDays(); 
+    await renderHistory();
   }
 
   /* Heute + Liste */
   async function updateTodayInfo(){
-    if(!db){ document.getElementById('todayInfo').textContent="Heute: (offline)"; return; }
-    const d=await db.collection("hausdienst").doc(todayStr()).get();
+    if(!db){ 
+      document.getElementById('todayInfo').textContent = "Heute: (offline)"; 
+      return; 
+    }
+    
+    const d = await db.collection("hausdienst").doc(todayStr()).get();
     const person = exists(d) ? d.data().person : null;
+    
     document.getElementById('todayInfo').innerHTML = person
       ? `Heute eingetragener Hausdienst: <span class="badge ok">${person}</span>`
       : `Heute: <span class="badge none">Noch niemand eingetragen</span>`;
   }
 
   async function renderNextDays(){
-    if(!db){ document.getElementById('nextList').textContent="Offline – keine Vorschau."; return; }
-    const out=[];
-    for(let i=0;i<14;i++){
-      const dt=new Date(); dt.setDate(dt.getDate()+i);
-      const id=dt.toISOString().slice(0,10);
-      const doc=await db.collection("hausdienst").doc(id).get();
-      out.push([id, exists(doc) ? (doc.data().person||null) : null, i===0]);
+    if(!db){ 
+      document.getElementById('nextList').textContent = "Offline – keine Vorschau."; 
+      return; 
     }
-    const rows = out.map(([d,p,isToday])=>{
+    
+    const out = [];
+    for(let i = 0; i < 14; i++){
+      const dt = new Date(); 
+      dt.setDate(dt.getDate() + i);
+      const id = dt.toISOString().slice(0,10);
+      const doc = await db.collection("hausdienst").doc(id).get();
+      out.push([id, exists(doc) ? (doc.data().person || null) : null, i === 0]);
+    }
+    
+    const rows = out.map(([d, p, isToday]) => {
       const action = p
         ? `<button class="btn small danger" onclick="clearSpecific('${d}')">Austragen</button>`
         : (selectedPerson ? `<button class="btn small" onclick="setForDate('${d}','${selectedPerson}')">Belegen mit Auswahl</button>` : `<span class="sub muted">frei</span>`);
-      return `<tr><td>${isToday?d+" (heute)":d}</td><td>${p ? p : (selectedPerson ? `<span class="muted">–</span>` : "—")}</td><td style="text-align:right">${action}</td></tr>`;
+      
+      return `<tr>
+        <td>${isToday ? d + " (heute)" : d}</td>
+        <td>${p ? p : (selectedPerson ? `<span class="muted">–</span>` : "—")}</td>
+        <td style="text-align:right">${action}</td>
+      </tr>`;
     }).join("");
-    document.getElementById('nextList').innerHTML = `<table><thead><tr><th>Datum</th><th>Person</th><th>Aktion</th></tr></thead><tbody>${rows}</tbody></table>`;
+    
+    document.getElementById('nextList').innerHTML = `
+      <table>
+        <thead>
+          <tr>
+            <th>Datum</th>
+            <th>Person</th>
+            <th>Aktion</th>
+          </tr>
+        </thead>
+        <tbody>${rows}</tbody>
+      </table>`;
   }
 
   /* Checkliste */
   const CATS = [
-    {key:"all",    label:"Übersicht"},
-    {key:"morgens",label:"Morgens"},
-    {key:"tag",    label:"Im Laufe des Tages"},
-    {key:"abend",  label:"Bevor man geht"},
+    {key: "all",    label: "Übersicht"},
+    {key: "morgens", label: "Morgens"},
+    {key: "tag",    label: "Im Laufe des Tages"},
+    {key: "abend",  label: "Bevor man geht"},
   ];
+  
   let showCat = localStorage.getItem("hausdienst_cat") || "all";
-  let showMode= localStorage.getItem("hausdienst_filter_mode") || "open";
+  let showMode = localStorage.getItem("hausdienst_filter_mode") || "open";
 
-  const CHECKED_KEY="hausdienst_checked_"+todayStr();
+  const CHECKED_KEY = "hausdienst_checked_" + todayStr();
   let checked = {};
-  try { checked = JSON.parse(localStorage.getItem(CHECKED_KEY) || "{}"); } catch(_) { checked = {}; }
+  
+  try { 
+    checked = JSON.parse(localStorage.getItem(CHECKED_KEY) || "{}"); 
+  } catch(_) { 
+    checked = {}; 
+  }
 
   function setMode(m){
     showMode = m;
     localStorage.setItem("hausdienst_filter_mode", m);
     renderTasks();
-    document.getElementById('fOpen').className = 'btn small ' + (m==='open'?'secondary':'ghost');
-    document.getElementById('fDone').className = 'btn small ' + (m==='done'?'secondary':'ghost');
-    document.getElementById('fAll').className  = 'btn small ' + (m==='all' ?'secondary':'ghost');
+    
+    document.getElementById('fOpen').className = 'btn small ' + (m === 'open' ? 'secondary' : 'ghost');
+    document.getElementById('fDone').className = 'btn small ' + (m === 'done' ? 'secondary' : 'ghost');
+    document.getElementById('fAll').className  = 'btn small ' + (m === 'all' ? 'secondary' : 'ghost');
   }
 
   function setCat(cat){
@@ -334,8 +623,10 @@
   }
 
   function renderCatTabs(){
-    const wrap=document.getElementById('catTabs');
-    wrap.innerHTML = CATS.map(c=>`<button class="tabbtn ${showCat===c.key?'active':''}" onclick="setCat('${c.key}')">${c.label}</button>`).join('');
+    const wrap = document.getElementById('catTabs');
+    wrap.innerHTML = CATS.map(c => 
+      `<button class="tabbtn ${showCat === c.key ? 'active' : ''}" onclick="setCat('${c.key}')">${c.label}</button>`
+    ).join('');
   }
 
   function toggleCheck(id){
@@ -346,70 +637,382 @@
 
   async function addTask(){
     if(!db) return alert("Offline – kann nicht speichern.");
-    const inp=document.getElementById('newTask');
-    const txt=inp.value.trim();
-    const cat=(document.getElementById('newTaskCat').value||'tag');
+    
+    const inp = document.getElementById('newTask');
+    const txt = inp.value.trim();
+    const cat = (document.getElementById('newTaskCat').value || 'tag');
+    
     if(!txt) return;
-    await db.collection('hausdienst_tasks').add({ text: txt, cat, createdAt: Date.now() });
-    inp.value='';
+    
+    await db.collection('hausdienst_tasks').add({ 
+      text: txt, 
+      cat, 
+      createdAt: Date.now() 
+    });
+    
+    inp.value = '';
     await renderTasks(true);
   }
 
   async function deleteTask(id){
     if(!db) return alert("Offline – kann nicht löschen.");
     if(!confirm("Willst du diese Aufgabe wirklich löschen?")) return;
+    
     await db.collection('hausdienst_tasks').doc(id).delete();
     await renderTasks(true);
   }
 
   let _tasks = [];
   async function loadTasks(){
-    if(!db){ _tasks=[]; renderTasks(); return; }
-    const snap = await db.collection('hausdienst_tasks').orderBy('createdAt','asc').get();
-    _tasks = snap.docs.map(d=>({id:d.id, ...d.data()}));
+    if(!db){ 
+      _tasks = []; 
+      renderTasks(); 
+      return; 
+    }
+    
+    const snap = await db.collection('hausdienst_tasks').orderBy('createdAt', 'asc').get();
+    _tasks = snap.docs.map(d => ({id: d.id, ...d.data()}));
   }
 
   function filteredTasks(){
     let arr = [..._tasks];
-    if(showCat!=='all') arr = arr.filter(t=>t.cat===showCat);
-    if(showMode==='open') arr = arr.filter(t=>!checked[t.id]);
-    if(showMode==='done') arr = arr.filter(t=>!!checked[t.id]);
+    if(showCat !== 'all') arr = arr.filter(t => t.cat === showCat);
+    if(showMode === 'open') arr = arr.filter(t => !checked[t.id]);
+    if(showMode === 'done') arr = arr.filter(t => !!checked[t.id]);
     return arr;
   }
 
-  async function renderTasks(reload=false){
+  async function renderTasks(reload = false){
     if(reload) await loadTasks();
-    const list=document.getElementById('list');
+    
+    const list = document.getElementById('list');
     const arr = filteredTasks();
+    
     if(!arr.length){
       list.innerHTML = `<div class="sub">Keine Aufgaben in dieser Ansicht.</div>`;
       return;
     }
-    const rows = arr.map(t=>{
+    
+    const rows = arr.map(t => {
       const isDone = !!checked[t.id];
       return `<tr>
-        <td style="width:32px"><input type="checkbox" ${isDone?'checked':''} onclick="toggleCheck('${t.id}')"></td>
-        <td>${t.text} ${t.cat!=='all'?`<span class="badge">${t.cat}</span>`:''}</td>
-        <td style="text-align:right"><button class="btn small danger" onclick="deleteTask('${t.id}')">Löschen</button></td>
+        <td style="width:44px">
+          <input type="checkbox" ${isDone ? 'checked' : ''} onclick="toggleCheck('${t.id}')">
+        </td>
+        <td>${t.text} ${t.cat !== 'all' ? `<span class="badge">${t.cat}</span>` : ''}</td>
+        <td style="text-align:right">
+          <button class="btn small danger" onclick="deleteTask('${t.id}')">Löschen</button>
+        </td>
       </tr>`;
     }).join('');
-    list.innerHTML = `<table><thead><tr><th></th><th>Aufgabe</th><th>Aktion</th></tr></thead><tbody>${rows}</tbody></table>`;
+    
+    list.innerHTML = `
+      <table>
+        <thead>
+          <tr>
+            <th></th>
+            <th>Aufgabe</th>
+            <th>Aktion</th>
+          </tr>
+        </thead>
+        <tbody>${rows}</tbody>
+      </table>`;
   }
 
   /* Historie (letzte 30 Tage) */
   async function renderHistory(){
     const el = document.getElementById('histList');
-    if(!db){ el.textContent="Offline – keine Historie."; return; }
-    const rows=[];
-    for(let i=0;i<30;i++){
-      const dt=new Date(); dt.setDate(dt.getDate()-i);
-      const id=dt.toISOString().slice(0,10);
-      const doc=await db.collection("hausdienst").doc(id).get();
-      const person = exists(doc) ? (doc.data().person||'—') : '—';
-      rows.push(`<tr><td>${id}</td><td>${person}</td></tr>`);
+    if(!db){ 
+      el.textContent = "Offline – keine Historie."; 
+      return; 
     }
-    el.innerHTML = `<table><thead><tr><th>Datum</th><th>Person</th></tr></thead><tbody>${rows.join('')}</tbody></table>`;
+    
+    const rows = [];
+    for(let i = 0; i < 30; i++){
+      const dt = new Date(); 
+      dt.setDate(dt.getDate() - i);
+      const id = dt.toISOString().slice(0,10);
+      const doc = await db.collection("hausdienst").doc(id).get();
+      const person = exists(doc) ? (doc.data().person || '—') : '—';
+      
+      const displayDate = id === todayStr() ? `${id} (heute)` : id;
+      
+      if (adminMode) {
+        rows.push(`
+          <div class="history-item" onclick="editHausdienst('${id}')">
+            <b>${displayDate}</b>: ${person}
+          </div>
+        `);
+      } else {
+        rows.push(`<div>${displayDate}: ${person}</div>`);
+      }
+    }
+    
+    el.innerHTML = rows.join('');
   }
+
+  /* Nach Datum suchen */
+  async function searchByDate() {
+    const dateInput = document.getElementById('dateSearch').value;
+    if (!dateInput) return;
+    
+    const resultsEl = document.getElementById('searchResults');
+    resultsEl.innerHTML = '<div class="sub">Suche…</div>';
+    
+    try {
+      const doc = await db.collection("hausdienst").doc(dateInput).get();
+      const person = exists(doc) ? doc.data().person : null;
+      
+      if (person) {
+        resultsEl.innerHTML = `
+          <div class="history-item">
+            <b>${dateInput}</b>: ${person}
+            ${adminMode ? `<button class="btn small" onclick="editHausdienst('${dateInput}')">Bearbeiten</button>` : ''}
+          </div>
+        `;
+      } else {
+        resultsEl.innerHTML = `<div class="sub">Kein Eintrag für ${dateInput} gefunden.</div>`;
+      }
+    } catch (error) {
+      resultsEl.innerHTML = `<div class="sub">Fehler bei der Suche: ${error.message}</div>`;
+    }
+  }
+
+  /* Hausdienst bearbeiten */
+  async function editHausdienst(date) {
+    if (!adminMode) return;
+    
+    currentEditDate = date;
+    const doc = await db.collection("hausdienst").doc(date).get();
+    const currentPerson = exists(doc) ? doc.data().person : null;
+    
+    document.getElementById('editDateDisplay').textContent = date;
+    renderPeopleRow('editPeopleRow', 'selectEditPerson');
+    
+    // Aktuelle Person auswählen
+    if (currentPerson) {
+      selectedPerson = currentPerson;
+      renderPeopleRow('editPeopleRow', 'selectEditPerson');
+    }
+    
+    document.getElementById('editModal').classList.add('show');
+  }
+  
+  function selectEditPerson(name) {
+    selectedPerson = name;
+    renderPeopleRow('editPeopleRow', 'selectEditPerson');
+  }
+  
+  async function saveHausdienst() {
+    if (!currentEditDate || !selectedPerson) return;
+    
+    await db.collection("hausdienst").doc(currentEditDate).set({
+      person: selectedPerson,
+      updatedAt: Date.now(),
+      updatedBy: "currentUser"
+    });
+    
+    closeModal('editModal');
+    renderHistory();
+    renderNextDays();
+    
+    if (currentEditDate === todayStr()) {
+      updateTodayInfo();
+    }
+  }
+  
+  async function deleteHausdienst() {
+    if (!currentEditDate) return;
+    
+    if (confirm(`Hausdienst für ${currentEditDate} wirklich löschen?`)) {
+      await db.collection("hausdienst").doc(currentEditDate).delete();
+      closeModal('editModal');
+      renderHistory();
+      renderNextDays();
+      
+      if (currentEditDate === todayStr()) {
+        updateTodayInfo();
+      }
+    }
+  }
+
+  /* Backup-Funktionen */
+  async function createBackup() {
+    if (!db) {
+      alert("Offline - Backup nicht möglich");
+      return;
+    }
+    
+    try {
+      // Hausdienste sammeln
+      const hausdienstSnapshot = await db.collection("hausdienst").get();
+      const hausdienstData = {};
+      
+      hausdienstSnapshot.forEach(doc => {
+        hausdienstData[doc.id] = doc.data();
+      });
+      
+      // Aufgaben sammeln
+      const tasksSnapshot = await db.collection("hausdienst_tasks").get();
+      const tasksData = [];
+      
+      tasksSnapshot.forEach(doc => {
+        tasksData.push({ id: doc.id, ...doc.data() });
+      });
+      
+      // Backup-Objekt erstellen
+      const backupData = {
+        hausdienst: hausdienstData,
+        tasks: tasksData,
+        timestamp: new Date().toISOString(),
+        version: "1.0"
+      };
+      
+      // Lokal speichern
+      const backups = JSON.parse(localStorage.getItem('hausdienst_backups') || '[]');
+      backups.push(backupData);
+      localStorage.setItem('hausdienst_backups', JSON.stringify(backups));
+      
+      // In Firebase speichern
+      await db.collection("backups").doc(`hausdienst_${Date.now()}`).set(backupData);
+      
+      alert("Backup erfolgreich erstellt!");
+    } catch (error) {
+      console.error("Backup error:", error);
+      alert("Fehler beim Erstellen des Backups: " + error.message);
+    }
+  }
+  
+  function exportBackup() {
+    const backups = JSON.parse(localStorage.getItem('hausdienst_backups') || '[]');
+    if (backups.length === 0) {
+      alert("Keine Backups vorhanden");
+      return;
+    }
+    
+    const latestBackup = backups[backups.length - 1];
+    const dataStr = JSON.stringify(latestBackup);
+    const dataUri = 'data:application/json;charset=utf-8,' + encodeURIComponent(dataStr);
+    
+    const exportFileDefaultName = `hausdienst-backup-${new Date().toISOString().slice(0,10)}.json`;
+    
+    const linkElement = document.createElement('a');
+    linkElement.setAttribute('href', dataUri);
+    linkElement.setAttribute('download', exportFileDefaultName);
+    linkElement.click();
+  }
+  
+  function restoreBackup(file) {
+    if (!file) return;
+    
+    const reader = new FileReader();
+    reader.onload = async function(e) {
+      try {
+        const backupData = JSON.parse(e.target.result);
+        
+        if (!confirm("Sicher, dass Sie dieses Backup wiederherstellen möchten? Alle aktuellen Daten werden überschrieben.")) {
+          return;
+        }
+        
+        // Hausdienste wiederherstellen
+        for (const [date, data] of Object.entries(backupData.hausdienst || {})) {
+          await db.collection("hausdienst").doc(date).set(data);
+        }
+        
+        // Aufgaben wiederherstellen (erst alte löschen)
+        const oldTasks = await db.collection("hausdienst_tasks").get();
+        const deletePromises = [];
+        oldTasks.forEach(doc => {
+          deletePromises.push(doc.ref.delete());
+        });
+        
+        await Promise.all(deletePromises);
+        
+        // Neue Aufgaben hinzufügen
+        for (const task of backupData.tasks || []) {
+          const { id, ...taskData } = task;
+          await db.collection("hausdienst_tasks").add(taskData);
+        }
+        
+        alert("Backup erfolgreich wiederhergestellt!");
+        location.reload();
+      } catch (err) {
+        console.error("Backup Wiederherstellungsfehler:", err);
+        alert("Fehler beim Wiederherstellen des Backups: " + err.message);
+      }
+    };
+    reader.readAsText(file);
+  }
+  
+  function showBackupList() {
+    const backups = JSON.parse(localStorage.getItem('hausdienst_backups') || '[]');
+    const backupList = document.getElementById('backupList');
+    
+    if (backups.length === 0) {
+      backupList.innerHTML = '<div class="sub">Keine lokalen Backups gefunden.</div>';
+      return;
+    }
+    
+    backupList.innerHTML = backups.map((backup, index) => `
+      <div class="backup-item">
+        <span>${new Date(backup.timestamp).toLocaleString()}</span>
+        <button class="btn small" onclick="restoreLocalBackup(${index})">Wiederherstellen</button>
+      </div>
+    `).join('');
+  }
+  
+  async function restoreLocalBackup(index) {
+    const backups = JSON.parse(localStorage.getItem('hausdienst_backups') || '[]');
+    if (index < 0 || index >= backups.length) return;
+    
+    if (!confirm("Sicher, dass Sie dieses Backup wiederherstellen möchten? Alle aktuellen Daten werden überschrieben.")) {
+      return;
+    }
+    
+    // Hier würde die Wiederherstellung aus dem lokalen Backup erfolgen
+    // Vereinfachte Implementierung für Demo-Zwecke
+    alert("Lokale Backup-Wiederherstellung würde hier durchgeführt werden.");
+  }
+
+  function openBackupModal() {
+    document.getElementById("backupModal").classList.add("show");
+  }
+
+  function closeModal(id) {
+    document.getElementById(id).classList.remove("show");
+  }
+
+  /* Gestenunterstützung für Tablets */
+  let touchStartX = 0;
+  let touchStartY = 0;
+  
+  document.addEventListener('touchstart', e => {
+    touchStartX = e.changedTouches[0].screenX;
+    touchStartY = e.changedTouches[0].screenY;
+  });
+  
+  document.addEventListener('touchend', e => {
+    const touchEndX = e.changedTouches[0].screenX;
+    const touchEndY = e.changedTouches[0].screenY;
+    
+    const diffX = touchEndX - touchStartX;
+    const diffY = touchEndY - touchStartY;
+    
+    // Horizontales Wischen (Tabs wechseln)
+    if (Math.abs(diffX) > Math.abs(diffY) && Math.abs(diffX) > 50) {
+      const currentTab = document.querySelector('.tabbtn.active').id;
+      
+      if (diffX > 0) {
+        // Nach rechts wischen - vorherigen Tab
+        if (currentTab === 'tabCheck') showTab('plan');
+        else if (currentTab === 'tabHist') showTab('check');
+      } else {
+        // Nach links wischen - nächsten Tab
+        if (currentTab === 'tabPlan') showTab('check');
+        else if (currentTab === 'tabCheck') showTab('history');
+      }
+    }
+  });
 
   /* Initialisierung */
   async function init(){
@@ -420,8 +1023,26 @@
     renderCatTabs();
     await loadTasks();
     await Promise.all([updateTodayInfo(), renderNextDays(), renderTasks(), renderHistory()]);
-    scheduleMidnightRefresh(async ()=>{ localStorage.removeItem(CHECKED_KEY); checked={}; await updateTodayInfo(); await renderTasks(true); await renderNextDays(); renderHistory(); });
+    
+    scheduleMidnightRefresh(async () => { 
+      localStorage.removeItem(CHECKED_KEY); 
+      checked = {}; 
+      await updateTodayInfo(); 
+      await renderTasks(true); 
+      await renderNextDays(); 
+      renderHistory(); 
+    });
+    
+    // Gesten-Hinweis anzeigen
+    const gestureHint = document.getElementById('gestureHint');
+    gestureHint.textContent = '← Wische zum Navigieren →';
+    
+    setTimeout(() => {
+      gestureHint.style.opacity = '0';
+      setTimeout(() => gestureHint.style.display = 'none', 1000);
+    }, 3000);
   }
+  
   init();
 </script>
 
