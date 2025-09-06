@@ -2,7 +2,7 @@
 <html lang="de">
 <head>
   <meta charset="UTF-8" />
-  <title>Sick & Sound — Strichliste</title>
+  <title>Sick & Sound – Strichliste</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <meta name="theme-color" content="#0b0e14" />
   <meta name="apple-mobile-web-app-capable" content="yes">
@@ -14,6 +14,7 @@
     :root{
       --ring: 48px; --row-pad: 6px; --name-size: 18px; --count-size: 17px; --cell-gap: 10px;
       --sticky-top: 56px; /* Höhe Appbar ca. */
+      --admin-color: #ff6b6b;
     }
     .content{ padding-bottom: 88px; }
     .appbar{ min-height: 52px; }
@@ -28,8 +29,12 @@
     .cell{ display:flex; align-items:center; justify-content:flex-end; gap: var(--cell-gap); }
     .count{ font-size: var(--count-size); min-width: 26px; text-align:right; }
     .plus-btn{ padding:8px 12px; }
+    .minus-btn{ padding:8px 12px; background-color: var(--admin-color); }
     .section-row td{ font-size:12px; opacity:.7 }
     .section-title{ font-size: 14px; }
+    .admin-mode .minus-btn{ display: inline-block !important; }
+    .admin-mode .person-cell{ cursor: pointer; }
+    .admin-indicator{ background-color: var(--admin-color); padding: 4px 8px; border-radius: 4px; margin-left: 8px; font-size: 12px; }
 
     /* CTA Checkliste */
     .cta-wrap{ display:flex; flex-wrap:wrap; gap:10px; align-items:center; margin-top:8px; }
@@ -53,11 +58,11 @@
     .delete-hint{ opacity:.75; font-size:12px; margin-top:4px }
     .delete-mode .person-cell{ cursor:pointer }
 
-    /* Admin styles */
-    .admin-section{ margin:10px 0; padding:10px; background:#1a1f2e; border-radius:8px; border:1px solid #333; }
-    .admin-section h3{ margin:0 0 10px 0; font-size:14px; color:#ff6b6b; }
-    .admin-row{ display:flex; gap:8px; margin:5px 0; flex-wrap:wrap; }
-    .admin-row input, .admin-row select{ flex:1; min-width:120px; }
+    /* Backup Modal */
+    .modal-content{ max-width: 500px; }
+    .backup-actions{ display: flex; gap: 10px; margin-top: 15px; }
+    .backup-list{ max-height: 200px; overflow-y: auto; margin: 10px 0; }
+    .backup-item{ padding: 8px; border-bottom: 1px solid rgba(255,255,255,0.1); display: flex; justify-content: space-between; }
   </style>
 </head>
 <body>
@@ -68,12 +73,14 @@
     <div class="app-title">
       <div class="brand-dot"></div>
       <h1>Sick &amp; Sound</h1>
+      <span id="adminIndicator" class="admin-indicator" style="display:none;">Admin-Modus</span>
     </div>
     <div class="appbar-actions">
       <button class="btn small dark" onclick="togglePayPal()" title="PayPal">💸</button>
       <button class="btn small" onclick="openDrinkModal()" title="Getränk hinzufügen">➕</button>
       <button class="btn small" onclick="openPersonModal()" title="Person hinzufügen">👤+</button>
-      <button class="btn small danger" id="adminToggle" onclick="toggleAdminMode()" style="display:none" title="Admin Panel">Admin</button>
+      <button class="btn small warning" id="adminBtn" onclick="toggleAdminMode()" title="Admin-Modus">🔧</button>
+      <button class="btn small secondary" id="backupBtn" onclick="openBackupModal()" title="Backup">💾</button>
     </div>
   </header>
 
@@ -84,6 +91,7 @@
       <div id="todayInfo" class="sub">Lade Tagesstatus…</div>
       <div class="cta-wrap" id="todayCta"></div>
       <div id="delInfo" class="delete-hint" style="display:none">Löschmodus aktiv: Tippe auf <b>Person</b> zum Löschen · Tippe auf <b>Spaltenkopf</b> zum Getränk löschen.</div>
+      <div id="adminInfo" class="delete-hint" style="display:none">Admin-Modus aktiv: Tippe auf <b>-1 Buttons</b> zum Abziehen von Strichen.</div>
     </div>
 
     <div class="card table-wrap" id="tableContainer"></div>
@@ -97,6 +105,7 @@
         <button class="btn" onclick="openPersonModal()">👤 Person hinzufügen</button>
         <button class="btn dark" onclick="resetAll()">♻ Abrechnen & zurücksetzen</button>
         <button class="btn ghost" onclick="window.location='buchungen.html'">📖 Buchungen</button>
+        <button class="btn warning" id="correctionBtn" onclick="toggleCorrectionMode()">✏️ Korrekturmodus</button>
       </div>
     </div>
   </main>
@@ -148,49 +157,27 @@
   </div>
 </div></div>
 
-<!-- Admin Modal -->
-<div class="modal" id="adminModal"><div class="box">
-  <h2>🔒 Admin Panel</h2>
+<div class="modal" id="backupModal"><div class="box modal-content">
+  <h2>💾 Backup & Wiederherstellung</h2>
+  <div class="sub">Automatische Backups werden täglich erstellt. Manuelle Backups werden lokal gespeichert.</div>
   
-  <!-- Login Section -->
-  <div id="adminLogin">
-    <input type="password" id="adminPassword" placeholder="Admin-Passwort">
-    <button class="btn" onclick="adminLogin()" style="margin-top:10px;">Einloggen</button>
-    <div id="adminError" style="color:#ff4d4f;font-size:12px;margin-top:5px;display:none;"></div>
+  <div class="section-title">Manuelles Backup erstellen</div>
+  <div class="backup-actions">
+    <button class="btn" onclick="createBackup()">Backup erstellen</button>
+    <button class="btn secondary" onclick="exportBackup()">Backup exportieren</button>
   </div>
   
-  <!-- Admin Controls (hidden initially) -->
-  <div id="adminControls" style="display:none;">
-    <div class="admin-section">
-      <h3>📉 Striche abziehen</h3>
-      <div class="admin-row">
-        <select id="adminPerson" style="flex:1;">
-          <option value="">Person wählen...</option>
-        </select>
-        <select id="adminDrink" style="flex:1;">
-          <option value="">Getränk wählen...</option>
-        </select>
-      </div>
-      <div class="admin-row">
-        <input type="number" id="adminAmount" placeholder="Anzahl abziehen" min="1" max="50" style="flex:1;">
-        <button class="btn small danger" onclick="adminSubtract()">Abziehen</button>
-      </div>
-      <div style="font-size:12px;opacity:0.7;">Anzahl der Striche, die entfernt werden sollen</div>
-    </div>
-    
-    <div class="admin-section">
-      <h3>💾 Backup erstellen</h3>
-      <div class="admin-row">
-        <button class="btn small secondary" onclick="createBackup()">📁 Backup herunterladen</button>
-        <button class="btn small" onclick="document.getElementById('backupFile').click()">📂 Backup laden</button>
-      </div>
-      <input type="file" id="backupFile" accept=".json" style="display:none" onchange="restoreBackup()">
-      <div style="font-size:12px;opacity:0.7;">Alle Daten sichern und wiederherstellen</div>
-    </div>
-    
-    <div style="display:flex;gap:8px;margin-top:15px;">
-      <button class="btn dark" onclick="closeModal('adminModal');adminLogout();">Schließen</button>
-    </div>
+  <div class="section-title">Wiederherstellung</div>
+  <input type="file" id="restoreFile" accept=".json" style="display: none" onchange="restoreBackup(this.files[0])">
+  <div class="backup-actions">
+    <button class="btn" onclick="document.getElementById('restoreFile').click()">Backup importieren</button>
+    <button class="btn warning" onclick="showBackupList()">Lokale Backups anzeigen</button>
+  </div>
+  
+  <div id="backupList" class="backup-list"></div>
+  
+  <div style="display:flex;gap:10px;margin-top:15px">
+    <button class="btn dark" onclick="closeModal('backupModal')">Schließen</button>
   </div>
 </div></div>
 
@@ -203,6 +190,7 @@
 <script>
 /* ===== Config ===== */
 const CORE = ["Chris","Daniel","Elmi","Florian","Joel","Kevin","Kiste","Marco","Meli","Simon"];
+const ADMIN_PASSWORD = "1379"; // Einfaches Admin-Passwort
 
 // Firebase sickandsound-8a15f
 const firebaseConfig = {
@@ -230,20 +218,16 @@ const STATE_COLLECTION = location.search.includes("beta") ? "state_beta" : "stat
 /* ===== Keys & State ===== */
 const pricesKey="sick_sound_prices", peopleKey="sick_sound_people", dataKey="sick_sound_data",
       historyKey="sick_sound_history", bookingsKey="sick_sound_bookings", orderKey="sick_sound_order",
-      xpKey="sick_sound_xp", redoKey="sick_sound_redo";
+      xpKey="sick_sound_xp", redoKey="sick_sound_redo", backupsKey="sick_sound_backups";
 let prices={"Getränk":1.5,"Mittagessen":6.0};
 let people=[], data={}, history=[], redoStack=[], bookings=[], columnOrder=Object.keys(prices), xp={};
-let deleteMode=false, hdToday=null;
-
-/* ===== Admin System ===== */
-const ADMIN_PASSWORD = "admin1379"; // Change this to your preferred password
-let isAdminMode = false;
-let adminLoggedIn = false;
+let deleteMode=false, adminMode=false, correctionMode=false, hdToday=null;
 
 /* ===== Sounds ===== */
 const makeSound = (src)=> (window.Howl ? new Howl({src:[src]}) : {play:()=>{}});
 const sClick = makeSound("https://cdn.jsdelivr.net/gh/jshawl/howler-examples@master/audio/sfx/coin1.wav");
 const sLevel = makeSound("https://cdn.jsdelivr.net/gh/jshawl/howler-examples@master/audio/sfx/powerUp5.wav");
+const sError = makeSound("https://cdn.jsdelivr.net/gh/jshawl/howler-examples@master/audio/sfx/error1.wav");
 
 /* ===== Helpers / XP ===== */
 const todayStr=()=>new Date().toISOString().slice(0,10);
@@ -270,226 +254,6 @@ function scheduleMidnightRefresh(cb){
 }
 document.addEventListener('visibilitychange', ()=>{ if(!document.hidden){ updateTodayBanner(); buildTable(); } });
 
-/* ===== Admin Functions ===== */
-// Show admin button when holding brand dot for 3 seconds
-let holdTimer = null;
-document.addEventListener('DOMContentLoaded', () => {
-  const brandDot = document.querySelector('.brand-dot');
-  if (brandDot) {
-    brandDot.addEventListener('mousedown', startAdminHold);
-    brandDot.addEventListener('mouseup', stopAdminHold);
-    brandDot.addEventListener('mouseleave', stopAdminHold);
-    brandDot.addEventListener('touchstart', startAdminHold);
-    brandDot.addEventListener('touchend', stopAdminHold);
-  }
-});
-
-function startAdminHold() {
-  holdTimer = setTimeout(() => {
-    document.getElementById('adminToggle').style.display = 'block';
-    if (navigator.vibrate) navigator.vibrate(50); // Haptic feedback if available
-  }, 3000);
-}
-
-function stopAdminHold() {
-  if (holdTimer) {
-    clearTimeout(holdTimer);
-    holdTimer = null;
-  }
-}
-
-function toggleAdminMode() {
-  if (!adminLoggedIn) {
-    document.getElementById('adminModal').classList.add('show');
-    populateAdminDropdowns();
-  } else {
-    adminLogout();
-  }
-}
-
-function populateAdminDropdowns() {
-  // Populate person dropdown
-  const personSelect = document.getElementById('adminPerson');
-  personSelect.innerHTML = '<option value="">Person wählen...</option>';
-  people.forEach(person => {
-    personSelect.innerHTML += `<option value="${person}">${person}</option>`;
-  });
-  
-  // Populate drink dropdown
-  const drinkSelect = document.getElementById('adminDrink');
-  drinkSelect.innerHTML = '<option value="">Getränk wählen...</option>';
-  Object.keys(prices).forEach(drink => {
-    drinkSelect.innerHTML += `<option value="${drink}">${drink}</option>`;
-  });
-}
-
-function adminLogin() {
-  const password = document.getElementById('adminPassword').value;
-  const errorEl = document.getElementById('adminError');
-  
-  if (password === ADMIN_PASSWORD) {
-    adminLoggedIn = true;
-    isAdminMode = true;
-    document.getElementById('adminLogin').style.display = 'none';
-    document.getElementById('adminControls').style.display = 'block';
-    document.getElementById('adminToggle').textContent = 'Admin ✓';
-    document.getElementById('adminToggle').classList.add('secondary');
-    errorEl.style.display = 'none';
-    
-    // Add visual indicator to app
-    document.body.style.borderTop = '3px solid #ff6b6b';
-    
-    history.push({type: "admin", action: "login", timestamp: Date.now()});
-  } else {
-    errorEl.textContent = 'Falsches Passwort!';
-    errorEl.style.display = 'block';
-  }
-}
-
-function adminLogout() {
-  adminLoggedIn = false;
-  isAdminMode = false;
-  document.getElementById('adminLogin').style.display = 'block';
-  document.getElementById('adminControls').style.display = 'none';
-  document.getElementById('adminToggle').textContent = 'Admin';
-  document.getElementById('adminToggle').classList.remove('secondary');
-  document.getElementById('adminPassword').value = '';
-  document.body.style.borderTop = 'none';
-  
-  history.push({type: "admin", action: "logout", timestamp: Date.now()});
-}
-
-function adminSubtract() {
-  const person = document.getElementById('adminPerson').value;
-  const drink = document.getElementById('adminDrink').value;
-  const amount = parseInt(document.getElementById('adminAmount').value) || 0;
-  
-  if (!person || !drink || amount <= 0) {
-    alert('Bitte alle Felder ausfüllen und positive Anzahl eingeben');
-    return;
-  }
-  
-  const id = `${person}_${drink}`;
-  const currentValue = data[id] || 0;
-  const newValue = Math.max(0, currentValue - amount);
-  const actualReduction = currentValue - newValue;
-  
-  if (actualReduction === 0) {
-    alert(`${person} hat keine ${drink}-Striche zum Abziehen`);
-    return;
-  }
-  
-  // Update data
-  const previousValue = data[id];
-  data[id] = newValue;
-  
-  // Update XP (subtract the equivalent value)
-  const xpReduction = actualReduction * (prices[drink] || 0);
-  xp[person] = Math.max(0, (xp[person] || 0) - xpReduction);
-  
-  // Add to history for undo functionality
-  history.push({
-    type: "admin_subtract",
-    id: id,
-    person: person,
-    drink: drink,
-    prev: previousValue,
-    new: newValue,
-    amount: actualReduction,
-    xpChange: -xpReduction,
-    timestamp: Date.now()
-  });
-  
-  // Clear redo stack since we made a new change
-  redoStack = [];
-  
-  // Update display
-  const el = document.getElementById(id);
-  if (el) {
-    el.textContent = newValue;
-    el.classList.add('bump');
-    setTimeout(() => el.classList.remove('bump'), 160);
-  }
-  
-  updateTotalsFor(person);
-  saveAll();
-  updateUndoRedoButtons();
-  
-  // Clear form
-  document.getElementById('adminAmount').value = '';
-  
-  alert(`${person}: ${actualReduction} ${drink}-Striche abgezogen (${currentValue} → ${newValue})\nXP reduziert um ${xpReduction.toFixed(2)}€`);
-}
-
-/* ===== Backup Functions ===== */
-function createBackup() {
-  const backup = {
-    timestamp: new Date().toISOString(),
-    version: "1.0",
-    data: {
-      prices: prices,
-      people: people,
-      data: data,
-      xp: xp,
-      history: history,
-      bookings: bookings,
-      columnOrder: columnOrder
-    }
-  };
-  
-  const blob = new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = `sick-sound-backup-${new Date().toISOString().slice(0, 10)}.json`;
-  a.click();
-  URL.revokeObjectURL(url);
-  
-  alert("Backup wurde erstellt und heruntergeladen!");
-}
-
-function restoreBackup() {
-  const file = document.getElementById('backupFile').files[0];
-  if (!file) return;
-  
-  if (!confirm("Achtung: Dies überschreibt alle aktuellen Daten! Fortfahren?")) {
-    document.getElementById('backupFile').value = '';
-    return;
-  }
-  
-  const reader = new FileReader();
-  reader.onload = async (e) => {
-    try {
-      const backup = JSON.parse(e.target.result);
-      
-      if (!backup.data) {
-        throw new Error("Ungültiges Backup-Format");
-      }
-      
-      // Restore data
-      prices = backup.data.prices || prices;
-      people = backup.data.people || people;
-      data = backup.data.data || {};
-      xp = backup.data.xp || {};
-      history = backup.data.history || [];
-      bookings = backup.data.bookings || [];
-      columnOrder = backup.data.columnOrder || Object.keys(prices);
-      
-      saveAll();
-      buildTable();
-      updateTodayBanner();
-      populateAdminDropdowns();
-      
-      alert(`Backup erfolgreich wiederhergestellt!\nDatum: ${backup.timestamp}`);
-    } catch (error) {
-      alert("Fehler beim Wiederherstellen: " + error.message);
-    }
-    
-    document.getElementById('backupFile').value = '';
-  };
-  reader.readAsText(file);
-}
-
 /* ===== Load ===== */
 async function loadState(){
   if(db){
@@ -512,6 +276,12 @@ async function loadState(){
   saveAll(); buildTable(); updateTodayBanner(); subscribeRealtime(); updateUndoRedoButtons();
   await ensureXpFromExistingStricheAfterLoad();
   scheduleMidnightRefresh(()=>{ updateTodayBanner(); buildTable(); });
+  
+  // Automatisches Backup einmal täglich
+  const lastBackup = localStorage.getItem('lastBackup');
+  if (!lastBackup || new Date().toDateString() !== new Date(parseInt(lastBackup)).toDateString()) {
+    createBackup();
+  }
 }
 function fallbackLoad(){
   prices=JSON.parse(localStorage.getItem(pricesKey))||prices;
@@ -608,28 +378,26 @@ function applyAction(a){
   if(a.type==="inc"){
     data[a.id] = (a.prev||0) + 1;
     if(a.person){ xp[a.person] = (xp[a.person]||0) + (a.xpDelta||0); }
+  } else if (a.type==="dec"){
+    data[a.id] = (a.prev||0) - 1;
+    if(a.person){ xp[a.person] = Math.max(0, (xp[a.person]||0) - (a.xpDelta||0)); }
   } else if (a.action==="change"){
     data[a.id] = (a.prev||0) + 1;
     const parts=a.id.split('_'); const person=parts[0]; const drink=parts.slice(1).join('_');
     xp[person] = (xp[person]||0) + (prices[drink]||0);
-  } else if (a.type==="admin_subtract") {
-    data[a.id] = a.new;
-    xp[a.person] = (xp[a.person]||0) + a.xpChange;
-    updateTotalsFor(a.person);
   }
 }
 function applyInverse(a){
   if(a.type==="inc"){
     data[a.id] = a.prev;
     if(a.person){ xp[a.person] = Math.max(0,(xp[a.person]||0) - (a.xpDelta||0)); }
+  } else if (a.type==="dec"){
+    data[a.id] = a.prev;
+    if(a.person){ xp[a.person] = (xp[a.person]||0) + (a.xpDelta||0); }
   } else if (a.action==="change"){
     data[a.id] = a.prev;
     const parts=a.id.split('_'); const person=parts[0]; const drink=parts.slice(1).join('_');
     xp[person] = Math.max(0,(xp[person]||0) - (prices[drink]||0));
-  } else if (a.type==="admin_subtract") {
-    data[a.id] = a.prev;
-    xp[a.person] = Math.max(0,(xp[a.person]||0) - a.xpChange);
-    updateTotalsFor(a.person);
   }
 }
 function undoLast(){ const last=history.pop(); if(!last) return; applyInverse(last); redoStack.push(last); saveAll(); buildTable(); updateUndoRedoButtons(); }
@@ -639,13 +407,60 @@ function redoLast(){ const act=redoStack.pop(); if(!act) return; applyAction(act
 function toggleDeleteMode(){
   deleteMode=!deleteMode;
   const btn=document.getElementById("deleteBtn");
-  btn.textContent= deleteMode ? "✖ Abbrechen" : "🗑 Löschen";
+  btn.textContent= deleteMode ? "❌ Abbrechen" : "🗑 Löschen";
   btn.classList.toggle("ghost", deleteMode);
   document.body.classList.toggle('delete-mode', deleteMode);
   const hint=document.getElementById('delInfo');
   if(hint) hint.style.display = deleteMode ? 'block' : 'none';
   buildTable();
 }
+
+/* Admin mode */
+function toggleAdminMode(){
+  if (adminMode) {
+    adminMode = false;
+    document.body.classList.remove('admin-mode');
+    document.getElementById('adminIndicator').style.display = 'none';
+    document.getElementById('adminInfo').style.display = 'none';
+    document.getElementById('adminBtn').textContent = '🔧';
+    buildTable();
+    return;
+  }
+  
+  const password = prompt("Admin-Passwort eingeben:");
+  if (password === ADMIN_PASSWORD) {
+    adminMode = true;
+    document.body.classList.add('admin-mode');
+    document.getElementById('adminIndicator').style.display = 'inline-block';
+    document.getElementById('adminInfo').style.display = 'block';
+    document.getElementById('adminBtn').textContent = '🔧✓';
+    buildTable();
+  } else {
+    alert("Falsches Passwort");
+    sError.play();
+  }
+}
+
+/* Correction mode */
+function toggleCorrectionMode(){
+  if (correctionMode) {
+    correctionMode = false;
+    document.getElementById('correctionBtn').textContent = '✏️ Korrekturmodus';
+    buildTable();
+    return;
+  }
+  
+  const password = prompt("Admin-Passwort für Korrekturmodus eingeben:");
+  if (password === ADMIN_PASSWORD) {
+    correctionMode = true;
+    document.getElementById('correctionBtn').textContent = '✏️✓ Korrekturmodus';
+    buildTable();
+  } else {
+    alert("Falsches Passwort");
+    sError.play();
+  }
+}
+
 function personCellClick(p){
   if(!deleteMode) return;
   deletePerson(p);
@@ -666,7 +481,11 @@ function buildTable(){
       </th>`;
     }
   });
-  html += `<th>Gesamt (€)</th></tr></thead><tbody>`;
+  html += `<th>Gesamt (€)</th>`;
+  if (correctionMode) {
+    html += `<th>Korrektur</th>`;
+  }
+  html += `</tr></thead><tbody>`;
 
   const ring=(xpVal, person)=>{
     const x=+xpVal||0;
@@ -694,28 +513,43 @@ function buildTable(){
       </div></th>`;
     columnOrder.forEach(dr=>{
       if(prices[dr]!==undefined){
-        const id=`${p}_${dr}`, val=data[id]||0, handler=`()=>inc('${id}','${dr}','${p}')`;
-        rhtml += `<td><div class="cell" onclick="inc('${id}','${dr}','${p}')">
+        const id=`${p}_${dr}`, val=data[id]||0, 
+              incHandler=`()=>changeCount('${id}','${dr}','${p}', 1)`,
+              decHandler=`()=>changeCount('${id}','${dr}','${p}', -1)`;
+        
+        rhtml += `<td><div class="cell" onclick="changeCount('${id}','${dr}','${p}', 1)">
+          ${adminMode ? `<button class="btn small minus-btn" onclick="event.stopPropagation(); changeCount('${id}','${dr}','${p}', -1)"
+            onmousedown="startHold(${decHandler})" onmouseup="stopHold()" onmouseleave="stopHold()"
+            ontouchstart="startHold(${decHandler})" ontouchend="stopHold()">-1</button>` : ''}
           <div class="count" id="${id}">${val}</div>
-          <button class="btn small plus-btn" onclick="event.stopPropagation(); inc('${id}','${dr}','${p}')"
-            onmousedown="startHold(${handler})" onmouseup="stopHold()" onmouseleave="stopHold()"
-            ontouchstart="startHold(${handler})" ontouchend="stopHold()">+1</button></div></td>`;
+          <button class="btn small plus-btn" onclick="event.stopPropagation(); changeCount('${id}','${dr}','${p}', 1)"
+            onmousedown="startHold(${incHandler})" onmouseup="stopHold()" onmouseleave="stopHold()"
+            ontouchstart="startHold(${incHandler})" ontouchend="stopHold()">+1</button></div></td>`;
       }
     });
     const total=columnOrder.reduce((s,d)=>s+(data[`${p}_${d}`]||0)*prices[d],0);
-    rhtml += `<td id="${p}_Total">${total.toFixed(2)}</td></tr>`;
+    rhtml += `<td id="${p}_Total">${total.toFixed(2)}</td>`;
+    
+    if (correctionMode) {
+      rhtml += `<td>
+        <input type="number" value="${total.toFixed(2)}" style="width: 60px; padding: 4px;" 
+               onchange="correctTotal('${p}', this.value)">
+      </td>`;
+    }
+    
+    rhtml += `</tr>`;
     return rhtml;
   };
 
   /* Kernteam */
   if(core.length){
-    html += `<tr class="section-row"><td colspan="${columnOrder.length+2}">— Kernteam —</td></tr>`;
+    html += `<tr class="section-row"><td colspan="${columnOrder.length + (correctionMode ? 2 : 1)}">— Kernteam —</td></tr>`;
     core.forEach(p=> html += row(p));
   }
 
   /* Gäste immer anzeigen */
   if(guests.length){
-    html += `<tr class="section-row"><td colspan="${columnOrder.length+2}">— Gäste —</td></tr>`;
+    html += `<tr class="section-row"><td colspan="${columnOrder.length + (correctionMode ? 2 : 1)}">— Gäste —</td></tr>`;
     guests.forEach(p=> html += row(p));
   }
 
@@ -749,16 +583,87 @@ function adjustToOnePage(){
 
 /* Interactions */
 function headerClick(drink){ if(deleteMode) deleteColumn(drink); }
-function inc(id,drink,person){
-  const el=document.getElementById(id); const cur=parseInt(el?.textContent||'0'), next=cur+1;
-  if(el){ el.textContent=next; el.classList.remove('bump'); void el.offsetWidth; el.classList.add('bump'); }
-  const xpDelta=prices[drink]||0;
-  history.push({type:"inc", id, prev:cur, person, xpDelta}); redoStack=[];
+function changeCount(id, drink, person, delta){
+  const el=document.getElementById(id); 
+  const cur=parseInt(el?.textContent||'0'), next=cur + delta;
+  if (next < 0) {
+    sError.play();
+    return; // keine negativen Zahlen
+  }
+
+  if(el){ 
+    el.textContent=next; 
+    el.classList.remove('bump'); 
+    void el.offsetWidth; 
+    el.classList.add('bump'); 
+  }
+  
+  const xpDelta = (prices[drink]||0) * delta;
+  history.push({
+    type: delta > 0 ? "inc" : "dec", 
+    id, 
+    prev: cur, 
+    person, 
+    xpDelta: Math.abs(xpDelta)
+  }); 
+  
+  redoStack=[];
   data[id]=next;
-  const before=levelOf((xp[person]||0)); xp[person]=(xp[person]||0)+xpDelta; const after=levelOf(xp[person]);
+  
+  const before=levelOf((xp[person]||0)); 
+  xp[person] = Math.max(0, (xp[person]||0) + xpDelta); 
+  const after=levelOf(xp[person]);
+  
   (after>before ? sLevel : sClick).play();
-  updateTotalsFor(person); saveAll(); updateUndoRedoButtons();
+  updateTotalsFor(person); 
+  saveAll(); 
+  updateUndoRedoButtons();
 }
+
+function correctTotal(person, newTotal) {
+  const currentTotal = columnOrder.reduce((s,d)=>s+(data[`${person}_${d}`]||0)*prices[d],0);
+  const difference = parseFloat(newTotal) - currentTotal;
+  
+  if (isNaN(difference)) return;
+  
+  // Finde das preiswerteste Getränk für die Korrektur
+  let cheapestDrink = null;
+  let cheapestPrice = Infinity;
+  
+  for (const drink of columnOrder) {
+    if (prices[drink] < cheapestPrice) {
+      cheapestDrink = drink;
+      cheapestPrice = prices[drink];
+    }
+  }
+  
+  if (!cheapestDrink) return;
+  
+  const id = `${person}_${cheapestDrink}`;
+  const currentCount = data[id] || 0;
+  const adjustment = Math.round(difference / cheapestPrice);
+  const newCount = Math.max(0, currentCount + adjustment);
+  
+  data[id] = newCount;
+  
+  // XP anpassen
+  const xpAdjustment = adjustment * cheapestPrice;
+  xp[person] = Math.max(0, (xp[person] || 0) + xpAdjustment);
+  
+  history.push({
+    type: "correction",
+    id,
+    person,
+    adjustment,
+    xpAdjustment,
+    previousCount: currentCount,
+    previousXp: xp[person] - xpAdjustment
+  });
+  
+  saveAll();
+  buildTable();
+}
+
 function updateTotalsFor(person){
   const tot=columnOrder.reduce((s,d)=>s+(data[`${person}_${d}`]||0)*prices[d],0);
   const el=document.getElementById(`${person}_Total`); if(el) el.textContent=tot.toFixed(2);
@@ -793,6 +698,139 @@ function resetAll(){
     xp[p]=(xp[p]||0)+sum; columnOrder.forEach(d=>data[`${p}_${d}`]=0);
   });
   history=[]; redoStack=[]; saveAll(); buildTable(); updateUndoRedoButtons();
+}
+
+/* Backup functions */
+function createBackup() {
+  const backupData = {
+    prices,
+    people,
+    data,
+    history,
+    redoStack,
+    bookings,
+    columnOrder,
+    xp,
+    timestamp: new Date().toISOString()
+  };
+  
+  // Lokal speichern
+  const backups = JSON.parse(localStorage.getItem(backupsKey) || "[]");
+  backups.push(backupData);
+  localStorage.setItem(backupsKey, JSON.stringify(backups));
+  localStorage.setItem('lastBackup', Date.now().toString());
+  
+  // In Firebase speichern, wenn verfügbar
+  if (db) {
+    db.collection("backups").add(backupData)
+      .then(() => alert("Backup erfolgreich erstellt!"))
+      .catch(err => console.error("Backup Fehler:", err));
+  } else {
+    alert("Backup erfolgreich lokal gespeichert!");
+  }
+}
+
+function exportBackup() {
+  const backupData = {
+    prices,
+    people,
+    data,
+    history,
+    redoStack,
+    bookings,
+    columnOrder,
+    xp,
+    timestamp: new Date().toISOString()
+  };
+  
+  const dataStr = JSON.stringify(backupData);
+  const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
+  
+  const exportFileDefaultName = `sick-sound-backup-${new Date().toISOString().slice(0,10)}.json`;
+  
+  const linkElement = document.createElement('a');
+  linkElement.setAttribute('href', dataUri);
+  linkElement.setAttribute('download', exportFileDefaultName);
+  linkElement.click();
+}
+
+function restoreBackup(file) {
+  if (!file) return;
+  
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      const backupData = JSON.parse(e.target.result);
+      
+      if (!confirm(`Sicher, dass Sie das Backup vom ${new Date(backupData.timestamp).toLocaleString()} wiederherstellen möchten? Alle aktuellen Daten werden überschrieben.`)) {
+        return;
+      }
+      
+      // Daten wiederherstellen
+      prices = backupData.prices || prices;
+      people = backupData.people || people;
+      data = backupData.data || data;
+      history = backupData.history || history;
+      redoStack = backupData.redoStack || redoStack;
+      bookings = backupData.bookings || bookings;
+      columnOrder = backupData.columnOrder || columnOrder;
+      xp = backupData.xp || xp;
+      
+      saveAll();
+      buildTable();
+      alert("Backup erfolgreich wiederhergestellt!");
+    } catch (err) {
+      console.error("Backup Wiederherstellungsfehler:", err);
+      alert("Fehler beim Wiederherstellen des Backups: " + err.message);
+    }
+  };
+  reader.readAsText(file);
+}
+
+function showBackupList() {
+  const backups = JSON.parse(localStorage.getItem(backupsKey) || "[]");
+  const backupList = document.getElementById('backupList');
+  
+  if (backups.length === 0) {
+    backupList.innerHTML = '<div class="sub">Keine lokalen Backups gefunden.</div>';
+    return;
+  }
+  
+  backupList.innerHTML = backups.map((backup, index) => `
+    <div class="backup-item">
+      <span>${new Date(backup.timestamp).toLocaleString()}</span>
+      <button class="btn small" onclick="restoreLocalBackup(${index})">Wiederherstellen</button>
+    </div>
+  `).join('');
+}
+
+function restoreLocalBackup(index) {
+  const backups = JSON.parse(localStorage.getItem(backupsKey) || "[]");
+  if (index < 0 || index >= backups.length) return;
+  
+  const backupData = backups[index];
+  
+  if (!confirm(`Sicher, dass Sie das Backup vom ${new Date(backupData.timestamp).toLocaleString()} wiederherstellen möchten? Alle aktuellen Daten werden überschrieben.`)) {
+    return;
+  }
+  
+  // Daten wiederherstellen
+  prices = backupData.prices || prices;
+  people = backupData.people || people;
+  data = backupData.data || data;
+  history = backupData.history || history;
+  redoStack = backupData.redoStack || redoStack;
+  bookings = backupData.bookings || bookings;
+  columnOrder = backupData.columnOrder || columnOrder;
+  xp = backupData.xp || xp;
+  
+  saveAll();
+  buildTable();
+  alert("Backup erfolgreich wiederhergestellt!");
+}
+
+function openBackupModal() {
+  document.getElementById("backupModal").classList.add("show");
 }
 
 /* Modals & helpers */
