@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <title>Sick & Sound – Admin</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#0b0e14" />
+  <link rel="stylesheet" href="style.css" />
+  <style>
+    .admin-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 12px; }
+    .date-picker { width: 100%; padding: 10px; margin-bottom: 10px; }
+    .edit-table td { padding: 8px; }
+    .edit-input { width: 60px; text-align: center; }
+  </style>
+</head>
+<body>
+<div class="app">
+  <header class="appbar">
+    <div class="app-title"><div class="brand-dot"></div><h1>Admin</h1></div>
+    <div class="appbar-actions">
+      <button class="btn small dark" onclick="logout()">Logout</button>
+    </div>
+  </header>
+
+  <main class="content">
+    <!-- Login Panel -->
+    <div id="loginPanel" class="card">
+      <div class="section-title">Admin Login</div>
+      <input type="password" id="adminPass" placeholder="Password" />
+      <button class="btn" onclick="login()">Login</button>
+    </div>
+
+    <!-- Admin Features (hidden until login) -->
+    <div id="adminPanel" style="display:none">
+      <div class="admin-grid">
+        <!-- Striche Editor -->
+        <div class="card">
+          <div class="section-title">Striche bearbeiten</div>
+          <select id="editPerson" onchange="loadPersonData()"></select>
+          <div id="editStricheTable"></div>
+        </div>
+
+        <!-- Hausdienst Editor -->
+        <div class="card">
+          <div class="section-title">Hausdienst bearbeiten</div>
+          <input type="date" class="date-picker" id="hdDate">
+          <select id="hdPerson"></select>
+          <div class="row" style="margin-top:10px">
+            <button class="btn" onclick="setHausdienst()">Speichern</button>
+            <button class="btn danger" onclick="deleteHausdienst()">Löschen</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <nav class="bottomnav">
+    <!-- Reuse your existing navigation -->
+  </nav>
+</div>
+
+<script>
+const ADMIN_PASS = "1379"; // Should match your existing password
+let db = null;
+
+// Firebase Config
+const firebaseConfig = {
+  apiKey: "AIzaSyBtZsr4QPHQbvO2qae6MoBoxJF5dNP2vh0",
+  authDomain: "sickandsound-8a15f.firebaseapp.com",
+  projectId: "sickandsound-8a15f",
+  storageBucket: "sickandsound-8a15f.appspot.com",
+  messagingSenderId: "32138160959",
+  appId: "1:32138160959:web:a65c7f4ad7d44e757fc18a"
+};
+
+// Initialize Firebase
+try {
+  firebase.initializeApp(firebaseConfig);
+  db = firebase.firestore();
+} catch(e) {
+  console.error("Firebase init failed:", e);
+}
+
+// Login/Logout
+function login() {
+  const pass = document.getElementById('adminPass').value;
+  if(pass === ADMIN_PASS) {
+    document.getElementById('loginPanel').style.display = 'none';
+    document.getElementById('adminPanel').style.display = 'block';
+    localStorage.setItem('adminAuth', '1');
+    init();
+  } else {
+    alert('Falsches Passwort');
+  }
+}
+
+function logout() {
+  localStorage.removeItem('adminAuth');
+  location.reload();
+}
+
+// Check auth on load
+if(localStorage.getItem('adminAuth') === '1') {
+  document.getElementById('loginPanel').style.display = 'none';
+  document.getElementById('adminPanel').style.display = 'block';
+  init();
+}
+
+// Initialize admin panel
+async function init() {
+  if(!db) return;
+  
+  const snap = await db.collection("state").doc("global").get();
+  if(!snap.exists) return;
+  
+  const data = snap.data();
+  const people = data.people || [];
+  const prices = data.prices || {};
+  
+  // Fill person dropdowns
+  const personSel = document.getElementById('editPerson');
+  const hdPersonSel = document.getElementById('hdPerson');
+  
+  people.forEach(p => {
+    personSel.add(new Option(p, p));
+    hdPersonSel.add(new Option(p, p));
+  });
+  
+  // Set today as default date
+  document.getElementById('hdDate').valueAsDate = new Date();
+}
+
+// Load and edit person's Striche
+async function loadPersonData() {
+  if(!db) return;
+  
+  const person = document.getElementById('editPerson').value;
+  const snap = await db.collection("state").doc("global").get();
+  if(!snap.exists) return;
+  
+  const data = snap.data();
+  const prices = data.prices || {};
+  const personData = {};
+  
+  // Get all Striche for this person
+  Object.keys(data.data || {}).forEach(key => {
+    if(key.startsWith(person + '_')) {
+      const drink = key.substring(person.length + 1);
+      personData[drink] = data.data[key];
+    }
+  });
+  
+  // Build edit table
+  let html = `<table class="edit-table"><tr><th>Getränk</th><th>Anzahl</th><th>Aktion</th></tr>`;
+  
+  Object.keys(prices).forEach(drink => {
+    const count = personData[drink] || 0;
+    html += `<tr>
+      <td>${drink}</td>
+      <td><input type="number" class="edit-input" value="${count}" 
+          id="edit_${person}_${drink}" min="0"></td>
+      <td><button class="btn small" onclick="saveStrich('${person}','${drink}')">Speichern</button></td>
+    </tr>`;
+  });
+  
+  html += '</table>';
+  document.getElementById('editStricheTable').innerHTML = html;
+}
+
+// Save edited Strich count
+async function saveStrich(person, drink) {
+  if(!db) return;
+  
+  const val = parseInt(document.getElementById(`edit_${person}_${drink}`).value) || 0;
+  await db.collection("state").doc("global").update({
+    [`data.${person}_${drink}`]: val
+  });
+  
+  alert('Gespeichert!');
+}
+
+// Set Hausdienst for date
+async function setHausdienst() {
+  if(!db) return;
+  
+  const date = document.getElementById('hdDate').value;
+  const person = document.getElementById('hdPerson').value;
+  
+  await db.collection("hausdienst").doc(date).set({
+    person,
+    updatedAt: Date.now()
+  });
+  
+  alert('Hausdienst eingetragen!');
+}
+
+// Delete Hausdienst for date
+async function deleteHausdienst() {
+  if(!db) return;
+  
+  const date = document.getElementById('hdDate').value;
+  if(!confirm(`Hausdienst für ${date} wirklich löschen?`)) return;
+  
+  await db.collection("hausdienst").doc(date).delete();
+  alert('Hausdienst gelöscht!');
+}
+</script>
+
+</body>
+</html>
