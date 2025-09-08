@@ -275,7 +275,7 @@
     <div class="edit-form">
       <div class="form-group">
         <label for="addDate">Datum</label>
-        <input type="date" id="addDate" required>
+        <input type="date" id="addDate" required value="">
       </div>
       <div class="form-group">
         <label for="addPerson">Person</label>
@@ -535,21 +535,22 @@
     
     const date = document.getElementById('editDate').value;
     const person = document.getElementById('editPerson').value;
-    const amount = document.getElementById('editAmount').value;
+    const amount = parseFloat(document.getElementById('editAmount').value);
     
-    if (!date || !person || !amount || isNaN(amount) || amount <= 0) {
+    if (!date || !person || isNaN(amount) || amount <= 0) {
       alert('Bitte füllen Sie alle Felder korrekt aus.');
       return;
     }
     
-    // Formatieren des Datums im deutschen Format
-    const formattedDate = new Date(date).toLocaleDateString('de-DE');
+    // Formatieren des Datums im deutschen Format (YYYY-MM-DD zu DD.MM.YYYY)
+    const dateParts = date.split('-');
+    const formattedDate = `${dateParts[2]}.${dateParts[1]}.${dateParts[0]}`;
     
     // Aktualisiere die Buchung
     bookings[currentEditIndex] = {
       date: formattedDate,
       person: person,
-      sum: Number(amount).toFixed(2)
+      sum: amount.toFixed(2)
     };
     
     // Speichere in Firebase
@@ -560,6 +561,8 @@
     
     // Aktualisiere die Anzeige
     render();
+    
+    alert('Buchung erfolgreich aktualisiert!');
   }
 
   function deleteEditing() {
@@ -578,11 +581,15 @@
     
     // Aktualisiere die Anzeige
     render();
+    
+    alert('Buchung erfolgreich gelöscht!');
   }
 
   function showAddModal() {
     // Setze heutiges Datum als Standard
-    document.getElementById('addDate').value = new Date().toISOString().slice(0, 10);
+    const today = new Date();
+    const formattedToday = today.toISOString().slice(0, 10);
+    document.getElementById('addDate').value = formattedToday;
     document.getElementById('addAmount').value = '';
     
     // Fülle Personen-Auswahl
@@ -600,34 +607,39 @@
     document.getElementById('addModal').classList.add('show');
   }
 
+  // KORRIGIERT: Funktion zum Hinzufügen neuer Buchungen
   function addNewBooking() {
-    const date = document.getElementById('addDate').value;
+    const dateInput = document.getElementById('addDate').value;
     const person = document.getElementById('addPerson').value;
-    const amount = document.getElementById('addAmount').value;
+    const amount = parseFloat(document.getElementById('addAmount').value);
     
-    if (!date || !person || !amount || isNaN(amount) || amount <= 0) {
+    if (!dateInput || !person || isNaN(amount) || amount <= 0) {
       alert('Bitte füllen Sie alle Felder korrekt aus.');
       return;
     }
     
-    // Formatieren des Datums im deutschen Format
-    const formattedDate = new Date(date).toLocaleDateString('de-DE');
+    // Datum korrekt formatieren (YYYY-MM-DD zu DD.MM.YYYY)
+    const dateParts = dateInput.split('-');
+    const formattedDate = `${dateParts[2]}.${dateParts[1]}.${dateParts[0]}`;
     
-    // Füge neue Buchung hinzu
+    // Neue Buchung hinzufügen
     bookings.push({
       date: formattedDate,
       person: person,
-      sum: Number(amount).toFixed(2)
+      sum: amount.toFixed(2)
     });
     
-    // Speichere in Firebase
+    // In Firebase speichern
     persist();
     
-    // Schließe das Modal
+    // Modal schließen
     closeModal('addModal');
     
-    // Aktualisiere die Anzeige
+    // Oberfläche aktualisieren
     render();
+    
+    // Erfolgsmeldung anzeigen
+    alert('Buchung erfolgreich hinzugefügt!');
   }
 
   function deleteBooking(index) {
@@ -651,6 +663,7 @@
     if (idx > -1) {
       bookings.splice(idx, 1);
       persist();
+      alert('Buchung erfolgreich gelöscht!');
     }
   }
 
@@ -702,6 +715,7 @@
     
     bookings = [];
     persist();
+    alert('Alle Buchungen wurden gelöscht!');
   }
 
   function exportCSV() {
@@ -733,15 +747,31 @@
     }, 0);
   }
 
+  // KORRIGIERT: Persist-Funktion mit localStorage und Firebase
   function persist() {
+    // Immer im localStorage speichern (für Offline-Unterstützung)
+    try {
+      localStorage.setItem('sick_sound_bookings', JSON.stringify(bookings));
+      console.log('Buchungen im localStorage gespeichert');
+    } catch (e) {
+      console.error('Fehler beim Speichern im localStorage:', e);
+    }
+    
     if (!db) {
       render();
       return;
     }
     
+    // In Firebase speichern
     db.collection(STATE_COLLECTION).doc('global').set({ bookings }, { merge: true })
-      .then(() => render())
-      .catch(() => render());
+      .then(() => {
+        console.log('Buchungen erfolgreich in Firebase gespeichert');
+        render();
+      })
+      .catch((error) => {
+        console.error('Fehler beim Speichern in Firebase:', error);
+        render();
+      });
   }
 
   // Backup-Funktionen
