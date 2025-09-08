@@ -11,130 +11,20 @@
   <link rel="stylesheet" href="style.css" />
   <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;800&display=swap" rel="stylesheet" />
   <style>
-    :root {
-      --admin-color: #ff6b6b;
-      --touch-target: 44px;
-      --primary-gradient: linear-gradient(135deg, #6ee7ff, #a78bfa);
-      --secondary-gradient: linear-gradient(135deg, #ffd166, #f96e46);
-    }
+    .rank-table td,.rank-table th{ padding:10px 8px; }
+    .lvl-ring{ width:46px; height:46px; position:relative; display:inline-grid; place-items:center; }
+    .lvl-ring .val{ position:absolute; font-size:11px; font-weight:800; line-height:1; }
+    .subtle{ opacity:.75 }
+    .pill{ padding:6px 10px; border-radius:999px; background:#1c2130; border:1px solid #2a3042; }
+    .ok{ color:#7CFC9A }
     
-    .tabs { 
-      display: flex; 
-      gap: 8px; 
-      margin: 15px 0; 
-      flex-wrap: wrap; 
-      justify-content: center;
-    }
-    .tabs .tabbtn { 
-      padding: 12px 20px; 
-      border-radius: 999px; 
-      background: #1c2130; 
-      color: #e6e8ef; 
-      border: 1px solid #2a3042; 
-      min-height: var(--touch-target);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-weight: 600;
-      flex: 1;
-      min-width: 120px;
-      max-width: 200px;
-    }
-    .tabs .tabbtn.active { 
-      background: var(--primary-gradient); 
-      color: #0b0e14; 
-      border-color: transparent; 
-      font-weight: 800; 
-      box-shadow: 0 4px 12px rgba(110, 231, 255, 0.3);
-    }
-    .panel { display: none; }
-    .panel.active { display: block; }
-    
-    .rank-table td, .rank-table th { 
-      padding: 12px 10px; 
-    }
-    .lvl-ring { 
-      width: 46px; 
-      height: 46px; 
-      position: relative; 
-      display: inline-grid; 
-      place-items: center; 
-    }
-    .lvl-ring .val { 
-      position: absolute; 
-      font-size: 11px; 
-      font-weight: 800; 
-      line-height: 1; 
-    }
-    .subtle { 
-      opacity: .75; 
-      font-size: 14px;
-    }
-    .pill { 
-      padding: 8px 14px; 
-      border-radius: 999px; 
-      background: #1c2130; 
-      border: 1px solid #2a3042; 
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-    }
-    .ok { color: #7CFC9A; }
-    
-    .medal {
-      width: 24px;
-      height: 24px;
-      border-radius: 50%;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      font-weight: bold;
-      margin-right: 8px;
-    }
-    .medal-gold {
-      background: linear-gradient(145deg, #FFD700, #D4AF37);
-      color: #000;
-    }
-    .medal-silver {
-      background: linear-gradient(145deg, #C0C0C0, #A8A8A8);
-      color: #000;
-    }
-    .medal-bronze {
-      background: linear-gradient(145deg, #CD7F32, #8C6B46);
-      color: #000;
-    }
-    
-    .achievement-badge {
-      display: inline-block;
-      padding: 4px 8px;
-      border-radius: 12px;
-      background: rgba(110, 231, 255, 0.15);
-      border: 1px solid rgba(110, 231, 255, 0.3);
-      font-size: 12px;
-      margin-left: 8px;
-    }
-    
-    .progress-bar {
-      height: 8px;
-      background: #1c2130;
-      border-radius: 4px;
-      overflow: hidden;
-      margin: 6px 0;
-    }
-    .progress-fill {
-      height: 100%;
-      background: var(--primary-gradient);
-      border-radius: 4px;
-      transition: width 0.5s ease;
-    }
-    
+    /* Admin-Modus Stile */
     .admin-indicator {
-      background-color: var(--admin-color);
-      padding: 6px 12px;
-      border-radius: 6px;
-      margin-left: 12px;
-      font-size: 14px;
-      font-weight: bold;
+      background-color: #ff6b6b;
+      padding: 4px 8px;
+      border-radius: 4px;
+      margin-left: 8px;
+      font-size: 12px;
     }
     
     .admin-controls {
@@ -145,47 +35,35 @@
       margin: 15px 0;
     }
     
-    .stats-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-      gap: 12px;
-      margin: 15px 0;
+    .edit-mode .editable {
+      cursor: pointer;
+      position: relative;
     }
-    .stat-card {
-      background: #1c2130;
-      border-radius: 12px;
-      padding: 15px;
-      text-align: center;
-    }
-    .stat-value {
-      font-size: 24px;
-      font-weight: 800;
-      margin: 8px 0;
-      background: var(--primary-gradient);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-    }
-    .stat-label {
+    
+    .edit-mode .editable:hover::after {
+      content: '✎';
+      position: absolute;
+      right: 5px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: #6ee7ff;
       font-size: 14px;
-      opacity: 0.8;
     }
     
-    @media (min-width: 768px) {
-      .tabs {
-        justify-content: flex-start;
-      }
-      .tabs .tabbtn {
-        flex: 0 1 auto;
-      }
+    .edit-form {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      margin-top: 10px;
     }
     
-    .highlight-new {
-      animation: highlight 2s ease;
-    }
-    
-    @keyframes highlight {
-      0% { background-color: rgba(124, 252, 154, 0.3); }
-      100% { background-color: transparent; }
+    .edit-form input {
+      padding: 8px 12px;
+      border-radius: 8px;
+      border: 1px solid rgba(255,255,255,0.1);
+      background: #0e1422;
+      color: #fff;
+      width: 100px;
     }
   </style>
 </head>
@@ -196,156 +74,33 @@
     <div class="appbar-actions">
       <span class="sub"><span class="statusdot" id="dot"></span><span id="connTxt">Verbinde…</span></span>
       <button class="btn small warning" id="adminBtn" onclick="toggleAdminMode()" title="Admin-Modus">🔧</button>
-      <button class="btn small secondary" id="backupBtn" onclick="openBackupModal()" title="Backup">💾</button>
     </div>
   </header>
 
   <main class="content">
     <div class="card">
-      <div class="section-title">Ranglisten</div>
-      <div class="sub subtle">Vergleiche deine Leistungen in verschiedenen Bereichen und sammle Auszeichnungen!</div>
-      
-      <div class="tabs">
-        <button id="tabXp" class="tabbtn active" onclick="showTab('xp')">Strichliste</button>
-        <button id="tabHausdienst" class="tabbtn" onclick="showTab('hausdienst')">Hausdienst</button>
-        <button id="tabAchievements" class="tabbtn" onclick="showTab('achievements')">Achievements</button>
-      </div>
+      <div class="section-title">Übersicht</div>
+      <div class="sub subtle">Level basiert auf Gesamt-XP. „Heute“ ist der aktuelle Warenwert deiner Striche (live).</div>
       
       <div id="adminIndicator" class="admin-indicator" style="display:none;">Admin-Modus</div>
-    </div>
-
-    <!-- XP Rangliste -->
-    <div id="panelXp" class="panel active">
-      <div class="card">
-        <div class="section-title">Strichlisten-Rangliste</div>
-        <div class="sub subtle">Level basiert auf Gesamt-XP. „Heute“ ist der aktuelle Warenwert deiner Striche (live).</div>
-        
-        <div class="stats-grid">
-          <div class="stat-card">
-            <div class="stat-label">Gesamt-XP</div>
-            <div class="stat-value" id="totalXp">0€</div>
-            <div class="stat-label">Alle Mitglieder</div>
-          </div>
-          <div class="stat-card">
-            <div class="stat-label">Durchschnitt</div>
-            <div class="stat-value" id="averageXp">0€</div>
-            <div class="stat-label">Pro Person</div>
-          </div>
-          <div class="stat-card">
-            <div class="stat-label">Spitzenreiter</div>
-            <div class="stat-value" id="leaderXp">-</div>
-            <div class="stat-label">Aktuell</div>
-          </div>
+      
+      <div id="adminControls" class="admin-controls" style="display:none;">
+        <div class="section-title">Admin-Bereich</div>
+        <div class="sub subtle">Gesamt-XP bearbeiten</div>
+        <div class="edit-form">
+          <select id="xpPersonSelect">
+            <option value="">Person auswählen</option>
+          </select>
+          <input type="number" id="xpEditValue" step="0.01" min="0" placeholder="Neue XP">
+          <button class="btn small" onclick="updateXp()">Aktualisieren</button>
         </div>
-        
-        <div id="adminControlsXp" class="admin-controls" style="display: none;">
-          <div class="section-title">Admin-Bereich</div>
-          <div class="sub subtle">XP manuell anpassen</div>
-          <div class="row">
-            <select id="xpPersonSelect" style="flex: 2;">
-              <option value="">Person auswählen</option>
-            </select>
-            <input type="number" id="xpAdjustValue" placeholder="XP" style="flex: 1;">
-            <button class="btn small" onclick="adjustXp()">Anpassen</button>
-          </div>
-        </div>
-      </div>
-
-      <div class="card table-wrap" id="rankWrap">
-        <div class="sub">Lade Rangliste…</div>
       </div>
     </div>
 
-    <!-- Hausdienst Rangliste -->
-    <div id="panelHausdienst" class="panel">
-      <div class="card">
-        <div class="section-title">Hausdienst-Rangliste</div>
-        <div class="sub subtle">Wer hat die meisten Hausdienste übernommen?</div>
-        
-        <div class="stats-grid">
-          <div class="stat-card">
-            <div class="stat-label">Gesamtdienste</div>
-            <div class="stat-value" id="totalDuties">0</div>
-            <div class="stat-label">Seit Beginn</div>
-          </div>
-          <div class="stat-card">
-            <div class="stat-label">Durchschnitt</div>
-            <div class="stat-value" id="averageDuties">0</div>
-            <div class="stat-label">Pro Person</div>
-          </div>
-          <div class="stat-card">
-            <div class="stat-label">Aktivist</div>
-            <div class="stat-value" id="leaderDuties">-</div>
-            <div class="stat-label">Hausdienst</div>
-          </div>
-        </div>
-        
-        <div id="adminControlsHausdienst" class="admin-controls" style="display: none;">
-          <div class="section-title">Admin-Bereich</div>
-          <div class="sub subtle">Hausdienste verwalten</div>
-          <div class="row">
-            <input type="date" id="dutyDate" style="flex: 1;">
-            <select id="dutyPersonSelect" style="flex: 1;">
-              <option value="">Person auswählen</option>
-            </select>
-            <button class="btn small" onclick="addDuty()">Hinzufügen</button>
-          </div>
-          <div class="sub subtle" style="margin-top: 10px;">Oder Hausdienst entfernen:</div>
-          <div class="row">
-            <input type="date" id="removeDutyDate" style="flex: 2;">
-            <button class="btn small danger" onclick="removeDuty()">Entfernen</button>
-          </div>
-        </div>
-      </div>
-
-      <div class="card table-wrap" id="hausdienstWrap">
-        <div class="sub">Lade Hausdienst-Rangliste…</div>
-      </div>
-    </div>
-
-    <!-- Achievements -->
-    <div id="panelAchievements" class="panel">
-      <div class="card">
-        <div class="section-title">Achievements & Auszeichnungen</div>
-        <div class="sub subtle">Sammle Auszeichnungen für besondere Leistungen!</div>
-        
-        <div class="tabs">
-          <button id="tabAllAchievements" class="tabbtn active" onclick="showAchievementTab('all')">Alle</button>
-          <button id="tabEarnedAchievements" class="tabbtn" onclick="showAchievementTab('earned')">Errungen</button>
-          <button id="tabLockedAchievements" class="tabbtn" onclick="showAchievementTab('locked')">Gesperrt</button>
-        </div>
-      </div>
-
-      <div class="card" id="achievementsWrap">
-        <div class="sub">Lade Achievements…</div>
-      </div>
+    <div class="card table-wrap" id="rankWrap">
+      <div class="sub">Lade Rangliste…</div>
     </div>
   </main>
-
-  <!-- Backup Modal -->
-  <div class="modal" id="backupModal"><div class="box modal-content">
-    <h2>💾 Backup & Wiederherstellung</h2>
-    <div class="sub">Automatische Backups werden täglich erstellt.</div>
-    
-    <div class="section-title">Manuelles Backup erstellen</div>
-    <div class="backup-actions">
-      <button class="btn" onclick="createBackup()">Backup erstellen</button>
-      <button class="btn secondary" onclick="exportBackup()">Backup exportieren</button>
-    </div>
-    
-    <div class="section-title">Wiederherstellung</div>
-    <input type="file" id="restoreFile" accept=".json" style="display: none" onchange="restoreBackup(this.files[0])">
-    <div class="backup-actions">
-      <button class="btn" onclick="document.getElementById('restoreFile').click()">Backup importieren</button>
-      <button class="btn warning" onclick="showBackupList()">Lokale Backups anzeigen</button>
-    </div>
-    
-    <div id="backupList" class="backup-list"></div>
-    
-    <div style="display:flex;gap:10px;margin-top:15px">
-      <button class="btn dark" onclick="closeModal('backupModal')">Schließen</button>
-    </div>
-  </div></div>
 
   <nav class="bottomnav">
     <a class="tab" href="index.html">
@@ -375,8 +130,8 @@
 <script src="https://www.gstatic.com/firebasejs/12.0.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/12.0.0/firebase-firestore-compat.js"></script>
 <script>
-  const CORE = ["Chris","Daniel","Elmi","Florian","Joel","Kevin","Kiste","Marco","Meli","Simon"];
-  const ADMIN_PASSWORD = "3006"; // Einfaches Admin-Passwort
+  const CORE=["Chris","Daniel","Elmi","Florian","Joel","Kevin","Kiste","Marco","Meli","Simon"];
+  const ADMIN_PASSWORD = "1379"; // Admin-Passwort
   
   const firebaseConfig = {
     apiKey: "AIzaSyBtZsr4QPHQbvO2qae6MoBoxJF5dNP2vh0",
@@ -387,86 +142,16 @@
     appId: "1:32138160959:web:a65c7f4ad7d44e757fc18a"
   };
 
+  let db=null, prices={}, data={}, xp={}, people=[];
   const STATE_COLLECTION = location.search.includes("beta") ? "state_beta" : "state";
-  
-  // Achievements Definition
-  const ACHIEVEMENTS = [
-    {
-      id: "first_steps",
-      name: "Erste Schritte",
-      description: "Erreiche Level 5",
-      icon: "🚶",
-      criteria: (person, xp, duties) => levelOf(xp) >= 5
-    },
-    {
-      id: "hausmeister",
-      name: "Hausmeister",
-      description: "Erledige 10 Hausdienste",
-      icon: "🧹",
-      criteria: (person, xp, duties) => duties >= 10
-    },
-    {
-      id: "xp_master",
-      name: "XP-Meister",
-      description: "Sammle über 500€ an XP",
-      icon: "⭐",
-      criteria: (person, xp, duties) => xp >= 500
-    },
-    {
-      id: "true_hero",
-      name: "Wahrer Held",
-      description: "Erreiche Level 20 UND erledige 20 Hausdienste",
-      icon: "🦸",
-      criteria: (person, xp, duties) => levelOf(xp) >= 20 && duties >= 20
-    },
-    {
-      id: "early_bird",
-      name: "Früher Vogel",
-      description: "Erledige einen Hausdienst an 5 verschiedenen Montagen",
-      icon: "🐦",
-      criteria: (person, xp, duties, dutyDays) => {
-        const mondays = dutyDays.filter(date => new Date(date).getDay() === 1);
-        return new Set(mondays).size >= 5;
-      }
-    },
-    {
-      id: "weekend_warrior",
-      name: "Wochenend-Krieger",
-      description: "Erledige einen Hausdienst an 5 verschiedenen Wochenenden",
-      icon: "⚔️",
-      criteria: (person, xp, duties, dutyDays) => {
-        const weekends = dutyDays.filter(date => {
-          const day = new Date(date).getDay();
-          return day === 0 || day === 6;
-        });
-        return new Set(weekends).size >= 5;
-      }
-    }
-  ];
-
-  let db = null;
-  let prices = {}, data = {}, xp = {}, people = [];
-  let hausdienstData = {};
   let adminMode = false;
-  let achievements = {};
-  let dutyStats = {};
 
-  function levelOf(xpVal) { 
-    xpVal = +xpVal || 0; 
-    return Math.max(1, Math.floor(Math.sqrt(xpVal/75)) + 1); 
-  }
+  function levelOf(x){ x = +x||0; return Math.max(1, Math.floor(Math.sqrt(x/75))+1); }
 
-  function ring(xpVal, label) {
-    const x = +xpVal || 0;
-    const lvl = levelOf(x);
-    const min = 75 * (lvl-1) * (lvl-1);
-    const max = 75 * lvl * lvl;
-    const p = Math.max(0, Math.min(1, (x-min)/(max-min)));
-    const r = 20;
-    const c = 2 * Math.PI * r;
-    const off = (1-p) * c;
-    const gid = "g" + (label || "x") + lvl;
-    
+  function ring(xpVal, label){
+    const x=+xpVal||0, lvl=levelOf(x);
+    const min=75*(lvl-1)*(lvl-1), max=75*lvl*lvl, p=Math.max(0,Math.min(1,(x-min)/(max-min)));
+    const r=20, c=2*Math.PI*r, off=(1-p)*c, gid="g"+(label||"x")+lvl;
     return `<div class="lvl-ring" title="Level ${lvl}">
       <svg viewBox="0 0 48 48" style="transform:rotate(-90deg)" width="100%" height="100%">
         <defs><linearGradient id="${gid}" x1="0" y1="0" x2="1" y2="1">
@@ -479,340 +164,75 @@
     </div>`;
   }
 
-  function currentValueOf(person) {
-    const keys = Object.keys(prices || {});
-    return keys.reduce((sum, k) => sum + ((data[`${person}_${k}`] || 0) * (Number(prices[k]) || 0)), 0);
+  function currentValueOf(person){
+    const keys = Object.keys(prices||{});
+    return keys.reduce((sum,k)=> sum + ( (data[`${person}_${k}`]||0) * (Number(prices[k])||0) ), 0);
   }
 
-  function showTab(tab) {
-    // Alle Tabs ausblenden
-    document.querySelectorAll('.panel').forEach(panel => {
-      panel.classList.remove('active');
-    });
-    document.querySelectorAll('.tabs .tabbtn').forEach(btn => {
-      btn.classList.remove('active');
-    });
-    
-    // Gewählten Tab aktivieren
-    document.getElementById('panel' + tab.charAt(0).toUpperCase() + tab.slice(1)).classList.add('active');
-    document.getElementById('tab' + tab.charAt(0).toUpperCase() + tab.slice(1)).classList.add('active');
-    
-    // Tab-spezifische Aktionen
-    if (tab === 'hausdienst') {
-      renderHausdienstRanking();
-    } else if (tab === 'achievements') {
-      renderAchievements('all');
-    }
-  }
-  
-  function showAchievementTab(filter) {
-    renderAchievements(filter);
-    
-    // Tabs aktivieren
-    document.querySelectorAll('#panelAchievements .tabs .tabbtn').forEach(btn => {
-      btn.classList.remove('active');
-    });
-    document.getElementById('tab' + filter.charAt(0).toUpperCase() + filter.slice(1) + 'Achievements').classList.add('active');
-  }
-
-  function renderXpRanking() {
-    const wrap = document.getElementById('rankWrap');
-    const names = [...new Set([...(people || []), ...Object.keys(xp || {})])];
-    
-    if (!names.length) { 
-      wrap.innerHTML = '<div class="sub">Keine Daten.</div>'; 
-      return; 
-    }
+  function render(){
+    const wrap=document.getElementById('rankWrap');
+    const names = [...new Set([...(people||[]), ...Object.keys(xp||{})])];
+    if(!names.length){ wrap.innerHTML = '<div class="sub">Keine Daten.</div>'; return; }
 
     const rows = names
-      .filter(n => CORE.includes(n) || !n.startsWith('_'))
-      .map(n => {
-        const base = Number(xp[n] || 0);
+      .filter(n=>CORE.includes(n) || !n.startsWith('_'))
+      .map(n=>{
+        const base = Number(xp[n]||0);
         const today = currentValueOf(n);
         const total = base + today;
         return { n, base, today, total, lvl: levelOf(total) };
       })
-      .sort((a, b) => b.total - a.total)
-      .map((r, i) => {
-        let medal = '';
-        if (i === 0) medal = '<span class="medal medal-gold">1</span>';
-        else if (i === 1) medal = '<span class="medal medal-silver">2</span>';
-        else if (i === 2) medal = '<span class="medal medal-bronze">3</span>';
+      .sort((a,b)=> b.total - a.total)
+      .map((r,i)=>{
+        // Im Admin-Modus bearbeitbare Zeilen
+        const editClass = adminMode ? 'editable' : '';
+        const editHandler = adminMode ? `ondblclick="editXp('${r.n}')"` : '';
         
         return `
-          <tr ${i < 3 ? 'class="highlight-new"' : ''}>
-            <td class="subtle">${medal}#${i+1}</td>
-            <td style="display:flex;align-items:center;gap:10px">
-              ${ring(r.total, r.n)} <b>${r.n}</b>
-            </td>
-            <td class="right">${r.base.toFixed(2)}€</td>
-            <td class="right">${r.today.toFixed(2)}€</td>
-            <td class="right"><b>${r.total.toFixed(2)}€</b></td>
-          </tr>
-        `;
-      }).join('');
+        <tr>
+          <td class="subtle">#${i+1}</td>
+          <td style="display:flex;align-items:center;gap:10px">
+            ${ring(r.total, r.n)} <b>${r.n}</b>
+          </td>
+          <td class="right">${r.base.toFixed(2)}€</td>
+          <td class="right">${r.today.toFixed(2)}€</td>
+          <td class="right ${editClass}" ${editHandler}><b>${r.total.toFixed(2)}€</b></td>
+        </tr>
+      `}).join('');
 
     wrap.innerHTML = `
       <table class="rank-table">
         <thead>
-          <tr>
-            <th></th>
-            <th>Person</th>
-            <th class="right">XP bisher</th>
-            <th class="right">Heute</th>
-            <th class="right">Gesamt</th>
-          </tr>
+          <tr><th></th><th>Person</th><th class="right">XP bisher</th><th class="right">Heute</th><th class="right">Gesamt</th></tr>
         </thead>
         <tbody>${rows}</tbody>
       </table>`;
       
-    // Statistiken aktualisieren
-    updateXpStats();
-  }
-  
-  function updateXpStats() {
-    const names = [...new Set([...(people || []), ...Object.keys(xp || {})])]
-      .filter(n => CORE.includes(n) || !n.startsWith('_'));
-    
-    if (names.length === 0) return;
-    
-    const totals = names.map(n => {
-      const base = Number(xp[n] || 0);
-      const today = currentValueOf(n);
-      return base + today;
-    });
-    
-    const totalXp = totals.reduce((sum, val) => sum + val, 0);
-    const averageXp = totalXp / names.length;
-    const leader = names
-      .map(n => {
-        const base = Number(xp[n] || 0);
-        const today = currentValueOf(n);
-        return { name: n, total: base + today };
-      })
-      .sort((a, b) => b.total - a.total)[0];
-    
-    document.getElementById('totalXp').textContent = `${totalXp.toFixed(2)}€`;
-    document.getElementById('averageXp').textContent = `${averageXp.toFixed(2)}€`;
-    document.getElementById('leaderXp').textContent = leader ? `${leader.name} (${leader.total.toFixed(2)}€)` : '-';
-  }
-  
-  async function renderHausdienstRanking() {
-    const wrap = document.getElementById('hausdienstWrap');
-    
-    if (!db) {
-      wrap.innerHTML = '<div class="sub">Offline - Keine Verbindung zur Datenbank.</div>';
-      return;
-    }
-    
-    try {
-      // Hausdienst-Daten laden
-      const snapshot = await db.collection("hausdienst").get();
-      hausdienstData = {};
-      dutyStats = {};
+    // Personen-Dropdown für Admin-Bereich füllen
+    if (adminMode) {
+      const select = document.getElementById('xpPersonSelect');
+      select.innerHTML = '<option value="">Person auswählen</option>';
       
-      snapshot.forEach(doc => {
-        const data = doc.data();
-        if (data.person) {
-          if (!hausdienstData[data.person]) {
-            hausdienstData[data.person] = [];
-          }
-          hausdienstData[data.person].push(doc.id);
-          
-          // Für Achievements: Speichere die Tage, an denen Hausdienste geleistet wurden
-          if (!dutyStats[data.person]) {
-            dutyStats[data.person] = {
-              count: 0,
-              days: []
-            };
-          }
-          dutyStats[data.person].count++;
-          dutyStats[data.person].days.push(doc.id);
-        }
-      });
-      
-      // Personen, die keine Hausdienste hatten, mit 0 initialisieren
-      CORE.forEach(person => {
-        if (!hausdienstData[person]) {
-          hausdienstData[person] = [];
-        }
-      });
-      
-      const sorted = Object.entries(hausdienstData)
-        .map(([person, duties]) => ({ person, count: duties.length }))
-        .sort((a, b) => b.count - a.count);
-      
-      if (sorted.length === 0) {
-        wrap.innerHTML = '<div class="sub">Keine Hausdienst-Daten gefunden.</div>';
-        return;
-      }
-      
-      const rows = sorted.map((item, i) => {
-        let medal = '';
-        if (i === 0) medal = '<span class="medal medal-gold">1</span>';
-        else if (i === 1) medal = '<span class="medal medal-silver">2</span>';
-        else if (i === 2) medal = '<span class="medal medal-bronze">3</span>';
-        
-        const progressPercent = Math.min(100, (item.count / Math.max(1, sorted[0].count)) * 100);
-        
-        return `
-          <tr ${i < 3 ? 'class="highlight-new"' : ''}>
-            <td class="subtle">${medal}#${i+1}</td>
-            <td style="display:flex;align-items:center;gap:10px">
-              <b>${item.person}</b>
-            </td>
-            <td>${item.count}</td>
-            <td>
-              <div class="progress-bar">
-                <div class="progress-fill" style="width: ${progressPercent}%"></div>
-              </div>
-            </td>
-          </tr>
-        `;
-      }).join('');
-      
-      wrap.innerHTML = `
-        <table class="rank-table">
-          <thead>
-            <tr>
-              <th></th>
-              <th>Person</th>
-              <th>Anzahl</th>
-              <th>Aktivität</th>
-            </tr>
-          </thead>
-          <tbody>${rows}</tbody>
-        </table>`;
-        
-      // Hausdienst-Statistiken aktualisieren
-      updateHausdienstStats(sorted);
-      
-      // Achievements neu berechnen
-      calculateAchievements();
-      
-    } catch (error) {
-      console.error("Fehler beim Laden der Hausdienst-Daten:", error);
-      wrap.innerHTML = '<div class="sub">Fehler beim Laden der Daten.</div>';
-    }
-  }
-  
-  function updateHausdienstStats(sortedData) {
-    if (sortedData.length === 0) return;
-    
-    const totalDuties = sortedData.reduce((sum, item) => sum + item.count, 0);
-    const averageDuties = totalDuties / sortedData.length;
-    const leader = sortedData[0];
-    
-    document.getElementById('totalDuties').textContent = totalDuties;
-    document.getElementById('averageDuties').textContent = averageDuties.toFixed(1);
-    document.getElementById('leaderDuties').textContent = leader ? `${leader.person} (${leader.count})` : '-';
-  }
-  
-  function calculateAchievements() {
-    achievements = {};
-    
-    // Für jede Person Achievements berechnen
-    CORE.forEach(person => {
-      achievements[person] = [];
-      
-      const personXp = (xp[person] || 0) + currentValueOf(person);
-      const personDuties = hausdienstData[person] ? hausdienstData[person].length : 0;
-      const personDutyDays = dutyStats[person] ? dutyStats[person].days : [];
-      
-      // Jedes Achievement prüfen
-      ACHIEVEMENTS.forEach(achievement => {
-        if (achievement.criteria(person, personXp, personDuties, personDutyDays)) {
-          achievements[person].push(achievement.id);
-        }
-      });
-    });
-    
-    // Achievements in localStorage speicern für Persistenz
-    localStorage.setItem('achievements', JSON.stringify(achievements));
-  }
-  
-  function renderAchievements(filter) {
-    const wrap = document.getElementById('achievementsWrap');
-    
-    // Achievements aus localStorage laden falls vorhanden
-    const storedAchievements = localStorage.getItem('achievements');
-    if (storedAchievements) {
-      achievements = JSON.parse(storedAchievements);
-    }
-    
-    let achievementsHtml = '';
-    
-    if (filter === 'all' || filter === 'earned') {
-      // Errungene Achievements anzeigen
-      CORE.forEach(person => {
-        const personAchievements = achievements[person] || [];
-        if (personAchievements.length > 0 && (filter === 'all' || filter === 'earned')) {
-          achievementsHtml += `
-            <div style="margin-bottom: 20px;">
-              <div class="section-title">${person}</div>
-              <div class="achievements-list">
-          `;
-          
-          personAchievements.forEach(achievementId => {
-            const achievement = ACHIEVEMENTS.find(a => a.id === achievementId);
-            if (achievement) {
-              achievementsHtml += `
-                <div class="pill">
-                  <span>${achievement.icon}</span>
-                  <span><b>${achievement.name}</b>: ${achievement.description}</span>
-                </div>
-              `;
-            }
-          });
-          
-          achievementsHtml += `</div></div>`;
-        }
-      });
-    }
-    
-    if (filter === 'all' || filter === 'locked') {
-      // Gesperrte Achievements anzeigen
-      const lockedAchievements = ACHIEVEMENTS.filter(achievement => {
-        // Prüfen, ob jemand dieses Achievement hat
-        return !Object.values(achievements).some(personAchievements => 
-          personAchievements.includes(achievement.id)
-        );
-      });
-      
-      if (lockedAchievements.length > 0) {
-        achievementsHtml += `
-          <div>
-            <div class="section-title">Noch nicht errungen</div>
-            <div class="achievements-list">
-        `;
-        
-        lockedAchievements.forEach(achievement => {
-          achievementsHtml += `
-            <div class="pill subtle">
-              <span>${achievement.icon}</span>
-              <span><b>${achievement.name}</b>: ${achievement.description}</span>
-            </div>
-          `;
+      names
+        .filter(n => CORE.includes(n) || !n.startsWith('_'))
+        .sort()
+        .forEach(n => {
+          const option = document.createElement('option');
+          option.value = n;
+          option.textContent = n;
+          select.appendChild(option);
         });
-        
-        achievementsHtml += `</div></div>`;
-      }
     }
-    
-    if (!achievementsHtml) {
-      achievementsHtml = '<div class="sub">Keine Achievements gefunden.</div>';
-    }
-    
-    wrap.innerHTML = achievementsHtml;
   }
-  
+
   function toggleAdminMode() {
     if (adminMode) {
       adminMode = false;
       document.getElementById('adminIndicator').style.display = 'none';
-      document.getElementById('adminControlsXp').style.display = 'none';
-      document.getElementById('adminControlsHausdienst').style.display = 'none';
+      document.getElementById('adminControls').style.display = 'none';
+      document.body.classList.remove('edit-mode');
       document.getElementById('adminBtn').textContent = '🔧';
+      render();
       return;
     }
     
@@ -820,303 +240,114 @@
     if (password === ADMIN_PASSWORD) {
       adminMode = true;
       document.getElementById('adminIndicator').style.display = 'inline-block';
-      document.getElementById('adminControlsXp').style.display = 'block';
-      document.getElementById('adminControlsHausdienst').style.display = 'block';
+      document.getElementById('adminControls').style.display = 'block';
+      document.body.classList.add('edit-mode');
       document.getElementById('adminBtn').textContent = '🔧✓';
-      
-      // Personen für Admin-Dropdowns füllen
-      const xpPersonSelect = document.getElementById('xpPersonSelect');
-      const dutyPersonSelect = document.getElementById('dutyPersonSelect');
-      
-      // Vorherige Optionen löschen (bis auf die erste)
-      while (xpPersonSelect.options.length > 1) {
-        xpPersonSelect.remove(1);
-      }
-      while (dutyPersonSelect.options.length > 1) {
-        dutyPersonSelect.remove(1);
-      }
-      
-      // Personen hinzufügen
-      CORE.forEach(person => {
-        const option = document.createElement('option');
-        option.value = person;
-        option.textContent = person;
-        
-        xpPersonSelect.appendChild(option.cloneNode(true));
-        dutyPersonSelect.appendChild(option);
-      });
+      render();
     } else {
       alert("Falsches Passwort");
     }
   }
   
-  function adjustXp() {
+  function editXp(person) {
+    if (!adminMode) return;
+    
+    // Person im Dropdown auswählen
+    document.getElementById('xpPersonSelect').value = person;
+    
+    // Aktuellen Gesamtwert in das Eingabefeld setzen
+    const base = Number(xp[person] || 0);
+    const today = currentValueOf(person);
+    const total = base + today;
+    
+    document.getElementById('xpEditValue').value = total.toFixed(2);
+    
+    // Scroll to admin controls
+    document.getElementById('adminControls').scrollIntoView({ behavior: 'smooth' });
+  }
+  
+  function updateXp() {
     if (!adminMode) return;
     
     const person = document.getElementById('xpPersonSelect').value;
-    const adjustment = parseFloat(document.getElementById('xpAdjustValue').value);
+    const newTotal = parseFloat(document.getElementById('xpEditValue').value);
     
-    if (!person || isNaN(adjustment)) {
+    if (!person || isNaN(newTotal) || newTotal < 0) {
       alert("Bitte gültige Werte eingeben");
       return;
     }
     
-    // XP anpassen
-    xp[person] = (xp[person] || 0) + adjustment;
-    if (xp[person] < 0) xp[person] = 0;
+    // Berechne neuen Basis-XP-Wert (Gesamt minus heutiger Wert)
+    const todayValue = currentValueOf(person);
+    const newBaseXp = newTotal - todayValue;
     
-    // Speichern
-    saveAll();
+    if (newBaseXp < 0) {
+      if (!confirm(`Achtung: Der neue Basis-XP-Wert (${newBaseXp.toFixed(2)}€) wäre negativ. Trotzdem fortfahren?`)) {
+        return;
+      }
+    }
     
-    // Rangliste aktualisieren
-    renderXpRanking();
-    
-    alert(`XP von ${person} um ${adjustment}€ angepasst. Neuer Wert: ${xp[person]}€`);
-    document.getElementById('xpAdjustValue').value = '';
-  }
-  
-  async function addDuty() {
-    if (!adminMode || !db) return;
-    
-    const date = document.getElementById('dutyDate').value;
-    const person = document.getElementById('dutyPersonSelect').value;
-    
-    if (!date || !person) {
-      alert("Bitte Datum und Person auswählen");
+    // Bestätigung einholen
+    if (!confirm(`${person}s XP von ${(xp[person] || 0).toFixed(2)}€ auf ${newBaseXp.toFixed(2)}€ ändern?`)) {
       return;
     }
     
-    try {
-      // Prüfen, ob bereits ein Eintrag für dieses Datum existiert
-      const existingDoc = await db.collection("hausdienst").doc(date).get();
-      if (existingDoc.exists) {
-        if (!confirm(`Für ${date} ist bereits ${existingDoc.data().person} eingetragen. Überschreiben?`)) {
-          return;
-        }
-      }
-      
-      // Hausdienst eintragen
-      await db.collection("hausdienst").doc(date).set({
-        person: person,
-        updatedAt: Date.now(),
-        updatedBy: "admin"
-      });
-      
-      alert(`${person} wurde für den ${date} als Hausdienst eingetragen`);
-      document.getElementById('dutyDate').value = '';
-      
-      // Rangliste aktualisieren
-      renderHausdienstRanking();
-      
-    } catch (error) {
-      console.error("Fehler beim Eintragen des Hausdienstes:", error);
-      alert("Fehler beim Eintragen des Hausdienstes");
-    }
-  }
-  
-  async function removeDuty() {
-    if (!adminMode || !db) return;
+    // XP-Wert aktualisieren
+    xp[person] = newBaseXp;
     
-    const date = document.getElementById('removeDutyDate').value;
-    
-    if (!date) {
-      alert("Bitte Datum auswählen");
-      return;
-    }
-    
-    try {
-      // Prüfen, ob ein Eintrag für dieses Datum existiert
-      const existingDoc = await db.collection("hausdienst").doc(date).get();
-      if (!existingDoc.exists) {
-        alert(`Für ${date} ist kein Hausdienst eingetragen`);
-        return;
-      }
-      
-      if (!confirm(`${existingDoc.data().person} als Hausdienst für ${date} wirklich entfernen?`)) {
-        return;
-      }
-      
-      // Hausdienst entfernen
-      await db.collection("hausdienst").doc(date).delete();
-      
-      alert(`Hausdienst für ${date} wurde entfernt`);
-      document.getElementById('removeDutyDate').value = '';
-      
-      // Rangliste aktualisieren
-      renderHausdienstRanking();
-      
-    } catch (error) {
-      console.error("Fehler beim Entfernen des Hausdienstes:", error);
-      alert("Fehler beim Entfernen des Hausdienstes");
-    }
-  }
-  
-  function openBackupModal() {
-    document.getElementById("backupModal").classList.add("show");
-  }
-  
-  function closeModal(id) {
-    document.getElementById(id).classList.remove("show");
-  }
-  
-  function createBackup() {
-    const backupData = {
-      xp: xp,
-      hausdienst: hausdienstData,
-      achievements: achievements,
-      timestamp: new Date().toISOString()
-    };
-    
-    // Lokal speichern
-    const backups = JSON.parse(localStorage.getItem('rangliste_backups') || '[]');
-    backups.push(backupData);
-    localStorage.setItem('rangliste_backups', JSON.stringify(backups));
-    
-    // In Firebase speichern, falls verfügbar
+    // In Firebase speichern
     if (db) {
-      db.collection("backups").doc(`rangliste_${Date.now()}`).set(backupData)
-        .then(() => alert("Backup erfolgreich erstellt!"))
-        .catch(err => console.error("Backup Fehler:", err));
+      db.collection(STATE_COLLECTION).doc('global').set({ xp }, { merge: true })
+        .then(() => {
+          alert("XP erfolgreich aktualisiert!");
+          render();
+        })
+        .catch(error => {
+          console.error("Fehler beim Speichern:", error);
+          alert("Fehler beim Speichern der Änderungen");
+        });
     } else {
-      alert("Backup erfolgreich lokal gespeichert!");
-    }
-  }
-  
-  function exportBackup() {
-    const backupData = {
-      xp: xp,
-      hausdienst: hausdienstData,
-      achievements: achievements,
-      timestamp: new Date().toISOString()
-    };
-    
-    const dataStr = JSON.stringify(backupData);
-    const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
-    
-    const exportFileDefaultName = `rangliste-backup-${new Date().toISOString().slice(0,10)}.json`;
-    
-    const linkElement = document.createElement('a');
-    linkElement.setAttribute('href', dataUri);
-    linkElement.setAttribute('download', exportFileDefaultName);
-    linkElement.click();
-  }
-  
-  function restoreBackup(file) {
-    if (!file) return;
-    
-    const reader = new FileReader();
-    reader.onload = function(e) {
-      try {
-        const backupData = JSON.parse(e.target.result);
-        
-        if (!confirm(`Sicher, dass Sie das Backup vom ${new Date(backupData.timestamp).toLocaleString()} wiederherstellen möchten? Alle aktuellen Daten werden überschrieben.`)) {
-          return;
-        }
-        
-        // Daten wiederherstellen
-        xp = backupData.xp || xp;
-        hausdienstData = backupData.hausdienst || hausdienstData;
-        achievements = backupData.achievements || achievements;
-        
-        saveAll();
-        renderXpRanking();
-        renderHausdienstRanking();
-        renderAchievements('all');
-        alert("Backup erfolgreich wiederhergestellt!");
-      } catch (err) {
-        console.error("Backup Wiederherstellungsfehler:", err);
-        alert("Fehler beim Wiederherstellen des Backups: " + err.message);
-      }
-    };
-    reader.readAsText(file);
-  }
-  
-  function showBackupList() {
-    const backups = JSON.parse(localStorage.getItem('rangliste_backups') || '[]');
-    const backupList = document.getElementById('backupList');
-    
-    if (backups.length === 0) {
-      backupList.innerHTML = '<div class="sub">Keine lokalen Backups gefunden.</div>';
-      return;
-    }
-    
-    backupList.innerHTML = backups.map((backup, index) => `
-      <div class="backup-item">
-        <span>${new Date(backup.timestamp).toLocaleString()}</span>
-        <button class="btn small" onclick="restoreLocalBackup(${index})">Wiederherstellen</button>
-      </div>
-    `).join('');
-  }
-  
-  function restoreLocalBackup(index) {
-    const backups = JSON.parse(localStorage.getItem('rangliste_backups') || '[]');
-    if (index < 0 || index >= backups.length) return;
-    
-    const backupData = backups[index];
-    
-    if (!confirm(`Sicher, dass Sie das Backup vom ${new Date(backupData.timestamp).toLocaleString()} wiederherstellen möchten? Alle aktuellen Daten werden überschrieben.`)) {
-      return;
-    }
-    
-    // Daten wiederherstellen
-    xp = backupData.xp || xp;
-    hausdienstData = backupData.hausdienst || hausdienstData;
-    achievements = backupData.achievements || achievements;
-    
-    saveAll();
-    renderXpRanking();
-    renderHausdienstRanking();
-    renderAchievements('all');
-    alert("Backup erfolgreich wiederhergestellt!");
-  }
-  
-  function saveAll() {
-    if (db) {
-      db.collection(STATE_COLLECTION).doc('global').set(
-        { prices, people, data, xp },
-        { merge: true }
-      ).catch(() => {});
+      // Offline: Nur lokal speichern
+      localStorage.setItem('sick_sound_xp', JSON.stringify(xp));
+      alert("XP lokal aktualisiert (Offline-Modus)");
+      render();
     }
   }
 
   (function init(){
-    try {
+    try{
       firebase.initializeApp(firebaseConfig);
       db = firebase.firestore();
-      try { db.settings({ experimentalAutoDetectLongPolling: true, merge: true }); } catch(_) {}
+      try{ db.settings({ experimentalAutoDetectLongPolling:true, merge:true }); }catch(_){}
       document.getElementById('dot').classList.add('statusok');
-      document.getElementById('connTxt').textContent = 'Online (Firestore verbunden)';
-    } catch(e) {
-      document.getElementById('connTxt').textContent = 'Offline – Firebase konnte nicht initialisiert werden.';
+      document.getElementById('connTxt').textContent='Online (Firestore verbunden)';
+    }catch(e){
+      document.getElementById('connTxt').textContent='Offline – Firebase konnte nicht initialisiert werden.';
+      // Offline-Daten laden
+      prices = JSON.parse(localStorage.getItem('sick_sound_prices') || '{}');
+      data = JSON.parse(localStorage.getItem('sick_sound_data') || '{}');
+      xp = JSON.parse(localStorage.getItem('sick_sound_xp') || '{}');
+      people = JSON.parse(localStorage.getItem('sick_sound_people') || '[]');
+      render();
       return;
     }
 
-    // Daten von Firebase laden
-    db.collection(STATE_COLLECTION).doc('global').onSnapshot(snap => {
-      if (!snap.exists) return;
-      const s = snap.data() || {};
+    db.collection(STATE_COLLECTION).doc('global').onSnapshot(snap=>{
+      if(!snap.exists) return;
+      const s=snap.data()||{};
       prices = s.prices || {};
-      data = s.data || {};
-      xp = s.xp || {};
+      data   = s.data   || {};
+      xp     = s.xp     || {};
       people = s.people || [];
-      renderXpRanking();
+      render();
     });
-    
-    // Initial Hausdienst-Rangliste laden
-    renderHausdienstRanking();
-    
-    // Achievements aus localStorage laden falls vorhanden
-    const storedAchievements = localStorage.getItem('achievements');
-    if (storedAchievements) {
-      achievements = JSON.parse(storedAchievements);
-    }
   })();
 </script>
 
 <!-- Service Worker -->
 <script>
   if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('./sw.js?v=21', { scope: './' }).catch(() => {});
+    navigator.serviceWorker.register('./sw.js?v=21', { scope: './' }).catch(()=>{});
   }
 </script>
 </body>
