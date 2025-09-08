@@ -57,12 +57,6 @@
     /* Hinweis im Löschmodus */
     .delete-hint{ opacity:.75; font-size:12px; margin-top:4px }
     .delete-mode .person-cell{ cursor:pointer }
-
-    /* Backup Modal */
-    .modal-content{ max-width: 500px; }
-    .backup-actions{ display: flex; gap: 10px; margin-top: 15px; }
-    .backup-list{ max-height: 200px; overflow-y: auto; margin: 10px 0; }
-    .backup-item{ padding: 8px; border-bottom: 1px solid rgba(255,255,255,0.1); display: flex; justify-content: space-between; }
   </style>
 </head>
 <body>
@@ -190,7 +184,7 @@
 <script>
 /* ===== Config ===== */
 const CORE = ["Chris","Daniel","Elmi","Florian","Joel","Kevin","Kiste","Marco","Meli","Simon"];
-const ADMIN_PASSWORD = "3006"; // Einfaches Admin-Passwort
+const ADMIN_PASSWORD = "1379"; // Einfaches Admin-Passwort
 
 // Firebase sickandsound-8a15f
 const firebaseConfig = {
@@ -218,9 +212,9 @@ const STATE_COLLECTION = location.search.includes("beta") ? "state_beta" : "stat
 /* ===== Keys & State ===== */
 const pricesKey="sick_sound_prices", peopleKey="sick_sound_people", dataKey="sick_sound_data",
       historyKey="sick_sound_history", bookingsKey="sick_sound_bookings", orderKey="sick_sound_order",
-      xpKey="sick_sound_xp", redoKey="sick_sound_redo", backupsKey="sick_sound_backups";
+      xpKey="sick_sound_xp", redoKey="sick_sound_redo", totalValueKey="sick_sound_totalValue";
 let prices={"Getränk":1.5,"Mittagessen":6.0};
-let people=[], data={}, history=[], redoStack=[], bookings=[], columnOrder=Object.keys(prices), xp={};
+let people=[], data={}, history=[], redoStack=[], bookings=[], columnOrder=Object.keys(prices), xp={}, totalValue={};
 let deleteMode=false, adminMode=false, correctionMode=false, hdToday=null;
 
 /* ===== Sounds ===== */
@@ -231,13 +225,20 @@ const sError = makeSound("https://cdn.jsdelivr.net/gh/jshawl/howler-examples@mas
 
 /* ===== Helpers / XP ===== */
 const todayStr=()=>new Date().toISOString().slice(0,10);
-const levelOf=x=>Math.floor(Math.sqrt(x/75))+1;
+// Level-Berechnung angepasst: Jetzt basierend auf Anzahl der Striche (nicht Geldwert)
+const levelOf=x=>Math.floor(Math.sqrt(x/5))+1;
+
 function valueOfCurrentStriche(person){
-  return (columnOrder||[]).reduce((sum,d)=> sum + ((data[`${person}_${d}`]||0)*(prices[d]||0)), 0);
+  return (columnOrder||[]).reduce((sum,d)=> sum + ( (data[`${person}_${d}`]||0) * (Number(prices[d])||0) ), 0);
 }
+
+function countOfCurrentStriche(person){
+  return (columnOrder||[]).reduce((sum,d)=> sum + (data[`${person}_${d}`]||0), 0);
+}
+
 function getXpForDisplay(person){
   const base=+(xp[person]||0);
-  const cur=valueOfCurrentStriche(person);
+  const cur=countOfCurrentStriche(person); // Anzahl der Striche statt Geldwert
   return Math.max(base, cur);
 }
 
@@ -264,9 +265,11 @@ async function loadState(){
         prices=s.prices||prices; people=s.people||JSON.parse(localStorage.getItem(peopleKey))||[];
         data=s.data||data; history=s.history||history; redoStack=s.redoStack||JSON.parse(localStorage.getItem(redoKey))||[];
         bookings=s.bookings||bookings; columnOrder=s.columnOrder||Object.keys(prices); xp=s.xp||xp;
+        totalValue=s.totalValue||JSON.parse(localStorage.getItem(totalValueKey))||{};
       }else{
         people=JSON.parse(localStorage.getItem(peopleKey))||[];
         redoStack=JSON.parse(localStorage.getItem(redoKey))||[];
+        totalValue=JSON.parse(localStorage.getItem(totalValueKey))||{};
       }
     }catch(e){ fallbackLoad(); }
   }else{ fallbackLoad(); }
@@ -276,12 +279,6 @@ async function loadState(){
   saveAll(); buildTable(); updateTodayBanner(); subscribeRealtime(); updateUndoRedoButtons();
   await ensureXpFromExistingStricheAfterLoad();
   scheduleMidnightRefresh(()=>{ updateTodayBanner(); buildTable(); });
-  
-  // Automatisches Backup einmal täglich
-  const lastBackup = localStorage.getItem('lastBackup');
-  if (!lastBackup || new Date().toDateString() !== new Date(parseInt(lastBackup)).toDateString()) {
-    createBackup();
-  }
 }
 function fallbackLoad(){
   prices=JSON.parse(localStorage.getItem(pricesKey))||prices;
@@ -292,15 +289,11 @@ function fallbackLoad(){
   bookings=JSON.parse(localStorage.getItem(bookingsKey))||bookings;
   columnOrder=JSON.parse(localStorage.getItem(orderKey))||Object.keys(prices);
   xp=JSON.parse(localStorage.getItem(xpKey))||xp;
+  totalValue=JSON.parse(localStorage.getItem(totalValueKey))||{};
 }
 
 async function ensureXpFromExistingStricheAfterLoad(){
-  const drinks=Object.keys(prices); let changed=false;
-  people.forEach(p=>{
-    let x=0; drinks.forEach(d=>{ const cnt=data[`${p}_${d}`]||0; x += cnt*(prices[d]||0); });
-    if((xp[p]||0) < x){ xp[p]=x; changed=true; }
-  });
-  if(changed){ saveAll(); buildTable(); }
+  // XP bereits korrekt gespeichert (Anzahl der Striche), muss nicht migriert werden
 }
 
 /* Save + Realtime */
@@ -313,9 +306,11 @@ function saveAll(){
   localStorage.setItem(bookingsKey,JSON.stringify(bookings));
   localStorage.setItem(orderKey,JSON.stringify(columnOrder));
   localStorage.setItem(xpKey,JSON.stringify(xp));
+  localStorage.setItem(totalValueKey,JSON.stringify(totalValue));
+  
   if(db){
     db.collection(STATE_COLLECTION).doc("global").set(
-      {prices,people,data,history,redoStack,bookings,columnOrder,xp},
+      {prices,people,data,history,redoStack,bookings,columnOrder,xp,totalValue},
       {merge:true}
     ).catch(()=>{});
   }
@@ -326,7 +321,8 @@ function subscribeRealtime(){
     if(!snap.exists) return;
     const s=snap.data();
     prices=s.prices||prices; people=s.people||people; data=s.data||data; history=s.history||history;
-    redoStack=s.redoStack||redoStack; bookings=s.bookings||bookings; columnOrder=s.columnOrder||columnOrder; xp=s.xp||xp;
+    redoStack=s.redoStack||redoStack; bookings=s.bookings||bookings; columnOrder=s.columnOrder||columnOrder; 
+    xp=s.xp||xp; totalValue=s.totalValue||totalValue;
     CORE.forEach(n=>{ if(!people.includes(n)) people.push(n); });
     buildTable(); updateTodayBanner(); updateUndoRedoButtons();
   });
@@ -384,7 +380,7 @@ function applyAction(a){
   } else if (a.action==="change"){
     data[a.id] = (a.prev||0) + 1;
     const parts=a.id.split('_'); const person=parts[0]; const drink=parts.slice(1).join('_');
-    xp[person] = (xp[person]||0) + (prices[drink]||0);
+    xp[person] = (xp[person]||0) + 1; // Immer 1 XP für jeden Strich
   }
 }
 function applyInverse(a){
@@ -397,7 +393,7 @@ function applyInverse(a){
   } else if (a.action==="change"){
     data[a.id] = a.prev;
     const parts=a.id.split('_'); const person=parts[0]; const drink=parts.slice(1).join('_');
-    xp[person] = Math.max(0,(xp[person]||0) - (prices[drink]||0));
+    xp[person] = Math.max(0,(xp[person]||0) - 1); // Immer 1 XP für jeden Strich
   }
 }
 function undoLast(){ const last=history.pop(); if(!last) return; applyInverse(last); redoStack.push(last); saveAll(); buildTable(); updateUndoRedoButtons(); }
@@ -489,8 +485,8 @@ function buildTable(){
 
   const ring=(xpVal, person)=>{
     const x=+xpVal||0;
-    const lvl=Math.max(1, Math.floor(Math.sqrt(x/75))+1);
-    const min=75*(lvl-1)*(lvl-1), max=75*lvl*lvl;
+    const lvl=Math.max(1, Math.floor(Math.sqrt(x/5))+1); // Angepasst für Striche statt Geld
+    const min=5*(lvl-1)*(lvl-1), max=5*lvl*lvl;
     const p=Math.max(0,Math.min(1,(x-min)/(max-min)));
     const r=22, c=2*Math.PI*r, off=(1-p)*c, gid="grad_"+person.replace(/[^a-z0-9]/gi,'')+"_"+lvl;
     return `<div class="lvl-ring" role="img" aria-label="Level ${lvl}, ${Math.round(p*100)}%">
@@ -513,10 +509,7 @@ function buildTable(){
       </div></th>`;
     columnOrder.forEach(dr=>{
       if(prices[dr]!==undefined){
-        const id=`${p}_${dr}`, val=data[id]||0, 
-              incHandler=`()=>changeCount('${id}','${dr}','${p}', 1)`,
-              decHandler=`()=>changeCount('${id}','${dr}','${p}', -1)`;
-        
+        const id=`${p}_${dr}`, val=data[id]||0, handler=`()=>changeCount('${id}','${dr}','${p}', 1)`;
         rhtml += `<td><div class="cell" onclick="changeCount('${id}','${dr}','${p}', 1)">
           ${adminMode ? `<button class="btn small minus-btn" onclick="event.stopPropagation(); changeCount('${id}','${dr}','${p}', -1)"
             onmousedown="startHold(${decHandler})" onmouseup="stopHold()" onmouseleave="stopHold()"
@@ -598,70 +591,29 @@ function changeCount(id, drink, person, delta){
     el.classList.add('bump'); 
   }
   
-  const xpDelta = (prices[drink]||0) * delta;
+  const xpDelta = 1; // Immer 1 XP pro Strich, unabhängig vom Preis
+  const valueDelta = prices[drink] || 0; // Für Badges/Zwecke, die Geldwert benötigen
+  
   history.push({
     type: delta > 0 ? "inc" : "dec", 
     id, 
     prev: cur, 
     person, 
-    xpDelta: Math.abs(xpDelta)
+    xpDelta: xpDelta,
+    valueDelta: valueDelta
   }); 
   
   redoStack=[];
   data[id]=next;
   
   const before=levelOf((xp[person]||0)); 
-  xp[person] = Math.max(0, (xp[person]||0) + xpDelta); 
+  xp[person] = Math.max(0, (xp[person]||0) + (delta > 0 ? xpDelta : -xpDelta)); 
   const after=levelOf(xp[person]);
   
   (after>before ? sLevel : sClick).play();
   updateTotalsFor(person); 
   saveAll(); 
   updateUndoRedoButtons();
-}
-
-function correctTotal(person, newTotal) {
-  const currentTotal = columnOrder.reduce((s,d)=>s+(data[`${person}_${d}`]||0)*prices[d],0);
-  const difference = parseFloat(newTotal) - currentTotal;
-  
-  if (isNaN(difference)) return;
-  
-  // Finde das preiswerteste Getränk für die Korrektur
-  let cheapestDrink = null;
-  let cheapestPrice = Infinity;
-  
-  for (const drink of columnOrder) {
-    if (prices[drink] < cheapestPrice) {
-      cheapestDrink = drink;
-      cheapestPrice = prices[drink];
-    }
-  }
-  
-  if (!cheapestDrink) return;
-  
-  const id = `${person}_${cheapestDrink}`;
-  const currentCount = data[id] || 0;
-  const adjustment = Math.round(difference / cheapestPrice);
-  const newCount = Math.max(0, currentCount + adjustment);
-  
-  data[id] = newCount;
-  
-  // XP anpassen
-  const xpAdjustment = adjustment * cheapestPrice;
-  xp[person] = Math.max(0, (xp[person] || 0) + xpAdjustment);
-  
-  history.push({
-    type: "correction",
-    id,
-    person,
-    adjustment,
-    xpAdjustment,
-    previousCount: currentCount,
-    previousXp: xp[person] - xpAdjustment
-  });
-  
-  saveAll();
-  buildTable();
 }
 
 function updateTotalsFor(person){
@@ -678,6 +630,7 @@ function deletePerson(p){
   people=people.filter(x=>x!==p);
   Object.keys(data).forEach(k=>{ if(k.startsWith(p+"_")) delete data[k]; });
   delete xp[p];
+  delete totalValue[p];
   saveAll(); buildTable(); toggleDeleteMode();
 }
 function deleteColumn(drink){
@@ -694,8 +647,17 @@ function resetAll(){
   if(!confirm("Alle Striche abrechnen und zurücksetzen?")) return;
   people.forEach(p=>{
     const sum=columnOrder.reduce((s,d)=>s+(data[`${p}_${d}`]||0)*prices[d],0);
+    const count=columnOrder.reduce((s,d)=>s+(data[`${p}_${d}`]||0),0);
+    
     if(sum>0) bookings.push({date:new Date().toLocaleDateString("de-DE"), person:p, sum});
-    xp[p]=(xp[p]||0)+sum; columnOrder.forEach(d=>data[`${p}_${d}`]=0);
+    
+    // XP um Anzahl der Striche erhöhen (nicht um Geldwert)
+    xp[p]=(xp[p]||0)+count;
+    
+    // Geldwert für Badges in totalValue speichern
+    totalValue[p] = (totalValue[p] || 0) + sum;
+    
+    columnOrder.forEach(d=>data[`${p}_${d}`]=0);
   });
   history=[]; redoStack=[]; saveAll(); buildTable(); updateUndoRedoButtons();
 }
@@ -711,13 +673,14 @@ function createBackup() {
     bookings,
     columnOrder,
     xp,
+    totalValue,
     timestamp: new Date().toISOString()
   };
   
   // Lokal speichern
-  const backups = JSON.parse(localStorage.getItem(backupsKey) || "[]");
+  const backups = JSON.parse(localStorage.getItem('sick_sound_backups') || '[]');
   backups.push(backupData);
-  localStorage.setItem(backupsKey, JSON.stringify(backups));
+  localStorage.setItem('sick_sound_backups', JSON.stringify(backups));
   localStorage.setItem('lastBackup', Date.now().toString());
   
   // In Firebase speichern, wenn verfügbar
@@ -740,6 +703,7 @@ function exportBackup() {
     bookings,
     columnOrder,
     xp,
+    totalValue,
     timestamp: new Date().toISOString()
   };
   
@@ -775,6 +739,7 @@ function restoreBackup(file) {
       bookings = backupData.bookings || bookings;
       columnOrder = backupData.columnOrder || columnOrder;
       xp = backupData.xp || xp;
+      totalValue = backupData.totalValue || totalValue;
       
       saveAll();
       buildTable();
@@ -788,7 +753,7 @@ function restoreBackup(file) {
 }
 
 function showBackupList() {
-  const backups = JSON.parse(localStorage.getItem(backupsKey) || "[]");
+  const backups = JSON.parse(localStorage.getItem('sick_sound_backups') || '[]');
   const backupList = document.getElementById('backupList');
   
   if (backups.length === 0) {
@@ -805,7 +770,7 @@ function showBackupList() {
 }
 
 function restoreLocalBackup(index) {
-  const backups = JSON.parse(localStorage.getItem(backupsKey) || "[]");
+  const backups = JSON.parse(localStorage.getItem('sick_sound_backups') || '[]');
   if (index < 0 || index >= backups.length) return;
   
   const backupData = backups[index];
@@ -823,6 +788,7 @@ function restoreLocalBackup(index) {
   bookings = backupData.bookings || bookings;
   columnOrder = backupData.columnOrder || columnOrder;
   xp = backupData.xp || xp;
+  totalValue = backupData.totalValue || totalValue;
   
   saveAll();
   buildTable();
