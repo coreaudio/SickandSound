@@ -94,14 +94,14 @@ body {
    CARDS & CONTAINER
    ======================================== */
 
-/* TABLET: Größere Cards mit mehr Padding */
+/* TABLET PORTRAIT: Größere Cards mit mehr Padding */
 .card {
   background: rgba(28, 33, 48, 0.6);
   backdrop-filter: blur(10px);
   border: 2px solid rgba(110,231,255,0.12);
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-md);
-  padding: 28px;
+  padding: 32px 28px 28px 28px; /* Mehr Padding oben */
   margin-bottom: 24px;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
@@ -130,20 +130,21 @@ body {
 /* PORTRAIT: Optimierte Spaltenbreiten */
 .card.table-wrap table th:first-child,
 .card.table-wrap table td:first-child {
-  width: 200px; /* Feste Breite für Personen-Spalte */
-  min-width: 200px;
+  width: 220px; /* Feste Breite für Personen-Spalte */
+  min-width: 220px;
 }
 
 .card.table-wrap table th:not(:first-child):not(:last-child),
 .card.table-wrap table td:not(:first-child):not(:last-child) {
-  width: 140px; /* Feste Breite für Getränke-Spalten */
-  min-width: 140px;
+  width: 110px; /* Kompaktere Breite für Getränke-Spalten */
+  min-width: 110px;
+  padding: var(--row-pad) 8px; /* Weniger Padding horizontal */
 }
 
 .card.table-wrap table th:last-child,
 .card.table-wrap table td:last-child {
-  width: 120px; /* Feste Breite für Gesamt-Spalte */
-  min-width: 120px;
+  width: 100px; /* Feste Breite für Gesamt-Spalte */
+  min-width: 100px;
 }
 
 .card.table-wrap table td, 
@@ -247,17 +248,19 @@ body {
    TYPOGRAPHY
    ======================================== */
 
-/* TABLET: Größere Section-Titles */
+/* PORTRAIT: Optimierte Section-Titles */
 .section-title{ 
-  font-size: 24px;
+  font-size: 20px;
   font-weight: 900;
   letter-spacing: 0.5px;
-  margin-bottom: 16px;
+  margin-bottom: 14px;
+  margin-top: 4px;
   background: linear-gradient(135deg, var(--primary), var(--secondary));
   background-clip: text;
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   text-shadow: 0 2px 8px rgba(110,231,255,0.2);
+  line-height: 1.3;
 }
 
 .sub {
@@ -318,16 +321,20 @@ body {
    GETRÄNKE-CHIPS
    ======================================== */
 
+/* PORTRAIT: Kompakte Getränke-Chips für bessere Platznutzung */
 .drink-chip {
-  padding: 12px 18px;
+  padding: 8px 12px;
   background: rgba(110,231,255,0.1);
-  border-radius: var(--radius-sm);
+  border-radius: 12px;
   border: 2px solid rgba(110,231,255,0.2);
   transition: all 0.2s;
-  min-height: var(--touch-target);
+  min-height: 44px;
   display: inline-flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
+  flex-direction: column;
+  text-align: center;
+  max-width: 100%;
 }
 
 .drink-chip:active {
@@ -337,15 +344,17 @@ body {
 }
 
 .drink-chip .drink-name{ 
-  font-size: 16px;
+  font-size: 13px;
   font-weight: 800;
   color: var(--primary);
+  line-height: 1.2;
+  word-break: break-word;
 }
-
 .drink-chip .drink-price{ 
-  font-size: 14px;
+  font-size: 12px;
   opacity: .9;
   font-weight: 700;
+  line-height: 1;
 }
 
 /* ========================================
@@ -626,28 +635,36 @@ body {
   opacity: .85; 
 }
 
-/* Sticky Header */
+/* Sticky Header - VERBESSERT */
 .card.table-wrap thead th{
   position: sticky;
   top: var(--sticky-top);
   z-index: 100;
-  background: #0b0e14;
-  box-shadow: 0 4px 12px rgba(0,0,0,.5);
-  border-bottom: 2px solid #6ee7ff;
+  background: linear-gradient(180deg, #0b0e14 85%, rgba(11, 14, 20, 0.95) 100%);
+  box-shadow: 0 6px 16px rgba(0,0,0,.6);
+  border-bottom: 3px solid #6ee7ff;
+  padding-top: 18px;
+  padding-bottom: 18px;
 }
 
 .card.table-wrap thead th::after {
   content: '';
   position: absolute;
-  bottom: -2px;
+  bottom: -3px;
   left: 0;
   right: 0;
-  height: 2px;
+  height: 3px;
   background: linear-gradient(90deg, #6ee7ff, #a78bfa);
+  box-shadow: 0 2px 8px rgba(110,231,255,0.5);
 }
 
 .card.table-wrap.scrolled thead th {
-  box-shadow: 0 4px 20px rgba(110,231,255,0.3);
+  box-shadow: 0 8px 24px rgba(110,231,255,0.4);
+}
+
+/* Erste Zeile: Mehr Abstand zum Header */
+.card.table-wrap tbody tr:first-child td {
+  padding-top: 20px;
 }
 
 /* Sticky First Column */
