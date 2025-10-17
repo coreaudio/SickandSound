@@ -778,35 +778,62 @@ function showXPPopup(element, text, color = '#6ee7ff') {
   setTimeout(() => popup.remove(), 1500);
 }
 
-/* Touch-Handling für Tablets - unterscheidet zwischen Tap und Swipe */
-let touchStartX=0, touchStartY=0, touchStartTime=0;
-const SWIPE_THRESHOLD = 30; // Pixel
-const TAP_TIME_THRESHOLD = 300; // ms
+/* TABLET: Verhindere ungewollte Klicks beim Scrollen */
+let touchStartX = 0, touchStartY = 0, touchStartTime = 0;
+let isTouchScrolling = false;
+const SCROLL_THRESHOLD = 10; // Pixel - sehr sensitiv
+const TAP_MAX_DURATION = 200; // ms
+
+// Füge passive:false hinzu für preventDefault
+const touchOptions = { passive: false };
 
 document.addEventListener('touchstart', function(e) {
-  if(e.target.closest('.plus-btn, .minus-btn, .cell')) {
-    const touch = e.touches[0];
-    touchStartX = touch.clientX;
-    touchStartY = touch.clientY;
-    touchStartTime = Date.now();
+  // Speichere Start-Position für alle Touches
+  const touch = e.touches[0];
+  touchStartX = touch.clientX;
+  touchStartY = touch.clientY;
+  touchStartTime = Date.now();
+  isTouchScrolling = false;
+}, { passive: true });
+
+document.addEventListener('touchmove', function(e) {
+  const touch = e.touches[0];
+  const deltaX = Math.abs(touch.clientX - touchStartX);
+  const deltaY = Math.abs(touch.clientY - touchStartY);
+  
+  // Wenn Finger sich bewegt hat, ist es Scrolling
+  if (deltaX > SCROLL_THRESHOLD || deltaY > SCROLL_THRESHOLD) {
+    isTouchScrolling = true;
   }
-}, {passive: true});
+}, { passive: true });
 
 document.addEventListener('touchend', function(e) {
-  if(e.target.closest('.plus-btn, .minus-btn, .cell')) {
-    const touch = e.changedTouches[0];
-    const deltaX = Math.abs(touch.clientX - touchStartX);
-    const deltaY = Math.abs(touch.clientY - touchStartY);
-    const deltaTime = Date.now() - touchStartTime;
-    
-    // Wenn Bewegung zu groß oder zu lang -> als Swipe behandeln, Event abbrechen
-    if(deltaX > SWIPE_THRESHOLD || deltaY > SWIPE_THRESHOLD || deltaTime > TAP_TIME_THRESHOLD) {
-      e.preventDefault();
-      e.stopPropagation();
-      return false;
-    }
+  // Wenn es Scrolling war, verhindere alle Klicks
+  if (isTouchScrolling) {
+    e.preventDefault();
+    e.stopPropagation();
+    isTouchScrolling = false;
+    return false;
   }
-}, {passive: false});
+  
+  // Prüfe Touch-Dauer
+  const touchDuration = Date.now() - touchStartTime;
+  if (touchDuration > TAP_MAX_DURATION) {
+    e.preventDefault();
+    e.stopPropagation();
+    return false;
+  }
+}, touchOptions);
+
+// Zusätzlicher Schutz: Click-Events nur bei echtem Tap
+document.addEventListener('click', function(e) {
+  if (isTouchScrolling) {
+    e.preventDefault();
+    e.stopPropagation();
+    isTouchScrolling = false;
+    return false;
+  }
+}, { capture: true });
 
 /* 00:00 Refresh */
 function scheduleMidnightRefresh(cb){

@@ -4,14 +4,14 @@
    ======================================== */
 
 :root{
-  /* TABLET-OPTIMIERT: Größere Touch-Targets & Lesbarkeit */
-  --ring: 64px;
-  --row-pad: 16px;
-  --name-size: 22px;
-  --count-size: 24px;
-  --cell-gap: 20px;
-  --sticky-top: 72px;
-  --touch-target: 52px; /* Minimum für Touch */
+  /* TABLET PORTRAIT: Optimiert für 768-1024px Hochformat */
+  --ring: 56px;
+  --row-pad: 14px;
+  --name-size: 20px;
+  --count-size: 22px;
+  --cell-gap: 16px;
+  --sticky-top: 80px;
+  --touch-target: 48px; /* Minimum für Touch */
   
   --admin-color: #ff6b6b;
   --primary: #6ee7ff;
@@ -42,10 +42,10 @@ body {
   -webkit-tap-highlight-color: transparent;
 }
 
-/* TABLET: Größeres Content-Padding */
+/* TABLET PORTRAIT: Optimiertes Content-Padding */
 .content{ 
-  padding: 24px 24px 120px 24px;
-  max-width: 1600px;
+  padding: 20px 20px 110px 20px;
+  max-width: 900px; /* Optimal für Tablet Portrait */
   margin: 0 auto;
 }
 
@@ -113,25 +113,53 @@ body {
   transform: scale(0.995);
 }
 
-/* Tabellen-Styling */
+/* Tabellen-Styling - PORTRAIT OPTIMIERT */
 .card.table-wrap {
   padding: 0;
-  overflow: hidden;
+  overflow-x: auto;
+  overflow-y: visible;
+  -webkit-overflow-scrolling: touch;
 }
 
 .card.table-wrap table {
   width: 100%;
   border-spacing: 0;
+  table-layout: fixed;
+}
+
+/* PORTRAIT: Optimierte Spaltenbreiten */
+.card.table-wrap table th:first-child,
+.card.table-wrap table td:first-child {
+  width: 200px; /* Feste Breite für Personen-Spalte */
+  min-width: 200px;
+}
+
+.card.table-wrap table th:not(:first-child):not(:last-child),
+.card.table-wrap table td:not(:first-child):not(:last-child) {
+  width: 140px; /* Feste Breite für Getränke-Spalten */
+  min-width: 140px;
+}
+
+.card.table-wrap table th:last-child,
+.card.table-wrap table td:last-child {
+  width: 120px; /* Feste Breite für Gesamt-Spalte */
+  min-width: 120px;
 }
 
 .card.table-wrap table td, 
 .card.table-wrap table th{ 
-  padding: var(--row-pad) 16px;
+  padding: var(--row-pad) 12px;
   border-bottom: 1px solid rgba(255,255,255,0.05);
+  vertical-align: middle;
+}
+
+/* PORTRAIT: Keine Hintergrund-Änderung beim Touch, nur visuelles Feedback */
+.card.table-wrap tbody tr {
+  transition: background 0.15s ease;
 }
 
 .card.table-wrap tbody tr:active {
-  background: rgba(110,231,255,0.08);
+  background: rgba(110,231,255,0.05);
 }
 
 /* ========================================
@@ -149,6 +177,7 @@ body {
   border: none;
   cursor: pointer;
   transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  touch-action: manipulation; /* Verhindert Zoom bei Doppel-Tap */
 }
 
 .btn:active {
@@ -162,16 +191,19 @@ body {
   font-size: 15px;
 }
 
+/* PORTRAIT: Plus/Minus Buttons mit besserer Touch-Erkennung */
 .plus-btn, .minus-btn { 
   min-width: var(--touch-target);
   min-height: var(--touch-target);
-  padding: 14px 20px;
+  padding: 12px 16px;
   border-radius: var(--radius-sm);
   font-weight: 900;
-  font-size: 16px;
+  font-size: 15px;
   box-shadow: var(--shadow-md);
   border: none;
   cursor: pointer;
+  touch-action: manipulation; /* Wichtig: Verhindert Scroll-Interferenz */
+  user-select: none;
 }
 
 .plus-btn {
@@ -181,7 +213,7 @@ body {
 
 .plus-btn:active {
   box-shadow: 0 6px 20px rgba(110,231,255,0.5);
-  transform: scale(0.98);
+  transform: scale(0.95);
 }
 
 .minus-btn {
@@ -190,7 +222,7 @@ body {
 }
 
 .minus-btn:active {
-  transform: scale(0.98);
+  transform: scale(0.95);
 }
 
 /* Input Fields */
@@ -320,22 +352,26 @@ body {
    CELL & COUNT
    ======================================== */
 
+/* PORTRAIT: Cell mit mehr Abstand für bessere Touch-Erkennung */
 .cell{ 
   display: flex; 
   align-items: center; 
   justify-content: flex-end; 
   gap: var(--cell-gap);
-  padding: 6px;
+  padding: 8px 4px;
   border-radius: var(--radius-sm);
+  touch-action: pan-y; /* Nur vertikales Scrollen erlauben */
 }
 
 .count{ 
   font-size: var(--count-size);
-  min-width: 32px;
+  min-width: 36px;
   text-align: right;
   font-weight: 800;
   color: var(--primary);
   text-shadow: 0 2px 8px rgba(110,231,255,0.4);
+  user-select: none;
+  pointer-events: none; /* Count selbst nicht klickbar */
 }
 
 /* ========================================
