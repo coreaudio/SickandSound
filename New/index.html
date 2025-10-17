@@ -11,7 +11,7 @@
   <link rel="icon" type="image/png" href="Icons/Apple logo.png">
   <link rel="manifest" href="manifest.webmanifest">
   <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;800&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="style.css?v=11" />
+  <link rel="stylesheet" href="style.css?v=12" />
   <script src="swipe-navigation.js" defer></script>
   <style>
     /* Seiten-spezifische Styles */
@@ -255,12 +255,6 @@ function getXpForDisplay(person){
   return Math.max(base, cur);
 }
 
-/* Long-press +1 */
-let holdT=null, holdI=null;
-function startHold(handler){ stopHold(); handler(); holdT=setTimeout(()=>{holdI=setInterval(handler,120)},420); }
-function stopHold(){ if(holdT) clearTimeout(holdT); if(holdI) clearInterval(holdI); holdT=holdI=null; }
-window.onmouseup=stopHold; window.onmouseleave=stopHold;
-
 /* Drag & Drop für Spalten */
 let draggedColumn = null;
 
@@ -325,7 +319,7 @@ function showXPPopup(element, text, color = '#6ee7ff') {
   setTimeout(() => popup.remove(), 1500);
 }
 
-/* TABLET: Verhindere ungewollte Klicks beim Scrollen/Swipen */
+/* TABLET: Verhindere ungewollte Klicks beim Scrollen/Swipen (kein Auto-Repeat mehr) */
 let touchStartX = 0, touchStartY = 0, touchStartTime = 0;
 let isTouchMoving = false;
 let isHorizontalSwipe = false;
@@ -349,8 +343,6 @@ document.addEventListener('touchmove', function(e) {
   // Jegliche Bewegung > 2px markieren
   if (deltaX > TAP_THRESHOLD || deltaY > TAP_THRESHOLD) {
     isTouchMoving = true;
-    // WICHTIG: Stoppe Auto-Repeat sofort bei Bewegung (verhindert Striche beim Scrollen)!
-    stopHold();
   }
   
   // Horizontaler Swipe (für Seiten-Navigation)
@@ -360,9 +352,6 @@ document.addEventListener('touchmove', function(e) {
 }, { passive: true });
 
 document.addEventListener('touchend', function(e) {
-  // Stoppe Auto-Repeat
-  stopHold();
-  
   // Bei jeglicher Bewegung ODER horizontalem Swipe: Klicks verhindern
   if (isTouchMoving || isHorizontalSwipe) {
     e.preventDefault();
@@ -695,18 +684,12 @@ function buildTable(){
       </div></th>`;
     columnOrder.forEach(dr=>{
       if(prices[dr]!==undefined){
-        const id=`${p}_${dr}`, val=data[id]||0, 
-              incHandler=`()=>changeCount('${id}','${dr}','${p}', 1)`,
-              decHandler=`()=>changeCount('${id}','${dr}','${p}', -1)`;
+        const id=`${p}_${dr}`, val=data[id]||0;
         
         rhtml += `<td><div class="cell" onclick="changeCount('${id}','${dr}','${p}', 1)">
-          ${adminMode ? `<button class="btn small minus-btn" onclick="event.stopPropagation(); changeCount('${id}','${dr}','${p}', -1)"
-            onmousedown="startHold(${decHandler})" onmouseup="stopHold()" onmouseleave="stopHold()"
-            ontouchstart="startHold(${decHandler})" ontouchend="stopHold()">-1</button>` : ''}
+          ${adminMode ? `<button class="btn small minus-btn" onclick="event.stopPropagation(); changeCount('${id}','${dr}','${p}', -1)">-1</button>` : ''}
           <div class="count" id="${id}">${val}</div>
-          <button class="btn small plus-btn" onclick="event.stopPropagation(); changeCount('${id}','${dr}','${p}', 1)"
-            onmousedown="startHold(${incHandler})" onmouseup="stopHold()" onmouseleave="stopHold()"
-            ontouchstart="startHold(${incHandler})" ontouchend="stopHold()">+1</button></div></td>`;
+          <button class="btn small plus-btn" onclick="event.stopPropagation(); changeCount('${id}','${dr}','${p}', 1)">+1</button></div></td>`;
       }
     });
     const total=columnOrder.reduce((s,d)=>s+(data[`${p}_${d}`]||0)*prices[d],0);
