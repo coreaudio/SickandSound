@@ -79,10 +79,10 @@ td{font-size:15px}
 td:last-child{font-weight:900; color:var(--gold)}
 .section-row td{padding:10px; background:rgba(255,255,255,.05); font-weight:900; letter-spacing:.3px; color:#cbd5e1}
 
-/* Sticky Headers - bleibt beim Scrollen der content area sichtbar */
+/* Sticky Headers - bleibt beim Scrollen direkt unter AppBar */
 thead th{
   position:sticky;
-  top:64px;
+  top:0;
   background:linear-gradient(180deg,#141926,#101521);
   z-index:10;
   box-shadow:0 2px 8px rgba(0,0,0,0.3);
@@ -156,6 +156,9 @@ button,.btn{min-height:44px}
   box-shadow:0 8px 24px rgba(0,0,0,.25); cursor:pointer; min-height:44px;
 }
 .cta-check svg{width:20px; height:20px}
+
+/* PayPal Button Logo */
+.paypal-logo{width:20px; height:20px; display:block}
 
 /* Hausdienst Warning - sehr deutlich */
 .hd-warning{
