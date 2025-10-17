@@ -1,898 +1,217 @@
-/* ========================================
-   TABLET-OPTIMIERTES DESIGN
-   Für Sick & Sound App
-   ======================================== */
-
 :root{
-  /* TABLET PORTRAIT: Optimiert für 768-1024px Hochformat */
-  --ring: 56px;
-  --row-pad: 14px;
-  --name-size: 20px;
-  --count-size: 22px;
-  --cell-gap: 16px;
-  --sticky-top: 80px;
-  --touch-target: 48px; /* Minimum für Touch */
-  
-  --admin-color: #ff6b6b;
-  --primary: #6ee7ff;
-  --secondary: #a78bfa;
-  --bg-dark: #0b0e14;
-  --bg-card: #151a24;
-  --bg-elevated: #1c2130;
-  --border: #2a3042;
-  --text: #e6e8ef;
-  
-  /* Größere Radien für Tablet */
-  --radius-sm: 16px;
-  --radius-md: 20px;
-  --radius-lg: 24px;
-  
-  --shadow-sm: 0 2px 8px rgba(0,0,0,0.2);
-  --shadow-md: 0 4px 16px rgba(0,0,0,0.3);
-  --shadow-lg: 0 8px 32px rgba(0,0,0,0.4);
-  --shadow-glow: 0 0 20px rgba(110,231,255,0.15);
+  --bg:#0b0e14; --panel:#141926; --panel-2:#101521; --txt:#e9eefb; --muted:#94a3b8;
+  --accent:#00e0b8; --accent-2:#7c3aed; --danger:#ff4d4f; --gold:#ffd700;
+  --appbar-h:64px; --nav-h:72px;
 }
+
+/* Reset & base */
+*{box-sizing:border-box}
+html,body{height:100%;margin:0}
+body{
+  color:var(--txt);
+  font-family: ui-sans-serif, -apple-system, BlinkMacSystemFont, "SF Pro Display",
+               "Segoe UI", Roboto, "Helvetica Neue", Arial, "Orbitron", sans-serif;
+  background:
+    radial-gradient(1000px 700px at 100% -20%, #0f1b2d 0%, rgba(11,14,20,0) 60%) no-repeat fixed,
+    var(--bg);
+}
+
+/* ===== App Shell ======================================================= */
+.app{height:100dvh; width:100%; display:flex; flex-direction:column}
+
+/* AppBar */
+.appbar{
+  position:sticky; top:0; z-index:50; height:var(--appbar-h);
+  display:flex; align-items:center; justify-content:space-between; gap:8px;
+  padding:0 calc(14px + env(safe-area-inset-right)) 0 calc(14px + env(safe-area-inset-left));
+  background:rgba(16,21,33,.68); border-bottom:1px solid rgba(255,255,255,.08);
+  backdrop-filter: saturate(160%) blur(16px);
+}
+.app-title{display:flex; align-items:center; gap:10px}
+.brand-dot{
+  width:28px; height:28px; border-radius:9px;
+  background:linear-gradient(140deg,var(--accent),var(--accent-2));
+  box-shadow:0 6px 20px rgba(0,224,184,.25);
+}
+.app-title h1{font-size:20px; letter-spacing:.3px; margin:0}
+.appbar-actions{display:flex; gap:8px}
+
+/* Content area (only this scrolls) */
+.content{
+  flex:1; min-height:0; /* enables child scrolling */
+  padding:14px;
+  padding-left: calc(14px + env(safe-area-inset-left));
+  padding-right: calc(14px + env(safe-area-inset-right));
+  overflow:auto;
+}
+
+/* Bottom navigation */
+.bottomnav{
+  position:sticky; bottom:0; z-index:50; height:calc(var(--nav-h) + env(safe-area-inset-bottom));
+  padding-bottom: env(safe-area-inset-bottom);
+  display:flex; justify-content:space-around; align-items:center;
+  background:rgba(16,21,33,.68); border-top:1px solid rgba(255,255,255,.08);
+  backdrop-filter: saturate(160%) blur(16px);
+}
+.tab{display:flex; flex-direction:column; align-items:center; gap:4px; color:#cbd5e1; text-decoration:none; font-size:11px}
+.tab svg{width:22px; height:22px; opacity:.9}
+.tab.active{color:#fff}
+.tab.active svg{opacity:1; filter: drop-shadow(0 2px 8px rgba(0,224,184,.35))}
+
+/* ===== Cards / Surfaces =============================================== */
+.card{
+  background: linear-gradient(180deg, #141926, #101521);
+  border:1px solid rgba(255,255,255,.06);
+  border-radius:16px;
+  box-shadow: 0 10px 30px rgba(0,0,0,.35), inset 0 1px 0 rgba(255,255,255,.03);
+  padding:14px;
+}
+.section-title{margin:0 0 8px 0; font-size:17px; font-weight:800}
+.sub{color:var(--muted); font-size:13px}
+
+/* ===== Table (Strichliste) ============================================ */
+.table-wrap{overflow:auto}
+table{width:100%; border-collapse:collapse; table-layout:fixed}
+th,td{padding:10px; border-bottom:1px solid rgba(255,255,255,.06); text-align:center}
+th{font-weight:900; font-size:15px; color:#fff}
+td{font-size:15px}
+td:last-child{font-weight:900; color:var(--gold)}
+.section-row td{padding:10px; background:rgba(255,255,255,.05); font-weight:900; letter-spacing:.3px; color:#cbd5e1}
+@media (min-width: 900px){
+  thead th{position:sticky; top:0; background:linear-gradient(180deg,#141926,#101521); z-index:2}
+}
+
+/* Drink header chip */
+.drink-chip{display:inline-block; min-width:120px; padding:8px 12px; border-radius:14px;
+  background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.09)}
+.drink-name{font-size:15px; font-weight:900; display:block}
+.drink-price{font-size:12px; color:#cdd5e1}
+
+/* Person cell + Level */
+.person-cell{display:flex; gap:12px; align-items:center; text-align:left}
+.p-info{flex:1; min-width:140px}
+.p-name{font-size:19px; font-weight:900; letter-spacing:.2px}
+.lvl-wrap{margin-top:4px}
+.lvl-line{font-size:12px; color:#cbd5e1; display:flex; justify-content:space-between}
+.progress{height:8px; background:#0e1422; border-radius:6px; overflow:hidden}
+.progress > span{display:block; height:100%; background:linear-gradient(90deg,var(--accent),var(--accent-2))}
+
+/* Circular Level Ring */
+.lvl-ring{position:relative; width:52px; height:52px}
+.lvl-ring svg{transform:rotate(-90deg)}
+.lvl-ring .val{position:absolute; inset:0; display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:900}
+.ring-bg{stroke:rgba(255,255,255,.12); stroke-width:6; fill:none}
+.ring-fg{stroke:url(#grad); stroke-width:6; fill:none; stroke-linecap:round; transition:stroke-dashoffset .25s ease}
+
+/* Cell content & counter */
+.cell{display:flex; flex-direction:column; gap:6px; align-items:center}
+.count{font-size:18px; font-weight:900}
+.count.bump{animation:bump .16s ease}
+@keyframes bump{0%{transform:scale(1)}50%{transform:scale(1.2)}100%{transform:scale(1)}}
+
+/* Buttons */
+.btn{-webkit-tap-highlight-color:transparent; padding:10px 14px; border:none; border-radius:12px;
+  font-weight:900; font-size:14px; color:#000; background:var(--accent);
+  box-shadow:0 10px 20px rgba(0,224,184,.15), inset 0 1px 0 rgba(255,255,255,.25);
+  cursor:pointer; user-select:none}
+.btn:active{transform:translateY(1px)}
+.btn.small{padding:8px 10px; font-size:13px}
+.btn.secondary{background:#3b82f6; color:#fff}
+.btn.dark{background:#242b3a; color:#fff}
+.btn.danger{background:var(--danger); color:#fff}
+.btn.warning{background:#f59e0b; color:#141414}
+.btn.ghost{background:transparent; color:#fff; border:1px solid rgba(255,255,255,.18)}
+.plus-btn{width:100%; max-width:120px}
+
+/* Footer buttons (legacy row) */
+.footer{display:flex; flex-wrap:wrap; gap:10px; justify-content:center}
+
+/* Modals */
+.modal{position:fixed; inset:0; display:none; align-items:center; justify-content:center; background:rgba(0,0,0,.6); z-index:60}
+.modal.show{display:flex}
+.modal .box{width:min(92vw,520px); background:#141926; border:1px solid rgba(255,255,255,.07); border-radius:16px; padding:16px}
+
+/* Inputs */
+input,select{width:100%; padding:12px; border-radius:10px; border:1px solid rgba(255,255,255,.08);
+  background:#0e1422; color:#fff; font-size:15px; outline:none}
+input::placeholder{color:#91a0b5}
+
+/* Misc */
+.qr{max-width:60%; max-height:60%; border:8px solid #fff; border-radius:16px}
+button,.btn{min-height:44px}
+.hd-today{background:rgba(0,224,184,.10)}
 
 /* ========================================
-   BASIS-LAYOUT
+   TABLET-OPTIMIERUNGEN
    ======================================== */
 
-body { 
-  background: linear-gradient(180deg, #0b0e14 0%, #151a24 100%);
-  -webkit-tap-highlight-color: transparent;
+/* Touch-Targets größer für Tablet */
+:root{
+  --touch-target: 48px;
 }
 
-/* TABLET PORTRAIT: Optimiertes Content-Padding */
-.content{ 
-  padding: 20px 20px 110px 20px;
-  max-width: 900px; /* Optimal für Tablet Portrait */
-  margin: 0 auto;
-}
-
-/* TABLET: Größere AppBar */
-.appbar{ 
-  min-height: 80px;
-  padding: 0 24px;
-  backdrop-filter: blur(12px);
-  background: rgba(11, 14, 20, 0.9);
-  box-shadow: 0 4px 24px rgba(0,0,0,0.4);
-  border-bottom: 2px solid rgba(110,231,255,0.15);
-}
-
-/* TABLET: Größere Bottom Navigation */
-.bottomnav{ 
-  height: 88px;
-  padding: 8px 0;
-  backdrop-filter: blur(12px);
-  background: rgba(11, 14, 20, 0.95);
-  box-shadow: 0 -4px 24px rgba(0,0,0,0.4);
-  border-top: 2px solid rgba(110,231,255,0.15);
-}
-
-.bottomnav .tab {
-  min-height: 72px;
-  padding: 12px 8px;
-  gap: 6px;
-}
-
-.bottomnav .tab svg {
-  width: 28px;
-  height: 28px;
-}
-
-.bottomnav .tab span {
-  font-size: 13px;
-  font-weight: 700;
-}
-
-.bottomnav .tab.active {
-  background: rgba(110,231,255,0.15);
-  border-radius: 16px 16px 0 0;
-}
-
-/* ========================================
-   CARDS & CONTAINER
-   ======================================== */
-
-/* TABLET: Größere Cards mit mehr Padding */
-.card {
-  background: rgba(28, 33, 48, 0.6);
-  backdrop-filter: blur(10px);
-  border: 2px solid rgba(110,231,255,0.12);
-  border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-md);
-  padding: 28px;
-  margin-bottom: 24px;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-/* TABLET: Active State statt Hover */
-.card:active {
-  border-color: rgba(110,231,255,0.3);
-  box-shadow: var(--shadow-lg), var(--shadow-glow);
-  transform: scale(0.995);
-}
-
-/* Tabellen-Styling - PORTRAIT OPTIMIERT */
-.card.table-wrap {
-  padding: 0;
-  overflow-x: auto;
-  overflow-y: visible;
-  -webkit-overflow-scrolling: touch;
-}
-
-.card.table-wrap table {
-  width: 100%;
-  border-spacing: 0;
-  table-layout: fixed;
-}
-
-/* PORTRAIT: Optimierte Spaltenbreiten - verhindert Überlappung */
-.card.table-wrap table th:first-child,
-.card.table-wrap table td:first-child {
-  width: 180px !important; /* Personen-Spalte */
-  min-width: 180px !important;
-}
-
-.card.table-wrap table th:not(:first-child):not(:last-child),
-.card.table-wrap table td:not(:first-child):not(:last-child) {
-  width: 100px !important; /* Getränke-Spalten - kompakter */
-  min-width: 100px !important;
-  text-align: center !important;
-  padding-left: 6px !important;
-  padding-right: 6px !important;
-}
-
-.card.table-wrap table th:last-child,
-.card.table-wrap table td:last-child {
-  width: 110px !important; /* Gesamt-Spalte */
-  min-width: 110px !important;
-}
-
-.card.table-wrap table td, 
-.card.table-wrap table th{ 
-  padding: var(--row-pad) 12px;
-  border-bottom: 1px solid rgba(255,255,255,0.05);
-  vertical-align: middle;
-}
-
-/* PORTRAIT: Keine Hintergrund-Änderung beim Touch, nur visuelles Feedback */
-.card.table-wrap tbody tr {
-  transition: background 0.15s ease;
-}
-
-.card.table-wrap tbody tr:active {
-  background: rgba(110,231,255,0.05);
-}
-
-/* ========================================
-   BUTTONS & INPUTS
-   ======================================== */
-
-/* TABLET: Größere Touch-Targets für Buttons */
-.btn {
+button, .btn, .plus-btn, .minus-btn {
   min-width: var(--touch-target);
-  min-height: var(--touch-target);
-  padding: 12px 20px;
-  border-radius: var(--radius-sm);
-  font-weight: 800;
-  font-size: 16px;
-  border: none;
-  cursor: pointer;
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-  touch-action: manipulation; /* Verhindert Zoom bei Doppel-Tap */
-}
-
-.btn:active {
-  transform: scale(0.98);
-}
-
-.btn.small {
-  min-width: 48px;
-  min-height: 48px;
-  padding: 10px 16px;
-  font-size: 15px;
-}
-
-/* PORTRAIT: Plus/Minus Buttons mit besserer Touch-Erkennung */
-.plus-btn, .minus-btn { 
-  min-width: var(--touch-target);
-  min-height: var(--touch-target);
-  padding: 12px 16px;
-  border-radius: var(--radius-sm);
-  font-weight: 900;
-  font-size: 15px;
-  box-shadow: var(--shadow-md);
-  border: none;
-  cursor: pointer;
-  touch-action: manipulation; /* Wichtig: Verhindert Scroll-Interferenz */
-  user-select: none;
-}
-
-.plus-btn {
-  background: linear-gradient(135deg, var(--primary), var(--secondary));
-  color: var(--bg-dark);
-}
-
-.plus-btn:active {
-  box-shadow: 0 6px 20px rgba(110,231,255,0.5);
-  transform: scale(0.95);
-}
-
-.minus-btn {
-  background: linear-gradient(135deg, #ff6b6b, #ff8e53);
-  color: white;
-}
-
-.minus-btn:active {
-  transform: scale(0.95);
-}
-
-/* Input Fields */
-.input, input[type="text"], input[type="number"], input[type="date"], select {
-  min-height: var(--touch-target);
-  padding: 12px 16px;
-  font-size: 16px;
-  border-radius: var(--radius-sm);
-  border: 2px solid rgba(110,231,255,0.2);
-  background: rgba(28, 33, 48, 0.6);
-  color: var(--text);
-  transition: all 0.2s;
-}
-
-.input:focus, input:focus, select:focus {
-  outline: none;
-  border-color: var(--primary);
-  box-shadow: 0 0 0 3px rgba(110,231,255,0.2);
-}
-
-/* ========================================
-   TYPOGRAPHY
-   ======================================== */
-
-/* TABLET: Größere Section-Titles */
-.section-title{ 
-  font-size: 24px;
-  font-weight: 900;
-  letter-spacing: 0.5px;
-  margin-bottom: 16px;
-  background: linear-gradient(135deg, var(--primary), var(--secondary));
-  background-clip: text;
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  text-shadow: 0 2px 8px rgba(110,231,255,0.2);
-}
-
-.sub {
-  font-size: 15px;
-  line-height: 1.6;
-}
-
-/* ========================================
-   LEVEL RING
-   ======================================== */
-
-.lvl-ring{ 
-  width: var(--ring); 
-  height: var(--ring); 
-  position: relative; 
-  display: inline-grid; 
-  place-items: center;
-  filter: drop-shadow(0 4px 8px rgba(110,231,255,0.3));
-}
-
-.lvl-ring .val{ 
-  position: absolute; 
-  font-size: 13px; 
-  font-weight: 900; 
-  line-height: 1;
-  text-shadow: 0 2px 4px rgba(0,0,0,0.5);
-}
-
-/* ========================================
-   PERSON CELL
-   ======================================== */
-
-.person-cell{ 
-  display: flex; 
-  align-items: center; 
-  gap: 14px; 
-  cursor: default;
-  padding: 4px;
-  border-radius: var(--radius-sm);
-  transition: all 0.2s;
-}
-
-.person-cell:active {
-  background: rgba(110,231,255,0.08);
-}
-
-.p-name{ 
-  font-size: var(--name-size); 
-  font-weight: 800; 
-  letter-spacing: .3px;
-  background: linear-gradient(135deg, var(--text), rgba(110,231,255,0.9));
-  background-clip: text;
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-}
-
-/* ========================================
-   GETRÄNKE-CHIPS
-   ======================================== */
-
-/* TABLET PORTRAIT: Getränke-Chips - kompakter für bessere Platznutzung */
-.drink-chip {
-  padding: 8px 10px !important;
-  background: rgba(110,231,255,0.1) !important;
-  border-radius: 10px !important;
-  border: 2px solid rgba(110,231,255,0.2) !important;
-  transition: all 0.2s;
-  display: inline-flex !important;
-  flex-direction: column !important;
-  align-items: center !important;
-  gap: 2px !important;
-  min-height: var(--touch-target) !important;
-  min-width: auto !important;
-  justify-content: center;
-}
-
-.drink-chip:active {
-  background: rgba(110,231,255,0.2) !important;
-  border-color: rgba(110,231,255,0.5) !important;
-  transform: scale(0.98);
-}
-
-.drink-chip .drink-name{ 
-  font-size: 13px !important;
-  font-weight: 800 !important;
-  color: var(--primary) !important;
-  line-height: 1.2 !important;
-  text-align: center !important;
-  word-break: break-word;
-  max-width: 100%;
-  display: block !important;
-}
-
-.drink-chip .drink-price{ 
-  font-size: 11px !important;
-  opacity: .9;
-  font-weight: 700;
-  white-space: nowrap;
-  color: #cdd5e1 !important;
-}
-
-/* ========================================
-   CELL & COUNT
-   ======================================== */
-
-/* PORTRAIT: Cell mit mehr Abstand für bessere Touch-Erkennung */
-.cell{ 
-  display: flex; 
-  align-items: center; 
-  justify-content: flex-end; 
-  gap: var(--cell-gap);
-  padding: 8px 4px;
-  border-radius: var(--radius-sm);
-  touch-action: pan-y; /* Nur vertikales Scrollen erlauben */
-}
-
-.count{ 
-  font-size: var(--count-size);
-  min-width: 36px;
-  text-align: right;
-  font-weight: 800;
-  color: var(--primary);
-  text-shadow: 0 2px 8px rgba(110,231,255,0.4);
-  user-select: none;
-  pointer-events: none; /* Count selbst nicht klickbar */
-}
-
-/* ========================================
-   STICKY HEADERS
-   ======================================== */
-
-.card.table-wrap thead th{
-  position: sticky;
-  top: var(--sticky-top);
-  z-index: 100;
-  background: #0b0e14;
-  box-shadow: 0 4px 12px rgba(0,0,0,.5);
-  border-bottom: 2px solid #6ee7ff;
-}
-
-.card.table-wrap thead th::after {
-  content: '';
-  position: absolute;
-  bottom: -2px;
-  left: 0;
-  right: 0;
-  height: 2px;
-  background: linear-gradient(90deg, #6ee7ff, #a78bfa);
-}
-
-.card.table-wrap.scrolled thead th {
-  box-shadow: 0 4px 20px rgba(110,231,255,0.3);
-}
-
-/* Sticky First Column */
-.card.table-wrap table th:first-child,
-.card.table-wrap table td:first-child {
-  position: sticky;
-  left: 0;
-  z-index: 50;
-  background: #0b0e14;
-}
-
-.card.table-wrap thead th:first-child {
-  z-index: 150;
-  box-shadow: 4px 0 12px rgba(0,0,0,.5);
-}
-
-.card.table-wrap tbody td:first-child {
-  box-shadow: 4px 0 8px rgba(0,0,0,.3);
-}
-
-/* ========================================
-   SECTION ROWS
-   ======================================== */
-
-.section-row td{ 
-  font-size: 14px;
-  opacity: .8;
-  font-weight: 700;
-  letter-spacing: 1px;
-  text-transform: uppercase;
-  padding-top: 20px !important;
-  padding-bottom: 12px !important;
-  background: rgba(110,231,255,0.03);
-}
-
-/* ========================================
-   DRAG & DROP
-   ======================================== */
-
-.draggable-column { 
-  cursor: move; 
-  position: relative; 
-  user-select: none;
-  min-height: var(--touch-target);
-}
-
-.dragging { opacity: 0.5; }
-.drag-over { background: rgba(110,231,255,0.25); }
-
-.drag-handle { 
-  display: inline-block; 
-  margin-right: 8px; 
-  opacity: 0.6; 
-  font-size: 18px;
-  font-weight: 900;
-}
-
-/* ========================================
-   BADGES & PILLS
-   ======================================== */
-
-.badge {
-  padding: 8px 14px;
-  border-radius: 999px;
-  font-size: 14px;
-  font-weight: 800;
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.pill {
-  padding: 10px 16px;
-  border-radius: 999px;
-  background: rgba(28, 33, 48, 0.8);
-  border: 2px solid rgba(110,231,255,0.2);
-  font-size: 15px;
-  font-weight: 700;
-}
-
-/* ========================================
-   ADMIN-MODUS
-   ======================================== */
-
-.admin-indicator{ 
-  background: linear-gradient(135deg, var(--admin-color), #ff8e53);
-  padding: 8px 16px;
-  border-radius: 999px;
-  margin-left: 12px;
-  font-size: 14px;
-  font-weight: 800;
-  box-shadow: 0 4px 12px rgba(255,107,107,0.3);
-}
-
-.admin-mode .minus-btn{ 
-  display: inline-block !important; 
-}
-
-.admin-mode .person-cell{ 
-  cursor: pointer; 
-}
-
-/* ========================================
-   TABLET-SPEZIFISCH: Text Logo
-   ======================================== */
-
-.text-logo { 
-  height: 40px; 
-  width: auto; 
-  display: block; 
-}
-
-.app-title { 
-  display: flex; 
-  align-items: center; 
-  gap: 16px; 
-}
-
-/* ========================================
-   HAUSDIENST-SPEZIFISCH
-   ======================================== */
-
-.hd-badge {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 36px;
-  height: 36px;
-  border-radius: 10px;
-  background: linear-gradient(135deg, #6ee7ff, #a78bfa);
-  font-size: 18px;
-  margin-right: 10px;
-}
-
-.hd-today { 
-  background: linear-gradient(90deg, rgba(110,231,255,0.15), rgba(167,139,250,0.15)) !important; 
-  border-left: 4px solid #6ee7ff !important; 
-}
-
-.hd-badge-today { 
-  display: inline-flex; 
-  align-items: center; 
-  gap: 8px; 
-  padding: 10px 18px; 
-  background: linear-gradient(135deg, #6ee7ff, #a78bfa); 
-  color: #0b0e14; 
-  font-weight: 900; 
-  border-radius: 999px; 
-  font-size: 16px;
-  box-shadow: 0 4px 12px rgba(110,231,255,0.4);
-}
-
-.hd-warning {
-  padding: 16px 20px; 
-  background: rgba(255,107,107,0.15); 
-  border-left: 4px solid #ff6b6b; 
-  border-radius: var(--radius-md); 
-  font-weight: 700; 
-  font-size: 16px;
-  animation: warning-pulse 2s ease-in-out infinite;
-}
-
-@keyframes warning-pulse {
-  0%, 100% { background: rgba(255,107,107,0.15); }
-  50% { background: rgba(255,107,107,0.25); }
-}
-
-/* ========================================
-   MODALS
-   ======================================== */
-
-.modal-content {
-  max-width: 600px;
-  padding: 32px;
-  border-radius: var(--radius-lg);
-}
-
-.modal-content h2 {
-  font-size: 26px;
-  margin-bottom: 16px;
-}
-
-/* ========================================
-   INDEX.HTML SPEZIFISCH
-   ======================================== */
-
-/* CTA Checkliste */
-.cta-wrap{ 
-  display: flex; 
-  flex-wrap: wrap; 
-  gap: 10px; 
-  align-items: center; 
-  margin-top: 8px; 
-}
-
-.cta-check{ 
-  display: inline-flex; 
-  align-items: center; 
-  gap: 10px; 
-  padding: 12px 16px; 
-  border-radius: 14px;
-  background: linear-gradient(135deg, #6ee7ff, #a78bfa); 
-  color: #0b0e14; 
-  font-weight: 900; 
-  letter-spacing: .2px;
-  text-decoration: none; 
-  border: none; 
-  box-shadow: 0 8px 24px rgba(0,0,0,.25); 
-  cursor: pointer;
   min-height: var(--touch-target);
   touch-action: manipulation;
 }
 
-.cta-check:active {
-  transform: scale(0.98);
+/* Sticky Headers beim Scrollen */
+@media (min-width: 600px) {
+  .card.table-wrap thead th {
+    position: sticky !important;
+    top: 64px !important;
+    z-index: 100;
+    background: linear-gradient(180deg,#141926,#101521);
+  }
+  
+  /* Erste Spalte (Personen) auch sticky */
+  .card.table-wrap table th:first-child,
+  .card.table-wrap table td:first-child {
+    position: sticky;
+    left: 0;
+    z-index: 50;
+    background: linear-gradient(180deg,#141926,#101521);
+  }
+  
+  .card.table-wrap thead th:first-child {
+    z-index: 150;
+  }
 }
 
-.cta-check svg{ 
-  width: 20px; 
-  height: 20px; 
+/* Getränke-Chips kompakter für Tablet */
+.drink-chip {
+  display: inline-flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  min-width: 90px !important;
+  gap: 2px !important;
 }
 
-.cta-sub{ 
-  font-size: 12px; 
-  opacity: .85; 
+.drink-chip .drink-name {
+  font-size: 13px !important;
+  text-align: center;
 }
 
-/* TABLET PORTRAIT: Sticky Header - bleibt beim Scrollen sichtbar */
-.card.table-wrap thead th{
-  position: sticky !important;
-  top: 80px !important; /* AppBar Höhe */
-  z-index: 100 !important;
-  background: #0b0e14 !important;
-  box-shadow: 0 4px 12px rgba(0,0,0,.5) !important;
-  border-bottom: 2px solid #6ee7ff !important;
-  padding-top: 14px !important;
-  padding-bottom: 14px !important;
+.drink-chip .drink-price {
+  font-size: 11px !important;
 }
 
-.card.table-wrap thead th::after {
-  content: '';
-  position: absolute;
-  bottom: -2px;
-  left: 0;
-  right: 0;
-  height: 2px;
-  background: linear-gradient(90deg, #6ee7ff, #a78bfa);
+/* Spaltenbreiten optimiert */
+.card.table-wrap table th:not(:first-child):not(:last-child),
+.card.table-wrap table td:not(:first-child):not(:last-child) {
+  width: 100px;
+  min-width: 100px;
+  padding-left: 6px;
+  padding-right: 6px;
 }
 
-.card.table-wrap.scrolled thead th {
-  box-shadow: 0 4px 20px rgba(110,231,255,0.3);
-}
-
-/* Sticky First Column (Personen) */
-.card.table-wrap table th:first-child,
-.card.table-wrap table td:first-child {
-  position: sticky;
-  left: 0;
-  z-index: 50;
-  background: #0b0e14;
-}
-
-.card.table-wrap thead th:first-child {
-  z-index: 150;
-  box-shadow: 4px 0 12px rgba(0,0,0,.5);
-}
-
-.card.table-wrap tbody td:first-child {
-  box-shadow: 4px 0 8px rgba(0,0,0,.3);
-}
-
-/* Erste Zeile nach Header - Fix für Überlappung */
+/* Erste Zeile Abstand */
 .card.table-wrap tbody tr:first-child td {
-  padding-top: 16px !important;
-}
-
-/* Hinweis im Löschmodus */
-.delete-hint{ 
-  opacity: .75; 
-  font-size: 12px; 
-  margin-top: 4px;
-}
-
-.delete-mode .person-cell{ 
-  cursor: pointer;
-}
-
-/* Backup Modal */
-.modal-content{ 
-  max-width: 500px; 
-}
-
-.backup-actions{ 
-  display: flex; 
-  gap: 10px; 
-  margin-top: 15px; 
-}
-
-.backup-list{ 
-  max-height: 200px; 
-  overflow-y: auto; 
-  margin: 10px 0; 
-}
-
-.backup-item{ 
-  padding: 8px; 
-  border-bottom: 1px solid rgba(255,255,255,0.1); 
-  display: flex; 
-  justify-content: space-between; 
-}
-
-.backup-item button{ 
-  margin-left: 8px; 
-}
-
-/* PayPal Button */
-.paypal-btn { 
-  position: relative; 
-}
-
-.paypal-logo { 
-  width: 20px; 
-  height: 20px; 
-}
-
-/* Drag & Drop Animationen */
-.draggable-column { 
-  cursor: move; 
-  position: relative; 
-  user-select: none;
-  min-height: var(--touch-target);
-}
-
-.dragging { 
-  opacity: 0.5; 
-}
-
-.drag-over { 
-  background: rgba(110,231,255,0.25); 
-}
-
-/* PORTRAIT: Kleinerer Drag-Handle für kompaktere Header */
-.drag-handle { 
-  display: inline-block; 
-  margin-right: 4px; 
-  opacity: 0.5; 
-  font-size: 14px;
-  font-weight: 800;
-  line-height: 1;
-}
-
-/* Moderne Animations */
-@keyframes slideIn {
-  from { opacity: 0; transform: translateY(20px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-
-@keyframes float {
-  0%, 100% { transform: translateY(0px); }
-  50% { transform: translateY(-10px); }
-}
-
-@keyframes shine {
-  0% { background-position: -200% center; }
-  100% { background-position: 200% center; }
-}
-
-/* Streak Counter */
-.streak-badge {
-  display: inline-flex; 
-  align-items: center; 
-  gap: 6px;
-  padding: 6px 12px; 
-  background: linear-gradient(135deg, #ff6b6b, #ff8e53);
-  border-radius: 999px; 
-  font-size: 13px; 
-  font-weight: 800;
-  animation: float 3s ease-in-out infinite;
-}
-
-/* XP Gain Animation */
-@keyframes xpPop {
-  0% { opacity: 0; transform: translateY(0) scale(0.5); }
-  50% { opacity: 1; transform: translateY(-30px) scale(1.2); }
-  100% { opacity: 0; transform: translateY(-60px) scale(0.8); }
-}
-
-.xp-popup {
-  position: fixed; 
-  pointer-events: none; 
-  z-index: 9999;
-  font-weight: 900; 
-  font-size: 20px;
-  color: #6ee7ff; 
-  text-shadow: 0 0 10px rgba(110,231,255,0.5);
-  animation: xpPop 1.5s ease-out forwards;
-}
-
-/* Moderne Cards mit Glassmorphism */
-.glass-card {
-  background: rgba(28, 33, 48, 0.7);
-  backdrop-filter: blur(10px);
-  border: 1px solid rgba(255,255,255,0.1);
-  border-radius: 16px;
-  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
-}
-
-/* Bump Animation für Count */
-@keyframes bump {
-  0%, 100% { transform: scale(1); }
-  50% { transform: scale(1.3); }
-}
-
-.bump {
-  animation: bump 0.3s ease;
-}
-
-/* Bottom Navigation - Optimiert */
-.bottomnav .tab {
-  min-height: 72px;
-  padding: 12px 8px;
-  gap: 6px;
-}
-
-.bottomnav .tab svg {
-  width: 28px;
-  height: 28px;
-}
-
-.bottomnav .tab span {
-  font-size: 13px;
-  font-weight: 700;
-}
-
-.bottomnav .tab.active {
-  background: rgba(110,231,255,0.15);
-  border-radius: 16px 16px 0 0;
-}
-
-/* AppBar-Buttons */
-.appbar-actions .btn {
-  min-width: var(--touch-target);
-  min-height: var(--touch-target);
-  padding: 12px 16px;
-  font-size: 15px;
-}
-
-/* ========================================
-   UTILITIES
-   ======================================== */
-
-.right { text-align: right; }
-.subtle { opacity: .75; }
-.muted { opacity: .6; }
-
-/* ========================================
-   ALLGEMEINE FIXES FÜR ALLE SEITEN
-   ======================================== */
-
-/* Verhindere Überlappung von ersten Zeilen mit Headern */
-.card tbody tr:first-child td,
-.card tbody tr:first-child th {
   padding-top: 18px !important;
 }
 
-/* Section-Rows bekommen mehr Abstand davor */
-.section-row td {
-  padding-top: 24px !important;
-}
-
-/* Card-Überschriften haben genug Abstand zum Inhalt */
-.card .section-title + * {
-  margin-top: 12px;
-}
-
-/* Tables haben Abstand zum Card-Rand */
-.card.table-wrap {
-  padding-top: 0;
-}
-
-.card.table-wrap thead {
-  background: #0b0e14;
+/* Touch-Scroll ohne ungewollte Klicks */
+.cell, .plus-btn, .minus-btn {
+  touch-action: manipulation;
 }
