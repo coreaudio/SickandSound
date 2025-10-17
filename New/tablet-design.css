@@ -130,23 +130,23 @@ body {
 /* PORTRAIT: Optimierte Spaltenbreiten - verhindert Überlappung */
 .card.table-wrap table th:first-child,
 .card.table-wrap table td:first-child {
-  width: 180px; /* Personen-Spalte */
-  min-width: 180px;
+  width: 180px !important; /* Personen-Spalte */
+  min-width: 180px !important;
 }
 
 .card.table-wrap table th:not(:first-child):not(:last-child),
 .card.table-wrap table td:not(:first-child):not(:last-child) {
-  width: 100px; /* Getränke-Spalten - kompakter */
-  min-width: 100px;
-  text-align: center;
-  padding-left: 6px;
-  padding-right: 6px;
+  width: 100px !important; /* Getränke-Spalten - kompakter */
+  min-width: 100px !important;
+  text-align: center !important;
+  padding-left: 6px !important;
+  padding-right: 6px !important;
 }
 
 .card.table-wrap table th:last-child,
 .card.table-wrap table td:last-child {
-  width: 110px; /* Gesamt-Spalte */
-  min-width: 110px;
+  width: 110px !important; /* Gesamt-Spalte */
+  min-width: 110px !important;
 }
 
 .card.table-wrap table td, 
@@ -323,40 +323,43 @@ body {
 
 /* TABLET PORTRAIT: Getränke-Chips - kompakter für bessere Platznutzung */
 .drink-chip {
-  padding: 8px 10px;
-  background: rgba(110,231,255,0.1);
-  border-radius: 10px;
-  border: 2px solid rgba(110,231,255,0.2);
+  padding: 8px 10px !important;
+  background: rgba(110,231,255,0.1) !important;
+  border-radius: 10px !important;
+  border: 2px solid rgba(110,231,255,0.2) !important;
   transition: all 0.2s;
-  display: inline-flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 2px;
-  min-height: var(--touch-target);
+  display: inline-flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  gap: 2px !important;
+  min-height: var(--touch-target) !important;
+  min-width: auto !important;
   justify-content: center;
 }
 
 .drink-chip:active {
-  background: rgba(110,231,255,0.2);
-  border-color: rgba(110,231,255,0.5);
+  background: rgba(110,231,255,0.2) !important;
+  border-color: rgba(110,231,255,0.5) !important;
   transform: scale(0.98);
 }
 
 .drink-chip .drink-name{ 
-  font-size: 13px;
-  font-weight: 800;
-  color: var(--primary);
-  line-height: 1.2;
-  text-align: center;
+  font-size: 13px !important;
+  font-weight: 800 !important;
+  color: var(--primary) !important;
+  line-height: 1.2 !important;
+  text-align: center !important;
   word-break: break-word;
   max-width: 100%;
+  display: block !important;
 }
 
 .drink-chip .drink-price{ 
-  font-size: 11px;
+  font-size: 11px !important;
   opacity: .9;
   font-weight: 700;
   white-space: nowrap;
+  color: #cdd5e1 !important;
 }
 
 /* ========================================
@@ -639,12 +642,12 @@ body {
 
 /* TABLET PORTRAIT: Sticky Header - bleibt beim Scrollen sichtbar */
 .card.table-wrap thead th{
-  position: sticky;
-  top: 80px; /* AppBar Höhe */
-  z-index: 100;
-  background: #0b0e14;
-  box-shadow: 0 4px 12px rgba(0,0,0,.5);
-  border-bottom: 2px solid #6ee7ff;
+  position: sticky !important;
+  top: 80px !important; /* AppBar Höhe */
+  z-index: 100 !important;
+  background: #0b0e14 !important;
+  box-shadow: 0 4px 12px rgba(0,0,0,.5) !important;
+  border-bottom: 2px solid #6ee7ff !important;
   padding-top: 14px !important;
   padding-bottom: 14px !important;
 }
