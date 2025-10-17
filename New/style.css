@@ -148,6 +148,18 @@ input::placeholder{color:#91a0b5}
 button,.btn{min-height:44px}
 .hd-today{background:rgba(0,224,184,.10)}
 
+/* Swipe-Navigation Fade */
+body{
+  opacity:1;
+  transition:opacity 0.2s ease;
+}
+
+/* Touch-Verhalten für Buttons - verhindere ungewollte Striche beim Scrollen */
+.plus-btn, .minus-btn, button, .btn{
+  touch-action:manipulation;
+  -webkit-tap-highlight-color:transparent;
+}
+
 /* CTA Button (Checkliste) */
 .cta-check{
   display:inline-flex; align-items:center; gap:10px; padding:12px 16px; border-radius:14px;

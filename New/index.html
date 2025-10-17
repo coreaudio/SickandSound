@@ -325,22 +325,20 @@ function showXPPopup(element, text, color = '#6ee7ff') {
   setTimeout(() => popup.remove(), 1500);
 }
 
-/* TABLET: Verhindere ungewollte Klicks beim Scrollen */
+/* TABLET: Verhindere ungewollte Klicks beim Scrollen/Swipen */
 let touchStartX = 0, touchStartY = 0, touchStartTime = 0;
-let isTouchScrolling = false;
-const SCROLL_THRESHOLD = 10; // Pixel - sehr sensitiv
-const TAP_MAX_DURATION = 200; // ms
-
-// Füge passive:false hinzu für preventDefault
-const touchOptions = { passive: false };
+let isTouchMoving = false;
+let isHorizontalSwipe = false;
+const TAP_THRESHOLD = 2; // Nur Bewegungen < 2px sind echte Taps (extrem strikt!)
+const TAP_MAX_DURATION = 250; // ms - etwas länger für langsame Taps
 
 document.addEventListener('touchstart', function(e) {
-  // Speichere Start-Position für alle Touches
   const touch = e.touches[0];
   touchStartX = touch.clientX;
   touchStartY = touch.clientY;
   touchStartTime = Date.now();
-  isTouchScrolling = false;
+  isTouchMoving = false;
+  isHorizontalSwipe = false;
 }, { passive: true });
 
 document.addEventListener('touchmove', function(e) {
@@ -348,18 +346,29 @@ document.addEventListener('touchmove', function(e) {
   const deltaX = Math.abs(touch.clientX - touchStartX);
   const deltaY = Math.abs(touch.clientY - touchStartY);
   
-  // Wenn Finger sich bewegt hat, ist es Scrolling
-  if (deltaX > SCROLL_THRESHOLD || deltaY > SCROLL_THRESHOLD) {
-    isTouchScrolling = true;
+  // Jegliche Bewegung > 2px markieren
+  if (deltaX > TAP_THRESHOLD || deltaY > TAP_THRESHOLD) {
+    isTouchMoving = true;
+    // WICHTIG: Stoppe Auto-Repeat sofort bei Bewegung (verhindert Striche beim Scrollen)!
+    stopHold();
+  }
+  
+  // Horizontaler Swipe (für Seiten-Navigation)
+  if (deltaX > 30 && deltaX > deltaY) {
+    isHorizontalSwipe = true;
   }
 }, { passive: true });
 
 document.addEventListener('touchend', function(e) {
-  // Wenn es Scrolling war, verhindere alle Klicks
-  if (isTouchScrolling) {
+  // Stoppe Auto-Repeat
+  stopHold();
+  
+  // Bei jeglicher Bewegung ODER horizontalem Swipe: Klicks verhindern
+  if (isTouchMoving || isHorizontalSwipe) {
     e.preventDefault();
     e.stopPropagation();
-    isTouchScrolling = false;
+    isTouchMoving = false;
+    isHorizontalSwipe = false;
     return false;
   }
   
@@ -370,14 +379,15 @@ document.addEventListener('touchend', function(e) {
     e.stopPropagation();
     return false;
   }
-}, touchOptions);
+}, { passive: false });
 
-// Zusätzlicher Schutz: Click-Events nur bei echtem Tap
+// Zusätzlicher Schutz: Click-Events nur bei echtem Tap (keine Bewegung)
 document.addEventListener('click', function(e) {
-  if (isTouchScrolling) {
+  if (isTouchMoving || isHorizontalSwipe) {
     e.preventDefault();
     e.stopPropagation();
-    isTouchScrolling = false;
+    isTouchMoving = false;
+    isHorizontalSwipe = false;
     return false;
   }
 }, { capture: true });
