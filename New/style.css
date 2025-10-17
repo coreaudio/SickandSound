@@ -70,15 +70,21 @@ body{
 .sub{color:var(--muted); font-size:13px}
 
 /* ===== Table (Strichliste) ============================================ */
-.table-wrap{overflow:auto}
+.table-wrap{overflow:auto; -webkit-overflow-scrolling:touch}
 table{width:100%; border-collapse:collapse; table-layout:fixed}
 th,td{padding:10px; border-bottom:1px solid rgba(255,255,255,.06); text-align:center}
 th{font-weight:900; font-size:15px; color:#fff}
 td{font-size:15px}
 td:last-child{font-weight:900; color:var(--gold)}
 .section-row td{padding:10px; background:rgba(255,255,255,.05); font-weight:900; letter-spacing:.3px; color:#cbd5e1}
-@media (min-width: 600px){
-  thead th{position:sticky; top:0; background:linear-gradient(180deg,#141926,#101521); z-index:2}
+
+/* Sticky Headers - immer aktiv */
+thead th{
+  position:sticky;
+  top:0;
+  background:linear-gradient(180deg,#141926,#101521);
+  z-index:10;
+  box-shadow:0 2px 8px rgba(0,0,0,0.3);
 }
 
 /* Drink header chip - kompakter für Tablet */
@@ -149,3 +155,18 @@ button,.btn{min-height:44px}
   box-shadow:0 8px 24px rgba(0,0,0,.25); cursor:pointer; min-height:44px;
 }
 .cta-check svg{width:20px; height:20px}
+
+/* Hausdienst Warning - sehr deutlich */
+.hd-warning{
+  padding:16px 20px; margin:12px 0;
+  background:linear-gradient(135deg, rgba(255,107,107,0.2), rgba(255,142,83,0.2));
+  border:2px solid var(--danger);
+  border-radius:14px;
+  font-weight:900; font-size:16px;
+  animation:warning-pulse 2s ease-in-out infinite;
+  box-shadow:0 4px 20px rgba(255,107,107,0.3);
+}
+@keyframes warning-pulse{
+  0%, 100%{background:linear-gradient(135deg, rgba(255,107,107,0.2), rgba(255,142,83,0.2)); border-color:var(--danger)}
+  50%{background:linear-gradient(135deg, rgba(255,107,107,0.3), rgba(255,142,83,0.3)); border-color:#ff8e53}
+}
