@@ -7,6 +7,8 @@
   <meta name="theme-color" content="#0b0e14" />
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <link rel="apple-touch-icon" href="Icons/Apple logo.png">
+  <link rel="icon" type="image/png" href="Icons/Apple logo.png">
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="stylesheet" href="style.css" />
   <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;800&display=swap" rel="stylesheet" />
@@ -103,6 +105,11 @@
     /* PayPal Button */
     .paypal-btn { position: relative; }
     .paypal-logo { width: 20px; height: 20px; }
+    
+    /* Text Logo */
+    .text-logo { height: 32px; width: auto; display: block; }
+    .app-title { display: flex; align-items: center; gap: 12px; }
+    .brand-dot { display: none; } /* Brand dot wird durch Logo ersetzt */
   </style>
 </head>
 <body>
@@ -111,8 +118,7 @@
   <!-- AppBar -->
   <header class="appbar">
     <div class="app-title">
-      <div class="brand-dot"></div>
-      <h1>Sick &amp; Sound</h1>
+      <img src="Icons/Text Logo.png" alt="Sick & Sound" class="text-logo">
       <span id="adminIndicator" class="admin-indicator" style="display:none;">Admin-Modus</span>
     </div>
     <div class="appbar-actions">

@@ -7,6 +7,8 @@
   <meta name="theme-color" content="#0b0e14" />
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <link rel="apple-touch-icon" href="Icons/Apple logo.png">
+  <link rel="icon" type="image/png" href="Icons/Apple logo.png">
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="stylesheet" href="style.css" />
   <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;800&display=swap" rel="stylesheet" />
@@ -51,12 +53,17 @@
     .task-delete { padding: 4px 8px; font-size: 11px; }
     .category-icon { font-size: 18px; margin-right: 6px; }
     .empty-state { text-align: center; padding: 30px; opacity: 0.6; font-size: 14px; }
+    
+    /* Text Logo */
+    .text-logo { height: 32px; width: auto; display: block; }
+    .app-title { display: flex; align-items: center; gap: 12px; }
+    .brand-dot { display: none; } /* Brand dot wird durch Logo ersetzt */
   </style>
 </head>
 <body>
 <div class="app">
   <header class="appbar">
-    <div class="app-title"><div class="brand-dot"></div><h1>Hausdienst</h1></div>
+    <div class="app-title"><img src="Icons/Text Logo.png" alt="Sick & Sound" class="text-logo"></div>
     <div class="appbar-actions">
       <a class="btn small dark" href="index.html" title="Zur Liste">🧾</a>
     </div>
