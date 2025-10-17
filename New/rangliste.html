@@ -67,12 +67,71 @@
       color: #fff;
       width: 100px;
     }
+    
+    /* Tab System */
+    .tabs {
+      display: flex;
+      gap: 8px;
+      overflow-x: auto;
+      padding: 4px;
+      margin-bottom: 16px;
+    }
+    
+    .tab-btn {
+      flex-shrink: 0;
+      padding: 10px 20px;
+      border-radius: 999px;
+      background: #1c2130;
+      border: 2px solid transparent;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      white-space: nowrap;
+    }
+    
+    .tab-btn.active {
+      background: linear-gradient(135deg, #6ee7ff, #a78bfa);
+      color: #0b0e14;
+      border-color: transparent;
+    }
+    
+    .tab-btn:hover:not(.active) {
+      border-color: #6ee7ff;
+    }
+    
+    .tab-content {
+      display: none;
+    }
+    
+    .tab-content.active {
+      display: block;
+    }
+    
+    /* Hausdienst Badge */
+    .hd-badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
+      background: linear-gradient(135deg, #6ee7ff, #a78bfa);
+      font-size: 16px;
+      margin-right: 8px;
+    }
+    
+    .medal-icon {
+      font-size: 24px;
+      margin-right: 8px;
+    }
   </style>
 </head>
 <body>
 <div class="app">
   <header class="appbar">
-    <div class="app-title"><div class="brand-dot"></div><h1>Rangliste</h1></div>
+    <div class="app-title">
+      <img src="Icons/Text Logo.png" alt="Sick & Sound" class="text-logo" style="height: 32px; width: auto;">
+    </div>
     <div class="appbar-actions">
       <span class="sub"><span class="statusdot" id="dot"></span><span id="connTxt">Verbinde…</span></span>
       <button class="btn small warning" id="adminBtn" onclick="toggleAdminMode()" title="Admin-Modus">🔧</button>
@@ -97,10 +156,30 @@
           <button class="btn small" onclick="updateXp()">Aktualisieren</button>
         </div>
       </div>
+      
+      <!-- Tab Navigation -->
+      <div class="tabs">
+        <button class="tab-btn active" onclick="switchTab('xp')">
+          💰 XP Rangliste
+        </button>
+        <button class="tab-btn" onclick="switchTab('hausdienst')">
+          🏠 Hausdienst Rangliste
+        </button>
+      </div>
     </div>
 
-    <div class="card table-wrap" id="rankWrap">
-      <div class="sub">Lade Rangliste…</div>
+    <!-- XP Rangliste -->
+    <div id="xpTab" class="tab-content active">
+      <div class="card table-wrap" id="rankWrap">
+        <div class="sub">Lade XP Rangliste…</div>
+      </div>
+    </div>
+    
+    <!-- Hausdienst Rangliste -->
+    <div id="hausdienstTab" class="tab-content">
+      <div class="card table-wrap" id="hausdienstRankWrap">
+        <div class="sub">Lade Hausdienst Rangliste…</div>
+      </div>
     </div>
   </main>
 
@@ -147,8 +226,25 @@
   let db=null, prices={}, data={}, xp={}, people=[];
   const STATE_COLLECTION = location.search.includes("beta") ? "state_beta" : "state";
   let adminMode = false;
+  let hausdienstData = {}; // Speichert Hausdienst-Einträge nach Person
 
   function levelOf(x){ x = +x||0; return Math.max(1, Math.floor(Math.sqrt(x/75))+1); }
+  
+  // Tab-Switching
+  function switchTab(tabName) {
+    // Update tab buttons
+    document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+    event.target.classList.add('active');
+    
+    // Update tab content
+    document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+    document.getElementById(tabName + 'Tab').classList.add('active');
+    
+    // Render entsprechende Rangliste
+    if (tabName === 'hausdienst') {
+      renderHausdienstRanking();
+    }
+  }
 
   function ring(xpVal, label){
     const x=+xpVal||0, lvl=levelOf(x);
@@ -315,6 +411,95 @@
       render();
     }
   }
+  
+  // Hausdienst Rangliste
+  function renderHausdienstRanking() {
+    const wrap = document.getElementById('hausdienstRankWrap');
+    
+    if (!hausdienstData || Object.keys(hausdienstData).length === 0) {
+      wrap.innerHTML = '<div class="sub">Keine Hausdienst-Daten gefunden.</div>';
+      return;
+    }
+    
+    // Erstelle Array mit Personen und ihren Hausdienst-Counts
+    const rankings = Object.entries(hausdienstData)
+      .map(([person, count]) => ({ person, count }))
+      .sort((a, b) => b.count - a.count);
+    
+    if (rankings.length === 0) {
+      wrap.innerHTML = '<div class="sub">Noch keine Hausdienste eingetragen.</div>';
+      return;
+    }
+    
+    // Medaillen für Top 3
+    const getMedal = (rank) => {
+      if (rank === 0) return '🥇';
+      if (rank === 1) return '🥈';
+      if (rank === 2) return '🥉';
+      return '';
+    };
+    
+    const rows = rankings.map((r, i) => {
+      const medal = getMedal(i);
+      
+      return `
+        <tr>
+          <td class="subtle">#${i + 1}</td>
+          <td>
+            <div style="display:flex;align-items:center;gap:10px">
+              ${medal ? `<span class="medal-icon">${medal}</span>` : '<span style="width:32px"></span>'}
+              <div class="hd-badge">🏠</div>
+              <b>${r.person}</b>
+            </div>
+          </td>
+          <td class="right"><b>${r.count}</b></td>
+        </tr>
+      `;
+    }).join('');
+    
+    wrap.innerHTML = `
+      <div class="sub subtle" style="margin-bottom: 12px;">
+        Zeigt an, wie oft sich jede Person für den Hausdienst eingetragen hat.
+      </div>
+      <table class="rank-table">
+        <thead>
+          <tr>
+            <th></th>
+            <th>Person</th>
+            <th class="right">Anzahl</th>
+          </tr>
+        </thead>
+        <tbody>${rows}</tbody>
+      </table>
+    `;
+  }
+  
+  // Lade Hausdienst-Daten aus Firebase
+  async function loadHausdienstData() {
+    if (!db) return;
+    
+    try {
+      // Lade alle Hausdienst-Einträge (letzte 365 Tage)
+      const oneYearAgo = new Date();
+      oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
+      
+      const snapshot = await db.collection('hausdienst').get();
+      
+      hausdienstData = {};
+      
+      snapshot.forEach(doc => {
+        const data = doc.data();
+        if (data.person) {
+          hausdienstData[data.person] = (hausdienstData[data.person] || 0) + 1;
+        }
+      });
+      
+      console.log('Hausdienst-Daten geladen:', hausdienstData);
+      
+    } catch (error) {
+      console.error('Fehler beim Laden der Hausdienst-Daten:', error);
+    }
+  }
 
   (function init(){
     try{
@@ -343,6 +528,9 @@
       people = s.people || [];
       render();
     });
+    
+    // Lade Hausdienst-Daten
+    loadHausdienstData();
   })();
 </script>
 
