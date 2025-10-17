@@ -1,0 +1,554 @@
+/* ========================================
+   TABLET-OPTIMIERTES DESIGN
+   Für Sick & Sound App
+   ======================================== */
+
+:root{
+  /* TABLET-OPTIMIERT: Größere Touch-Targets & Lesbarkeit */
+  --ring: 64px;
+  --row-pad: 16px;
+  --name-size: 22px;
+  --count-size: 24px;
+  --cell-gap: 20px;
+  --sticky-top: 72px;
+  --touch-target: 52px; /* Minimum für Touch */
+  
+  --admin-color: #ff6b6b;
+  --primary: #6ee7ff;
+  --secondary: #a78bfa;
+  --bg-dark: #0b0e14;
+  --bg-card: #151a24;
+  --bg-elevated: #1c2130;
+  --border: #2a3042;
+  --text: #e6e8ef;
+  
+  /* Größere Radien für Tablet */
+  --radius-sm: 16px;
+  --radius-md: 20px;
+  --radius-lg: 24px;
+  
+  --shadow-sm: 0 2px 8px rgba(0,0,0,0.2);
+  --shadow-md: 0 4px 16px rgba(0,0,0,0.3);
+  --shadow-lg: 0 8px 32px rgba(0,0,0,0.4);
+  --shadow-glow: 0 0 20px rgba(110,231,255,0.15);
+}
+
+/* ========================================
+   BASIS-LAYOUT
+   ======================================== */
+
+body { 
+  background: linear-gradient(180deg, #0b0e14 0%, #151a24 100%);
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* TABLET: Größeres Content-Padding */
+.content{ 
+  padding: 24px 24px 120px 24px;
+  max-width: 1600px;
+  margin: 0 auto;
+}
+
+/* TABLET: Größere AppBar */
+.appbar{ 
+  min-height: 80px;
+  padding: 0 24px;
+  backdrop-filter: blur(12px);
+  background: rgba(11, 14, 20, 0.9);
+  box-shadow: 0 4px 24px rgba(0,0,0,0.4);
+  border-bottom: 2px solid rgba(110,231,255,0.15);
+}
+
+/* TABLET: Größere Bottom Navigation */
+.bottomnav{ 
+  height: 88px;
+  padding: 8px 0;
+  backdrop-filter: blur(12px);
+  background: rgba(11, 14, 20, 0.95);
+  box-shadow: 0 -4px 24px rgba(0,0,0,0.4);
+  border-top: 2px solid rgba(110,231,255,0.15);
+}
+
+.bottomnav .tab {
+  min-height: 72px;
+  padding: 12px 8px;
+  gap: 6px;
+}
+
+.bottomnav .tab svg {
+  width: 28px;
+  height: 28px;
+}
+
+.bottomnav .tab span {
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.bottomnav .tab.active {
+  background: rgba(110,231,255,0.15);
+  border-radius: 16px 16px 0 0;
+}
+
+/* ========================================
+   CARDS & CONTAINER
+   ======================================== */
+
+/* TABLET: Größere Cards mit mehr Padding */
+.card {
+  background: rgba(28, 33, 48, 0.6);
+  backdrop-filter: blur(10px);
+  border: 2px solid rgba(110,231,255,0.12);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+  padding: 28px;
+  margin-bottom: 24px;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* TABLET: Active State statt Hover */
+.card:active {
+  border-color: rgba(110,231,255,0.3);
+  box-shadow: var(--shadow-lg), var(--shadow-glow);
+  transform: scale(0.995);
+}
+
+/* Tabellen-Styling */
+.card.table-wrap {
+  padding: 0;
+  overflow: hidden;
+}
+
+.card.table-wrap table {
+  width: 100%;
+  border-spacing: 0;
+}
+
+.card.table-wrap table td, 
+.card.table-wrap table th{ 
+  padding: var(--row-pad) 16px;
+  border-bottom: 1px solid rgba(255,255,255,0.05);
+}
+
+.card.table-wrap tbody tr:active {
+  background: rgba(110,231,255,0.08);
+}
+
+/* ========================================
+   BUTTONS & INPUTS
+   ======================================== */
+
+/* TABLET: Größere Touch-Targets für Buttons */
+.btn {
+  min-width: var(--touch-target);
+  min-height: var(--touch-target);
+  padding: 12px 20px;
+  border-radius: var(--radius-sm);
+  font-weight: 800;
+  font-size: 16px;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.btn:active {
+  transform: scale(0.98);
+}
+
+.btn.small {
+  min-width: 48px;
+  min-height: 48px;
+  padding: 10px 16px;
+  font-size: 15px;
+}
+
+.plus-btn, .minus-btn { 
+  min-width: var(--touch-target);
+  min-height: var(--touch-target);
+  padding: 14px 20px;
+  border-radius: var(--radius-sm);
+  font-weight: 900;
+  font-size: 16px;
+  box-shadow: var(--shadow-md);
+  border: none;
+  cursor: pointer;
+}
+
+.plus-btn {
+  background: linear-gradient(135deg, var(--primary), var(--secondary));
+  color: var(--bg-dark);
+}
+
+.plus-btn:active {
+  box-shadow: 0 6px 20px rgba(110,231,255,0.5);
+  transform: scale(0.98);
+}
+
+.minus-btn {
+  background: linear-gradient(135deg, #ff6b6b, #ff8e53);
+  color: white;
+}
+
+.minus-btn:active {
+  transform: scale(0.98);
+}
+
+/* Input Fields */
+.input, input[type="text"], input[type="number"], input[type="date"], select {
+  min-height: var(--touch-target);
+  padding: 12px 16px;
+  font-size: 16px;
+  border-radius: var(--radius-sm);
+  border: 2px solid rgba(110,231,255,0.2);
+  background: rgba(28, 33, 48, 0.6);
+  color: var(--text);
+  transition: all 0.2s;
+}
+
+.input:focus, input:focus, select:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(110,231,255,0.2);
+}
+
+/* ========================================
+   TYPOGRAPHY
+   ======================================== */
+
+/* TABLET: Größere Section-Titles */
+.section-title{ 
+  font-size: 24px;
+  font-weight: 900;
+  letter-spacing: 0.5px;
+  margin-bottom: 16px;
+  background: linear-gradient(135deg, var(--primary), var(--secondary));
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  text-shadow: 0 2px 8px rgba(110,231,255,0.2);
+}
+
+.sub {
+  font-size: 15px;
+  line-height: 1.6;
+}
+
+/* ========================================
+   LEVEL RING
+   ======================================== */
+
+.lvl-ring{ 
+  width: var(--ring); 
+  height: var(--ring); 
+  position: relative; 
+  display: inline-grid; 
+  place-items: center;
+  filter: drop-shadow(0 4px 8px rgba(110,231,255,0.3));
+}
+
+.lvl-ring .val{ 
+  position: absolute; 
+  font-size: 13px; 
+  font-weight: 900; 
+  line-height: 1;
+  text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+}
+
+/* ========================================
+   PERSON CELL
+   ======================================== */
+
+.person-cell{ 
+  display: flex; 
+  align-items: center; 
+  gap: 14px; 
+  cursor: default;
+  padding: 4px;
+  border-radius: var(--radius-sm);
+  transition: all 0.2s;
+}
+
+.person-cell:active {
+  background: rgba(110,231,255,0.08);
+}
+
+.p-name{ 
+  font-size: var(--name-size); 
+  font-weight: 800; 
+  letter-spacing: .3px;
+  background: linear-gradient(135deg, var(--text), rgba(110,231,255,0.9));
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+/* ========================================
+   GETRÄNKE-CHIPS
+   ======================================== */
+
+.drink-chip {
+  padding: 12px 18px;
+  background: rgba(110,231,255,0.1);
+  border-radius: var(--radius-sm);
+  border: 2px solid rgba(110,231,255,0.2);
+  transition: all 0.2s;
+  min-height: var(--touch-target);
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.drink-chip:active {
+  background: rgba(110,231,255,0.2);
+  border-color: rgba(110,231,255,0.5);
+  transform: scale(0.98);
+}
+
+.drink-chip .drink-name{ 
+  font-size: 16px;
+  font-weight: 800;
+  color: var(--primary);
+}
+
+.drink-chip .drink-price{ 
+  font-size: 14px;
+  opacity: .9;
+  font-weight: 700;
+}
+
+/* ========================================
+   CELL & COUNT
+   ======================================== */
+
+.cell{ 
+  display: flex; 
+  align-items: center; 
+  justify-content: flex-end; 
+  gap: var(--cell-gap);
+  padding: 6px;
+  border-radius: var(--radius-sm);
+}
+
+.count{ 
+  font-size: var(--count-size);
+  min-width: 32px;
+  text-align: right;
+  font-weight: 800;
+  color: var(--primary);
+  text-shadow: 0 2px 8px rgba(110,231,255,0.4);
+}
+
+/* ========================================
+   STICKY HEADERS
+   ======================================== */
+
+.card.table-wrap thead th{
+  position: sticky;
+  top: var(--sticky-top);
+  z-index: 100;
+  background: #0b0e14;
+  box-shadow: 0 4px 12px rgba(0,0,0,.5);
+  border-bottom: 2px solid #6ee7ff;
+}
+
+.card.table-wrap thead th::after {
+  content: '';
+  position: absolute;
+  bottom: -2px;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, #6ee7ff, #a78bfa);
+}
+
+.card.table-wrap.scrolled thead th {
+  box-shadow: 0 4px 20px rgba(110,231,255,0.3);
+}
+
+/* Sticky First Column */
+.card.table-wrap table th:first-child,
+.card.table-wrap table td:first-child {
+  position: sticky;
+  left: 0;
+  z-index: 50;
+  background: #0b0e14;
+}
+
+.card.table-wrap thead th:first-child {
+  z-index: 150;
+  box-shadow: 4px 0 12px rgba(0,0,0,.5);
+}
+
+.card.table-wrap tbody td:first-child {
+  box-shadow: 4px 0 8px rgba(0,0,0,.3);
+}
+
+/* ========================================
+   SECTION ROWS
+   ======================================== */
+
+.section-row td{ 
+  font-size: 14px;
+  opacity: .8;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  padding-top: 20px !important;
+  padding-bottom: 12px !important;
+  background: rgba(110,231,255,0.03);
+}
+
+/* ========================================
+   DRAG & DROP
+   ======================================== */
+
+.draggable-column { 
+  cursor: move; 
+  position: relative; 
+  user-select: none;
+  min-height: var(--touch-target);
+}
+
+.dragging { opacity: 0.5; }
+.drag-over { background: rgba(110,231,255,0.25); }
+
+.drag-handle { 
+  display: inline-block; 
+  margin-right: 8px; 
+  opacity: 0.6; 
+  font-size: 18px;
+  font-weight: 900;
+}
+
+/* ========================================
+   BADGES & PILLS
+   ======================================== */
+
+.badge {
+  padding: 8px 14px;
+  border-radius: 999px;
+  font-size: 14px;
+  font-weight: 800;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.pill {
+  padding: 10px 16px;
+  border-radius: 999px;
+  background: rgba(28, 33, 48, 0.8);
+  border: 2px solid rgba(110,231,255,0.2);
+  font-size: 15px;
+  font-weight: 700;
+}
+
+/* ========================================
+   ADMIN-MODUS
+   ======================================== */
+
+.admin-indicator{ 
+  background: linear-gradient(135deg, var(--admin-color), #ff8e53);
+  padding: 8px 16px;
+  border-radius: 999px;
+  margin-left: 12px;
+  font-size: 14px;
+  font-weight: 800;
+  box-shadow: 0 4px 12px rgba(255,107,107,0.3);
+}
+
+.admin-mode .minus-btn{ 
+  display: inline-block !important; 
+}
+
+.admin-mode .person-cell{ 
+  cursor: pointer; 
+}
+
+/* ========================================
+   TABLET-SPEZIFISCH: Text Logo
+   ======================================== */
+
+.text-logo { 
+  height: 40px; 
+  width: auto; 
+  display: block; 
+}
+
+.app-title { 
+  display: flex; 
+  align-items: center; 
+  gap: 16px; 
+}
+
+/* ========================================
+   HAUSDIENST-SPEZIFISCH
+   ======================================== */
+
+.hd-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  background: linear-gradient(135deg, #6ee7ff, #a78bfa);
+  font-size: 18px;
+  margin-right: 10px;
+}
+
+.hd-today { 
+  background: linear-gradient(90deg, rgba(110,231,255,0.15), rgba(167,139,250,0.15)) !important; 
+  border-left: 4px solid #6ee7ff !important; 
+}
+
+.hd-badge-today { 
+  display: inline-flex; 
+  align-items: center; 
+  gap: 8px; 
+  padding: 10px 18px; 
+  background: linear-gradient(135deg, #6ee7ff, #a78bfa); 
+  color: #0b0e14; 
+  font-weight: 900; 
+  border-radius: 999px; 
+  font-size: 16px;
+  box-shadow: 0 4px 12px rgba(110,231,255,0.4);
+}
+
+.hd-warning {
+  padding: 16px 20px; 
+  background: rgba(255,107,107,0.15); 
+  border-left: 4px solid #ff6b6b; 
+  border-radius: var(--radius-md); 
+  font-weight: 700; 
+  font-size: 16px;
+  animation: warning-pulse 2s ease-in-out infinite;
+}
+
+@keyframes warning-pulse {
+  0%, 100% { background: rgba(255,107,107,0.15); }
+  50% { background: rgba(255,107,107,0.25); }
+}
+
+/* ========================================
+   MODALS
+   ======================================== */
+
+.modal-content {
+  max-width: 600px;
+  padding: 32px;
+  border-radius: var(--radius-lg);
+}
+
+.modal-content h2 {
+  font-size: 26px;
+  margin-bottom: 16px;
+}
+
+/* ========================================
+   UTILITIES
+   ======================================== */
+
+.right { text-align: right; }
+.subtle { opacity: .75; }
+.muted { opacity: .6; }
