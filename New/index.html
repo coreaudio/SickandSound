@@ -51,9 +51,25 @@
     .card.table-wrap thead th{
       position: sticky;
       top: var(--sticky-top);
-      z-index: 2;
-      background: #111827; /* dunkler Hintergrund für Lesbarkeit */
-      box-shadow: 0 2px 0 rgba(0,0,0,.25);
+      z-index: 100;
+      background: #0b0e14; /* Gleiche Farbe wie Body */
+      box-shadow: 0 4px 12px rgba(0,0,0,.5);
+      border-bottom: 2px solid #6ee7ff;
+    }
+    
+    .card.table-wrap thead th::after {
+      content: '';
+      position: absolute;
+      bottom: -2px;
+      left: 0;
+      right: 0;
+      height: 2px;
+      background: linear-gradient(90deg, #6ee7ff, #a78bfa);
+    }
+    
+    /* Sticky Header Animation */
+    .card.table-wrap.scrolled thead th {
+      box-shadow: 0 4px 20px rgba(110,231,255,0.3);
     }
 
     /* Hinweis im Löschmodus */
@@ -1294,6 +1310,15 @@ if('serviceWorker' in navigator){
 
 window.onload=loadState;
 window.onresize=()=>requestAnimationFrame(adjustToOnePage);
+
+/* Sticky Header Scroll Detection */
+window.addEventListener('scroll', () => {
+  const tableContainer = document.getElementById('tableContainer');
+  const scrolled = window.scrollY > 100;
+  if (tableContainer) {
+    tableContainer.classList.toggle('scrolled', scrolled);
+  }
+}, { passive: true });
 </script>
 </body>
 </html>
