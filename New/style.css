@@ -71,7 +71,7 @@ body{
 .sub{color:var(--muted); font-size:13px}
 
 /* ===== Table (Strichliste) ============================================ */
-.table-wrap{overflow:auto; -webkit-overflow-scrolling:touch}
+.table-wrap{overflow:visible}
 table{width:100%; border-collapse:collapse; table-layout:fixed}
 th,td{padding:10px; border-bottom:1px solid rgba(255,255,255,.06); text-align:center}
 th{font-weight:900; font-size:15px; color:#fff}
@@ -79,10 +79,10 @@ td{font-size:15px}
 td:last-child{font-weight:900; color:var(--gold)}
 .section-row td{padding:10px; background:rgba(255,255,255,.05); font-weight:900; letter-spacing:.3px; color:#cbd5e1}
 
-/* Sticky Headers - immer aktiv */
+/* Sticky Headers - bleibt beim Scrollen der content area sichtbar */
 thead th{
   position:sticky;
-  top:0;
+  top:64px;
   background:linear-gradient(180deg,#141926,#101521);
   z-index:10;
   box-shadow:0 2px 8px rgba(0,0,0,0.3);
