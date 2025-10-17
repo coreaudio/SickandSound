@@ -71,6 +71,24 @@
     .card.table-wrap.scrolled thead th {
       box-shadow: 0 4px 20px rgba(110,231,255,0.3);
     }
+    
+    /* Sticky First Column (Personen) */
+    .card.table-wrap table th:first-child,
+    .card.table-wrap table td:first-child {
+      position: sticky;
+      left: 0;
+      z-index: 50;
+      background: #0b0e14;
+    }
+    
+    .card.table-wrap thead th:first-child {
+      z-index: 150; /* Höher als normale sticky header */
+      box-shadow: 4px 0 12px rgba(0,0,0,.5);
+    }
+    
+    .card.table-wrap tbody td:first-child {
+      box-shadow: 4px 0 8px rgba(0,0,0,.3);
+    }
 
     /* Hinweis im Löschmodus */
     .delete-hint{ opacity:.75; font-size:12px; margin-top:4px }
