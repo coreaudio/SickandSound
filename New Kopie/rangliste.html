@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <title>Sick & Sound – Rangliste</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#0b0e14" />
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <link rel="apple-touch-icon" href="Icons/Apple logo.png">
+  <link rel="icon" type="image/png" href="Icons/Apple logo.png">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="stylesheet" href="style.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;800&display=swap" rel="stylesheet" />
+  <style>
+    .rank-table td,.rank-table th{ padding:10px 8px; }
+    .lvl-ring{ width:46px; height:46px; position:relative; display:inline-grid; place-items:center; }
+    .lvl-ring .val{ position:absolute; font-size:11px; font-weight:800; line-height:1; }
+    .subtle{ opacity:.75 }
+    .pill{ padding:6px 10px; border-radius:999px; background:#1c2130; border:1px solid #2a3042; }
+    .ok{ color:#7CFC9A }
+    
+    /* Admin-Modus Stile */
+    .admin-indicator {
+      background-color: #ff6b6b;
+      padding: 4px 8px;
+      border-radius: 4px;
+      margin-left: 8px;
+      font-size: 12px;
+    }
+    
+    .admin-controls {
+      background: rgba(255, 107, 107, 0.1);
+      border: 1px solid rgba(255, 107, 107, 0.3);
+      border-radius: 12px;
+      padding: 12px;
+      margin: 15px 0;
+    }
+    
+    .edit-mode .editable {
+      cursor: pointer;
+      position: relative;
+    }
+    
+    .edit-mode .editable:hover::after {
+      content: '✎';
+      position: absolute;
+      right: 5px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: #6ee7ff;
+      font-size: 14px;
+    }
+    
+    .edit-form {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      margin-top: 10px;
+    }
+    
+    .edit-form input {
+      padding: 8px 12px;
+      border-radius: 8px;
+      border: 1px solid rgba(255,255,255,0.1);
+      background: #0e1422;
+      color: #fff;
+      width: 100px;
+    }
+  </style>
+</head>
+<body>
+<div class="app">
+  <header class="appbar">
+    <div class="app-title"><div class="brand-dot"></div><h1>Rangliste</h1></div>
+    <div class="appbar-actions">
+      <span class="sub"><span class="statusdot" id="dot"></span><span id="connTxt">Verbinde…</span></span>
+      <button class="btn small warning" id="adminBtn" onclick="toggleAdminMode()" title="Admin-Modus">🔧</button>
+    </div>
+  </header>
+
+  <main class="content">
+    <div class="card">
+      <div class="section-title">Übersicht</div>
+      <div class="sub subtle">Level basiert auf Gesamt-XP. „Heute“ ist der aktuelle Warenwert deiner Striche (live).</div>
+      
+      <div id="adminIndicator" class="admin-indicator" style="display:none;">Admin-Modus</div>
+      
+      <div id="adminControls" class="admin-controls" style="display:none;">
+        <div class="section-title">Admin-Bereich</div>
+        <div class="sub subtle">Gesamt-XP bearbeiten</div>
+        <div class="edit-form">
+          <select id="xpPersonSelect">
+            <option value="">Person auswählen</option>
+          </select>
+          <input type="number" id="xpEditValue" step="0.01" min="0" placeholder="Neue XP">
+          <button class="btn small" onclick="updateXp()">Aktualisieren</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="card table-wrap" id="rankWrap">
+      <div class="sub">Lade Rangliste…</div>
+    </div>
+  </main>
+
+  <nav class="bottomnav">
+    <a class="tab" href="index.html">
+      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M4 6h16v2H4zM4 11h16v2H4zM4 16h10v2H4z"/></svg>
+      <span>Liste</span>
+    </a>
+    <a class="tab" href="hausdienst.html#plan">
+      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 3l9 7-1.2 1.6L18 10.1V20h-5v-6H11v6H6v-9.9L4.2 11.6 3 10z"/></svg>
+      <span>Hausdienst</span>
+    </a>
+    <a class="tab active" href="rangliste.html">
+      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M7 17H3V7h4v10zm7 0h-4V3h4v14zm7 0h-4v-8h4v8z"/></svg>
+      <span>Rang</span>
+    </a>
+    <a class="tab" href="badges.html">
+      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 1l3.09 6.26L22 8.27l-5 4.87L18.18 22 12 18.56 5.82 22 7 13.14 2 8.27l6.91-1.01L12 1z"/></svg>
+      <span>Badges</span>
+    </a>
+    <a class="tab" href="buchungen.html">
+      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 2h9l5 5v13a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2zm8 1.5V8h4.5L14 3.5z"/></svg>
+      <span>Buchungen</span>
+    </a>
+  </nav>
+</div>
+
+<!-- Firebase -->
+<script src="https://www.gstatic.com/firebasejs/12.0.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/12.0.0/firebase-firestore-compat.js"></script>
+<script>
+  const CORE=["Chris","Daniel","Elmi","Florian","Joel","Kevin","Kiste","Marco","Meli","Simon"];
+  const ADMIN_PASSWORD = "1379"; // Admin-Passwort
+  
+  const firebaseConfig = {
+    apiKey: "AIzaSyBtZsr4QPHQbvO2qae6MoBoxJF5dNP2vh0",
+    authDomain: "sickandsound-8a15f.firebaseapp.com",
+    projectId: "sickandsound-8a15f",
+    storageBucket: "sickandsound-8a15f.appspot.com",
+    messagingSenderId: "32138160959",
+    appId: "1:32138160959:web:a65c7f4ad7d44e757fc18a"
+  };
+
+  let db=null, prices={}, data={}, xp={}, people=[];
+  const STATE_COLLECTION = location.search.includes("beta") ? "state_beta" : "state";
+  let adminMode = false;
+
+  function levelOf(x){ x = +x||0; return Math.max(1, Math.floor(Math.sqrt(x/75))+1); }
+
+  function ring(xpVal, label){
+    const x=+xpVal||0, lvl=levelOf(x);
+    const min=75*(lvl-1)*(lvl-1), max=75*lvl*lvl, p=Math.max(0,Math.min(1,(x-min)/(max-min)));
+    const r=20, c=2*Math.PI*r, off=(1-p)*c, gid="g"+(label||"x")+lvl;
+    return `<div class="lvl-ring" title="Level ${lvl}">
+      <svg viewBox="0 0 48 48" style="transform:rotate(-90deg)" width="100%" height="100%">
+        <defs><linearGradient id="${gid}" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0%" stop-color="#6ee7ff"/><stop offset="100%" stop-color="#a78bfa"/></linearGradient></defs>
+        <circle cx="24" cy="24" r="${r}" stroke="#2a3042" stroke-width="6" fill="none"></circle>
+        <circle cx="24" cy="24" r="${r}" stroke="url(#${gid})" stroke-width="6" stroke-linecap="round" fill="none"
+                stroke-dasharray="${c}" stroke-dashoffset="${off}"></circle>
+      </svg>
+      <div class="val">Lv.${lvl}</div>
+    </div>`;
+  }
+
+  function currentValueOf(person){
+    const keys = Object.keys(prices||{});
+    return keys.reduce((sum,k)=> sum + ( (data[`${person}_${k}`]||0) * (Number(prices[k])||0) ), 0);
+  }
+
+  function render(){
+    const wrap=document.getElementById('rankWrap');
+    const names = [...new Set([...(people||[]), ...Object.keys(xp||{})])];
+    if(!names.length){ wrap.innerHTML = '<div class="sub">Keine Daten.</div>'; return; }
+
+    const rows = names
+      .filter(n=>CORE.includes(n) || !n.startsWith('_'))
+      .map(n=>{
+        const base = Number(xp[n]||0);
+        const today = currentValueOf(n);
+        const total = base + today;
+        return { n, base, today, total, lvl: levelOf(total) };
+      })
+      .sort((a,b)=> b.total - a.total)
+      .map((r,i)=>{
+        // Im Admin-Modus bearbeitbare Zeilen
+        const editClass = adminMode ? 'editable' : '';
+        const editHandler = adminMode ? `ondblclick="editXp('${r.n}')"` : '';
+        
+        return `
+        <tr>
+          <td class="subtle">#${i+1}</td>
+          <td style="display:flex;align-items:center;gap:10px">
+            ${ring(r.total, r.n)} <b>${r.n}</b>
+          </td>
+          <td class="right">${r.base.toFixed(2)}€</td>
+          <td class="right">${r.today.toFixed(2)}€</td>
+          <td class="right ${editClass}" ${editHandler}><b>${r.total.toFixed(2)}€</b></td>
+        </tr>
+      `}).join('');
+
+    wrap.innerHTML = `
+      <table class="rank-table">
+        <thead>
+          <tr><th></th><th>Person</th><th class="right">XP bisher</th><th class="right">Heute</th><th class="right">Gesamt</th></tr>
+        </thead>
+        <tbody>${rows}</tbody>
+      </table>`;
+      
+    // Personen-Dropdown für Admin-Bereich füllen
+    if (adminMode) {
+      const select = document.getElementById('xpPersonSelect');
+      select.innerHTML = '<option value="">Person auswählen</option>';
+      
+      names
+        .filter(n => CORE.includes(n) || !n.startsWith('_'))
+        .sort()
+        .forEach(n => {
+          const option = document.createElement('option');
+          option.value = n;
+          option.textContent = n;
+          select.appendChild(option);
+        });
+    }
+  }
+
+  function toggleAdminMode() {
+    if (adminMode) {
+      adminMode = false;
+      document.getElementById('adminIndicator').style.display = 'none';
+      document.getElementById('adminControls').style.display = 'none';
+      document.body.classList.remove('edit-mode');
+      document.getElementById('adminBtn').textContent = '🔧';
+      render();
+      return;
+    }
+    
+    const password = prompt("Admin-Passwort eingeben:");
+    if (password === ADMIN_PASSWORD) {
+      adminMode = true;
+      document.getElementById('adminIndicator').style.display = 'inline-block';
+      document.getElementById('adminControls').style.display = 'block';
+      document.body.classList.add('edit-mode');
+      document.getElementById('adminBtn').textContent = '🔧✓';
+      render();
+    } else {
+      alert("Falsches Passwort");
+    }
+  }
+  
+  function editXp(person) {
+    if (!adminMode) return;
+    
+    // Person im Dropdown auswählen
+    document.getElementById('xpPersonSelect').value = person;
+    
+    // Aktuellen Gesamtwert in das Eingabefeld setzen
+    const base = Number(xp[person] || 0);
+    const today = currentValueOf(person);
+    const total = base + today;
+    
+    document.getElementById('xpEditValue').value = total.toFixed(2);
+    
+    // Scroll to admin controls
+    document.getElementById('adminControls').scrollIntoView({ behavior: 'smooth' });
+  }
+  
+  function updateXp() {
+    if (!adminMode) return;
+    
+    const person = document.getElementById('xpPersonSelect').value;
+    const newTotal = parseFloat(document.getElementById('xpEditValue').value);
+    
+    if (!person || isNaN(newTotal) || newTotal < 0) {
+      alert("Bitte gültige Werte eingeben");
+      return;
+    }
+    
+    // Berechne neuen Basis-XP-Wert (Gesamt minus heutiger Wert)
+    const todayValue = currentValueOf(person);
+    const newBaseXp = newTotal - todayValue;
+    
+    if (newBaseXp < 0) {
+      if (!confirm(`Achtung: Der neue Basis-XP-Wert (${newBaseXp.toFixed(2)}€) wäre negativ. Trotzdem fortfahren?`)) {
+        return;
+      }
+    }
+    
+    // Bestätigung einholen
+    if (!confirm(`${person}s XP von ${(xp[person] || 0).toFixed(2)}€ auf ${newBaseXp.toFixed(2)}€ ändern?`)) {
+      return;
+    }
+    
+    // XP-Wert aktualisieren
+    xp[person] = newBaseXp;
+    
+    // In Firebase speichern
+    if (db) {
+      db.collection(STATE_COLLECTION).doc('global').set({ xp }, { merge: true })
+        .then(() => {
+          alert("XP erfolgreich aktualisiert!");
+          render();
+        })
+        .catch(error => {
+          console.error("Fehler beim Speichern:", error);
+          alert("Fehler beim Speichern der Änderungen");
+        });
+    } else {
+      // Offline: Nur lokal speichern
+      localStorage.setItem('sick_sound_xp', JSON.stringify(xp));
+      alert("XP lokal aktualisiert (Offline-Modus)");
+      render();
+    }
+  }
+
+  (function init(){
+    try{
+      firebase.initializeApp(firebaseConfig);
+      db = firebase.firestore();
+      try{ db.settings({ experimentalAutoDetectLongPolling:true, merge:true }); }catch(_){}
+      document.getElementById('dot').classList.add('statusok');
+      document.getElementById('connTxt').textContent='Online (Firestore verbunden)';
+    }catch(e){
+      document.getElementById('connTxt').textContent='Offline – Firebase konnte nicht initialisiert werden.';
+      // Offline-Daten laden
+      prices = JSON.parse(localStorage.getItem('sick_sound_prices') || '{}');
+      data = JSON.parse(localStorage.getItem('sick_sound_data') || '{}');
+      xp = JSON.parse(localStorage.getItem('sick_sound_xp') || '{}');
+      people = JSON.parse(localStorage.getItem('sick_sound_people') || '[]');
+      render();
+      return;
+    }
+
+    db.collection(STATE_COLLECTION).doc('global').onSnapshot(snap=>{
+      if(!snap.exists) return;
+      const s=snap.data()||{};
+      prices = s.prices || {};
+      data   = s.data   || {};
+      xp     = s.xp     || {};
+      people = s.people || [];
+      render();
+    });
+  })();
+</script>
+
+<!-- Service Worker -->
+<script>
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('./sw.js?v=21', { scope: './' }).catch(()=>{});
+  }
+</script>
+</body>
+</html>

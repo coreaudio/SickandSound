@@ -110,72 +110,6 @@
     .text-logo { height: 32px; width: auto; display: block; }
     .app-title { display: flex; align-items: center; gap: 12px; }
     .brand-dot { display: none; } /* Brand dot wird durch Logo ersetzt */
-    
-    /* Drag & Drop für Spalten */
-    .draggable-column { cursor: move; position: relative; user-select: none; }
-    .dragging { opacity: 0.5; }
-    .drag-over { background: rgba(110,231,255,0.2); }
-    .drag-handle { display: inline-block; margin-right: 4px; opacity: 0.5; font-size: 12px; }
-    
-    /* Moderne Animations */
-    @keyframes slideIn {
-      from { opacity: 0; transform: translateY(20px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
-    
-    @keyframes float {
-      0%, 100% { transform: translateY(0px); }
-      50% { transform: translateY(-10px); }
-    }
-    
-    @keyframes shine {
-      0% { background-position: -200% center; }
-      100% { background-position: 200% center; }
-    }
-    
-    /* Streak Counter */
-    .streak-badge {
-      display: inline-flex; align-items: center; gap: 6px;
-      padding: 6px 12px; background: linear-gradient(135deg, #ff6b6b, #ff8e53);
-      border-radius: 999px; font-size: 13px; font-weight: 800;
-      animation: float 3s ease-in-out infinite;
-    }
-    
-    /* XP Gain Animation */
-    @keyframes xpPop {
-      0% { opacity: 0; transform: translateY(0) scale(0.5); }
-      50% { opacity: 1; transform: translateY(-30px) scale(1.2); }
-      100% { opacity: 0; transform: translateY(-60px) scale(0.8); }
-    }
-    
-    .xp-popup {
-      position: fixed; pointer-events: none; z-index: 9999;
-      font-weight: 900; font-size: 20px;
-      color: #6ee7ff; text-shadow: 0 0 10px rgba(110,231,255,0.5);
-      animation: xpPop 1.5s ease-out forwards;
-    }
-    
-    /* Moderne Cards mit Glassmorphism */
-    .glass-card {
-      background: rgba(28, 33, 48, 0.7);
-      backdrop-filter: blur(10px);
-      border: 1px solid rgba(255,255,255,0.1);
-      border-radius: 16px;
-      box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
-    }
-    
-    /* Hover Effects */
-    .plus-btn:hover, .minus-btn:hover {
-      transform: scale(1.1);
-      box-shadow: 0 4px 12px rgba(110,231,255,0.3);
-    }
-    
-    .plus-btn:active, .minus-btn:active {
-      transform: scale(0.95);
-    }
-    
-    /* Smooth transitions */
-    .btn, .plus-btn, .minus-btn, .cell { transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); }
   </style>
 </head>
 <body>
@@ -402,70 +336,6 @@ let holdT=null, holdI=null;
 function startHold(handler){ stopHold(); handler(); holdT=setTimeout(()=>{holdI=setInterval(handler,120)},420); }
 function stopHold(){ if(holdT) clearTimeout(holdT); if(holdI) clearInterval(holdI); holdT=holdI=null; }
 window.onmouseup=stopHold; window.onmouseleave=stopHold;
-
-/* Drag & Drop für Spalten */
-let draggedColumn = null;
-
-function handleDragStart(e) {
-  draggedColumn = e.target.closest('th');
-  draggedColumn.classList.add('dragging');
-  e.dataTransfer.effectAllowed = 'move';
-  e.dataTransfer.setData('text/html', draggedColumn.innerHTML);
-}
-
-function handleDragOver(e) {
-  if (e.preventDefault) e.preventDefault();
-  e.dataTransfer.dropEffect = 'move';
-  
-  const target = e.target.closest('th.draggable-column');
-  if (target && target !== draggedColumn) {
-    target.classList.add('drag-over');
-  }
-  return false;
-}
-
-function handleDrop(e) {
-  if (e.stopPropagation) e.stopPropagation();
-  
-  const target = e.target.closest('th.draggable-column');
-  if (target && draggedColumn && target !== draggedColumn) {
-    const fromIndex = parseInt(draggedColumn.dataset.index);
-    const toIndex = parseInt(target.dataset.index);
-    
-    // Tausche Positionen in columnOrder
-    const temp = columnOrder[fromIndex];
-    columnOrder[fromIndex] = columnOrder[toIndex];
-    columnOrder[toIndex] = temp;
-    
-    saveAll();
-    buildTable();
-    
-    // Erfolgsfeedback
-    showXPPopup(target, '✓ Verschoben', '#6ee7ff');
-  }
-  
-  return false;
-}
-
-function handleDragEnd(e) {
-  draggedColumn?.classList.remove('dragging');
-  document.querySelectorAll('.drag-over').forEach(el => el.classList.remove('drag-over'));
-  draggedColumn = null;
-}
-
-/* XP Popup Animation */
-function showXPPopup(element, text, color = '#6ee7ff') {
-  const rect = element.getBoundingClientRect();
-  const popup = document.createElement('div');
-  popup.className = 'xp-popup';
-  popup.textContent = text;
-  popup.style.left = rect.left + rect.width / 2 + 'px';
-  popup.style.top = rect.top + 'px';
-  popup.style.color = color;
-  document.body.appendChild(popup);
-  
-  setTimeout(() => popup.remove(), 1500);
-}
 
 /* Touch-Handling für Tablets - unterscheidet zwischen Tap und Swipe */
 let touchStartX=0, touchStartY=0, touchStartTime=0;
@@ -753,18 +623,12 @@ function buildTable(){
   const guests=people.filter(n=>!CORE.includes(n)).sort((a,b)=>a.localeCompare(b));
 
   let html = `<table><thead><tr><th style="min-width:240px;text-align:left">Person</th>`;
-  columnOrder.forEach((drink, index)=>{
+  columnOrder.forEach(drink=>{
     if(prices[drink]!==undefined){
       const delTitle = deleteMode ? ` title="Zum Löschen tippen"` : '';
-      html += `<th class="draggable-column" draggable="true" data-drink="${drink}" data-index="${index}" 
-               onclick="headerClick('${drink}')"${delTitle}
-               ondragstart="handleDragStart(event)" ondragover="handleDragOver(event)" 
-               ondrop="handleDrop(event)" ondragend="handleDragEnd(event)">
-        <span class="drink-chip">
-          <span class="drag-handle">⋮⋮</span>
-          <span class="drink-name">${drink.replace('_',' ')}</span>
-          <span class="drink-price">${prices[drink]} €</span>
-        </span>
+      html += `<th onclick="headerClick('${drink}')"${delTitle}>
+        <span class="drink-chip"><span class="drink-name">${drink.replace('_',' ')}</span>
+        <span class="drink-price">${prices[drink]} €</span></span>
       </th>`;
     }
   });
@@ -901,22 +765,7 @@ function changeCount(id, drink, person, delta){
   xp[person] = Math.max(0, (xp[person]||0) + xpDelta); 
   const after=levelOf(xp[person]);
   
-  // XP Popup Animation
-  if (delta > 0 && el) {
-    showXPPopup(el, `+${xpDelta.toFixed(1)} XP`, after > before ? '#a78bfa' : '#6ee7ff');
-  }
-  
-  // Level Up Animation
-  if (after > before) {
-    sLevel.play();
-    const personCell = document.querySelector(`[onclick*="personCellClick('${person}')"]`);
-    if (personCell) {
-      showXPPopup(personCell, `🎉 LEVEL ${after}!`, '#FFD700');
-    }
-  } else {
-    sClick.play();
-  }
-  
+  (after>before ? sLevel : sClick).play();
   updateTotalsFor(person); 
   saveAll(); 
   updateUndoRedoButtons();
