@@ -40,16 +40,10 @@
 
   <!-- AppBar -->
   <header class="appbar">
-    <div class="app-title">
-      <div class="brand-dot"></div>
-      <h1>Strichliste</h1>
-      <span id="adminIndicator" class="admin-indicator" style="display:none;">Admin-Modus</span>
-    </div>
     <div class="appbar-actions">
       <button class="btn small paypal-btn" onclick="togglePayPal()" title="PayPal" style="background:#0070ba;color:white;padding:6px 10px;">
         <svg class="paypal-logo" viewBox="0 0 24 24" fill="currentColor">
-          <path d="M20.067 8.478c.492.88.556 2.014.3 3.327-.74 3.806-3.276 5.12-6.514 5.12h-.5a.805.805 0 0 0-.794.68l-.04.22-.63 3.993-.032.17a.804.804 0 0 1-.794.679H7.72a.483.483 0 0 1-.477-.558L9.096 7.58a.972.972 0 0 1 .959-.817h4.455c.958 0 1.798.084 2.456.262 1.158.314 1.926.928 2.101 2.453z"/>
-          <path d="M8.5 3C8.5 1.619 9.619.5 11 .5h4.032c1.75 0 3.14.145 4.113.662 1.067.568 1.683 1.501 1.928 2.998.174 1.067.087 2.278-.305 3.637-.74 3.806-3.276 5.12-6.514 5.12h-.5a.805.805 0 0 0-.794.68l-.04.22-.63 3.993-.032.17a.804.804 0 0 1-.794.679H7.72a.483.483 0 0 1-.477-.558L9.096 7.58a.972.972 0 0 1 .959-.817h4.455c.958 0 1.798.084 2.456.262-.172-1.522-.93-2.138-2.088-2.452-.658-.178-1.498-.262-2.456-.262H8.5z" opacity=".7"/>
+          <path d="M7.076 21.337H2.47a.641.641 0 0 1-.633-.74L4.944.901C5.026.382 5.474 0 5.998 0h7.46c2.57 0 4.578.543 5.69 1.81 1.01 1.15 1.304 2.42 1.012 4.287-.023.143-.047.288-.077.437-.983 5.05-4.349 6.797-8.647 6.797h-2.19c-.524 0-.968.382-1.05.9l-1.12 7.106zm14.146-14.42a3.35 3.35 0 0 0-.607-.541c-.013.076-.026.175-.041.254-.93 4.778-4.005 7.201-9.138 7.201h-2.19a.563.563 0 0 0-.556.479l-1.187 7.527h-.506c-.41 0-.733-.33-.666-.724l.84-5.32.046-.289c.082-.518.526-.9 1.05-.9h2.19c4.882 0 8.65-1.986 9.753-7.729a7.035 7.035 0 0 0 .128-.765c.018-.153.029-.305.034-.456l.01-.157zm-12.645 9.583l1.187-7.527c.082-.518.526-.9 1.05-.9h2.19c5.133 0 8.208-2.423 9.138-7.201.017-.085.028-.166.041-.254-1.184-1.375-3.261-1.977-5.79-1.977h-7.46a.961.961 0 0 0-.95.807L.969 20.485a.641.641 0 0 0 .633.74h4.606l.002-.012-.002.012 1.03-6.524c.082-.518.526-.9 1.05-.9h2.19z"/>
         </svg>
       </button>
       <button class="btn small" onclick="openDrinkModal()" title="Getränk hinzufügen">➕</button>
@@ -58,6 +52,11 @@
       <button class="btn small warning" id="adminBtn" onclick="toggleAdminMode()" title="Admin-Modus">🔧</button>
       <button class="btn small secondary" id="backupBtn" onclick="openBackupModal()" title="Backup">💾</button>
     </div>
+    <div class="app-title">
+      <img src="Icons/Text Logo.png" alt="Sick & Sound" class="text-logo">
+      <span id="adminIndicator" class="admin-indicator" style="display:none;">Admin-Modus</span>
+    </div>
+    <div style="width:280px"></div><!-- Spacer für zentriertes Logo -->
   </header>
 
   <!-- Content -->
