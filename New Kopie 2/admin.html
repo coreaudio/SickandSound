@@ -7,242 +7,34 @@
   <meta name="theme-color" content="#0b0e14" />
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <link rel="apple-touch-icon" href="Icons/Apple logo.png">
-  <link rel="icon" type="image/png" href="Icons/Apple logo.png">
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="stylesheet" href="style.css" />
   <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;800&display=swap" rel="stylesheet" />
   <style>
     :root{
-      --ring: 52px; --row-pad: 12px; --name-size: 19px; --count-size: 20px; --cell-gap: 14px;
-      --sticky-top: 56px;
+      --ring: 48px; --row-pad: 6px; --name-size: 18px; --count-size: 17px; --cell-gap: 10px;
+      --sticky-top: 56px; /* Höhe Appbar ca. */
       --admin-color: #ff6b6b;
-      --primary: #6ee7ff;
-      --secondary: #a78bfa;
-      --bg-dark: #0b0e14;
-      --bg-card: #151a24;
-      --bg-elevated: #1c2130;
-      --border: #2a3042;
-      --text: #e6e8ef;
-      --radius-sm: 12px;
-      --radius-md: 16px;
-      --radius-lg: 20px;
-      --shadow-sm: 0 2px 8px rgba(0,0,0,0.2);
-      --shadow-md: 0 4px 16px rgba(0,0,0,0.3);
-      --shadow-lg: 0 8px 32px rgba(0,0,0,0.4);
-      --shadow-glow: 0 0 20px rgba(110,231,255,0.15);
     }
-    
-    /* Moderneres Basis-Layout */
-    body { 
-      background: linear-gradient(180deg, #0b0e14 0%, #151a24 100%);
-    }
-    
-    .content{ 
-      padding: 16px 16px 100px 16px;
-      max-width: 1400px;
-      margin: 0 auto;
-    }
-    
-    .appbar{ 
-      min-height: 64px;
-      backdrop-filter: blur(12px);
-      background: rgba(11, 14, 20, 0.9);
-      box-shadow: 0 4px 24px rgba(0,0,0,0.4);
-      border-bottom: 1px solid rgba(110,231,255,0.1);
-    }
-    
-    .bottomnav{ 
-      height: 72px;
-      backdrop-filter: blur(12px);
-      background: rgba(11, 14, 20, 0.95);
-      box-shadow: 0 -4px 24px rgba(0,0,0,0.4);
-      border-top: 1px solid rgba(110,231,255,0.1);
-    }
-    
-    /* Moderne Cards */
-    .card {
-      background: rgba(28, 33, 48, 0.6);
-      backdrop-filter: blur(10px);
-      border: 1px solid rgba(110,231,255,0.1);
-      border-radius: var(--radius-lg);
-      box-shadow: var(--shadow-md);
-      padding: 24px;
-      margin-bottom: 20px;
-      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    }
-    
-    .card:hover {
-      border-color: rgba(110,231,255,0.3);
-      box-shadow: var(--shadow-lg), var(--shadow-glow);
-      transform: translateY(-2px);
-    }
-    
-    /* Tabellen-Styling */
-    .card.table-wrap {
-      padding: 0;
-      overflow: hidden;
-    }
-    
-    .card.table-wrap table {
-      width: 100%;
-      border-spacing: 0;
-    }
-    
-    .card.table-wrap table td, 
-    .card.table-wrap table th{ 
-      padding: var(--row-pad) 16px;
-      border-bottom: 1px solid rgba(255,255,255,0.05);
-    }
-    
-    .card.table-wrap tbody tr:hover {
-      background: rgba(110,231,255,0.05);
-    }
-    
-    /* Level Ring */
-    .lvl-ring{ 
-      width: var(--ring); 
-      height: var(--ring); 
-      position:relative; 
-      display:inline-grid; 
-      place-items:center;
-      filter: drop-shadow(0 4px 8px rgba(110,231,255,0.3));
-    }
-    .lvl-ring .val{ 
-      position:absolute; 
-      font-size: 13px; 
-      font-weight: 900; 
-      line-height:1;
-      text-shadow: 0 2px 4px rgba(0,0,0,0.5);
-    }
-    
-    /* Person Cell */
-    .person-cell{ 
-      display:flex; 
-      align-items:center; 
-      gap:14px; 
-      cursor:default;
-      padding: 4px;
-      border-radius: var(--radius-sm);
-      transition: all 0.2s;
-    }
-    
-    .person-cell:hover {
-      background: rgba(110,231,255,0.08);
-    }
-    
-    .p-name{ 
-      font-size: var(--name-size); 
-      font-weight: 800; 
-      letter-spacing:.3px;
-      background: linear-gradient(135deg, var(--text), rgba(110,231,255,0.9));
-      background-clip: text;
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-    }
-    
-    /* Getränke Chips */
-    .drink-chip {
-      padding: 8px 12px;
-      background: rgba(110,231,255,0.1);
-      border-radius: var(--radius-sm);
-      border: 1px solid rgba(110,231,255,0.2);
-      transition: all 0.2s;
-    }
-    
-    .drink-chip:hover {
-      background: rgba(110,231,255,0.15);
-      border-color: rgba(110,231,255,0.4);
-      transform: translateY(-1px);
-    }
-    
-    .drink-chip .drink-name{ 
-      font-size: 13px;
-      font-weight: 700;
-      color: var(--primary);
-    }
-    .drink-chip .drink-price{ 
-      font-size: 12px;
-      opacity:.9;
-      margin-left: 6px;
-    }
-    
-    /* Cell & Buttons */
-    .cell{ 
-      display:flex; 
-      align-items:center; 
-      justify-content:flex-end; 
-      gap: var(--cell-gap);
-      padding: 6px;
-      border-radius: var(--radius-sm);
-    }
-    
-    .count{ 
-      font-size: var(--count-size);
-      min-width: 32px;
-      text-align:right;
-      font-weight: 800;
-      color: var(--primary);
-      text-shadow: 0 2px 8px rgba(110,231,255,0.4);
-    }
-    
-    .plus-btn, .minus-btn { 
-      padding: 10px 16px;
-      border-radius: var(--radius-sm);
-      font-weight: 800;
-      font-size: 14px;
-      box-shadow: var(--shadow-sm);
-      border: 2px solid transparent;
-    }
-    
-    .plus-btn {
-      background: linear-gradient(135deg, var(--primary), var(--secondary));
-      color: var(--bg-dark);
-    }
-    
-    .plus-btn:hover {
-      box-shadow: 0 4px 16px rgba(110,231,255,0.4);
-      transform: scale(1.05);
-    }
-    
-    .minus-btn {
-      background: linear-gradient(135deg, #ff6b6b, #ff8e53);
-      color: white;
-    }
-    
-    .section-row td{ 
-      font-size:13px;
-      opacity:.8;
-      font-weight: 700;
-      letter-spacing: 1px;
-      text-transform: uppercase;
-      padding-top: 20px !important;
-      padding-bottom: 12px !important;
-      background: rgba(110,231,255,0.03);
-    }
-    
-    .section-title{ 
-      font-size: 18px;
-      font-weight: 900;
-      letter-spacing: 0.5px;
-      margin-bottom: 12px;
-      background: linear-gradient(135deg, var(--primary), var(--secondary));
-      background-clip: text;
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-    }
-    
+    .content{ padding-bottom: 88px; }
+    .appbar{ min-height: 52px; }
+    .bottomnav{ height: 64px; }
+    .card.table-wrap table td, .card.table-wrap table th{ padding-top: var(--row-pad); padding-bottom: var(--row-pad); }
+    .lvl-ring{ width: var(--ring); height: var(--ring); position:relative; display:inline-grid; place-items:center; }
+    .lvl-ring .val{ position:absolute; font-size: 12px; font-weight: 800; line-height:1; }
+    .person-cell{ display:flex; align-items:center; gap:10px; cursor:default; }
+    .p-name{ font-size: var(--name-size); font-weight: 800; letter-spacing:.2px; }
+    .drink-chip .drink-name{ font-size: 12px; }
+    .drink-chip .drink-price{ font-size: 11px; opacity:.8 }
+    .cell{ display:flex; align-items:center; justify-content:flex-end; gap: var(--cell-gap); }
+    .count{ font-size: var(--count-size); min-width: 26px; text-align:right; }
+    .plus-btn{ padding:8px 12px; }
+    .minus-btn{ padding:8px 12px; background-color: var(--admin-color); }
+    .section-row td{ font-size:12px; opacity:.7 }
+    .section-title{ font-size: 14px; }
     .admin-mode .minus-btn{ display: inline-block !important; }
     .admin-mode .person-cell{ cursor: pointer; }
-    .admin-indicator{ 
-      background: linear-gradient(135deg, var(--admin-color), #ff8e53);
-      padding: 6px 14px;
-      border-radius: 999px;
-      margin-left: 12px;
-      font-size: 12px;
-      font-weight: 800;
-      box-shadow: 0 4px 12px rgba(255,107,107,0.3);
-    }
+    .admin-indicator{ background-color: var(--admin-color); padding: 4px 8px; border-radius: 4px; margin-left: 8px; font-size: 12px; }
 
     /* CTA Checkliste */
     .cta-wrap{ display:flex; flex-wrap:wrap; gap:10px; align-items:center; margin-top:8px; }
@@ -257,43 +49,9 @@
     .card.table-wrap thead th{
       position: sticky;
       top: var(--sticky-top);
-      z-index: 100;
-      background: #0b0e14; /* Gleiche Farbe wie Body */
-      box-shadow: 0 4px 12px rgba(0,0,0,.5);
-      border-bottom: 2px solid #6ee7ff;
-    }
-    
-    .card.table-wrap thead th::after {
-      content: '';
-      position: absolute;
-      bottom: -2px;
-      left: 0;
-      right: 0;
-      height: 2px;
-      background: linear-gradient(90deg, #6ee7ff, #a78bfa);
-    }
-    
-    /* Sticky Header Animation */
-    .card.table-wrap.scrolled thead th {
-      box-shadow: 0 4px 20px rgba(110,231,255,0.3);
-    }
-    
-    /* Sticky First Column (Personen) */
-    .card.table-wrap table th:first-child,
-    .card.table-wrap table td:first-child {
-      position: sticky;
-      left: 0;
-      z-index: 50;
-      background: #0b0e14;
-    }
-    
-    .card.table-wrap thead th:first-child {
-      z-index: 150; /* Höher als normale sticky header */
-      box-shadow: 4px 0 12px rgba(0,0,0,.5);
-    }
-    
-    .card.table-wrap tbody td:first-child {
-      box-shadow: 4px 0 8px rgba(0,0,0,.3);
+      z-index: 2;
+      background: #111827; /* dunkler Hintergrund für Lesbarkeit */
+      box-shadow: 0 2px 0 rgba(0,0,0,.25);
     }
 
     /* Hinweis im Löschmodus */
@@ -305,117 +63,6 @@
     .backup-actions{ display: flex; gap: 10px; margin-top: 15px; }
     .backup-list{ max-height: 200px; overflow-y: auto; margin: 10px 0; }
     .backup-item{ padding: 8px; border-bottom: 1px solid rgba(255,255,255,0.1); display: flex; justify-content: space-between; }
-
-    /* Touch-Handling für Tablets - verhindert ungewollte Klicks beim Swipen */
-    .cell, .plus-btn, .minus-btn { touch-action: manipulation; }
-    .card.table-wrap { touch-action: pan-y pinch-zoom; }
-    .card.table-wrap table { touch-action: pan-y; }
-    
-    /* Reset Modal */
-    .reset-person-item { display: flex; align-items: center; justify-content: space-between; padding: 10px; margin: 4px 0; background: rgba(255,255,255,0.05); border-radius: 6px; }
-    .reset-person-item:hover { background: rgba(255,255,255,0.08); }
-    .reset-person-info { display: flex; align-items: center; gap: 10px; flex: 1; }
-    .reset-checkbox { width: 18px; height: 18px; cursor: pointer; }
-    .reset-person-name { font-weight: 700; font-size: 14px; }
-    .reset-person-sum { font-size: 16px; font-weight: 800; color: #6ee7ff; }
-    
-    /* Hausdienst Hervorhebung */
-    .hd-today { background: linear-gradient(90deg, rgba(110,231,255,0.15), rgba(167,139,250,0.15)) !important; border-left: 4px solid #6ee7ff !important; }
-    .hd-today .person-cell { animation: pulse-glow 2s ease-in-out infinite; }
-    @keyframes pulse-glow {
-      0%, 100% { box-shadow: 0 0 0 rgba(110,231,255,0.4); }
-      50% { box-shadow: 0 0 20px rgba(110,231,255,0.6); }
-    }
-    .hd-badge-today { 
-      display: inline-flex; align-items: center; gap: 6px; padding: 8px 16px; 
-      background: linear-gradient(135deg, #6ee7ff, #a78bfa); 
-      color: #0b0e14; font-weight: 900; border-radius: 999px; font-size: 15px;
-      box-shadow: 0 4px 12px rgba(110,231,255,0.4);
-    }
-    .hd-warning {
-      padding: 12px 16px; background: rgba(255,107,107,0.15); 
-      border-left: 4px solid #ff6b6b; border-radius: 8px; 
-      font-weight: 700; animation: warning-pulse 2s ease-in-out infinite;
-    }
-    @keyframes warning-pulse {
-      0%, 100% { background: rgba(255,107,107,0.15); }
-      50% { background: rgba(255,107,107,0.25); }
-    }
-    
-    /* PayPal Button */
-    .paypal-btn { position: relative; }
-    .paypal-logo { width: 20px; height: 20px; }
-    
-    /* Text Logo */
-    .text-logo { height: 32px; width: auto; display: block; }
-    .app-title { display: flex; align-items: center; gap: 12px; }
-    .brand-dot { display: none; } /* Brand dot wird durch Logo ersetzt */
-    
-    /* Drag & Drop für Spalten */
-    .draggable-column { cursor: move; position: relative; user-select: none; }
-    .dragging { opacity: 0.5; }
-    .drag-over { background: rgba(110,231,255,0.2); }
-    .drag-handle { display: inline-block; margin-right: 4px; opacity: 0.5; font-size: 12px; }
-    
-    /* Moderne Animations */
-    @keyframes slideIn {
-      from { opacity: 0; transform: translateY(20px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
-    
-    @keyframes float {
-      0%, 100% { transform: translateY(0px); }
-      50% { transform: translateY(-10px); }
-    }
-    
-    @keyframes shine {
-      0% { background-position: -200% center; }
-      100% { background-position: 200% center; }
-    }
-    
-    /* Streak Counter */
-    .streak-badge {
-      display: inline-flex; align-items: center; gap: 6px;
-      padding: 6px 12px; background: linear-gradient(135deg, #ff6b6b, #ff8e53);
-      border-radius: 999px; font-size: 13px; font-weight: 800;
-      animation: float 3s ease-in-out infinite;
-    }
-    
-    /* XP Gain Animation */
-    @keyframes xpPop {
-      0% { opacity: 0; transform: translateY(0) scale(0.5); }
-      50% { opacity: 1; transform: translateY(-30px) scale(1.2); }
-      100% { opacity: 0; transform: translateY(-60px) scale(0.8); }
-    }
-    
-    .xp-popup {
-      position: fixed; pointer-events: none; z-index: 9999;
-      font-weight: 900; font-size: 20px;
-      color: #6ee7ff; text-shadow: 0 0 10px rgba(110,231,255,0.5);
-      animation: xpPop 1.5s ease-out forwards;
-    }
-    
-    /* Moderne Cards mit Glassmorphism */
-    .glass-card {
-      background: rgba(28, 33, 48, 0.7);
-      backdrop-filter: blur(10px);
-      border: 1px solid rgba(255,255,255,0.1);
-      border-radius: 16px;
-      box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
-    }
-    
-    /* Hover Effects */
-    .plus-btn:hover, .minus-btn:hover {
-      transform: scale(1.1);
-      box-shadow: 0 4px 12px rgba(110,231,255,0.3);
-    }
-    
-    .plus-btn:active, .minus-btn:active {
-      transform: scale(0.95);
-    }
-    
-    /* Smooth transitions */
-    .btn, .plus-btn, .minus-btn, .cell { transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); }
   </style>
 </head>
 <body>
@@ -424,19 +71,14 @@
   <!-- AppBar -->
   <header class="appbar">
     <div class="app-title">
-      <img src="Icons/Text Logo.png" alt="Sick & Sound" class="text-logo">
+      <div class="brand-dot"></div>
+      <h1>Sick &amp; Sound</h1>
       <span id="adminIndicator" class="admin-indicator" style="display:none;">Admin-Modus</span>
     </div>
     <div class="appbar-actions">
-      <button class="btn small paypal-btn" onclick="togglePayPal()" title="PayPal" style="background:#0070ba;color:white;padding:6px 10px;">
-        <svg class="paypal-logo" viewBox="0 0 24 24" fill="currentColor">
-          <path d="M20.067 8.478c.492.88.556 2.014.3 3.327-.74 3.806-3.276 5.12-6.514 5.12h-.5a.805.805 0 0 0-.794.68l-.04.22-.63 3.993-.032.17a.804.804 0 0 1-.794.679H7.72a.483.483 0 0 1-.477-.558L9.096 7.58a.972.972 0 0 1 .959-.817h4.455c.958 0 1.798.084 2.456.262 1.158.314 1.926.928 2.101 2.453z"/>
-          <path d="M8.5 3C8.5 1.619 9.619.5 11 .5h4.032c1.75 0 3.14.145 4.113.662 1.067.568 1.683 1.501 1.928 2.998.174 1.067.087 2.278-.305 3.637-.74 3.806-3.276 5.12-6.514 5.12h-.5a.805.805 0 0 0-.794.68l-.04.22-.63 3.993-.032.17a.804.804 0 0 1-.794.679H7.72a.483.483 0 0 1-.477-.558L9.096 7.58a.972.972 0 0 1 .959-.817h4.455c.958 0 1.798.084 2.456.262-.172-1.522-.93-2.138-2.088-2.452-.658-.178-1.498-.262-2.456-.262H8.5z" opacity=".7"/>
-        </svg>
-      </button>
+      <button class="btn small dark" onclick="togglePayPal()" title="PayPal">💸</button>
       <button class="btn small" onclick="openDrinkModal()" title="Getränk hinzufügen">➕</button>
       <button class="btn small" onclick="openPersonModal()" title="Person hinzufügen">👤+</button>
-      <button class="btn small" onclick="openCoreTeamModal()" title="Kernteam verwalten">👥</button>
       <button class="btn small warning" id="adminBtn" onclick="toggleAdminMode()" title="Admin-Modus">🔧</button>
       <button class="btn small secondary" id="backupBtn" onclick="openBackupModal()" title="Backup">💾</button>
     </div>
@@ -539,43 +181,6 @@
   </div>
 </div></div>
 
-<div class="modal" id="coreTeamModal"><div class="box modal-content">
-  <h2>👥 Kernteam verwalten</h2>
-  <div class="sub">Personen im Kernteam können sich für den Hausdienst eintragen. Benötigt Admin-Passwort.</div>
-  
-  <div class="section-title">Aktuelles Kernteam</div>
-  <div id="coreTeamList" style="display:flex;flex-wrap:wrap;gap:8px;margin:10px 0;"></div>
-  
-  <div class="section-title">Person zum Kernteam hinzufügen</div>
-  <div style="display:flex;gap:10px;margin-top:10px;flex-wrap:wrap;">
-    <input id="coreTeamName" placeholder="Name eingeben" style="flex:1;min-width:200px;">
-    <button class="btn" onclick="addToCoreTeam()">Zum Kernteam hinzufügen</button>
-  </div>
-  
-  <div style="display:flex;gap:10px;margin-top:15px">
-    <button class="btn dark" onclick="closeModal('coreTeamModal')">Schließen</button>
-  </div>
-</div></div>
-
-<div class="modal" id="resetModal"><div class="box modal-content">
-  <h2>♻ Abrechnen & Zurücksetzen</h2>
-  <div class="sub">Wähle die Personen aus, die abgerechnet werden sollen. Alle Striche werden zurückgesetzt und die Summen zu den Buchungen hinzugefügt.</div>
-  
-  <div class="section-title">Personen auswählen</div>
-  <div style="margin:10px 0;max-height:400px;overflow-y:auto;">
-    <div style="margin-bottom:10px;">
-      <button class="btn small" onclick="selectAllForReset(true)">Alle auswählen</button>
-      <button class="btn small ghost" onclick="selectAllForReset(false)">Alle abwählen</button>
-    </div>
-    <div id="resetPersonList"></div>
-  </div>
-  
-  <div style="display:flex;gap:10px;margin-top:15px;flex-wrap:wrap;">
-    <button class="btn warning" onclick="confirmReset()">Ausgewählte abrechnen</button>
-    <button class="btn dark" onclick="closeModal('resetModal')">Abbrechen</button>
-  </div>
-</div></div>
-
 <!-- Firebase + Howler -->
 <script src="https://www.gstatic.com/firebasejs/12.0.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/12.0.0/firebase-analytics-compat.js"></script>
@@ -584,9 +189,8 @@
 
 <script>
 /* ===== Config ===== */
-let CORE = ["Chris","Daniel","Elmi","Florian","Joel","Kevin","Kiste","Marco","Meli","Simon"];
+const CORE = ["Chris","Daniel","Elmi","Florian","Joel","Kevin","Kiste","Marco","Meli","Simon"];
 const ADMIN_PASSWORD = "1379"; // Einfaches Admin-Passwort
-const coreTeamKey = "sick_sound_core_team";
 
 // Firebase sickandsound-8a15f
 const firebaseConfig = {
@@ -643,100 +247,6 @@ function startHold(handler){ stopHold(); handler(); holdT=setTimeout(()=>{holdI=
 function stopHold(){ if(holdT) clearTimeout(holdT); if(holdI) clearInterval(holdI); holdT=holdI=null; }
 window.onmouseup=stopHold; window.onmouseleave=stopHold;
 
-/* Drag & Drop für Spalten */
-let draggedColumn = null;
-
-function handleDragStart(e) {
-  draggedColumn = e.target.closest('th');
-  draggedColumn.classList.add('dragging');
-  e.dataTransfer.effectAllowed = 'move';
-  e.dataTransfer.setData('text/html', draggedColumn.innerHTML);
-}
-
-function handleDragOver(e) {
-  if (e.preventDefault) e.preventDefault();
-  e.dataTransfer.dropEffect = 'move';
-  
-  const target = e.target.closest('th.draggable-column');
-  if (target && target !== draggedColumn) {
-    target.classList.add('drag-over');
-  }
-  return false;
-}
-
-function handleDrop(e) {
-  if (e.stopPropagation) e.stopPropagation();
-  
-  const target = e.target.closest('th.draggable-column');
-  if (target && draggedColumn && target !== draggedColumn) {
-    const fromIndex = parseInt(draggedColumn.dataset.index);
-    const toIndex = parseInt(target.dataset.index);
-    
-    // Tausche Positionen in columnOrder
-    const temp = columnOrder[fromIndex];
-    columnOrder[fromIndex] = columnOrder[toIndex];
-    columnOrder[toIndex] = temp;
-    
-    saveAll();
-    buildTable();
-    
-    // Erfolgsfeedback
-    showXPPopup(target, '✓ Verschoben', '#6ee7ff');
-  }
-  
-  return false;
-}
-
-function handleDragEnd(e) {
-  draggedColumn?.classList.remove('dragging');
-  document.querySelectorAll('.drag-over').forEach(el => el.classList.remove('drag-over'));
-  draggedColumn = null;
-}
-
-/* XP Popup Animation */
-function showXPPopup(element, text, color = '#6ee7ff') {
-  const rect = element.getBoundingClientRect();
-  const popup = document.createElement('div');
-  popup.className = 'xp-popup';
-  popup.textContent = text;
-  popup.style.left = rect.left + rect.width / 2 + 'px';
-  popup.style.top = rect.top + 'px';
-  popup.style.color = color;
-  document.body.appendChild(popup);
-  
-  setTimeout(() => popup.remove(), 1500);
-}
-
-/* Touch-Handling für Tablets - unterscheidet zwischen Tap und Swipe */
-let touchStartX=0, touchStartY=0, touchStartTime=0;
-const SWIPE_THRESHOLD = 30; // Pixel
-const TAP_TIME_THRESHOLD = 300; // ms
-
-document.addEventListener('touchstart', function(e) {
-  if(e.target.closest('.plus-btn, .minus-btn, .cell')) {
-    const touch = e.touches[0];
-    touchStartX = touch.clientX;
-    touchStartY = touch.clientY;
-    touchStartTime = Date.now();
-  }
-}, {passive: true});
-
-document.addEventListener('touchend', function(e) {
-  if(e.target.closest('.plus-btn, .minus-btn, .cell')) {
-    const touch = e.changedTouches[0];
-    const deltaX = Math.abs(touch.clientX - touchStartX);
-    const deltaY = Math.abs(touch.clientY - touchStartY);
-    const deltaTime = Date.now() - touchStartTime;
-    
-    // Wenn Bewegung zu groß oder zu lang -> als Swipe behandeln, Event abbrechen
-    if(deltaX > SWIPE_THRESHOLD || deltaY > SWIPE_THRESHOLD || deltaTime > TAP_TIME_THRESHOLD) {
-      e.preventDefault();
-      e.stopPropagation();
-      return false;
-    }
-  }
-}, {passive: false});
-
 /* 00:00 Refresh */
 function scheduleMidnightRefresh(cb){
   const now=new Date(); const mid=new Date(now.getFullYear(),now.getMonth(),now.getDate()+1,0,0,2);
@@ -746,12 +256,6 @@ document.addEventListener('visibilitychange', ()=>{ if(!document.hidden){ update
 
 /* ===== Load ===== */
 async function loadState(){
-  // Lade gespeichertes Kernteam
-  const savedCore = localStorage.getItem(coreTeamKey);
-  if(savedCore) {
-    try { CORE = JSON.parse(savedCore); } catch(_) {}
-  }
-  
   if(db){
     try{
       const snap=await db.collection(STATE_COLLECTION).doc("global").get();
@@ -760,7 +264,6 @@ async function loadState(){
         prices=s.prices||prices; people=s.people||JSON.parse(localStorage.getItem(peopleKey))||[];
         data=s.data||data; history=s.history||history; redoStack=s.redoStack||JSON.parse(localStorage.getItem(redoKey))||[];
         bookings=s.bookings||bookings; columnOrder=s.columnOrder||Object.keys(prices); xp=s.xp||xp;
-        if(s.coreTeam) CORE = s.coreTeam;
       }else{
         people=JSON.parse(localStorage.getItem(peopleKey))||[];
         redoStack=JSON.parse(localStorage.getItem(redoKey))||[];
@@ -810,10 +313,9 @@ function saveAll(){
   localStorage.setItem(bookingsKey,JSON.stringify(bookings));
   localStorage.setItem(orderKey,JSON.stringify(columnOrder));
   localStorage.setItem(xpKey,JSON.stringify(xp));
-  localStorage.setItem(coreTeamKey,JSON.stringify(CORE));
   if(db){
     db.collection(STATE_COLLECTION).doc("global").set(
-      {prices,people,data,history,redoStack,bookings,columnOrder,xp,coreTeam:CORE},
+      {prices,people,data,history,redoStack,bookings,columnOrder,xp},
       {merge:true}
     ).catch(()=>{});
   }
@@ -825,7 +327,6 @@ function subscribeRealtime(){
     const s=snap.data();
     prices=s.prices||prices; people=s.people||people; data=s.data||data; history=s.history||history;
     redoStack=s.redoStack||redoStack; bookings=s.bookings||bookings; columnOrder=s.columnOrder||columnOrder; xp=s.xp||xp;
-    if(s.coreTeam) CORE = s.coreTeam;
     CORE.forEach(n=>{ if(!people.includes(n)) people.push(n); });
     buildTable(); updateTodayBanner(); updateUndoRedoButtons();
   });
@@ -850,30 +351,9 @@ async function updateTodayBanner(existing){
     const infoEl=document.getElementById("todayInfo");
     const ctaEl=document.getElementById("todayCta");
 
-    if(person) {
-      // Jemand ist eingetragen - prominente Anzeige
-      infoEl.innerHTML = `
-        <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
-          <span style="font-size:14px;opacity:0.9;">Heute Hausdienst:</span>
-          <span class="hd-badge-today">
-            🏠 ${person}
-          </span>
-        </div>
-      `;
-    } else {
-      // Niemand eingetragen - auffällige Warnung
-      infoEl.innerHTML = `
-        <div class="hd-warning">
-          <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
-            <span style="font-size:20px;">⚠️</span>
-            <span style="font-size:15px;">Achtung: Kein Hausdienst eingetragen!</span>
-          </div>
-          <div style="font-size:13px;opacity:0.9;font-weight:400;">
-            Bitte trage dich oder jemanden für heute ein.
-          </div>
-        </div>
-      `;
-    }
+    infoEl.innerHTML = person
+      ? `Heute eingetragener Hausdienst: <span class="badge ok">${person}</span>`
+      : `Heute: <span class="badge none">Noch niemand eingetragen</span>`;
 
     ctaEl.innerHTML = `
       <button class="cta-check" onclick="openChecklist()">
@@ -881,10 +361,9 @@ async function updateTodayBanner(existing){
         Checkliste öffnen
       </button>
       <span class="cta-sub">Direkt zur Aufgabenübersicht</span>
-      ${!person ? '<button class="btn warning" style="margin-left:10px;" onclick="window.location=\'hausdienst.html\'">🏠 Hausdienst eintragen</button>' : ''}
     `;
   }catch(e){
-    document.getElementById("todayInfo").innerHTML = `<div class="hd-warning">⚠️ Status nicht verfügbar (offline?)</div>`;
+    document.getElementById("todayInfo").textContent="Heute: Status nicht verfügbar (offline?)";
     document.getElementById("todayCta").innerHTML = `<button class="cta-check" onclick="openChecklist()">Checkliste öffnen</button>`;
   }
 }
@@ -993,18 +472,12 @@ function buildTable(){
   const guests=people.filter(n=>!CORE.includes(n)).sort((a,b)=>a.localeCompare(b));
 
   let html = `<table><thead><tr><th style="min-width:240px;text-align:left">Person</th>`;
-  columnOrder.forEach((drink, index)=>{
+  columnOrder.forEach(drink=>{
     if(prices[drink]!==undefined){
       const delTitle = deleteMode ? ` title="Zum Löschen tippen"` : '';
-      html += `<th class="draggable-column" draggable="true" data-drink="${drink}" data-index="${index}" 
-               onclick="headerClick('${drink}')"${delTitle}
-               ondragstart="handleDragStart(event)" ondragover="handleDragOver(event)" 
-               ondrop="handleDrop(event)" ondragend="handleDragEnd(event)">
-        <span class="drink-chip">
-          <span class="drag-handle">⋮⋮</span>
-          <span class="drink-name">${drink.replace('_',' ')}</span>
-          <span class="drink-price">${prices[drink]} €</span>
-        </span>
+      html += `<th onclick="headerClick('${drink}')"${delTitle}>
+        <span class="drink-chip"><span class="drink-name">${drink.replace('_',' ')}</span>
+        <span class="drink-price">${prices[drink]} €</span></span>
       </th>`;
     }
   });
@@ -1141,22 +614,7 @@ function changeCount(id, drink, person, delta){
   xp[person] = Math.max(0, (xp[person]||0) + xpDelta); 
   const after=levelOf(xp[person]);
   
-  // XP Popup Animation
-  if (delta > 0 && el) {
-    showXPPopup(el, `+${xpDelta.toFixed(1)} XP`, after > before ? '#a78bfa' : '#6ee7ff');
-  }
-  
-  // Level Up Animation
-  if (after > before) {
-    sLevel.play();
-    const personCell = document.querySelector(`[onclick*="personCellClick('${person}')"]`);
-    if (personCell) {
-      showXPPopup(personCell, `🎉 LEVEL ${after}!`, '#FFD700');
-    }
-  } else {
-    sClick.play();
-  }
-  
+  (after>before ? sLevel : sClick).play();
   updateTotalsFor(person); 
   saveAll(); 
   updateUndoRedoButtons();
@@ -1231,94 +689,15 @@ function deleteColumn(drink){
 }
 
 /* Abrechnen */
-let selectedForReset = [];
-
 function resetAll(){
-  const pw=prompt("Passwort eingeben:"); if(pw!=="1379"){alert("Falsches Passwort"); sError.play(); return;}
-  
-  // Öffne Modal mit Personenauswahl
-  selectedForReset = [];
-  renderResetPersonList();
-  document.getElementById("resetModal").classList.add("show");
-}
-
-function renderResetPersonList(){
-  const list = document.getElementById('resetPersonList');
-  
-  // Sortiere Personen nach Gesamtsumme (höchste zuerst)
-  const peopleWithSums = people.map(p => {
-    const sum = columnOrder.reduce((s,d)=>s+(data[`${p}_${d}`]||0)*prices[d],0);
-    return {name: p, sum: sum};
-  }).filter(p => p.sum > 0).sort((a,b) => b.sum - a.sum);
-  
-  if(peopleWithSums.length === 0) {
-    list.innerHTML = '<div class="sub" style="text-align:center;padding:20px;">Keine Personen mit offenen Beträgen gefunden.</div>';
-    return;
-  }
-  
-  list.innerHTML = peopleWithSums.map(person => {
-    const isSelected = selectedForReset.includes(person.name);
-    return `
-      <div class="reset-person-item">
-        <div class="reset-person-info">
-          <input type="checkbox" class="reset-checkbox" 
-                 ${isSelected ? 'checked' : ''} 
-                 onchange="toggleResetSelection('${person.name}')">
-          <span class="reset-person-name">${person.name}</span>
-        </div>
-        <span class="reset-person-sum">${person.sum.toFixed(2)} €</span>
-      </div>
-    `;
-  }).join('');
-}
-
-function toggleResetSelection(person){
-  if(selectedForReset.includes(person)) {
-    selectedForReset = selectedForReset.filter(p => p !== person);
-  } else {
-    selectedForReset.push(person);
-  }
-}
-
-function selectAllForReset(select){
-  const peopleWithSums = people.filter(p => {
-    const sum = columnOrder.reduce((s,d)=>s+(data[`${p}_${d}`]||0)*prices[d],0);
-    return sum > 0;
-  });
-  
-  selectedForReset = select ? [...peopleWithSums] : [];
-  renderResetPersonList();
-}
-
-function confirmReset(){
-  if(selectedForReset.length === 0) {
-    alert("Bitte wähle mindestens eine Person aus.");
-    return;
-  }
-  
-  const totalAmount = selectedForReset.reduce((sum, p) => {
-    return sum + columnOrder.reduce((s,d)=>s+(data[`${p}_${d}`]||0)*prices[d],0);
-  }, 0);
-  
-  if(!confirm(`${selectedForReset.length} Person(en) für insgesamt ${totalAmount.toFixed(2)} € abrechnen und zurücksetzen?`)) {
-    return;
-  }
-  
-  // Rechne nur ausgewählte Personen ab
-  selectedForReset.forEach(p=>{
+  const pw=prompt("Passwort eingeben:"); if(pw!=="1379"){alert("Falsches Passwort");return;}
+  if(!confirm("Alle Striche abrechnen und zurücksetzen?")) return;
+  people.forEach(p=>{
     const sum=columnOrder.reduce((s,d)=>s+(data[`${p}_${d}`]||0)*prices[d],0);
     if(sum>0) bookings.push({date:new Date().toLocaleDateString("de-DE"), person:p, sum});
-    xp[p]=(xp[p]||0)+sum; 
-    columnOrder.forEach(d=>data[`${p}_${d}`]=0);
+    xp[p]=(xp[p]||0)+sum; columnOrder.forEach(d=>data[`${p}_${d}`]=0);
   });
-  
-  history=[]; redoStack=[]; 
-  saveAll(); 
-  buildTable(); 
-  updateUndoRedoButtons();
-  closeModal('resetModal');
-  
-  alert(`✅ ${selectedForReset.length} Person(en) erfolgreich abgerechnet!`);
+  history=[]; redoStack=[]; saveAll(); buildTable(); updateUndoRedoButtons();
 }
 
 /* Backup functions */
@@ -1459,62 +838,6 @@ function openPersonModal(){ document.getElementById("personModal").classList.add
 function openDrinkModal(){ document.getElementById("drinkModal").classList.add("show"); }
 function closeModal(id){ document.getElementById(id).classList.remove("show"); }
 function togglePayPal(){ document.getElementById("paypalModal").classList.toggle("show"); }
-
-/* Kernteam-Verwaltung */
-function openCoreTeamModal(){
-  const password = prompt("Admin-Passwort für Kernteam-Verwaltung eingeben:");
-  if (password !== ADMIN_PASSWORD) {
-    alert("Falsches Passwort");
-    sError.play();
-    return;
-  }
-  renderCoreTeamList();
-  document.getElementById("coreTeamModal").classList.add("show");
-}
-
-function renderCoreTeamList(){
-  const list = document.getElementById('coreTeamList');
-  list.innerHTML = CORE.map(name => `
-    <div style="display:inline-flex;align-items:center;gap:6px;padding:6px 12px;background:#1c2130;border-radius:999px;border:1px solid #2a3042;">
-      <span>${name}</span>
-      <button class="btn small danger" style="padding:2px 6px;font-size:11px;" onclick="removeFromCoreTeam('${name}')">✕</button>
-    </div>
-  `).join('');
-}
-
-function addToCoreTeam(){
-  const input = document.getElementById('coreTeamName');
-  const name = input.value.trim();
-  
-  if(!name) {
-    alert("Bitte einen Namen eingeben");
-    return;
-  }
-  
-  if(CORE.includes(name)) {
-    alert("Person ist bereits im Kernteam");
-    return;
-  }
-  
-  CORE.push(name);
-  if(!people.includes(name)) people.push(name);
-  
-  saveAll();
-  buildTable();
-  renderCoreTeamList();
-  input.value = '';
-  alert(`${name} wurde zum Kernteam hinzugefügt`);
-}
-
-function removeFromCoreTeam(name){
-  if(!confirm(`${name} wirklich aus dem Kernteam entfernen?`)) return;
-  
-  CORE = CORE.filter(n => n !== name);
-  saveAll();
-  buildTable();
-  renderCoreTeamList();
-  alert(`${name} wurde aus dem Kernteam entfernt`);
-}
 function confirmAddPerson(){
   const name=document.getElementById("personName").value.trim(); if(!name) return alert("Bitte Namen eingeben");
   if(people.includes(name)) return alert("Person existiert bereits");
@@ -1534,15 +857,6 @@ if('serviceWorker' in navigator){
 
 window.onload=loadState;
 window.onresize=()=>requestAnimationFrame(adjustToOnePage);
-
-/* Sticky Header Scroll Detection */
-window.addEventListener('scroll', () => {
-  const tableContainer = document.getElementById('tableContainer');
-  const scrolled = window.scrollY > 100;
-  if (tableContainer) {
-    tableContainer.classList.toggle('scrolled', scrolled);
-  }
-}, { passive: true });
 </script>
 </body>
 </html>
