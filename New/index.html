@@ -14,221 +14,29 @@
   <link rel="stylesheet" href="tablet-design.css" />
   <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;800&display=swap" rel="stylesheet" />
   <style>
-    /* Spezifische Styles nur für index.html (Rest kommt aus tablet-design.css) */
-
-    /* CTA Checkliste */
-    .cta-wrap{ display:flex; flex-wrap:wrap; gap:10px; align-items:center; margin-top:8px; }
-    .cta-check{ display:inline-flex; align-items:center; gap:10px; padding:12px 16px; border-radius:14px;
-      background: linear-gradient(135deg,#6ee7ff,#a78bfa); color:#0b0e14; font-weight:900; letter-spacing:.2px;
-      text-decoration:none; border:none; box-shadow:0 8px 24px rgba(0,0,0,.25); cursor:pointer;
-    }
-    .cta-check svg{ width:20px; height:20px; }
-    .cta-sub{ font-size:12px; opacity:.85; }
-
-    /* Sticky Header */
-    .card.table-wrap thead th{
-      position: sticky;
-      top: var(--sticky-top);
-      z-index: 100;
-      background: #0b0e14; /* Gleiche Farbe wie Body */
-      box-shadow: 0 4px 12px rgba(0,0,0,.5);
-      border-bottom: 2px solid #6ee7ff;
-    }
+    /* ===================================================
+       ALLE STYLES SIND IN tablet-design.css
+       Nur seiten-spezifische Overrides hier
+       =================================================== */
     
-    .card.table-wrap thead th::after {
-      content: '';
-      position: absolute;
-      bottom: -2px;
-      left: 0;
-      right: 0;
-      height: 2px;
-      background: linear-gradient(90deg, #6ee7ff, #a78bfa);
+    /* Reset Modal Spezial-Styles */
+    .reset-person-item { 
+      display: flex; align-items: center; justify-content: space-between; 
+      padding: 10px; margin: 4px 0; background: rgba(255,255,255,0.05); 
+      border-radius: 6px; 
     }
-    
-    /* Sticky Header Animation */
-    .card.table-wrap.scrolled thead th {
-      box-shadow: 0 4px 20px rgba(110,231,255,0.3);
-    }
-    
-    /* Sticky First Column (Personen) */
-    .card.table-wrap table th:first-child,
-    .card.table-wrap table td:first-child {
-      position: sticky;
-      left: 0;
-      z-index: 50;
-      background: #0b0e14;
-    }
-    
-    .card.table-wrap thead th:first-child {
-      z-index: 150; /* Höher als normale sticky header */
-      box-shadow: 4px 0 12px rgba(0,0,0,.5);
-    }
-    
-    .card.table-wrap tbody td:first-child {
-      box-shadow: 4px 0 8px rgba(0,0,0,.3);
-    }
-
-    /* Hinweis im Löschmodus */
-    .delete-hint{ opacity:.75; font-size:12px; margin-top:4px }
-    .delete-mode .person-cell{ cursor:pointer }
-
-    /* Backup Modal */
-    .modal-content{ max-width: 500px; }
-    .backup-actions{ display: flex; gap: 10px; margin-top: 15px; }
-    .backup-list{ max-height: 200px; overflow-y: auto; margin: 10px 0; }
-    .backup-item{ padding: 8px; border-bottom: 1px solid rgba(255,255,255,0.1); display: flex; justify-content: space-between; }
-
-    /* Touch-Handling für Tablets - verhindert ungewollte Klicks beim Swipen */
-    .cell, .plus-btn, .minus-btn { touch-action: manipulation; }
-    .card.table-wrap { touch-action: pan-y pinch-zoom; }
-    .card.table-wrap table { touch-action: pan-y; }
-    
-    /* Reset Modal */
-    .reset-person-item { display: flex; align-items: center; justify-content: space-between; padding: 10px; margin: 4px 0; background: rgba(255,255,255,0.05); border-radius: 6px; }
-    .reset-person-item:hover { background: rgba(255,255,255,0.08); }
+    .reset-person-item:active { background: rgba(255,255,255,0.08); }
     .reset-person-info { display: flex; align-items: center; gap: 10px; flex: 1; }
     .reset-checkbox { width: 18px; height: 18px; cursor: pointer; }
     .reset-person-name { font-weight: 700; font-size: 14px; }
     .reset-person-sum { font-size: 16px; font-weight: 800; color: #6ee7ff; }
     
-    /* Hausdienst Hervorhebung */
-    .hd-today { background: linear-gradient(90deg, rgba(110,231,255,0.15), rgba(167,139,250,0.15)) !important; border-left: 4px solid #6ee7ff !important; }
-    .hd-today .person-cell { animation: pulse-glow 2s ease-in-out infinite; }
+    /* Hausdienst Heute Animation */
     @keyframes pulse-glow {
       0%, 100% { box-shadow: 0 0 0 rgba(110,231,255,0.4); }
       50% { box-shadow: 0 0 20px rgba(110,231,255,0.6); }
     }
-    .hd-badge-today { 
-      display: inline-flex; align-items: center; gap: 6px; padding: 8px 16px; 
-      background: linear-gradient(135deg, #6ee7ff, #a78bfa); 
-      color: #0b0e14; font-weight: 900; border-radius: 999px; font-size: 15px;
-      box-shadow: 0 4px 12px rgba(110,231,255,0.4);
-    }
-    .hd-warning {
-      padding: 12px 16px; background: rgba(255,107,107,0.15); 
-      border-left: 4px solid #ff6b6b; border-radius: 8px; 
-      font-weight: 700; animation: warning-pulse 2s ease-in-out infinite;
-    }
-    @keyframes warning-pulse {
-      0%, 100% { background: rgba(255,107,107,0.15); }
-      50% { background: rgba(255,107,107,0.25); }
-    }
-    
-    /* PayPal Button */
-    .paypal-btn { position: relative; }
-    .paypal-logo { width: 20px; height: 20px; }
-    
-    /* Text Logo */
-    .text-logo { height: 32px; width: auto; display: block; }
-    .app-title { display: flex; align-items: center; gap: 12px; }
-    .brand-dot { display: none; } /* Brand dot wird durch Logo ersetzt */
-    
-    /* TABLET: Drag & Drop für Spalten */
-    .draggable-column { 
-      cursor: move; 
-      position: relative; 
-      user-select: none;
-      min-height: var(--touch-target);
-    }
-    .dragging { opacity: 0.5; }
-    .drag-over { background: rgba(110,231,255,0.25); }
-    .drag-handle { 
-      display: inline-block; 
-      margin-right: 8px; 
-      opacity: 0.6; 
-      font-size: 18px;
-      font-weight: 900;
-    }
-    
-    /* Moderne Animations */
-    @keyframes slideIn {
-      from { opacity: 0; transform: translateY(20px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
-    
-    @keyframes float {
-      0%, 100% { transform: translateY(0px); }
-      50% { transform: translateY(-10px); }
-    }
-    
-    @keyframes shine {
-      0% { background-position: -200% center; }
-      100% { background-position: 200% center; }
-    }
-    
-    /* Streak Counter */
-    .streak-badge {
-      display: inline-flex; align-items: center; gap: 6px;
-      padding: 6px 12px; background: linear-gradient(135deg, #ff6b6b, #ff8e53);
-      border-radius: 999px; font-size: 13px; font-weight: 800;
-      animation: float 3s ease-in-out infinite;
-    }
-    
-    /* XP Gain Animation */
-    @keyframes xpPop {
-      0% { opacity: 0; transform: translateY(0) scale(0.5); }
-      50% { opacity: 1; transform: translateY(-30px) scale(1.2); }
-      100% { opacity: 0; transform: translateY(-60px) scale(0.8); }
-    }
-    
-    .xp-popup {
-      position: fixed; pointer-events: none; z-index: 9999;
-      font-weight: 900; font-size: 20px;
-      color: #6ee7ff; text-shadow: 0 0 10px rgba(110,231,255,0.5);
-      animation: xpPop 1.5s ease-out forwards;
-    }
-    
-    /* Moderne Cards mit Glassmorphism */
-    .glass-card {
-      background: rgba(28, 33, 48, 0.7);
-      backdrop-filter: blur(10px);
-      border: 1px solid rgba(255,255,255,0.1);
-      border-radius: 16px;
-      box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
-    }
-    
-    /* Hover Effects */
-    .plus-btn:hover, .minus-btn:hover {
-      transform: scale(1.1);
-      box-shadow: 0 4px 12px rgba(110,231,255,0.3);
-    }
-    
-    .plus-btn:active, .minus-btn:active {
-      transform: scale(0.95);
-    }
-    
-    /* Smooth transitions */
-    .btn, .plus-btn, .minus-btn, .cell { transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); }
-    
-    /* TABLET: Optimierte Bottom Navigation */
-    .bottomnav .tab {
-      min-height: 72px;
-      padding: 12px 8px;
-      gap: 6px;
-    }
-    
-    .bottomnav .tab svg {
-      width: 28px;
-      height: 28px;
-    }
-    
-    .bottomnav .tab span {
-      font-size: 13px;
-      font-weight: 700;
-    }
-    
-    .bottomnav .tab.active {
-      background: rgba(110,231,255,0.15);
-      border-radius: 16px 16px 0 0;
-    }
-    
-    /* TABLET: Größere AppBar-Buttons */
-    .appbar-actions .btn {
-      min-width: var(--touch-target);
-      min-height: var(--touch-target);
-      padding: 12px 16px;
-      font-size: 15px;
-    }
+    .hd-today .person-cell { animation: pulse-glow 2s ease-in-out infinite; }
   </style>
 </head>
 <body>
