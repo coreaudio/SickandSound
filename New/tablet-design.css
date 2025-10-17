@@ -861,3 +861,76 @@ body {
 .right { text-align: right; }
 .subtle { opacity: .75; }
 .muted { opacity: .6; }
+
+/* ========================================
+   DESKTOP OPTIMIERUNG (>1024px)
+   Für PC/große Bildschirme
+   ======================================== */
+
+@media (min-width: 1025px) {
+  :root {
+    /* Desktop: Größere Werte */
+    --ring: 64px;
+    --row-pad: 16px;
+    --name-size: 22px;
+    --count-size: 24px;
+    --cell-gap: 20px;
+  }
+  
+  /* Desktop: Breiteres Content */
+  .content {
+    max-width: 1400px;
+    padding: 24px 40px 120px 40px;
+  }
+  
+  /* Desktop: Getränke-Chips horizontal wieder */
+  .drink-chip {
+    flex-direction: row;
+    padding: 10px 16px;
+    min-height: 52px;
+    gap: 8px;
+  }
+  
+  .drink-chip .drink-name {
+    font-size: 15px;
+  }
+  
+  .drink-chip .drink-price {
+    font-size: 13px;
+  }
+  
+  /* Desktop: Breitere Spalten */
+  .card.table-wrap table th:not(:first-child):not(:last-child),
+  .card.table-wrap table td:not(:first-child):not(:last-child) {
+    width: 140px;
+    min-width: 140px;
+    padding: var(--row-pad) 12px;
+  }
+  
+  /* Desktop: Section-Titles größer */
+  .section-title {
+    font-size: 24px;
+  }
+  
+  /* Desktop: Hover wieder aktivieren */
+  .card:hover {
+    border-color: rgba(110,231,255,0.3);
+    box-shadow: var(--shadow-lg), var(--shadow-glow);
+    transform: translateY(-2px);
+  }
+  
+  .plus-btn:hover, .minus-btn:hover {
+    transform: scale(1.05);
+    box-shadow: 0 4px 12px rgba(110,231,255,0.3);
+  }
+  
+  .person-cell:hover {
+    background: rgba(110,231,255,0.08);
+  }
+  
+  .drink-chip:hover {
+    background: rgba(110,231,255,0.15);
+    border-color: rgba(110,231,255,0.4);
+    transform: translateY(-1px);
+  }
+}
