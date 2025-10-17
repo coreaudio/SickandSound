@@ -35,6 +35,22 @@
 
     .statusdot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px;background:#ffadad}
     .statusok{background:#7CFC9A}
+    
+    /* Verbesserte Checkliste */
+    .progress-section { margin: 15px 0; padding: 12px; background: rgba(255,255,255,0.03); border-radius: 8px; }
+    .progress-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+    .progress-title { font-weight: 800; font-size: 14px; }
+    .progress-stats { font-size: 12px; opacity: 0.8; }
+    .progress-bar { height: 6px; background: rgba(255,255,255,0.1); border-radius: 3px; overflow: hidden; }
+    .progress-fill { height: 100%; background: linear-gradient(90deg, #6ee7ff, #a78bfa); transition: width 0.3s ease; }
+    .task-item { display: flex; align-items: center; gap: 10px; padding: 10px; margin: 6px 0; background: rgba(255,255,255,0.05); border-radius: 6px; border-left: 3px solid #6ee7ff; }
+    .task-item.done { opacity: 0.6; border-left-color: #7CFC9A; }
+    .task-checkbox { width: 20px; height: 20px; cursor: pointer; flex-shrink: 0; }
+    .task-text { flex: 1; font-size: 14px; }
+    .task-text.done { text-decoration: line-through; }
+    .task-delete { padding: 4px 8px; font-size: 11px; }
+    .category-icon { font-size: 18px; margin-right: 6px; }
+    .empty-state { text-align: center; padding: 30px; opacity: 0.6; font-size: 14px; }
   </style>
 </head>
 <body>
@@ -88,6 +104,8 @@
       <div class="card">
         <div class="section-title">Checkliste</div>
         <div class="sub">Aufgaben sind dauerhaft gespeichert · Haken gilt nur heute</div>
+        
+        <div id="overallProgress" style="margin-top:12px;"></div>
 
         <div id="catTabs" class="segmented" style="margin-top:10px"></div>
 
@@ -150,7 +168,14 @@
 <script src="https://www.gstatic.com/firebasejs/12.0.0/firebase-analytics-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/12.0.0/firebase-firestore-compat.js"></script>
 <script>
-  const CORE=["Chris","Daniel","Elmi","Florian","Joel","Kevin","Kiste","Marco","Meli","Simon"];
+  let CORE=["Chris","Daniel","Elmi","Florian","Joel","Kevin","Kiste","Marco","Meli","Simon"];
+  const coreTeamKey = "sick_sound_core_team";
+  
+  // Lade gespeichertes Kernteam
+  const savedCore = localStorage.getItem(coreTeamKey);
+  if(savedCore) {
+    try { CORE = JSON.parse(savedCore); } catch(_) {}
+  }
 
   /* ✅ Richtiges Firebase-Config für sickandsound-8a15f */
   const firebaseConfig = {
@@ -407,23 +432,142 @@
     return arr;
   }
 
-  async function renderTasks(reload=false){
-    if(reload) await loadTasks();
-    const list=document.getElementById('list');
-    const arr = filteredTasks();
-    if(!arr.length){
-      list.innerHTML = `<div class="sub">Keine Aufgaben in dieser Ansicht.</div>`;
+  function updateOverallProgress(){
+    const totalTasks = _tasks.length;
+    const completedTasks = _tasks.filter(t => checked[t.id]).length;
+    const progress = totalTasks > 0 ? (completedTasks / totalTasks * 100) : 0;
+    
+    const progressEl = document.getElementById('overallProgress');
+    if(!totalTasks) {
+      progressEl.innerHTML = '';
       return;
     }
-    const rows = arr.map(t=>{
-      const isDone = !!checked[t.id];
-      return `<tr>
-        <td style="width:32px"><input type="checkbox" ${isDone?'checked':''} onclick="toggleCheck('${t.id}')"></td>
-        <td>${t.text} ${t.cat!=='all'?`<span class="badge">${t.cat}</span>`:''}</td>
-        <td style="text-align:right"><button class="btn small danger" onclick="deleteTask('${t.id}')">Löschen</button></td>
-      </tr>`;
-    }).join('');
-    list.innerHTML = `<table><thead><tr><th></th><th>Aufgabe</th><th>Aktion</th></tr></thead><tbody>${rows}</tbody></table>`;
+    
+    let emoji = '📝';
+    let message = 'Los geht\'s!';
+    if(progress === 100) {
+      emoji = '🎉';
+      message = 'Perfekt! Alle Aufgaben erledigt!';
+    } else if(progress >= 75) {
+      emoji = '💪';
+      message = 'Fast geschafft!';
+    } else if(progress >= 50) {
+      emoji = '👍';
+      message = 'Guter Fortschritt!';
+    } else if(progress >= 25) {
+      emoji = '⏳';
+      message = 'Weiter so!';
+    }
+    
+    progressEl.innerHTML = `
+      <div style="text-align:center;padding:10px;background:rgba(110,231,255,0.1);border-radius:8px;border:1px solid rgba(110,231,255,0.3);">
+        <div style="font-size:24px;margin-bottom:4px;">${emoji}</div>
+        <div style="font-weight:800;margin-bottom:6px;">${message}</div>
+        <div style="font-size:13px;opacity:0.9;margin-bottom:8px;">${completedTasks} von ${totalTasks} Aufgaben erledigt</div>
+        <div class="progress-bar" style="height:8px;max-width:300px;margin:0 auto;">
+          <div class="progress-fill" style="width:${progress}%"></div>
+        </div>
+      </div>
+    `;
+  }
+
+  async function renderTasks(reload=false){
+    if(reload) await loadTasks();
+    updateOverallProgress();
+    const list=document.getElementById('list');
+    
+    // Gruppiere Aufgaben nach Kategorie
+    const catIcons = {
+      morgens: '☀️',
+      tag: '📋',
+      abend: '🌙',
+      all: '📝'
+    };
+    
+    const catNames = {
+      morgens: 'Morgens',
+      tag: 'Im Laufe des Tages',
+      abend: 'Bevor man geht',
+      all: 'Alle Aufgaben'
+    };
+    
+    if(showCat === 'all') {
+      // Zeige alle Kategorien mit Fortschrittsbalken
+      let html = '';
+      const categories = ['morgens', 'tag', 'abend'];
+      
+      categories.forEach(cat => {
+        const catTasks = _tasks.filter(t => t.cat === cat);
+        if(!catTasks.length) return;
+        
+        const completedCount = catTasks.filter(t => checked[t.id]).length;
+        const totalCount = catTasks.length;
+        const progress = totalCount > 0 ? (completedCount / totalCount * 100) : 0;
+        
+        // Nur offene Aufgaben anzeigen wenn im "Offen" Modus
+        let displayTasks = catTasks;
+        if(showMode === 'open') displayTasks = catTasks.filter(t => !checked[t.id]);
+        if(showMode === 'done') displayTasks = catTasks.filter(t => checked[t.id]);
+        
+        if(!displayTasks.length && showMode !== 'all') return;
+        
+        html += `<div class="progress-section">
+          <div class="progress-header">
+            <div class="progress-title"><span class="category-icon">${catIcons[cat]}</span>${catNames[cat]}</div>
+            <div class="progress-stats">${completedCount} / ${totalCount}</div>
+          </div>
+          <div class="progress-bar"><div class="progress-fill" style="width: ${progress}%"></div></div>`;
+        
+        displayTasks.forEach(t => {
+          const isDone = !!checked[t.id];
+          html += `<div class="task-item ${isDone?'done':''}">
+            <input type="checkbox" class="task-checkbox" ${isDone?'checked':''} onclick="toggleCheck('${t.id}')">
+            <div class="task-text ${isDone?'done':''}">${t.text}</div>
+            <button class="btn small danger task-delete" onclick="deleteTask('${t.id}')">Löschen</button>
+          </div>`;
+        });
+        
+        html += `</div>`;
+      });
+      
+      if(!html) {
+        list.innerHTML = `<div class="empty-state">✅ Alle Aufgaben erledigt!</div>`;
+      } else {
+        list.innerHTML = html;
+      }
+    } else {
+      // Einzelne Kategorie
+      const arr = filteredTasks();
+      if(!arr.length){
+        const msg = showMode === 'done' ? '✅ Noch keine Aufgaben erledigt' : '✨ Keine offenen Aufgaben';
+        list.innerHTML = `<div class="empty-state">${msg}</div>`;
+        return;
+      }
+      
+      const catTasks = _tasks.filter(t => t.cat === showCat);
+      const completedCount = catTasks.filter(t => checked[t.id]).length;
+      const totalCount = catTasks.length;
+      const progress = totalCount > 0 ? (completedCount / totalCount * 100) : 0;
+      
+      let html = `<div class="progress-section">
+        <div class="progress-header">
+          <div class="progress-title"><span class="category-icon">${catIcons[showCat]}</span>${catNames[showCat]}</div>
+          <div class="progress-stats">${completedCount} / ${totalCount}</div>
+        </div>
+        <div class="progress-bar"><div class="progress-fill" style="width: ${progress}%"></div></div>`;
+      
+      arr.forEach(t => {
+        const isDone = !!checked[t.id];
+        html += `<div class="task-item ${isDone?'done':''}">
+          <input type="checkbox" class="task-checkbox" ${isDone?'checked':''} onclick="toggleCheck('${t.id}')">
+          <div class="task-text ${isDone?'done':''}">${t.text}</div>
+          <button class="btn small danger task-delete" onclick="deleteTask('${t.id}')">Löschen</button>
+        </div>`;
+      });
+      
+      html += `</div>`;
+      list.innerHTML = html;
+    }
   }
 
   /* Historie (letzte 30 Tage) */
@@ -441,9 +585,23 @@
     el.innerHTML = `<table><thead><tr><th>Datum</th><th>Person</th></tr></thead><tbody>${rows.join('')}</tbody></table>`;
   }
 
+  /* Lade CORE aus Firebase */
+  async function loadCoreTeam(){
+    if(!db) return;
+    try{
+      const snap = await db.collection("state").doc("global").get();
+      if(snap.exists && snap.data().coreTeam){
+        CORE = snap.data().coreTeam;
+        localStorage.setItem(coreTeamKey, JSON.stringify(CORE));
+        renderPeopleRow();
+      }
+    }catch(e){ console.error("Fehler beim Laden des Kernteams:", e); }
+  }
+
   /* Initialisierung */
   async function init(){
     pickTabFromQuery();
+    await loadCoreTeam();
     renderPeopleRow();
     updateSelectionUI();
     setMode(showMode);
