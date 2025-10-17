@@ -84,6 +84,7 @@
       <button class="btn small dark" onclick="togglePayPal()" title="PayPal">💸</button>
       <button class="btn small" onclick="openDrinkModal()" title="Getränk hinzufügen">➕</button>
       <button class="btn small" onclick="openPersonModal()" title="Person hinzufügen">👤+</button>
+      <button class="btn small" onclick="openCoreTeamModal()" title="Kernteam verwalten">👥</button>
       <button class="btn small warning" id="adminBtn" onclick="toggleAdminMode()" title="Admin-Modus">🔧</button>
       <button class="btn small secondary" id="backupBtn" onclick="openBackupModal()" title="Backup">💾</button>
     </div>
@@ -186,6 +187,24 @@
   </div>
 </div></div>
 
+<div class="modal" id="coreTeamModal"><div class="box modal-content">
+  <h2>👥 Kernteam verwalten</h2>
+  <div class="sub">Personen im Kernteam können sich für den Hausdienst eintragen. Benötigt Admin-Passwort.</div>
+  
+  <div class="section-title">Aktuelles Kernteam</div>
+  <div id="coreTeamList" style="display:flex;flex-wrap:wrap;gap:8px;margin:10px 0;"></div>
+  
+  <div class="section-title">Person zum Kernteam hinzufügen</div>
+  <div style="display:flex;gap:10px;margin-top:10px;flex-wrap:wrap;">
+    <input id="coreTeamName" placeholder="Name eingeben" style="flex:1;min-width:200px;">
+    <button class="btn" onclick="addToCoreTeam()">Zum Kernteam hinzufügen</button>
+  </div>
+  
+  <div style="display:flex;gap:10px;margin-top:15px">
+    <button class="btn dark" onclick="closeModal('coreTeamModal')">Schließen</button>
+  </div>
+</div></div>
+
 <!-- Firebase + Howler -->
 <script src="https://www.gstatic.com/firebasejs/12.0.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/12.0.0/firebase-analytics-compat.js"></script>
@@ -194,8 +213,9 @@
 
 <script>
 /* ===== Config ===== */
-const CORE = ["Chris","Daniel","Elmi","Florian","Joel","Kevin","Kiste","Marco","Meli","Simon"];
+let CORE = ["Chris","Daniel","Elmi","Florian","Joel","Kevin","Kiste","Marco","Meli","Simon"];
 const ADMIN_PASSWORD = "1379"; // Einfaches Admin-Passwort
+const coreTeamKey = "sick_sound_core_team";
 
 // Firebase sickandsound-8a15f
 const firebaseConfig = {
@@ -291,6 +311,12 @@ document.addEventListener('visibilitychange', ()=>{ if(!document.hidden){ update
 
 /* ===== Load ===== */
 async function loadState(){
+  // Lade gespeichertes Kernteam
+  const savedCore = localStorage.getItem(coreTeamKey);
+  if(savedCore) {
+    try { CORE = JSON.parse(savedCore); } catch(_) {}
+  }
+  
   if(db){
     try{
       const snap=await db.collection(STATE_COLLECTION).doc("global").get();
@@ -299,6 +325,7 @@ async function loadState(){
         prices=s.prices||prices; people=s.people||JSON.parse(localStorage.getItem(peopleKey))||[];
         data=s.data||data; history=s.history||history; redoStack=s.redoStack||JSON.parse(localStorage.getItem(redoKey))||[];
         bookings=s.bookings||bookings; columnOrder=s.columnOrder||Object.keys(prices); xp=s.xp||xp;
+        if(s.coreTeam) CORE = s.coreTeam;
       }else{
         people=JSON.parse(localStorage.getItem(peopleKey))||[];
         redoStack=JSON.parse(localStorage.getItem(redoKey))||[];
@@ -348,9 +375,10 @@ function saveAll(){
   localStorage.setItem(bookingsKey,JSON.stringify(bookings));
   localStorage.setItem(orderKey,JSON.stringify(columnOrder));
   localStorage.setItem(xpKey,JSON.stringify(xp));
+  localStorage.setItem(coreTeamKey,JSON.stringify(CORE));
   if(db){
     db.collection(STATE_COLLECTION).doc("global").set(
-      {prices,people,data,history,redoStack,bookings,columnOrder,xp},
+      {prices,people,data,history,redoStack,bookings,columnOrder,xp,coreTeam:CORE},
       {merge:true}
     ).catch(()=>{});
   }
@@ -362,6 +390,7 @@ function subscribeRealtime(){
     const s=snap.data();
     prices=s.prices||prices; people=s.people||people; data=s.data||data; history=s.history||history;
     redoStack=s.redoStack||redoStack; bookings=s.bookings||bookings; columnOrder=s.columnOrder||columnOrder; xp=s.xp||xp;
+    if(s.coreTeam) CORE = s.coreTeam;
     CORE.forEach(n=>{ if(!people.includes(n)) people.push(n); });
     buildTable(); updateTodayBanner(); updateUndoRedoButtons();
   });
@@ -873,6 +902,62 @@ function openPersonModal(){ document.getElementById("personModal").classList.add
 function openDrinkModal(){ document.getElementById("drinkModal").classList.add("show"); }
 function closeModal(id){ document.getElementById(id).classList.remove("show"); }
 function togglePayPal(){ document.getElementById("paypalModal").classList.toggle("show"); }
+
+/* Kernteam-Verwaltung */
+function openCoreTeamModal(){
+  const password = prompt("Admin-Passwort für Kernteam-Verwaltung eingeben:");
+  if (password !== ADMIN_PASSWORD) {
+    alert("Falsches Passwort");
+    sError.play();
+    return;
+  }
+  renderCoreTeamList();
+  document.getElementById("coreTeamModal").classList.add("show");
+}
+
+function renderCoreTeamList(){
+  const list = document.getElementById('coreTeamList');
+  list.innerHTML = CORE.map(name => `
+    <div style="display:inline-flex;align-items:center;gap:6px;padding:6px 12px;background:#1c2130;border-radius:999px;border:1px solid #2a3042;">
+      <span>${name}</span>
+      <button class="btn small danger" style="padding:2px 6px;font-size:11px;" onclick="removeFromCoreTeam('${name}')">✕</button>
+    </div>
+  `).join('');
+}
+
+function addToCoreTeam(){
+  const input = document.getElementById('coreTeamName');
+  const name = input.value.trim();
+  
+  if(!name) {
+    alert("Bitte einen Namen eingeben");
+    return;
+  }
+  
+  if(CORE.includes(name)) {
+    alert("Person ist bereits im Kernteam");
+    return;
+  }
+  
+  CORE.push(name);
+  if(!people.includes(name)) people.push(name);
+  
+  saveAll();
+  buildTable();
+  renderCoreTeamList();
+  input.value = '';
+  alert(`${name} wurde zum Kernteam hinzugefügt`);
+}
+
+function removeFromCoreTeam(name){
+  if(!confirm(`${name} wirklich aus dem Kernteam entfernen?`)) return;
+  
+  CORE = CORE.filter(n => n !== name);
+  saveAll();
+  buildTable();
+  renderCoreTeamList();
+  alert(`${name} wurde aus dem Kernteam entfernt`);
+}
 function confirmAddPerson(){
   const name=document.getElementById("personName").value.trim(); if(!name) return alert("Bitte Namen eingeben");
   if(people.includes(name)) return alert("Person existiert bereits");
