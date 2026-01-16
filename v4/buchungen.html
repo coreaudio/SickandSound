@@ -1,0 +1,936 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <title>Sick & Sound – Buchungen</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#0b0e14" />
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="stylesheet" href="style.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;800&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --admin-color: #ff6b6b;
+      --edit-color: #6ee7ff;
+      --touch-target: 44px;
+    }
+    
+    .content{ padding-bottom: 84px; }
+    .table td, .table th{ padding: 12px 10px; }
+    .right{ text-align:right; }
+    .controls{ display:flex; gap:10px; flex-wrap:wrap; align-items:center; margin-bottom: 15px; }
+    .totals{ display:flex; gap:12px; flex-wrap:wrap; margin-top:10px; }
+    .pill{ padding:8px 14px; border-radius:999px; background:#1c2130; border:1px solid #2a3042; }
+    .danger-link{ color:#ffb4b4; cursor:pointer; }
+    .subtle{ opacity:.8; }
+    .delete-hint{ font-size:14px; opacity:.75; margin-top:8px; }
+    
+    .admin-indicator {
+      background-color: var(--admin-color);
+      padding: 6px 12px;
+      border-radius: 6px;
+      margin-left: 12px;
+      font-size: 14px;
+      font-weight: bold;
+    }
+    
+    .edit-mode .editable {
+      cursor: pointer;
+      position: relative;
+    }
+    
+    .edit-mode .editable:hover::after {
+      content: '✎';
+      position: absolute;
+      right: 5px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--edit-color);
+      font-size: 14px;
+    }
+    
+    .admin-controls {
+      background: rgba(255, 107, 107, 0.1);
+      border: 1px solid rgba(255, 107, 107, 0.3);
+      border-radius: 12px;
+      padding: 15px;
+      margin: 15px 0;
+    }
+    
+    .modal-content {
+      max-width: 500px;
+      width: 90%;
+    }
+    
+    .form-group {
+      margin-bottom: 15px;
+    }
+    
+    .form-group label {
+      display: block;
+      margin-bottom: 5px;
+      font-weight: bold;
+    }
+    
+    .edit-form input, .edit-form select {
+      width: 100%;
+      padding: 12px;
+      border-radius: 10px;
+      border: 1px solid rgba(255,255,255,0.1);
+      background: #0e1422;
+      color: #fff;
+      font-size: 16px;
+    }
+    
+    .button-group {
+      display: flex;
+      gap: 10px;
+      margin-top: 20px;
+      flex-wrap: wrap;
+    }
+    
+    .button-group .btn {
+      flex: 1;
+      min-width: 120px;
+    }
+    
+    @media (min-width: 768px) {
+      .controls {
+        justify-content: space-between;
+      }
+      
+      .totals {
+        justify-content: flex-start;
+      }
+    }
+    
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 12px;
+      margin: 15px 0;
+    }
+    
+    .stat-card {
+      background: #1c2130;
+      border-radius: 12px;
+      padding: 15px;
+      text-align: center;
+    }
+    
+    .stat-value {
+      font-size: 24px;
+      font-weight: 800;
+      margin: 8px 0;
+      background: linear-gradient(135deg, #6ee7ff, #a78bfa);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    
+    .stat-label {
+      font-size: 14px;
+      opacity: 0.8;
+    }
+  </style>
+</head>
+<body>
+<div class="app">
+  <header class="appbar">
+    <div class="app-title">
+      <div class="brand-dot"></div>
+      <h1>Buchungen</h1>
+      <span id="adminIndicator" class="admin-indicator" style="display:none;">Admin-Modus</span>
+    </div>
+    <div class="appbar-actions">
+      <span class="sub"><span class="statusdot" id="dot"></span><span id="connTxt">Verbinde…</span></span>
+      <button class="btn small warning" id="adminBtn" onclick="toggleAdminMode()" title="Admin-Modus">🔧</button>
+    </div>
+  </header>
+
+  <main class="content">
+    <div class="card">
+      <div class="section-title">Abrechnungen</div>
+      
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-label">Gesamtbetrag</div>
+          <div class="stat-value" id="totalAmount">0,00 €</div>
+          <div class="stat-label">Alle Buchungen</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Durchschnitt</div>
+          <div class="stat-value" id="averageAmount">0,00 €</div>
+          <div class="stat-label">Pro Buchung</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Anzahl</div>
+          <div class="stat-value" id="totalCount">0</div>
+          <div class="stat-label">Buchungen</div>
+        </div>
+      </div>
+      
+      <div class="controls">
+        <select id="rangeSel" class="input" onchange="render()" style="min-height: var(--touch-target);">
+          <option value="all">Alle</option>
+          <option value="month">Dieser Monat</option>
+          <option value="last30">Letzte 30 Tage</option>
+          <option value="year">Dieses Jahr</option>
+        </select>
+        <div>
+          <button class="btn" onclick="exportCSV()">📤 CSV exportieren</button>
+          <button class="btn secondary" onclick="showAddModal()">➕ Neue Buchung</button>
+        </div>
+      </div>
+      
+      <div id="adminControls" class="admin-controls" style="display:none;">
+        <div class="section-title">Admin-Bereich</div>
+        <div class="sub subtle">Erweiterte Funktionen für Buchungsverwaltung</div>
+        <div class="button-group">
+          <button class="btn danger" onclick="toggleDeleteMode()" id="delBtn">🗑 Löschmodus</button>
+          <button class="btn dark" onclick="clearAll()" id="clearBtn">♻ Alle löschen</button>
+          <button class="btn" onclick="openBackupModal()">💾 Backup</button>
+        </div>
+      </div>
+      
+      <div id="delHint" class="delete-hint" style="display:none;">
+        Löschmodus aktiv: Klicke auf eine Zeile, um sie zu löschen.
+      </div>
+      <div id="editHint" class="delete-hint" style="display:none;">
+        Bearbeitungsmodus aktiv: Klicke auf Datum, Person oder Betrag zum Bearbeiten.
+      </div>
+      
+      <div class="totals">
+        <span class="pill">Gefiltert: <b id="sumAll">0,00 €</b></span>
+        <span class="pill">Einträge: <b id="countAll">0</b></span>
+      </div>
+    </div>
+
+    <div class="card table-wrap" id="listWrap">
+      <div class="sub">Lade Buchungen…</div>
+    </div>
+
+    <div class="card" id="perPersonCard">
+      <div class="section-title">Summen pro Person</div>
+      <div id="perPerson" class="subtle">–</div>
+    </div>
+  </main>
+
+  <nav class="bottomnav">
+    <a class="tab" href="index.html">
+      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M4 6h16v2H4zM4 11h16v2H4zM4 16h10v2H4z"/></svg>
+      <span>Liste</span>
+    </a>
+    <a class="tab" href="hausdienst.html#plan">
+      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 3l9 7-1.2 1.6L18 10.1V20h-5v-6H11v6H6v-9.9L4.2 11.6 3 10z"/></svg>
+      <span>Hausdienst</span>
+    </a>
+    <a class="tab" href="rangliste.html">
+      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M7 17H3V7h4v10zm7 0h-4V3h4v14zm7 0h-4v-8h4v8z"/></svg>
+      <span>Rang</span>
+    </a>
+    <a class="tab" href="badges.html">
+      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 1l3.09 6.26L22 8.27l-5 4.87L18.18 22 12 18.56 5.82 22 7 13.14 2 8.27l6.91-1.01L12 1z"/></svg>
+      <span>Badges</span>
+    </a>
+    <a class="tab active" href="buchungen.html">
+      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 2h9l5 5v13a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2zm8 1.5V8h4.5L14 3.5z"/></svg>
+      <span>Buchungen</span>
+    </a>
+  </nav>
+</div>
+
+<!-- Modals -->
+<div class="modal" id="editModal">
+  <div class="box modal-content">
+    <h2>Buchung bearbeiten</h2>
+    <div class="edit-form">
+      <div class="form-group">
+        <label for="editDate">Datum</label>
+        <input type="date" id="editDate" required>
+      </div>
+      <div class="form-group">
+        <label for="editPerson">Person</label>
+        <select id="editPerson" required>
+          <option value="">Person auswählen</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label for="editAmount">Betrag (€)</label>
+        <input type="number" id="editAmount" step="0.01" min="0" required>
+      </div>
+    </div>
+    <div class="button-group">
+      <button class="btn" onclick="saveEditing()">Speichern</button>
+      <button class="btn dark" onclick="closeModal('editModal')">Abbrechen</button>
+      <button class="btn danger" onclick="deleteEditing()" id="deleteEditBtn">Löschen</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal" id="addModal">
+  <div class="box modal-content">
+    <h2>Neue Buchung</h2>
+    <div class="edit-form">
+      <div class="form-group">
+        <label for="addDate">Datum</label>
+        <input type="date" id="addDate" required value="">
+      </div>
+      <div class="form-group">
+        <label for="addPerson">Person</label>
+        <select id="addPerson" required>
+          <option value="">Person auswählen</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label for="addAmount">Betrag (€)</label>
+        <input type="number" id="addAmount" step="0.01" min="0" required>
+      </div>
+    </div>
+    <div class="button-group">
+      <button class="btn" onclick="addNewBooking()">Hinzufügen</button>
+      <button class="btn dark" onclick="closeModal('addModal')">Abbrechen</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal" id="backupModal">
+  <div class="box modal-content">
+    <h2>💾 Backup & Wiederherstellung</h2>
+    <div class="sub">Sichern oder Wiederherstellen der Buchungsdaten</div>
+    
+    <div class="section-title">Manuelles Backup erstellen</div>
+    <div class="button-group">
+      <button class="btn" onclick="createBackup()">Backup erstellen</button>
+      <button class="btn secondary" onclick="exportBackup()">Backup exportieren</button>
+    </div>
+    
+    <div class="section-title">Wiederherstellung</div>
+    <input type="file" id="restoreFile" accept=".json" style="display: none" onchange="restoreBackup(this.files[0])">
+    <div class="button-group">
+      <button class="btn" onclick="document.getElementById('restoreFile').click()">Backup importieren</button>
+      <button class="btn warning" onclick="showBackupList()">Lokale Backups</button>
+    </div>
+    
+    <div id="backupList" class="backup-list" style="max-height: 200px; overflow-y: auto; margin: 15px 0;"></div>
+    
+    <div class="button-group">
+      <button class="btn dark" onclick="closeModal('backupModal')">Schließen</button>
+    </div>
+  </div>
+</div>
+
+<!-- Firebase -->
+<script src="https://www.gstatic.com/firebasejs/12.0.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/12.0.0/firebase-firestore-compat.js"></script>
+<script>
+  const CORE = ["Chris","Daniel","Elmi","Florian","Joel","Kevin","Kiste","Marco","Meli","Simon"];
+  const ADMIN_PASSWORD = "1379"; // Einfaches Admin-Passwort
+  
+  const firebaseConfig = {
+    apiKey: "AIzaSyBtZsr4QPHQbvO2qae6MoBoxJF5dNP2vh0",
+    authDomain: "sickandsound-8a15f.firebaseapp.com",
+    projectId: "sickandsound-8a15f",
+    storageBucket: "sickandsound-8a15f.appspot.com",
+    messagingSenderId: "32138160959",
+    appId: "1:32138160959:web:a65c7f4ad7d44e757fc18a"
+  };
+  
+  const STATE_COLLECTION = location.search.includes("beta") ? "state_beta" : "state";
+
+  let db = null;
+  let bookings = [];
+  let prices = {};
+  let people = [];
+  let deleteMode = false;
+  let adminMode = false;
+  let currentEditIndex = -1;
+
+  function euro(n){ return (Number(n)||0).toFixed(2).replace('.',',')+' €'; }
+  
+  function parseDE(dstr) {
+    const m = /^(\d{1,2})\.(\d{1,2})\.(\d{2,4})$/.exec(dstr);
+    if(!m) return null;
+    const dd = +m[1], mm = (+m[2])-1, yy = (+m[3]<100 ? 2000 + +m[3] : +m[3]);
+    return new Date(yy, mm, dd);
+  }
+
+  function formatDateForInput(dateStr) {
+    if (!dateStr) return new Date().toISOString().slice(0, 10);
+    
+    // Versuche das Datum zu parsen (unterstützt verschiedene Formate)
+    const date = parseDE(dateStr) || new Date(dateStr);
+    if (isNaN(date.getTime())) return new Date().toISOString().slice(0, 10);
+    
+    return date.toISOString().slice(0, 10);
+  }
+
+  function withinRange(b) {
+    const v = document.getElementById('rangeSel').value;
+    if(v === 'all') return true;
+    
+    const now = new Date();
+    const d = parseDE(b.date) || new Date(b.date || 0);
+    if(isNaN(d.getTime())) return false;
+    
+    if(v === 'last30') {
+      const from = new Date(now);
+      from.setDate(now.getDate() - 30);
+      return d >= from && d <= now;
+    }
+    
+    if(v === 'month') {
+      return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+    }
+    
+    if(v === 'year') {
+      return d.getFullYear() === now.getFullYear();
+    }
+    
+    return true;
+  }
+
+  function updateStats() {
+    // Gesamtstatistiken
+    const totalAmount = bookings.reduce((sum, b) => sum + (Number(b.sum) || 0), 0);
+    const averageAmount = bookings.length > 0 ? totalAmount / bookings.length : 0;
+    
+    document.getElementById('totalAmount').textContent = euro(totalAmount);
+    document.getElementById('averageAmount').textContent = euro(averageAmount);
+    document.getElementById('totalCount').textContent = bookings.length;
+    
+    // Gefilterte Statistiken
+    const filtered = bookings.filter(withinRange);
+    const sum = filtered.reduce((s, b) => s + (Number(b.sum) || 0), 0);
+    const cnt = filtered.length;
+    
+    document.getElementById('sumAll').textContent = euro(sum).replace(' €','');
+    document.getElementById('countAll').textContent = String(cnt);
+    
+    // Summen pro Person
+    const map = {};
+    filtered.forEach(b => {
+      map[b.person] = (map[b.person] || 0) + (Number(b.sum) || 0);
+    });
+    
+    const ppl = Object.keys(map).sort((a, b) => map[b] - map[a]);
+    const per = ppl.map(p => `<span class="pill">${p}: <b>${euro(map[p])}</b></span>`).join(' ');
+    
+    const card = document.getElementById('perPersonCard');
+    if(ppl.length) {
+      card.style.display = 'block';
+      document.getElementById('perPerson').innerHTML = per;
+    } else {
+      card.style.display = 'none';
+    }
+  }
+
+  function render() {
+    const wrap = document.getElementById('listWrap');
+    const filtered = bookings.filter(withinRange);
+    
+    if (filtered.length === 0) {
+      wrap.innerHTML = '<div class="sub">Keine Buchungen im ausgewählten Zeitraum.</div>';
+      updateStats();
+      return;
+    }
+    
+    const rows = filtered
+      .slice()
+      .sort((a, b) => {
+        const dateA = parseDE(a.date) || new Date(a.date || 0);
+        const dateB = parseDE(b.date) || new Date(b.date || 0);
+        return dateB - dateA || a.person.localeCompare(b.person);
+      })
+      .map((b, i) => {
+        const displayDate = b.date || '-';
+        const displayPerson = b.person || '-';
+        const displayAmount = b.sum != null ? euro(b.sum) : '-';
+        
+        // Für Bearbeitungsmodus
+        const editAttr = adminMode ? 'ondblclick="startEditing(' + i + ')"' : '';
+        const editClass = adminMode ? 'editable' : '';
+        
+        return `
+          <tr data-index="${i}" onclick="rowClick(${i})">
+            <td class="${editClass}" ${editAttr} data-field="date">${displayDate}</td>
+            <td class="${editClass}" ${editAttr} data-field="person">${displayPerson}</td>
+            <td class="right ${editClass}" ${editAttr} data-field="sum">${displayAmount}</td>
+            ${adminMode ? '<td class="subtle">Doppelklick zum Bearbeiten</td>' : ''}
+          </tr>
+        `;
+      }).join('');
+
+    wrap.innerHTML = `
+      <table class="table">
+        <thead>
+          <tr>
+            <th>Datum</th>
+            <th>Person</th>
+            <th class="right">Betrag</th>
+            ${adminMode ? '<th>Aktion</th>' : ''}
+          </tr>
+        </thead>
+        <tbody>${rows}</tbody>
+      </table>
+    `;
+    
+    updateStats();
+  }
+
+  function rowClick(i) {
+    if (deleteMode) {
+      deleteBooking(i);
+      return;
+    }
+    
+    if (adminMode) {
+      // Im Admin-Modus ohne Löschmodus: Bearbeitungsmodal öffnen
+      startEditing(i);
+    }
+  }
+
+  function startEditing(index) {
+    if (!adminMode) return;
+    
+    const filtered = bookings.filter(withinRange);
+    if (index < 0 || index >= filtered.length) return;
+    
+    // Finde den originalen Index der Buchung
+    const booking = filtered[index];
+    const originalIndex = bookings.findIndex(b => 
+      b.date === booking.date && 
+      b.person === booking.person && 
+      Number(b.sum) === Number(booking.sum)
+    );
+    
+    if (originalIndex === -1) return;
+    
+    currentEditIndex = originalIndex;
+    const book = bookings[originalIndex];
+    
+    // Fülle das Formular
+    document.getElementById('editDate').value = formatDateForInput(book.date);
+    document.getElementById('editAmount').value = Number(book.sum) || 0;
+    
+    // Fülle Personen-Auswahl
+    const personSelect = document.getElementById('editPerson');
+    personSelect.innerHTML = '<option value="">Person auswählen</option>';
+    
+    CORE.forEach(person => {
+      const option = document.createElement('option');
+      option.value = person;
+      option.textContent = person;
+      option.selected = (person === book.person);
+      personSelect.appendChild(option);
+    });
+    
+    // Zeige Modal an
+    document.getElementById('editModal').classList.add('show');
+  }
+
+  function saveEditing() {
+    if (currentEditIndex === -1) return;
+    
+    const date = document.getElementById('editDate').value;
+    const person = document.getElementById('editPerson').value;
+    const amount = parseFloat(document.getElementById('editAmount').value);
+    
+    if (!date || !person || isNaN(amount) || amount <= 0) {
+      alert('Bitte füllen Sie alle Felder korrekt aus.');
+      return;
+    }
+    
+    // Formatieren des Datums im deutschen Format (YYYY-MM-DD zu DD.MM.YYYY)
+    const dateParts = date.split('-');
+    const formattedDate = `${dateParts[2]}.${dateParts[1]}.${dateParts[0]}`;
+    
+    // Aktualisiere die Buchung
+    bookings[currentEditIndex] = {
+      date: formattedDate,
+      person: person,
+      sum: amount.toFixed(2)
+    };
+    
+    // Speichere in Firebase
+    persist();
+    
+    // Schließe das Modal
+    closeModal('editModal');
+    
+    // Aktualisiere die Anzeige
+    render();
+    
+    alert('Buchung erfolgreich aktualisiert!');
+  }
+
+  function deleteEditing() {
+    if (currentEditIndex === -1) return;
+    
+    if (!confirm('Diese Buchung wirklich löschen?')) return;
+    
+    // Entferne die Buchung
+    bookings.splice(currentEditIndex, 1);
+    
+    // Speichere in Firebase
+    persist();
+    
+    // Schließe das Modal
+    closeModal('editModal');
+    
+    // Aktualisiere die Anzeige
+    render();
+    
+    alert('Buchung erfolgreich gelöscht!');
+  }
+
+  function showAddModal() {
+    // Setze heutiges Datum als Standard
+    const today = new Date();
+    const formattedToday = today.toISOString().slice(0, 10);
+    document.getElementById('addDate').value = formattedToday;
+    document.getElementById('addAmount').value = '';
+    
+    // Fülle Personen-Auswahl
+    const personSelect = document.getElementById('addPerson');
+    personSelect.innerHTML = '<option value="">Person auswählen</option>';
+    
+    CORE.forEach(person => {
+      const option = document.createElement('option');
+      option.value = person;
+      option.textContent = person;
+      personSelect.appendChild(option);
+    });
+    
+    // Zeige Modal an
+    document.getElementById('addModal').classList.add('show');
+  }
+
+  // KORRIGIERT: Funktion zum Hinzufügen neuer Buchungen
+  function addNewBooking() {
+    const dateInput = document.getElementById('addDate').value;
+    const person = document.getElementById('addPerson').value;
+    const amount = parseFloat(document.getElementById('addAmount').value);
+    
+    if (!dateInput || !person || isNaN(amount) || amount <= 0) {
+      alert('Bitte füllen Sie alle Felder korrekt aus.');
+      return;
+    }
+    
+    // Datum korrekt formatieren (YYYY-MM-DD zu DD.MM.YYYY)
+    const dateParts = dateInput.split('-');
+    const formattedDate = `${dateParts[2]}.${dateParts[1]}.${dateParts[0]}`;
+    
+    // Neue Buchung hinzufügen
+    bookings.push({
+      date: formattedDate,
+      person: person,
+      sum: amount.toFixed(2)
+    });
+    
+    // In Firebase speichern
+    persist();
+    
+    // Modal schließen
+    closeModal('addModal');
+    
+    // Oberfläche aktualisieren
+    render();
+    
+    // Erfolgsmeldung anzeigen
+    alert('Buchung erfolgreich hinzugefügt!');
+  }
+
+  function deleteBooking(index) {
+    if (!deleteMode) return;
+    
+    const filtered = bookings.filter(withinRange);
+    if (index < 0 || index >= filtered.length) return;
+    
+    const row = filtered[index];
+    if (!row) return;
+    
+    if (!confirm(`Buchung löschen?\n${row.date} – ${row.person} – ${euro(row.sum)}`)) return;
+    
+    // Finde Index im Original-Array
+    const idx = bookings.findIndex(b => 
+      b.date === row.date && 
+      b.person === row.person && 
+      Number(b.sum) === Number(row.sum)
+    );
+    
+    if (idx > -1) {
+      bookings.splice(idx, 1);
+      persist();
+      alert('Buchung erfolgreich gelöscht!');
+    }
+  }
+
+  function toggleDeleteMode() {
+    deleteMode = !deleteMode;
+    const btn = document.getElementById('delBtn');
+    btn.textContent = deleteMode ? '❌ Löschmodus beenden' : '🗑 Löschmodus';
+    btn.classList.toggle('danger', deleteMode);
+    document.getElementById('delHint').style.display = deleteMode ? 'block' : 'none';
+    render();
+  }
+
+  function toggleAdminMode() {
+    if (adminMode) {
+      adminMode = false;
+      deleteMode = false;
+      document.getElementById('adminIndicator').style.display = 'none';
+      document.getElementById('adminControls').style.display = 'none';
+      document.getElementById('editHint').style.display = 'none';
+      document.getElementById('delHint').style.display = 'none';
+      document.body.classList.remove('edit-mode');
+      document.getElementById('adminBtn').textContent = '🔧';
+      render();
+      return;
+    }
+    
+    const password = prompt("Admin-Passwort eingeben:");
+    if (password === ADMIN_PASSWORD) {
+      adminMode = true;
+      document.getElementById('adminIndicator').style.display = 'inline-block';
+      document.getElementById('adminControls').style.display = 'block';
+      document.getElementById('editHint').style.display = 'block';
+      document.body.classList.add('edit-mode');
+      document.getElementById('adminBtn').textContent = '🔧✓';
+      render();
+    } else {
+      alert("Falsches Passwort");
+    }
+  }
+
+  function clearAll() {
+    const pw = prompt("Passwort eingeben:");
+    if (pw !== "1379") {
+      alert("Falsches Passwort");
+      return;
+    }
+    
+    if (!confirm("Wirklich alle Buchungen dauerhaft löschen?")) return;
+    
+    bookings = [];
+    persist();
+    alert('Alle Buchungen wurden gelöscht!');
+  }
+
+  function exportCSV() {
+    const header = ['Datum', 'Person', 'Betrag'];
+    const lines = [header.join(';')];
+    
+    bookings
+      .filter(withinRange)
+      .forEach(b => {
+        const row = [
+          b.date || '',
+          (b.person || '').replaceAll(';', ','),
+          (Number(b.sum) || 0).toString().replace('.', ',')
+        ];
+        lines.push(row.join(';'));
+      });
+    
+    const blob = new Blob([lines.join('\n')], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'buchungen.csv';
+    document.body.appendChild(a);
+    a.click();
+    
+    setTimeout(() => {
+      URL.revokeObjectURL(url);
+      a.remove();
+    }, 0);
+  }
+
+  // KORRIGIERT: Persist-Funktion mit localStorage und Firebase
+  function persist() {
+    // Immer im localStorage speichern (für Offline-Unterstützung)
+    try {
+      localStorage.setItem('sick_sound_bookings', JSON.stringify(bookings));
+      console.log('Buchungen im localStorage gespeichert');
+    } catch (e) {
+      console.error('Fehler beim Speichern im localStorage:', e);
+    }
+    
+    if (!db) {
+      render();
+      return;
+    }
+    
+    // In Firebase speichern
+    db.collection(STATE_COLLECTION).doc('global').set({ bookings }, { merge: true })
+      .then(() => {
+        console.log('Buchungen erfolgreich in Firebase gespeichert');
+        render();
+      })
+      .catch((error) => {
+        console.error('Fehler beim Speichern in Firebase:', error);
+        render();
+      });
+  }
+
+  // Backup-Funktionen
+  function openBackupModal() {
+    document.getElementById("backupModal").classList.add("show");
+  }
+
+  function createBackup() {
+    const backupData = {
+      bookings: bookings,
+      timestamp: new Date().toISOString(),
+      type: 'buchungen'
+    };
+    
+    // Lokal speichern
+    const backups = JSON.parse(localStorage.getItem('buchungen_backups') || '[]');
+    backups.push(backupData);
+    localStorage.setItem('buchungen_backups', JSON.stringify(backups));
+    
+    // In Firebase speichern, falls verfügbar
+    if (db) {
+      db.collection("backups").doc(`buchungen_${Date.now()}`).set(backupData)
+        .then(() => alert("Backup erfolgreich erstellt!"))
+        .catch(err => console.error("Backup Fehler:", err));
+    } else {
+      alert("Backup erfolgreich lokal gespeichert!");
+    }
+  }
+
+  function exportBackup() {
+    const backupData = {
+      bookings: bookings,
+      timestamp: new Date().toISOString(),
+      type: 'buchungen'
+    };
+    
+    const dataStr = JSON.stringify(backupData);
+    const dataUri = 'data:application/json;charset=utf-8,' + encodeURIComponent(dataStr);
+    
+    const exportFileDefaultName = `buchungen-backup-${new Date().toISOString().slice(0,10)}.json`;
+    
+    const linkElement = document.createElement('a');
+    linkElement.setAttribute('href', dataUri);
+    linkElement.setAttribute('download', exportFileDefaultName);
+    linkElement.click();
+  }
+
+  function restoreBackup(file) {
+    if (!file) return;
+    
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      try {
+        const backupData = JSON.parse(e.target.result);
+        
+        if (!confirm("Sicher, dass Sie dieses Backup wiederherstellen möchten? Alle aktuellen Buchungen werden überschrieben.")) {
+          return;
+        }
+        
+        // Setze Buchungen aus dem Backup
+        bookings = backupData.bookings || [];
+        
+        // Speichere in Firebase
+        persist();
+        
+        alert("Backup erfolgreich wiederhergestellt!");
+      } catch (err) {
+        console.error("Backup Wiederherstellungsfehler:", err);
+        alert("Fehler beim Wiederherstellen des Backups: " + err.message);
+      }
+    };
+    reader.readAsText(file);
+  }
+
+  function showBackupList() {
+    const backups = JSON.parse(localStorage.getItem('buchungen_backups') || '[]');
+    const backupList = document.getElementById('backupList');
+    
+    if (backups.length === 0) {
+      backupList.innerHTML = '<div class="sub">Keine lokalen Backups gefunden.</div>';
+      return;
+    }
+    
+    backupList.innerHTML = backups.map((backup, index) => `
+      <div class="backup-item">
+        <span>${new Date(backup.timestamp).toLocaleString()}</span>
+        <button class="btn small" onclick="restoreLocalBackup(${index})">Wiederherstellen</button>
+      </div>
+    `).join('');
+  }
+
+  function restoreLocalBackup(index) {
+    const backups = JSON.parse(localStorage.getItem('buchungen_backups') || '[]');
+    if (index < 0 || index >= backups.length) return;
+    
+    const backupData = backups[index];
+    
+    if (!confirm("Sicher, dass Sie dieses Backup wiederherstellen möchten? Alle aktuellen Buchungen werden überschrieben.")) {
+      return;
+    }
+    
+    // Setze Buchungen aus dem Backup
+    bookings = backupData.bookings || [];
+    
+    // Speichere in Firebase
+    persist();
+    
+    alert("Backup erfolgreich wiederhergestellt!");
+  }
+
+  function closeModal(modalId) {
+    document.getElementById(modalId).classList.remove('show');
+    currentEditIndex = -1;
+  }
+
+  // --- Initialisierung ---
+  (function init() {
+    try {
+      firebase.initializeApp(firebaseConfig);
+      db = firebase.firestore();
+      try { 
+        db.settings({ experimentalAutoDetectLongPolling: true, merge: true }); 
+      } catch(_) {}
+      
+      document.getElementById('dot').classList.add('statusok');
+      document.getElementById('connTxt').textContent = 'Online (Firestore verbunden)';
+    } catch(e) {
+      document.getElementById('connTxt').textContent = 'Offline – Firebase konnte nicht initialisiert werden.';
+      db = null;
+    }
+
+    if (db) {
+      db.collection(STATE_COLLECTION).doc('global').onSnapshot(snap => {
+        const s = (snap.exists ? snap.data() : {}) || {};
+        bookings = Array.isArray(s.bookings) ? s.bookings : [];
+        prices = s.prices || {};
+        people = s.people || [];
+        render();
+      });
+    } else {
+      // Offline-Modus
+      bookings = JSON.parse(localStorage.getItem('sick_sound_bookings') || '[]');
+      render();
+    }
+    
+    // Event-Listener für Klicks außerhalb von Modals
+    document.addEventListener('click', function(event) {
+      if (event.target.classList.contains('modal')) {
+        event.target.classList.remove('show');
+      }
+    });
+  })();
+</script>
+
+<!-- Service Worker -->
+<script>
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('./sw.js?v=21', { scope: './' }).catch(() => {});
+  }
+</script>
+</body>
+</html>

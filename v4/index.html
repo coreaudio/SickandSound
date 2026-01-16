@@ -1,0 +1,862 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <title>Sick & Sound – Strichliste</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#0b0e14" />
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="stylesheet" href="style.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;800&display=swap" rel="stylesheet" />
+  <style>
+    :root{
+      --ring: 48px; --row-pad: 6px; --name-size: 18px; --count-size: 17px; --cell-gap: 10px;
+      --sticky-top: 56px; /* Höhe Appbar ca. */
+      --admin-color: #ff6b6b;
+    }
+    .content{ padding-bottom: 88px; }
+    .appbar{ min-height: 52px; }
+    .bottomnav{ height: 64px; }
+    .card.table-wrap table td, .card.table-wrap table th{ padding-top: var(--row-pad); padding-bottom: var(--row-pad); }
+    .lvl-ring{ width: var(--ring); height: var(--ring); position:relative; display:inline-grid; place-items:center; }
+    .lvl-ring .val{ position:absolute; font-size: 12px; font-weight: 800; line-height:1; }
+    .person-cell{ display:flex; align-items:center; gap:10px; cursor:default; }
+    .p-name{ font-size: var(--name-size); font-weight: 800; letter-spacing:.2px; }
+    .drink-chip .drink-name{ font-size: 12px; }
+    .drink-chip .drink-price{ font-size: 11px; opacity:.8 }
+    .cell{ display:flex; align-items:center; justify-content:flex-end; gap: var(--cell-gap); }
+    .count{ font-size: var(--count-size); min-width: 26px; text-align:right; }
+    .plus-btn{ padding:8px 12px; }
+    .minus-btn{ padding:8px 12px; background-color: var(--admin-color); }
+    .section-row td{ font-size:12px; opacity:.7 }
+    .section-title{ font-size: 14px; }
+    .admin-mode .minus-btn{ display: inline-block !important; }
+    .admin-mode .person-cell{ cursor: pointer; }
+    .admin-indicator{ background-color: var(--admin-color); padding: 4px 8px; border-radius: 4px; margin-left: 8px; font-size: 12px; }
+
+    /* CTA Checkliste */
+    .cta-wrap{ display:flex; flex-wrap:wrap; gap:10px; align-items:center; margin-top:8px; }
+    .cta-check{ display:inline-flex; align-items:center; gap:10px; padding:12px 16px; border-radius:14px;
+      background: linear-gradient(135deg,#6ee7ff,#a78bfa); color:#0b0e14; font-weight:900; letter-spacing:.2px;
+      text-decoration:none; border:none; box-shadow:0 8px 24px rgba(0,0,0,.25); cursor:pointer;
+    }
+    .cta-check svg{ width:20px; height:20px; }
+    .cta-sub{ font-size:12px; opacity:.85; }
+
+    /* Sticky Header */
+    .card.table-wrap thead th{
+      position: sticky;
+      top: var(--sticky-top);
+      z-index: 2;
+      background: #111827; /* dunkler Hintergrund für Lesbarkeit */
+      box-shadow: 0 2px 0 rgba(0,0,0,.25);
+    }
+
+    /* Hinweis im Löschmodus */
+    .delete-hint{ opacity:.75; font-size:12px; margin-top:4px }
+    .delete-mode .person-cell{ cursor:pointer }
+
+    /* Backup Modal */
+    .modal-content{ max-width: 500px; }
+    .backup-actions{ display: flex; gap: 10px; margin-top: 15px; }
+    .backup-list{ max-height: 200px; overflow-y: auto; margin: 10px 0; }
+    .backup-item{ padding: 8px; border-bottom: 1px solid rgba(255,255,255,0.1); display: flex; justify-content: space-between; }
+  </style>
+</head>
+<body>
+<div class="app">
+
+  <!-- AppBar -->
+  <header class="appbar">
+    <div class="app-title">
+      <div class="brand-dot"></div>
+      <h1>Sick &amp; Sound</h1>
+      <span id="adminIndicator" class="admin-indicator" style="display:none;">Admin-Modus</span>
+    </div>
+    <div class="appbar-actions">
+      <button class="btn small dark" onclick="togglePayPal()" title="PayPal">💸</button>
+      <button class="btn small" onclick="openDrinkModal()" title="Getränk hinzufügen">➕</button>
+      <button class="btn small" onclick="openPersonModal()" title="Person hinzufügen">👤+</button>
+      <button class="btn small warning" id="adminBtn" onclick="toggleAdminMode()" title="Admin-Modus">🔧</button>
+      <button class="btn small secondary" id="backupBtn" onclick="openBackupModal()" title="Backup">💾</button>
+    </div>
+  </header>
+
+  <!-- Content -->
+  <main class="content">
+    <div class="card" style="margin-bottom:8px">
+      <div class="section-title">Heute</div>
+      <div id="todayInfo" class="sub">Lade Tagesstatus…</div>
+      <div class="cta-wrap" id="todayCta"></div>
+      <div id="delInfo" class="delete-hint" style="display:none">Löschmodus aktiv: Tippe auf <b>Person</b> zum Löschen · Tippe auf <b>Spaltenkopf</b> zum Getränk löschen.</div>
+      <div id="adminInfo" class="delete-hint" style="display:none">Admin-Modus aktiv: Tippe auf <b>-1 Buttons</b> zum Abziehen von Strichen.</div>
+    </div>
+
+    <div class="card table-wrap" id="tableContainer"></div>
+
+    <div class="card" style="margin-top:8px">
+      <div class="section-title">Aktionen</div>
+      <div class="footer" style="gap:8px;flex-wrap:wrap">
+        <button class="btn warning" id="undoBtn" onclick="undoLast()">↩ Rückgängig</button>
+        <button class="btn secondary" id="redoBtn" onclick="redoLast()">↪ Wiederholen</button>
+        <button class="btn danger" id="deleteBtn" onclick="toggleDeleteMode()">🗑 Löschen</button>
+        <button class="btn" onclick="openPersonModal()">👤 Person hinzufügen</button>
+        <button class="btn dark" onclick="resetAll()">♻ Abrechnen & zurücksetzen</button>
+        <button class="btn ghost" onclick="window.location='buchungen.html'">📖 Buchungen</button>
+        <button class="btn warning" id="correctionBtn" onclick="toggleCorrectionMode()">✏️ Korrekturmodus</button>
+      </div>
+    </div>
+  </main>
+
+  <!-- BottomNav -->
+  <nav class="bottomnav">
+    <a class="tab active" href="index.html" aria-label="Strichliste">
+      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M4 6h16v2H4zM4 11h16v2H4zM4 16h10v2H4z"/></svg>
+      <span>Liste</span>
+    </a>
+    <a class="tab" href="hausdienst.html#plan" aria-label="Hausdienst">
+      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 3l9 7-1.2 1.6L18 10.1V20h-5v-6H11v6H6v-9.9L4.2 11.6 3 10z"/></svg>
+      <span>Hausdienst</span>
+    </a>
+    <a class="tab" href="rangliste.html" aria-label="Ranglisten">
+      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M7 17H3V7h4v10zm7 0h-4V3h4v14zm7 0h-4v-8h4v8z"/></svg>
+      <span>Rang</span>
+    </a>
+    <a class="tab" href="badges.html" aria-label="Badges">
+      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 1l3.09 6.26L22 8.27l-5 4.87L18.18 22 12 18.56 5.82 22 7 13.14 2 8.27l6.91-1.01L12 1z"/></svg>
+      <span>Badges</span>
+    </a>
+    <a class="tab" href="buchungen.html" aria-label="Buchungen">
+      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 2h9l5 5v13a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2zm8 1.5V8h4.5L14 3.5z"/></svg>
+      <span>Buchungen</span>
+    </a>
+  </nav>
+</div>
+
+<!-- Modals -->
+<div class="modal" id="paypalModal" onclick="togglePayPal()"><img class="qr" src="frame.png" alt="PayPal QR"></div>
+
+<div class="modal" id="personModal"><div class="box">
+  <h2>➕ Person hinzufügen</h2>
+  <input id="personName" placeholder="Name eintippen" />
+  <div style="display:flex;gap:10px;margin-top:10px">
+    <button class="btn" onclick="confirmAddPerson()">Speichern</button>
+    <button class="btn dark" onclick="closeModal('personModal')">Abbrechen</button>
+  </div>
+</div></div>
+
+<div class="modal" id="drinkModal"><div class="box">
+  <h2>🥤 Getränk hinzufügen</h2>
+  <input id="drinkName" placeholder="Name des Getränks">
+  <input id="drinkPrice" type="number" step="0.1" placeholder="Preis (€)">
+  <div style="display:flex;gap:10px;margin-top:10px">
+    <button class="btn" onclick="confirmAddDrink()">Speichern</button>
+    <button class="btn dark" onclick="closeModal('drinkModal')">Abbrechen</button>
+  </div>
+</div></div>
+
+<div class="modal" id="backupModal"><div class="box modal-content">
+  <h2>💾 Backup & Wiederherstellung</h2>
+  <div class="sub">Automatische Backups werden täglich erstellt. Manuelle Backups werden lokal gespeichert.</div>
+  
+  <div class="section-title">Manuelles Backup erstellen</div>
+  <div class="backup-actions">
+    <button class="btn" onclick="createBackup()">Backup erstellen</button>
+    <button class="btn secondary" onclick="exportBackup()">Backup exportieren</button>
+  </div>
+  
+  <div class="section-title">Wiederherstellung</div>
+  <input type="file" id="restoreFile" accept=".json" style="display: none" onchange="restoreBackup(this.files[0])">
+  <div class="backup-actions">
+    <button class="btn" onclick="document.getElementById('restoreFile').click()">Backup importieren</button>
+    <button class="btn warning" onclick="showBackupList()">Lokale Backups anzeigen</button>
+  </div>
+  
+  <div id="backupList" class="backup-list"></div>
+  
+  <div style="display:flex;gap:10px;margin-top:15px">
+    <button class="btn dark" onclick="closeModal('backupModal')">Schließen</button>
+  </div>
+</div></div>
+
+<!-- Firebase + Howler -->
+<script src="https://www.gstatic.com/firebasejs/12.0.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/12.0.0/firebase-analytics-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/12.0.0/firebase-firestore-compat.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/howler@2.2.4/dist/howler.core.min.js"></script>
+
+<script>
+/* ===== Config ===== */
+const CORE = ["Chris","Daniel","Elmi","Florian","Joel","Kevin","Kiste","Marco","Meli","Simon"];
+const ADMIN_PASSWORD = "1379"; // Einfaches Admin-Passwort
+
+// Firebase sickandsound-8a15f
+const firebaseConfig = {
+  apiKey: "AIzaSyBtZsr4QPHQbvO2qae6MoBoxJF5dNP2vh0",
+  authDomain: "sickandsound-8a15f.firebaseapp.com",
+  projectId: "sickandsound-8a15f",
+  storageBucket: "sickandsound-8a15f.appspot.com",
+  messagingSenderId: "32138160959",
+  appId: "1:32138160959:web:a65c7f4ad7d44e757fc18a"
+};
+
+let db = null;
+try{
+  if(window.firebase){
+    firebase.initializeApp(firebaseConfig);
+    try{ firebase.analytics(); }catch(_){}
+    db = firebase.firestore();
+    try { db.settings({ experimentalAutoDetectLongPolling:true, merge:true }); } catch(_) {}
+  }
+}catch(_){ db = null; }
+
+/* Prod/Beta Toggle */
+const STATE_COLLECTION = location.search.includes("beta") ? "state_beta" : "state";
+
+/* ===== Keys & State ===== */
+const pricesKey="sick_sound_prices", peopleKey="sick_sound_people", dataKey="sick_sound_data",
+      historyKey="sick_sound_history", bookingsKey="sick_sound_bookings", orderKey="sick_sound_order",
+      xpKey="sick_sound_xp", redoKey="sick_sound_redo", backupsKey="sick_sound_backups";
+let prices={"Getränk":1.5,"Mittagessen":6.0};
+let people=[], data={}, history=[], redoStack=[], bookings=[], columnOrder=Object.keys(prices), xp={};
+let deleteMode=false, adminMode=false, correctionMode=false, hdToday=null;
+
+/* ===== Sounds ===== */
+const makeSound = (src)=> (window.Howl ? new Howl({src:[src]}) : {play:()=>{}});
+const sClick = makeSound("https://cdn.jsdelivr.net/gh/jshawl/howler-examples@master/audio/sfx/coin1.wav");
+const sLevel = makeSound("https://cdn.jsdelivr.net/gh/jshawl/howler-examples@master/audio/sfx/powerUp5.wav");
+const sError = makeSound("https://cdn.jsdelivr.net/gh/jshawl/howler-examples@master/audio/sfx/error1.wav");
+
+/* ===== Helpers / XP ===== */
+const todayStr=()=>new Date().toISOString().slice(0,10);
+const levelOf=x=>Math.floor(Math.sqrt(x/75))+1;
+function valueOfCurrentStriche(person){
+  return (columnOrder||[]).reduce((sum,d)=> sum + ((data[`${person}_${d}`]||0)*(prices[d]||0)), 0);
+}
+function getXpForDisplay(person){
+  const base=+(xp[person]||0);
+  const cur=valueOfCurrentStriche(person);
+  return Math.max(base, cur);
+}
+
+/* Long-press +1 */
+let holdT=null, holdI=null;
+function startHold(handler){ stopHold(); handler(); holdT=setTimeout(()=>{holdI=setInterval(handler,120)},420); }
+function stopHold(){ if(holdT) clearTimeout(holdT); if(holdI) clearInterval(holdI); holdT=holdI=null; }
+window.onmouseup=stopHold; window.onmouseleave=stopHold;
+
+/* 00:00 Refresh */
+function scheduleMidnightRefresh(cb){
+  const now=new Date(); const mid=new Date(now.getFullYear(),now.getMonth(),now.getDate()+1,0,0,2);
+  setTimeout(()=>{ try{ cb(); } finally{ scheduleMidnightRefresh(cb);} }, mid-now);
+}
+document.addEventListener('visibilitychange', ()=>{ if(!document.hidden){ updateTodayBanner(); buildTable(); } });
+
+/* ===== Load ===== */
+async function loadState(){
+  if(db){
+    try{
+      const snap=await db.collection(STATE_COLLECTION).doc("global").get();
+      if(snap.exists){
+        const s=snap.data();
+        prices=s.prices||prices; people=s.people||JSON.parse(localStorage.getItem(peopleKey))||[];
+        data=s.data||data; history=s.history||history; redoStack=s.redoStack||JSON.parse(localStorage.getItem(redoKey))||[];
+        bookings=s.bookings||bookings; columnOrder=s.columnOrder||Object.keys(prices); xp=s.xp||xp;
+      }else{
+        people=JSON.parse(localStorage.getItem(peopleKey))||[];
+        redoStack=JSON.parse(localStorage.getItem(redoKey))||[];
+      }
+    }catch(e){ fallbackLoad(); }
+  }else{ fallbackLoad(); }
+
+  CORE.forEach(n=>{ if(!people.includes(n)) people.push(n); });
+
+  saveAll(); buildTable(); updateTodayBanner(); subscribeRealtime(); updateUndoRedoButtons();
+  await ensureXpFromExistingStricheAfterLoad();
+  scheduleMidnightRefresh(()=>{ updateTodayBanner(); buildTable(); });
+  
+  // Automatisches Backup einmal täglich
+  const lastBackup = localStorage.getItem('lastBackup');
+  if (!lastBackup || new Date().toDateString() !== new Date(parseInt(lastBackup)).toDateString()) {
+    createBackup();
+  }
+}
+function fallbackLoad(){
+  prices=JSON.parse(localStorage.getItem(pricesKey))||prices;
+  people=JSON.parse(localStorage.getItem(peopleKey))||[];
+  data=JSON.parse(localStorage.getItem(dataKey))||data;
+  history=JSON.parse(localStorage.getItem(historyKey))||history;
+  redoStack=JSON.parse(localStorage.getItem(redoKey))||[];
+  bookings=JSON.parse(localStorage.getItem(bookingsKey))||bookings;
+  columnOrder=JSON.parse(localStorage.getItem(orderKey))||Object.keys(prices);
+  xp=JSON.parse(localStorage.getItem(xpKey))||xp;
+}
+
+async function ensureXpFromExistingStricheAfterLoad(){
+  const drinks=Object.keys(prices); let changed=false;
+  people.forEach(p=>{
+    let x=0; drinks.forEach(d=>{ const cnt=data[`${p}_${d}`]||0; x += cnt*(prices[d]||0); });
+    if((xp[p]||0) < x){ xp[p]=x; changed=true; }
+  });
+  if(changed){ saveAll(); buildTable(); }
+}
+
+/* Save + Realtime */
+function saveAll(){
+  localStorage.setItem(pricesKey,JSON.stringify(prices));
+  localStorage.setItem(peopleKey,JSON.stringify(people));
+  localStorage.setItem(dataKey,JSON.stringify(data));
+  localStorage.setItem(historyKey,JSON.stringify(history));
+  localStorage.setItem(redoKey,JSON.stringify(redoStack));
+  localStorage.setItem(bookingsKey,JSON.stringify(bookings));
+  localStorage.setItem(orderKey,JSON.stringify(columnOrder));
+  localStorage.setItem(xpKey,JSON.stringify(xp));
+  if(db){
+    db.collection(STATE_COLLECTION).doc("global").set(
+      {prices,people,data,history,redoStack,bookings,columnOrder,xp},
+      {merge:true}
+    ).catch(()=>{});
+  }
+}
+function subscribeRealtime(){
+  if(!db) return;
+  db.collection(STATE_COLLECTION).doc("global").onSnapshot(snap=>{
+    if(!snap.exists) return;
+    const s=snap.data();
+    prices=s.prices||prices; people=s.people||people; data=s.data||data; history=s.history||history;
+    redoStack=s.redoStack||redoStack; bookings=s.bookings||bookings; columnOrder=s.columnOrder||columnOrder; xp=s.xp||xp;
+    CORE.forEach(n=>{ if(!people.includes(n)) people.push(n); });
+    buildTable(); updateTodayBanner(); updateUndoRedoButtons();
+  });
+  db.collection("hausdienst").doc(todayStr()).onSnapshot(doc=>{
+    hdToday = doc && doc.exists ? doc.data().person : null;
+    updateTodayBanner(hdToday); buildTable();
+  });
+}
+
+/* Heute-Banner + CTA */
+async function updateTodayBanner(existing){
+  try{
+    let person=existing;
+    if(person===undefined){
+      if(db){
+        const d=await db.collection("hausdienst").doc(todayStr()).get();
+        person = d.exists ? d.data().person : null;
+      }else{ person=null; }
+    }
+    hdToday=person;
+
+    const infoEl=document.getElementById("todayInfo");
+    const ctaEl=document.getElementById("todayCta");
+
+    infoEl.innerHTML = person
+      ? `Heute eingetragener Hausdienst: <span class="badge ok">${person}</span>`
+      : `Heute: <span class="badge none">Noch niemand eingetragen</span>`;
+
+    ctaEl.innerHTML = `
+      <button class="cta-check" onclick="openChecklist()">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M9 16.2l-3.5-3.5-1.4 1.4L9 19 20.3 7.7l-1.4-1.4z"/></svg>
+        Checkliste öffnen
+      </button>
+      <span class="cta-sub">Direkt zur Aufgabenübersicht</span>
+    `;
+  }catch(e){
+    document.getElementById("todayInfo").textContent="Heute: Status nicht verfügbar (offline?)";
+    document.getElementById("todayCta").innerHTML = `<button class="cta-check" onclick="openChecklist()">Checkliste öffnen</button>`;
+  }
+}
+function openChecklist(){ location.href = 'hausdienst.html#check'; }
+
+/* Undo/Redo */
+function updateUndoRedoButtons(){
+  const u=document.getElementById("undoBtn"), r=document.getElementById("redoBtn");
+  if(!u||!r) return; u.disabled = history.length===0; r.disabled = redoStack.length===0;
+}
+function applyAction(a){
+  if(a.type==="inc"){
+    data[a.id] = (a.prev||0) + 1;
+    if(a.person){ xp[a.person] = (xp[a.person]||0) + (a.xpDelta||0); }
+  } else if (a.type==="dec"){
+    data[a.id] = (a.prev||0) - 1;
+    if(a.person){ xp[a.person] = Math.max(0, (xp[a.person]||0) - (a.xpDelta||0)); }
+  } else if (a.action==="change"){
+    data[a.id] = (a.prev||0) + 1;
+    const parts=a.id.split('_'); const person=parts[0]; const drink=parts.slice(1).join('_');
+    xp[person] = (xp[person]||0) + (prices[drink]||0);
+  }
+}
+function applyInverse(a){
+  if(a.type==="inc"){
+    data[a.id] = a.prev;
+    if(a.person){ xp[a.person] = Math.max(0,(xp[a.person]||0) - (a.xpDelta||0)); }
+  } else if (a.type==="dec"){
+    data[a.id] = a.prev;
+    if(a.person){ xp[a.person] = (xp[a.person]||0) + (a.xpDelta||0); }
+  } else if (a.action==="change"){
+    data[a.id] = a.prev;
+    const parts=a.id.split('_'); const person=parts[0]; const drink=parts.slice(1).join('_');
+    xp[person] = Math.max(0,(xp[person]||0) - (prices[drink]||0));
+  }
+}
+function undoLast(){ const last=history.pop(); if(!last) return; applyInverse(last); redoStack.push(last); saveAll(); buildTable(); updateUndoRedoButtons(); }
+function redoLast(){ const act=redoStack.pop(); if(!act) return; applyAction(act); history.push(act); saveAll(); buildTable(); updateUndoRedoButtons(); }
+
+/* Delete mode inkl. Personen löschen */
+function toggleDeleteMode(){
+  deleteMode=!deleteMode;
+  const btn=document.getElementById("deleteBtn");
+  btn.textContent= deleteMode ? "❌ Abbrechen" : "🗑 Löschen";
+  btn.classList.toggle("ghost", deleteMode);
+  document.body.classList.toggle('delete-mode', deleteMode);
+  const hint=document.getElementById('delInfo');
+  if(hint) hint.style.display = deleteMode ? 'block' : 'none';
+  buildTable();
+}
+
+/* Admin mode */
+function toggleAdminMode(){
+  if (adminMode) {
+    adminMode = false;
+    document.body.classList.remove('admin-mode');
+    document.getElementById('adminIndicator').style.display = 'none';
+    document.getElementById('adminInfo').style.display = 'none';
+    document.getElementById('adminBtn').textContent = '🔧';
+    buildTable();
+    return;
+  }
+  
+  const password = prompt("Admin-Passwort eingeben:");
+  if (password === ADMIN_PASSWORD) {
+    adminMode = true;
+    document.body.classList.add('admin-mode');
+    document.getElementById('adminIndicator').style.display = 'inline-block';
+    document.getElementById('adminInfo').style.display = 'block';
+    document.getElementById('adminBtn').textContent = '🔧✓';
+    buildTable();
+  } else {
+    alert("Falsches Passwort");
+    sError.play();
+  }
+}
+
+/* Correction mode */
+function toggleCorrectionMode(){
+  if (correctionMode) {
+    correctionMode = false;
+    document.getElementById('correctionBtn').textContent = '✏️ Korrekturmodus';
+    buildTable();
+    return;
+  }
+  
+  const password = prompt("Admin-Passwort für Korrekturmodus eingeben:");
+  if (password === ADMIN_PASSWORD) {
+    correctionMode = true;
+    document.getElementById('correctionBtn').textContent = '✏️✓ Korrekturmodus';
+    buildTable();
+  } else {
+    alert("Falsches Passwort");
+    sError.play();
+  }
+}
+
+function personCellClick(p){
+  if(!deleteMode) return;
+  deletePerson(p);
+}
+
+/* Tabelle + Level-Ring */
+function buildTable(){
+  const core=CORE.filter(n=>people.includes(n));
+  const guests=people.filter(n=>!CORE.includes(n)).sort((a,b)=>a.localeCompare(b));
+
+  let html = `<table><thead><tr><th style="min-width:240px;text-align:left">Person</th>`;
+  columnOrder.forEach(drink=>{
+    if(prices[drink]!==undefined){
+      const delTitle = deleteMode ? ` title="Zum Löschen tippen"` : '';
+      html += `<th onclick="headerClick('${drink}')"${delTitle}>
+        <span class="drink-chip"><span class="drink-name">${drink.replace('_',' ')}</span>
+        <span class="drink-price">${prices[drink]} €</span></span>
+      </th>`;
+    }
+  });
+  html += `<th>Gesamt (€)</th>`;
+  if (correctionMode) {
+    html += `<th>Korrektur</th>`;
+  }
+  html += `</tr></thead><tbody>`;
+
+  const ring=(xpVal, person)=>{
+    const x=+xpVal||0;
+    const lvl=Math.max(1, Math.floor(Math.sqrt(x/75))+1);
+    const min=75*(lvl-1)*(lvl-1), max=75*lvl*lvl;
+    const p=Math.max(0,Math.min(1,(x-min)/(max-min)));
+    const r=22, c=2*Math.PI*r, off=(1-p)*c, gid="grad_"+person.replace(/[^a-z0-9]/gi,'')+"_"+lvl;
+    return `<div class="lvl-ring" role="img" aria-label="Level ${lvl}, ${Math.round(p*100)}%">
+      <svg viewBox="0 0 52 52" width="100%" height="100%" style="transform:rotate(-90deg)">
+        <defs><linearGradient id="${gid}" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0%" stop-color="var(--accent,#6ee7ff)"/><stop offset="100%" stop-color="var(--accent-2,#a78bfa)"/></linearGradient></defs>
+        <circle cx="26" cy="26" r="${r}" stroke="#2a2f3b" stroke-width="6" fill="none"/>
+        <circle cx="26" cy="26" r="${r}" stroke="url(#${gid})" stroke-width="6" stroke-linecap="round" fill="none"
+                stroke-dasharray="${c}" stroke-dashoffset="${off}"/></svg>
+      <div class="val">Lv. ${lvl}</div></div>`;
+  };
+
+  const row=(p)=>{
+    const xpVal=getXpForDisplay(p);
+    const hdClass=(hdToday===p)?"hd-today":"";
+    const personTitle = deleteMode ? ` title="Person löschen"` : '';
+    let rhtml = `<tr class="${hdClass}"><th style="text-align:left">
+      <div class="person-cell"${personTitle} onclick="personCellClick('${p}')">
+        ${ring(xpVal,p)}<div class="p-info"><div class="p-name">${p}</div></div>
+      </div></th>`;
+    columnOrder.forEach(dr=>{
+      if(prices[dr]!==undefined){
+        const id=`${p}_${dr}`, val=data[id]||0, 
+              incHandler=`()=>changeCount('${id}','${dr}','${p}', 1)`,
+              decHandler=`()=>changeCount('${id}','${dr}','${p}', -1)`;
+        
+        rhtml += `<td><div class="cell" onclick="changeCount('${id}','${dr}','${p}', 1)">
+          ${adminMode ? `<button class="btn small minus-btn" onclick="event.stopPropagation(); changeCount('${id}','${dr}','${p}', -1)"
+            onmousedown="startHold(${decHandler})" onmouseup="stopHold()" onmouseleave="stopHold()"
+            ontouchstart="startHold(${decHandler})" ontouchend="stopHold()">-1</button>` : ''}
+          <div class="count" id="${id}">${val}</div>
+          <button class="btn small plus-btn" onclick="event.stopPropagation(); changeCount('${id}','${dr}','${p}', 1)"
+            onmousedown="startHold(${incHandler})" onmouseup="stopHold()" onmouseleave="stopHold()"
+            ontouchstart="startHold(${incHandler})" ontouchend="stopHold()">+1</button></div></td>`;
+      }
+    });
+    const total=columnOrder.reduce((s,d)=>s+(data[`${p}_${d}`]||0)*prices[d],0);
+    rhtml += `<td id="${p}_Total">${total.toFixed(2)}</td>`;
+    
+    if (correctionMode) {
+      rhtml += `<td>
+        <input type="number" value="${total.toFixed(2)}" style="width: 60px; padding: 4px;" 
+               onchange="correctTotal('${p}', this.value)">
+      </td>`;
+    }
+    
+    rhtml += `</tr>`;
+    return rhtml;
+  };
+
+  /* Kernteam */
+  if(core.length){
+    html += `<tr class="section-row"><td colspan="${columnOrder.length + (correctionMode ? 2 : 1)}">— Kernteam —</td></tr>`;
+    core.forEach(p=> html += row(p));
+  }
+
+  /* Gäste immer anzeigen */
+  if(guests.length){
+    html += `<tr class="section-row"><td colspan="${columnOrder.length + (correctionMode ? 2 : 1)}">— Gäste —</td></tr>`;
+    guests.forEach(p=> html += row(p));
+  }
+
+  html += `</tbody></table>`;
+  document.getElementById("tableContainer").innerHTML = html;
+  requestAnimationFrame(adjustToOnePage);
+}
+
+/* Onepage fit (für Kernteam-Spaltenhöhen) */
+function adjustToOnePage(){
+  const appbar=document.querySelector('.appbar')?.offsetHeight||0;
+  document.documentElement.style.setProperty('--sticky-top', Math.max(40, appbar)+4+'px');
+  const bottom=document.querySelector('.bottomnav')?.offsetHeight||0;
+  const cards=Array.from(document.querySelectorAll('.content .card')).filter((el,i)=> i!==1 );
+  const other=appbar+bottom+cards.reduce((s,c)=>s+c.offsetHeight,0)+20;
+  const avail=window.innerHeight - other;
+  const headH=36, coreCount=10, rowsTotal=coreCount;
+
+  let rowH=Math.max(42, Math.min(72, Math.floor((avail - headH)/rowsTotal)));
+  let ring=Math.max(36, Math.min(56, rowH-10));
+  let name=Math.max(18, Math.min(22, Math.floor(rowH*0.45)));
+  let count=Math.max(16, Math.min(20, Math.floor(rowH*0.40)));
+  let pad=Math.max(4, Math.floor((rowH-34)/2));
+
+  document.documentElement.style.setProperty('--row-pad', pad+'px');
+  document.documentElement.style.setProperty('--ring', ring+'px');
+  document.documentElement.style.setProperty('--name-size', name+'px');
+  document.documentElement.style.setProperty('--count-size', count+'px');
+  document.documentElement.style.setProperty('--cell-gap', Math.max(8, Math.floor(rowH*0.22))+'px');
+}
+
+/* Interactions */
+function headerClick(drink){ if(deleteMode) deleteColumn(drink); }
+function changeCount(id, drink, person, delta){
+  const el=document.getElementById(id); 
+  const cur=parseInt(el?.textContent||'0'), next=cur + delta;
+  if (next < 0) {
+    sError.play();
+    return; // keine negativen Zahlen
+  }
+
+  if(el){ 
+    el.textContent=next; 
+    el.classList.remove('bump'); 
+    void el.offsetWidth; 
+    el.classList.add('bump'); 
+  }
+  
+  const xpDelta = (prices[drink]||0) * delta;
+  history.push({
+    type: delta > 0 ? "inc" : "dec", 
+    id, 
+    prev: cur, 
+    person, 
+    xpDelta: Math.abs(xpDelta)
+  }); 
+  
+  redoStack=[];
+  data[id]=next;
+  
+  const before=levelOf((xp[person]||0)); 
+  xp[person] = Math.max(0, (xp[person]||0) + xpDelta); 
+  const after=levelOf(xp[person]);
+  
+  (after>before ? sLevel : sClick).play();
+  updateTotalsFor(person); 
+  saveAll(); 
+  updateUndoRedoButtons();
+}
+
+function correctTotal(person, newTotal) {
+  const currentTotal = columnOrder.reduce((s,d)=>s+(data[`${person}_${d}`]||0)*prices[d],0);
+  const difference = parseFloat(newTotal) - currentTotal;
+  
+  if (isNaN(difference)) return;
+  
+  // Finde das preiswerteste Getränk für die Korrektur
+  let cheapestDrink = null;
+  let cheapestPrice = Infinity;
+  
+  for (const drink of columnOrder) {
+    if (prices[drink] < cheapestPrice) {
+      cheapestDrink = drink;
+      cheapestPrice = prices[drink];
+    }
+  }
+  
+  if (!cheapestDrink) return;
+  
+  const id = `${person}_${cheapestDrink}`;
+  const currentCount = data[id] || 0;
+  const adjustment = Math.round(difference / cheapestPrice);
+  const newCount = Math.max(0, currentCount + adjustment);
+  
+  data[id] = newCount;
+  
+  // XP anpassen
+  const xpAdjustment = adjustment * cheapestPrice;
+  xp[person] = Math.max(0, (xp[person] || 0) + xpAdjustment);
+  
+  history.push({
+    type: "correction",
+    id,
+    person,
+    adjustment,
+    xpAdjustment,
+    previousCount: currentCount,
+    previousXp: xp[person] - xpAdjustment
+  });
+  
+  saveAll();
+  buildTable();
+}
+
+function updateTotalsFor(person){
+  const tot=columnOrder.reduce((s,d)=>s+(data[`${person}_${d}`]||0)*prices[d],0);
+  const el=document.getElementById(`${person}_Total`); if(el) el.textContent=tot.toFixed(2);
+  buildTable();
+}
+
+/* Delete helpers */
+function deletePerson(p){
+  if(!deleteMode) return;
+  if(CORE.includes(p)){ alert("Kernteam kann nicht gelöscht werden."); toggleDeleteMode(); return; }
+  if(!confirm(`${p} wirklich löschen?`)) return;
+  people=people.filter(x=>x!==p);
+  Object.keys(data).forEach(k=>{ if(k.startsWith(p+"_")) delete data[k]; });
+  delete xp[p];
+  saveAll(); buildTable(); toggleDeleteMode();
+}
+function deleteColumn(drink){
+  if(!deleteMode) return;
+  if(!confirm(`Getränk "${drink}" löschen?`)) return;
+  delete prices[drink]; columnOrder=columnOrder.filter(d=>d!==drink);
+  Object.keys(data).forEach(k=>{ if(k.endsWith("_"+drink)) delete data[k]; });
+  saveAll(); buildTable(); toggleDeleteMode();
+}
+
+/* Abrechnen */
+function resetAll(){
+  const pw=prompt("Passwort eingeben:"); if(pw!=="1379"){alert("Falsches Passwort");return;}
+  if(!confirm("Alle Striche abrechnen und zurücksetzen?")) return;
+  people.forEach(p=>{
+    const sum=columnOrder.reduce((s,d)=>s+(data[`${p}_${d}`]||0)*prices[d],0);
+    if(sum>0) bookings.push({date:new Date().toLocaleDateString("de-DE"), person:p, sum});
+    xp[p]=(xp[p]||0)+sum; columnOrder.forEach(d=>data[`${p}_${d}`]=0);
+  });
+  history=[]; redoStack=[]; saveAll(); buildTable(); updateUndoRedoButtons();
+}
+
+/* Backup functions */
+function createBackup() {
+  const backupData = {
+    prices,
+    people,
+    data,
+    history,
+    redoStack,
+    bookings,
+    columnOrder,
+    xp,
+    timestamp: new Date().toISOString()
+  };
+  
+  // Lokal speichern
+  const backups = JSON.parse(localStorage.getItem(backupsKey) || "[]");
+  backups.push(backupData);
+  localStorage.setItem(backupsKey, JSON.stringify(backups));
+  localStorage.setItem('lastBackup', Date.now().toString());
+  
+  // In Firebase speichern, wenn verfügbar
+  if (db) {
+    db.collection("backups").add(backupData)
+      .then(() => alert("Backup erfolgreich erstellt!"))
+      .catch(err => console.error("Backup Fehler:", err));
+  } else {
+    alert("Backup erfolgreich lokal gespeichert!");
+  }
+}
+
+function exportBackup() {
+  const backupData = {
+    prices,
+    people,
+    data,
+    history,
+    redoStack,
+    bookings,
+    columnOrder,
+    xp,
+    timestamp: new Date().toISOString()
+  };
+  
+  const dataStr = JSON.stringify(backupData);
+  const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
+  
+  const exportFileDefaultName = `sick-sound-backup-${new Date().toISOString().slice(0,10)}.json`;
+  
+  const linkElement = document.createElement('a');
+  linkElement.setAttribute('href', dataUri);
+  linkElement.setAttribute('download', exportFileDefaultName);
+  linkElement.click();
+}
+
+function restoreBackup(file) {
+  if (!file) return;
+  
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      const backupData = JSON.parse(e.target.result);
+      
+      if (!confirm(`Sicher, dass Sie das Backup vom ${new Date(backupData.timestamp).toLocaleString()} wiederherstellen möchten? Alle aktuellen Daten werden überschrieben.`)) {
+        return;
+      }
+      
+      // Daten wiederherstellen
+      prices = backupData.prices || prices;
+      people = backupData.people || people;
+      data = backupData.data || data;
+      history = backupData.history || history;
+      redoStack = backupData.redoStack || redoStack;
+      bookings = backupData.bookings || bookings;
+      columnOrder = backupData.columnOrder || columnOrder;
+      xp = backupData.xp || xp;
+      
+      saveAll();
+      buildTable();
+      alert("Backup erfolgreich wiederhergestellt!");
+    } catch (err) {
+      console.error("Backup Wiederherstellungsfehler:", err);
+      alert("Fehler beim Wiederherstellen des Backups: " + err.message);
+    }
+  };
+  reader.readAsText(file);
+}
+
+function showBackupList() {
+  const backups = JSON.parse(localStorage.getItem(backupsKey) || "[]");
+  const backupList = document.getElementById('backupList');
+  
+  if (backups.length === 0) {
+    backupList.innerHTML = '<div class="sub">Keine lokalen Backups gefunden.</div>';
+    return;
+  }
+  
+  backupList.innerHTML = backups.map((backup, index) => `
+    <div class="backup-item">
+      <span>${new Date(backup.timestamp).toLocaleString()}</span>
+      <button class="btn small" onclick="restoreLocalBackup(${index})">Wiederherstellen</button>
+    </div>
+  `).join('');
+}
+
+function restoreLocalBackup(index) {
+  const backups = JSON.parse(localStorage.getItem(backupsKey) || "[]");
+  if (index < 0 || index >= backups.length) return;
+  
+  const backupData = backups[index];
+  
+  if (!confirm(`Sicher, dass Sie das Backup vom ${new Date(backupData.timestamp).toLocaleString()} wiederherstellen möchten? Alle aktuellen Daten werden überschrieben.`)) {
+    return;
+  }
+  
+  // Daten wiederherstellen
+  prices = backupData.prices || prices;
+  people = backupData.people || people;
+  data = backupData.data || data;
+  history = backupData.history || history;
+  redoStack = backupData.redoStack || redoStack;
+  bookings = backupData.bookings || bookings;
+  columnOrder = backupData.columnOrder || columnOrder;
+  xp = backupData.xp || xp;
+  
+  saveAll();
+  buildTable();
+  alert("Backup erfolgreich wiederhergestellt!");
+}
+
+function openBackupModal() {
+  document.getElementById("backupModal").classList.add("show");
+}
+
+/* Modals & helpers */
+function openPersonModal(){ document.getElementById("personModal").classList.add("show"); }
+function openDrinkModal(){ document.getElementById("drinkModal").classList.add("show"); }
+function closeModal(id){ document.getElementById(id).classList.remove("show"); }
+function togglePayPal(){ document.getElementById("paypalModal").classList.toggle("show"); }
+function confirmAddPerson(){
+  const name=document.getElementById("personName").value.trim(); if(!name) return alert("Bitte Namen eingeben");
+  if(people.includes(name)) return alert("Person existiert bereits");
+  people.push(name); saveAll(); buildTable(); closeModal('personModal'); document.getElementById("personName").value="";
+}
+function confirmAddDrink(){
+  const name=document.getElementById("drinkName").value.trim(), price=parseFloat(document.getElementById("drinkPrice").value);
+  if(!name||isNaN(price)||price<=0) return alert("Bitte gültige Eingaben");
+  const key=name.replace(/\s+/g,'_'); prices[key]=price; if(!columnOrder.includes(key)) columnOrder.push(key);
+  saveAll(); buildTable(); closeModal('drinkModal'); document.getElementById("drinkName").value=""; document.getElementById("drinkPrice").value="";
+}
+
+/* SW */
+if('serviceWorker' in navigator){
+  navigator.serviceWorker.register('./sw.js?v=21', { scope: './' }).catch(()=>{});
+}
+
+window.onload=loadState;
+window.onresize=()=>requestAnimationFrame(adjustToOnePage);
+</script>
+</body>
+</html>
