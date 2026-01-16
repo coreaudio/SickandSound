@@ -62,13 +62,26 @@
     .hd-status.complete { background: rgba(124, 252, 154, 0.2); color: #7CFC9A; }
     .progress-bar { height: 4px; background: #2a3042; border-radius: 2px; overflow: hidden; margin-top: 6px; }
     .progress-bar .fill { height: 100%; background: linear-gradient(90deg, #6ee7ff, #7CFC9A); transition: width 0.3s; }
+
+    /* Admin-Modus */
+    .admin-indicator { background-color: #ff6b6b; padding: 4px 8px; border-radius: 4px; margin-left: 8px; font-size: 12px; }
+    .admin-card { background: rgba(255, 107, 107, 0.1); border: 1px solid rgba(255, 107, 107, 0.3); }
+    .admin-form { display: flex; flex-direction: column; gap: 10px; margin-top: 10px; }
+    .admin-form .row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+    .admin-form input[type="date"] { padding: 8px 12px; border-radius: 8px; border: 1px solid #2a3042; background: #0e1422; color: #e6e8ef; }
+    .admin-form select { padding: 8px 12px; border-radius: 8px; border: 1px solid #2a3042; background: #0e1422; color: #e6e8ef; flex: 1; min-width: 120px; }
   </style>
 </head>
 <body>
 <div class="app">
   <header class="appbar">
-    <div class="app-title"><div class="brand-dot"></div><h1>Hausdienst</h1></div>
+    <div class="app-title">
+      <div class="brand-dot"></div>
+      <h1>Hausdienst</h1>
+      <span id="adminIndicator" class="admin-indicator" style="display:none;">Admin</span>
+    </div>
     <div class="appbar-actions">
+      <button class="btn small warning" id="adminBtn" onclick="toggleAdminMode()" title="Admin-Modus">🔧</button>
       <a class="btn small dark" href="index.html" title="Zur Liste">🧾</a>
     </div>
   </header>
@@ -87,6 +100,28 @@
 
     <!-- Panel: Planen -->
     <div id="panelPlan" class="panel active">
+      <!-- Admin: Rückwirkend eintragen -->
+      <div class="card admin-card" id="adminPanel" style="display:none">
+        <div class="section-title">Admin: Rückwirkend eintragen</div>
+        <div class="sub">Hausdienst für beliebiges Datum eintragen oder ändern</div>
+        <div class="admin-form">
+          <div class="row">
+            <input type="date" id="adminDate" />
+            <select id="adminPerson">
+              <option value="">Person auswählen...</option>
+            </select>
+          </div>
+          <div class="row">
+            <button class="btn small" onclick="adminSetHausdienst()">Eintragen</button>
+            <button class="btn small warning" onclick="adminClearHausdienst()">Löschen</button>
+            <label style="display:flex;align-items:center;gap:6px;font-size:12px">
+              <input type="checkbox" id="adminMarkComplete" /> Als abgeschlossen markieren
+            </label>
+          </div>
+        </div>
+        <div id="adminStatus" class="sub" style="margin-top:8px"></div>
+      </div>
+
       <div class="card">
         <div class="section-title">Hausdienst planen</div>
         <div class="row" style="margin-top:6px">
@@ -209,6 +244,8 @@
 <script src="https://www.gstatic.com/firebasejs/12.0.0/firebase-firestore-compat.js"></script>
 <script>
   const CORE=["Chris","Daniel","Elmi","Florian","Joel","Kevin","Kiste","Marco","Meli","Simon"];
+  const ADMIN_PASSWORD = "1379";
+  let adminMode = false;
 
   /* ✅ Richtiges Firebase-Config für sickandsound-8a15f */
   const firebaseConfig = {
@@ -283,6 +320,106 @@
     const now=new Date();
     const mid=new Date(now.getFullYear(),now.getMonth(),now.getDate()+1,0,0,2);
     setTimeout(()=>{ cb(); scheduleMidnightRefresh(cb); }, mid-now);
+  }
+
+  /* Admin-Modus */
+  function toggleAdminMode() {
+    if (adminMode) {
+      adminMode = false;
+      document.getElementById('adminIndicator').style.display = 'none';
+      document.getElementById('adminPanel').style.display = 'none';
+      document.getElementById('adminBtn').textContent = '🔧';
+      return;
+    }
+
+    const password = prompt("Admin-Passwort eingeben:");
+    if (password === ADMIN_PASSWORD) {
+      adminMode = true;
+      document.getElementById('adminIndicator').style.display = 'inline-block';
+      document.getElementById('adminPanel').style.display = 'block';
+      document.getElementById('adminBtn').textContent = '🔧✓';
+      initAdminPanel();
+    } else {
+      alert("Falsches Passwort");
+    }
+  }
+
+  function initAdminPanel() {
+    // Datum auf heute setzen
+    document.getElementById('adminDate').value = todayStr();
+
+    // Personen-Dropdown füllen
+    const select = document.getElementById('adminPerson');
+    select.innerHTML = '<option value="">Person auswählen...</option>';
+    CORE.forEach(p => {
+      const opt = document.createElement('option');
+      opt.value = p;
+      opt.textContent = p;
+      select.appendChild(opt);
+    });
+  }
+
+  async function adminSetHausdienst() {
+    if (!adminMode || !db) return;
+
+    const date = document.getElementById('adminDate').value;
+    const person = document.getElementById('adminPerson').value;
+    const markComplete = document.getElementById('adminMarkComplete').checked;
+    const statusEl = document.getElementById('adminStatus');
+
+    if (!date || !person) {
+      statusEl.innerHTML = '<span class="badge" style="background:#ff6b6b;color:#fff">Bitte Datum und Person auswählen</span>';
+      return;
+    }
+
+    try {
+      const data = {
+        person: person,
+        updatedAt: Date.now(),
+        setByAdmin: true
+      };
+
+      if (markComplete) {
+        data.completed = true;
+        data.completedAt = Date.now();
+      }
+
+      await db.collection("hausdienst").doc(date).set(data, { merge: true });
+      statusEl.innerHTML = `<span class="badge ok">✓ ${person} für ${date} eingetragen${markComplete ? ' (abgeschlossen)' : ''}</span>`;
+
+      // Listen aktualisieren
+      if (date === todayStr()) await updateTodayInfo();
+      await renderNextDays();
+      await renderHistory();
+    } catch (e) {
+      statusEl.innerHTML = `<span class="badge" style="background:#ff6b6b;color:#fff">Fehler: ${e.message}</span>`;
+    }
+  }
+
+  async function adminClearHausdienst() {
+    if (!adminMode || !db) return;
+
+    const date = document.getElementById('adminDate').value;
+    const statusEl = document.getElementById('adminStatus');
+
+    if (!date) {
+      statusEl.innerHTML = '<span class="badge" style="background:#ff6b6b;color:#fff">Bitte Datum auswählen</span>';
+      return;
+    }
+
+    if (!confirm(`Hausdienst für ${date} wirklich löschen?`)) return;
+
+    try {
+      await db.collection("hausdienst").doc(date).delete();
+      statusEl.innerHTML = `<span class="badge ok">✓ Hausdienst für ${date} gelöscht</span>`;
+
+      // Listen aktualisieren
+      if (date === todayStr()) await updateTodayInfo();
+      await renderNextDays();
+      await renderHistory();
+    } catch (e) {
+      statusEl.innerHTML = `<span class="badge" style="background:#ff6b6b;color:#fff">Fehler: ${e.message}</span>`;
+    }
   }
 
   /* Auswahl */
