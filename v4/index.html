@@ -79,6 +79,13 @@
     .backup-actions{ display: flex; gap: 10px; margin-top: 15px; }
     .backup-list{ max-height: 200px; overflow-y: auto; margin: 10px 0; }
     .backup-item{ padding: 8px; border-bottom: 1px solid rgba(255,255,255,0.1); display: flex; justify-content: space-between; }
+
+    /* Hausdienst-Status in Strichliste */
+    .hd-today { background: rgba(255, 107, 107, 0.1); }
+    .hd-today.hd-complete { background: rgba(124, 252, 154, 0.1); }
+    .hd-status-icon { margin-left: 6px; font-size: 14px; }
+    .hd-status-icon.pending { color: #ff6b6b; }
+    .hd-status-icon.complete { color: #7CFC9A; }
   </style>
 </head>
 <body>
@@ -238,6 +245,7 @@ const pricesKey="sick_sound_prices", peopleKey="sick_sound_people", dataKey="sic
 let prices={"Getränk":1.5,"Mittagessen":6.0};
 let people=[], data={}, history=[], redoStack=[], bookings=[], columnOrder=Object.keys(prices), xp={};
 let deleteMode=false, adminMode=false, correctionMode=false, hdToday=null;
+let hdTodayCompleted = false; // Ob der heutige Hausdienst abgeschlossen ist
 let monthlyHdCounts = {}; // Hausdienste pro Person im aktuellen Monat
 const HD_REQUIRED = 3; // Jeder soll 3 Hausdienste pro Monat machen
 const HD_EXEMPT = ["Meli"]; // Personen die vom Hausdienst befreit sind
@@ -389,7 +397,14 @@ function subscribeRealtime(){
     buildTable(); updateTodayBanner(); updateUndoRedoButtons();
   });
   db.collection("hausdienst").doc(todayStr()).onSnapshot(doc=>{
-    hdToday = doc && doc.exists ? doc.data().person : null;
+    if (doc && doc.exists) {
+      const data = doc.data();
+      hdToday = data.person || null;
+      hdTodayCompleted = data.completed || false;
+    } else {
+      hdToday = null;
+      hdTodayCompleted = false;
+    }
     updateTodayBanner(hdToday); buildTable();
   });
 
@@ -419,9 +434,14 @@ async function updateTodayBanner(existing){
     const infoEl=document.getElementById("todayInfo");
     const ctaEl=document.getElementById("todayCta");
 
-    infoEl.innerHTML = person
-      ? `Heute eingetragener Hausdienst: <span class="badge ok">${person}</span>`
-      : `Heute: <span class="badge none">Noch niemand eingetragen</span>`;
+    if (person) {
+      const statusBadge = hdTodayCompleted
+        ? `<span class="badge ok">${person} ✓</span>`
+        : `<span class="badge" style="background:#ff6b6b;color:#fff">${person} ○</span>`;
+      infoEl.innerHTML = `Heute Hausdienst: ${statusBadge}`;
+    } else {
+      infoEl.innerHTML = `Heute: <span class="badge none">Noch niemand eingetragen</span>`;
+    }
 
     ctaEl.innerHTML = `
       <button class="cta-check" onclick="openChecklist()">
@@ -573,7 +593,8 @@ function buildTable(){
 
   const row=(p)=>{
     const xpVal=getXpForDisplay(p);
-    const hdClass=(hdToday===p)?"hd-today":"";
+    const isHdToday = hdToday === p;
+    const hdClass = isHdToday ? (hdTodayCompleted ? "hd-today hd-complete" : "hd-today") : "";
     const personTitle = deleteMode ? ` title="Person löschen"` : '';
 
     // Offene Hausdienste berechnen (nur für Kernteam)
@@ -582,9 +603,14 @@ function buildTable(){
       ? `<span class="hd-badge ${openHd > 0 ? 'open' : 'done'}" title="Offene Hausdienste diesen Monat">${openHd}</span>`
       : '';
 
+    // Hausdienst-Status-Icon für heute
+    const hdStatusIcon = isHdToday
+      ? `<span class="hd-status-icon ${hdTodayCompleted ? 'complete' : 'pending'}" title="${hdTodayCompleted ? 'Hausdienst abgeschlossen' : 'Hausdienst noch offen'}">${hdTodayCompleted ? '✓' : '○'}</span>`
+      : '';
+
     let rhtml = `<tr class="${hdClass}"><th style="text-align:left">
       <div class="person-cell"${personTitle} onclick="personCellClick('${p}')">
-        ${ring(xpVal,p)}<div class="p-info"><div class="p-name">${p}${hdBadge}</div></div>
+        ${ring(xpVal,p)}<div class="p-info"><div class="p-name">${p}${hdStatusIcon}${hdBadge}</div></div>
       </div></th>`;
     columnOrder.forEach(dr=>{
       if(prices[dr]!==undefined){
