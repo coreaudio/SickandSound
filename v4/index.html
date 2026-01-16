@@ -54,6 +54,22 @@
       box-shadow: 0 2px 0 rgba(0,0,0,.25);
     }
 
+    /* Hausdienst-Badge */
+    .hd-badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 20px;
+      height: 20px;
+      padding: 0 6px;
+      border-radius: 10px;
+      font-size: 11px;
+      font-weight: 800;
+      margin-left: 6px;
+    }
+    .hd-badge.open { background: #ff6b6b; color: #fff; }
+    .hd-badge.done { background: #2a3042; color: #7CFC9A; }
+
     /* Hinweis im Löschmodus */
     .delete-hint{ opacity:.75; font-size:12px; margin-top:4px }
     .delete-mode .person-cell{ cursor:pointer }
@@ -222,6 +238,9 @@ const pricesKey="sick_sound_prices", peopleKey="sick_sound_people", dataKey="sic
 let prices={"Getränk":1.5,"Mittagessen":6.0};
 let people=[], data={}, history=[], redoStack=[], bookings=[], columnOrder=Object.keys(prices), xp={};
 let deleteMode=false, adminMode=false, correctionMode=false, hdToday=null;
+let monthlyHdCounts = {}; // Hausdienste pro Person im aktuellen Monat
+const HD_REQUIRED = 3; // Jeder soll 3 Hausdienste pro Monat machen
+const HD_EXEMPT = ["Meli"]; // Personen die vom Hausdienst befreit sind
 
 /* ===== Sounds ===== */
 const makeSound = (src)=> (window.Howl ? new Howl({src:[src]}) : {play:()=>{}});
@@ -231,6 +250,44 @@ const sError = makeSound("https://cdn.jsdelivr.net/gh/jshawl/howler-examples@mas
 
 /* ===== Helpers / XP ===== */
 const todayStr=()=>new Date().toISOString().slice(0,10);
+const currentMonthStr=()=>new Date().toISOString().slice(0,7); // YYYY-MM
+
+// Lädt die Hausdienste für den aktuellen Monat
+async function loadMonthlyHdCounts(){
+  if(!db) return;
+  try {
+    const month = currentMonthStr();
+    const snap = await db.collection("hausdienst")
+      .where(firebase.firestore.FieldPath.documentId(), ">=", month + "-01")
+      .where(firebase.firestore.FieldPath.documentId(), "<=", month + "-31")
+      .get();
+
+    monthlyHdCounts = {};
+    snap.forEach(doc => {
+      const person = doc.data().person;
+      if(!person) return;
+
+      // Prüfen ob das Datum ein Wochenende ist
+      const dateStr = doc.id;
+      const date = new Date(dateStr);
+      const dayOfWeek = date.getDay();
+      const isWeekend = (dayOfWeek === 0 || dayOfWeek === 6);
+
+      // Wochenende = 0.5, Wochentag = 1
+      const points = isWeekend ? 0.5 : 1;
+      monthlyHdCounts[person] = (monthlyHdCounts[person] || 0) + points;
+    });
+  } catch(e) {
+    console.error("Fehler beim Laden der monatlichen Hausdienste:", e);
+  }
+}
+
+// Berechnet die noch offenen Hausdienste für eine Person
+function getOpenHdCount(person){
+  if(HD_EXEMPT.includes(person)) return 0;
+  const done = monthlyHdCounts[person] || 0;
+  return Math.max(0, HD_REQUIRED - done);
+}
 const levelOf=x=>Math.floor(Math.sqrt(x/75))+1;
 function valueOfCurrentStriche(person){
   return (columnOrder||[]).reduce((sum,d)=> sum + ((data[`${person}_${d}`]||0)*(prices[d]||0)), 0);
@@ -273,6 +330,7 @@ async function loadState(){
 
   CORE.forEach(n=>{ if(!people.includes(n)) people.push(n); });
 
+  await loadMonthlyHdCounts();
   saveAll(); buildTable(); updateTodayBanner(); subscribeRealtime(); updateUndoRedoButtons();
   await ensureXpFromExistingStricheAfterLoad();
   scheduleMidnightRefresh(()=>{ updateTodayBanner(); buildTable(); });
@@ -334,6 +392,16 @@ function subscribeRealtime(){
     hdToday = doc && doc.exists ? doc.data().person : null;
     updateTodayBanner(hdToday); buildTable();
   });
+
+  // Echtzeit-Updates für monatliche Hausdienste
+  const month = currentMonthStr();
+  db.collection("hausdienst")
+    .where(firebase.firestore.FieldPath.documentId(), ">=", month + "-01")
+    .where(firebase.firestore.FieldPath.documentId(), "<=", month + "-31")
+    .onSnapshot(async () => {
+      await loadMonthlyHdCounts();
+      buildTable();
+    });
 }
 
 /* Heute-Banner + CTA */
@@ -507,9 +575,16 @@ function buildTable(){
     const xpVal=getXpForDisplay(p);
     const hdClass=(hdToday===p)?"hd-today":"";
     const personTitle = deleteMode ? ` title="Person löschen"` : '';
+
+    // Offene Hausdienste berechnen (nur für Kernteam)
+    const openHd = CORE.includes(p) ? getOpenHdCount(p) : null;
+    const hdBadge = openHd !== null
+      ? `<span class="hd-badge ${openHd > 0 ? 'open' : 'done'}" title="Offene Hausdienste diesen Monat">${openHd}</span>`
+      : '';
+
     let rhtml = `<tr class="${hdClass}"><th style="text-align:left">
       <div class="person-cell"${personTitle} onclick="personCellClick('${p}')">
-        ${ring(xpVal,p)}<div class="p-info"><div class="p-name">${p}</div></div>
+        ${ring(xpVal,p)}<div class="p-info"><div class="p-name">${p}${hdBadge}</div></div>
       </div></th>`;
     columnOrder.forEach(dr=>{
       if(prices[dr]!==undefined){
