@@ -25,6 +25,20 @@
     .stat-label { font-size: 11px; opacity: 0.7; margin-top: 4px; }
     .avg-rating { display: flex; align-items: center; gap: 6px; }
     .no-ratings { text-align: center; padding: 40px; opacity: 0.6; }
+
+    /* Durchschnittsliste Styling */
+    .avg-list { display: flex; flex-direction: column; gap: 8px; }
+    .avg-item { display: flex; align-items: center; justify-content: space-between; padding: 12px; background: #1c2130; border-radius: 10px; }
+    .avg-item .rank { font-size: 18px; font-weight: 800; min-width: 30px; color: #6ee7ff; }
+    .avg-item .rank.gold { color: #ffd700; }
+    .avg-item .rank.silver { color: #c0c0c0; }
+    .avg-item .rank.bronze { color: #cd7f32; }
+    .avg-item .person-info { flex: 1; margin-left: 10px; }
+    .avg-item .person-name { font-weight: 800; }
+    .avg-item .person-count { font-size: 11px; opacity: 0.6; }
+    .avg-item .avg-score { display: flex; align-items: center; gap: 6px; }
+    .avg-item .avg-value { font-size: 18px; font-weight: 800; background: linear-gradient(135deg, #6ee7ff, #a78bfa); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+    .avg-item .stars { color: #ffd700; font-size: 14px; }
   </style>
 </head>
 <body>
@@ -75,15 +89,16 @@
       </div>
     </div>
 
+    <!-- Durchschnittsbewertungen pro Person - prominent oben -->
     <div class="card">
-      <div class="section-title">Bewertungen</div>
-      <div id="ratingsList" class="sub">Lade Bewertungen...</div>
+      <div class="section-title">Durchschnittliche Bewertung pro Person</div>
+      <div class="sub" style="margin-bottom:10px">Rangliste basierend auf durchschnittlicher Hausdienst-Bewertung</div>
+      <div id="personAverages" class="sub">Lade...</div>
     </div>
 
-    <!-- Durchschnittsbewertungen pro Person -->
     <div class="card">
-      <div class="section-title">Durchschnitt pro Person</div>
-      <div id="personAverages" class="sub">Lade...</div>
+      <div class="section-title">Alle Bewertungen</div>
+      <div id="ratingsList" class="sub">Lade Bewertungen...</div>
     </div>
   </main>
 
@@ -270,7 +285,7 @@
     const container = document.getElementById('personAverages');
 
     if (!ratings.length) {
-      container.innerHTML = '<div class="no-ratings">Keine Daten</div>';
+      container.innerHTML = '<div class="no-ratings">Noch keine Bewertungen vorhanden</div>';
       return;
     }
 
@@ -293,25 +308,29 @@
       }))
       .sort((a, b) => b.avg - a.avg);
 
+    const getRankClass = (i) => {
+      if (i === 0) return 'gold';
+      if (i === 1) return 'silver';
+      if (i === 2) return 'bronze';
+      return '';
+    };
+
     container.innerHTML = `
-      <table>
-        <thead>
-          <tr><th>#</th><th>Person</th><th>Durchschnitt</th><th>Anzahl</th></tr>
-        </thead>
-        <tbody>
-          ${sorted.map((s, i) => `
-            <tr>
-              <td>${i + 1}</td>
-              <td><b>${s.person}</b></td>
-              <td class="avg-rating">
-                <span class="rating-stars">${renderStars(Math.round(s.avg))}</span>
-                <span>${s.avg.toFixed(2)}</span>
-              </td>
-              <td>${s.count}</td>
-            </tr>
-          `).join('')}
-        </tbody>
-      </table>
+      <div class="avg-list">
+        ${sorted.map((s, i) => `
+          <div class="avg-item">
+            <span class="rank ${getRankClass(i)}">#${i + 1}</span>
+            <div class="person-info">
+              <div class="person-name">${s.person}</div>
+              <div class="person-count">${s.count} Bewertung${s.count !== 1 ? 'en' : ''}</div>
+            </div>
+            <div class="avg-score">
+              <span class="stars">${renderStars(Math.round(s.avg))}</span>
+              <span class="avg-value">${s.avg.toFixed(2)}</span>
+            </div>
+          </div>
+        `).join('')}
+      </div>
     `;
   }
 
