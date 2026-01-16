@@ -80,7 +80,7 @@
   <main class="content">
     <div class="card">
       <div class="section-title">Übersicht</div>
-      <div class="sub subtle">Level basiert auf Gesamt-XP. „Heute“ ist der aktuelle Warenwert deiner Striche (live).</div>
+      <div class="sub subtle">Zwei Ranglisten: Hausdienste (Wochentag=1, Wochenende=0.5) und Gesamtsumme (Level basiert auf XP).</div>
       
       <div id="adminIndicator" class="admin-indicator" style="display:none;">Admin-Modus</div>
       
@@ -97,7 +97,13 @@
       </div>
     </div>
 
-    <div class="card table-wrap" id="rankWrap">
+    <div class="card table-wrap" id="hausdienstRankWrap">
+      <div class="section-title">🏠 Hausdienst-Rangliste</div>
+      <div class="sub">Lade Rangliste…</div>
+    </div>
+
+    <div class="card table-wrap" id="xpRankWrap">
+      <div class="section-title">💰 Gesamtsumme-Rangliste</div>
       <div class="sub">Lade Rangliste…</div>
     </div>
   </main>
@@ -197,25 +203,54 @@
   }
 
   function render(){
-    const wrap=document.getElementById('rankWrap');
+    const hdWrap = document.getElementById('hausdienstRankWrap');
+    const xpWrap = document.getElementById('xpRankWrap');
     const names = [...new Set([...(people||[]), ...Object.keys(xp||{})])];
-    if(!names.length){ wrap.innerHTML = '<div class="sub">Keine Daten.</div>'; return; }
 
-    const rows = names
+    if(!names.length){
+      hdWrap.innerHTML = '<div class="section-title">🏠 Hausdienst-Rangliste</div><div class="sub">Keine Daten.</div>';
+      xpWrap.innerHTML = '<div class="section-title">💰 Gesamtsumme-Rangliste</div><div class="sub">Keine Daten.</div>';
+      return;
+    }
+
+    // Daten für alle Personen sammeln
+    const personData = names
       .filter(n=>CORE.includes(n) || !n.startsWith('_'))
       .map(n=>{
         const base = Number(xp[n]||0);
         const today = currentValueOf(n);
         const total = base + today;
-        return { n, base, today, total, lvl: levelOf(total) };
-      })
+        const hdCount = hausdienstCounts[n] || 0;
+        return { n, base, today, total, lvl: levelOf(total), hdCount };
+      });
+
+    // Hausdienst-Rangliste (sortiert nach Hausdienst-Anzahl)
+    const hdRows = [...personData]
+      .sort((a,b)=> b.hdCount - a.hdCount)
+      .map((r,i)=>`
+        <tr>
+          <td class="subtle">#${i+1}</td>
+          <td><b>${r.n}</b></td>
+          <td class="right"><b>${r.hdCount % 1 === 0 ? r.hdCount : r.hdCount.toFixed(1)}</b></td>
+        </tr>
+      `).join('');
+
+    hdWrap.innerHTML = `
+      <div class="section-title">🏠 Hausdienst-Rangliste</div>
+      <table class="rank-table">
+        <thead>
+          <tr><th></th><th>Person</th><th class="right">Hausdienste</th></tr>
+        </thead>
+        <tbody>${hdRows}</tbody>
+      </table>`;
+
+    // Gesamtsumme-Rangliste (sortiert nach Gesamtsumme)
+    const xpRows = [...personData]
       .sort((a,b)=> b.total - a.total)
       .map((r,i)=>{
-        // Im Admin-Modus bearbeitbare Zeilen
         const editClass = adminMode ? 'editable' : '';
         const editHandler = adminMode ? `ondblclick="editXp('${r.n}')"` : '';
-        
-        const hdCount = hausdienstCounts[r.n] || 0;
+
         return `
         <tr>
           <td class="subtle">#${i+1}</td>
@@ -225,23 +260,23 @@
           <td class="right">${r.base.toFixed(2)}€</td>
           <td class="right">${r.today.toFixed(2)}€</td>
           <td class="right ${editClass}" ${editHandler}><b>${r.total.toFixed(2)}€</b></td>
-          <td class="right">${hdCount % 1 === 0 ? hdCount : hdCount.toFixed(1)}</td>
         </tr>
       `}).join('');
 
-    wrap.innerHTML = `
+    xpWrap.innerHTML = `
+      <div class="section-title">💰 Gesamtsumme-Rangliste</div>
       <table class="rank-table">
         <thead>
-          <tr><th></th><th>Person</th><th class="right">XP bisher</th><th class="right">Heute</th><th class="right">Gesamt</th><th class="right">Hausdienst</th></tr>
+          <tr><th></th><th>Person</th><th class="right">XP bisher</th><th class="right">Heute</th><th class="right">Gesamt</th></tr>
         </thead>
-        <tbody>${rows}</tbody>
+        <tbody>${xpRows}</tbody>
       </table>`;
-      
+
     // Personen-Dropdown für Admin-Bereich füllen
     if (adminMode) {
       const select = document.getElementById('xpPersonSelect');
       select.innerHTML = '<option value="">Person auswählen</option>';
-      
+
       names
         .filter(n => CORE.includes(n) || !n.startsWith('_'))
         .sort()
