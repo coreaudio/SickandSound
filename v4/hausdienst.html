@@ -713,7 +713,8 @@
   let modalRating = 0;
   let yesterdayPerson = null;
   let todayPerson = null;
-  let ratingAlreadyGiven = false;
+  let existingRatingId = null; // ID der bestehenden Bewertung
+  let existingRatingData = null; // Daten der bestehenden Bewertung
 
   function getYesterdayStr() {
     const d = new Date();
@@ -738,15 +739,35 @@
     document.getElementById('modalSubmitBtn').disabled = modalRating === 0;
   }
 
-  function openRatingModal() {
-    if (!yesterdayPerson || !todayPerson || ratingAlreadyGiven) return;
+  async function openRatingModal() {
+    if (!yesterdayPerson || !todayPerson) return;
 
-    modalRating = 0;
-    document.querySelectorAll('#modalStars .star').forEach(s => s.classList.remove('active', 'hovered'));
-    document.getElementById('modalComment').value = '';
-    document.getElementById('modalSubmitBtn').disabled = true;
-    document.getElementById('modalRatingInfo').innerHTML =
-      `Bewerte den Hausdienst von <b>${yesterdayPerson}</b> (${getYesterdayStr()})`;
+    // Bestehende Bewertung laden
+    const existingRating = await db.collection('bewertungen')
+      .where('date', '==', getYesterdayStr())
+      .where('bewertetVon', '==', todayPerson)
+      .get();
+
+    if (!existingRating.empty) {
+      existingRatingId = existingRating.docs[0].id;
+      existingRatingData = existingRating.docs[0].data();
+      setModalRating(existingRatingData.rating);
+      document.getElementById('modalComment').value = existingRatingData.comment || '';
+      document.getElementById('modalRatingInfo').innerHTML =
+        `Bewertung für <b>${yesterdayPerson}</b> (${getYesterdayStr()}) bearbeiten:`;
+      document.getElementById('modalSubmitBtn').textContent = 'Aktualisieren';
+    } else {
+      existingRatingId = null;
+      existingRatingData = null;
+      modalRating = 0;
+      document.querySelectorAll('#modalStars .star').forEach(s => s.classList.remove('active', 'hovered'));
+      document.getElementById('modalComment').value = '';
+      document.getElementById('modalSubmitBtn').disabled = true;
+      document.getElementById('modalRatingInfo').innerHTML =
+        `Bewerte den Hausdienst von <b>${yesterdayPerson}</b> (${getYesterdayStr()}):`;
+      document.getElementById('modalSubmitBtn').textContent = 'Bewerten';
+    }
+
     document.getElementById('ratingModal').classList.add('show');
   }
 
@@ -759,19 +780,30 @@
 
     const comment = document.getElementById('modalComment').value.trim();
 
-    await db.collection('bewertungen').add({
-      date: getYesterdayStr(),
-      bewerteterHausdienst: yesterdayPerson,
-      bewertetVon: todayPerson,
-      rating: modalRating,
-      comment: comment,
-      createdAt: Date.now()
-    });
+    if (existingRatingId) {
+      // Bestehende Bewertung aktualisieren
+      await db.collection('bewertungen').doc(existingRatingId).update({
+        rating: modalRating,
+        comment: comment,
+        updatedAt: Date.now()
+      });
+      alert('Bewertung aktualisiert!');
+    } else {
+      // Neue Bewertung erstellen
+      await db.collection('bewertungen').add({
+        date: getYesterdayStr(),
+        bewerteterHausdienst: yesterdayPerson,
+        bewertetVon: todayPerson,
+        rating: modalRating,
+        comment: comment,
+        createdAt: Date.now()
+      });
+      alert('Bewertung gespeichert!');
+    }
 
-    ratingAlreadyGiven = true;
+    existingRatingData = { rating: modalRating, comment: comment };
     closeRatingModal();
     updateHdStatus();
-    alert('Bewertung gespeichert!');
   }
 
   async function checkAndShowRatingModal() {
@@ -795,11 +827,19 @@
       .where('bewertetVon', '==', todayPerson)
       .get();
 
-    ratingAlreadyGiven = !existingRating.empty;
+    const hasRating = !existingRating.empty;
+    if (hasRating) {
+      existingRatingId = existingRating.docs[0].id;
+      existingRatingData = existingRating.docs[0].data();
+    } else {
+      existingRatingId = null;
+      existingRatingData = null;
+    }
+
     updateHdStatus();
 
     // Modal automatisch öffnen wenn noch nicht bewertet
-    if (!ratingAlreadyGiven) {
+    if (!hasRating) {
       openRatingModal();
     }
   }
@@ -818,10 +858,12 @@
     if (ratingBtn) {
       if (!todayPerson || !yesterdayPerson) {
         ratingBtn.style.display = 'none';
-      } else if (ratingAlreadyGiven) {
-        ratingBtn.textContent = '✓ Bewertung abgegeben';
-        ratingBtn.disabled = true;
-        ratingBtn.className = 'btn small ghost';
+      } else if (existingRatingData) {
+        // Bewertung existiert - kann bearbeitet werden
+        const stars = '★'.repeat(existingRatingData.rating) + '☆'.repeat(5 - existingRatingData.rating);
+        ratingBtn.innerHTML = `✎ Bewertung bearbeiten <span style="color:#ffd700;margin-left:6px">${stars}</span>`;
+        ratingBtn.disabled = false;
+        ratingBtn.className = 'btn small secondary';
         ratingBtn.style.display = 'inline-block';
       } else {
         ratingBtn.textContent = `${yesterdayPerson}s Hausdienst bewerten`;
@@ -907,7 +949,10 @@
           .where('date', '==', getYesterdayStr())
           .where('bewertetVon', '==', todayPerson)
           .get();
-        ratingAlreadyGiven = !existingRating.empty;
+        if (!existingRating.empty) {
+          existingRatingId = existingRating.docs[0].id;
+          existingRatingData = existingRating.docs[0].data();
+        }
       }
       updateHdStatus();
     }
@@ -919,7 +964,8 @@
       localStorage.removeItem(CHECKED_KEY);
       checked={};
       modalRating = 0;
-      ratingAlreadyGiven = false;
+      existingRatingId = null;
+      existingRatingData = null;
       todayPerson = null;
       yesterdayPerson = null;
       await updateTodayInfo();
