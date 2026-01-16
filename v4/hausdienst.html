@@ -70,6 +70,18 @@
     .admin-form .row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
     .admin-form input[type="date"] { padding: 8px 12px; border-radius: 8px; border: 1px solid #2a3042; background: #0e1422; color: #e6e8ef; }
     .admin-form select { padding: 8px 12px; border-radius: 8px; border: 1px solid #2a3042; background: #0e1422; color: #e6e8ef; flex: 1; min-width: 120px; }
+
+    /* Bewertungs-Modal */
+    .modal { position: fixed; inset: 0; background: rgba(0,0,0,0.8); display: none; place-items: center; z-index: 100; padding: 20px; }
+    .modal.show { display: grid; }
+    .modal-box { background: #151a23; border-radius: 16px; padding: 24px; max-width: 400px; width: 100%; border: 1px solid #2a3042; }
+    .modal-title { font-size: 18px; font-weight: 800; margin-bottom: 8px; }
+    .modal-stars { display: flex; gap: 8px; justify-content: center; margin: 20px 0; }
+    .modal-stars .star { font-size: 36px; cursor: pointer; color: #2a3042; transition: all 0.2s; }
+    .modal-stars .star:hover, .modal-stars .star.active { color: #ffd700; transform: scale(1.15); }
+    .modal-stars .star.hovered { color: #ffd700; }
+    .modal-actions { display: flex; gap: 10px; margin-top: 15px; }
+    .modal-actions .btn { flex: 1; }
   </style>
 </head>
 <body>
@@ -177,24 +189,7 @@
         <div class="section-title">Hausdienst-Status</div>
         <div id="hdStatusInfo"><div class="sub">Lade Status...</div></div>
         <div class="progress-bar"><div class="fill" id="progressFill" style="width:0%"></div></div>
-      </div>
-
-      <!-- Bewertung -->
-      <div class="card" id="ratingCard">
-        <div class="section-title">Bewertung abgeben</div>
-        <div id="ratingInfo" class="rating-info">Lade...</div>
-        <div id="ratingContent">
-          <div class="star-rating" id="starRating">
-            <span class="star" data-value="1" onclick="setRating(1)" onmouseenter="hoverRating(1)" onmouseleave="hoverRating(0)">★</span>
-            <span class="star" data-value="2" onclick="setRating(2)" onmouseenter="hoverRating(2)" onmouseleave="hoverRating(0)">★</span>
-            <span class="star" data-value="3" onclick="setRating(3)" onmouseenter="hoverRating(3)" onmouseleave="hoverRating(0)">★</span>
-            <span class="star" data-value="4" onclick="setRating(4)" onmouseenter="hoverRating(4)" onmouseleave="hoverRating(0)">★</span>
-            <span class="star" data-value="5" onclick="setRating(5)" onmouseenter="hoverRating(5)" onmouseleave="hoverRating(0)">★</span>
-          </div>
-          <textarea id="ratingComment" class="rating-comment" placeholder="Optionaler Kommentar zur Bewertung..."></textarea>
-          <button class="btn" onclick="submitRating()" style="margin-top:10px" id="submitRatingBtn" disabled>Bewertung abgeben</button>
-        </div>
-        <div id="ratingStatus" class="sub" style="margin-top:8px"></div>
+        <button class="btn small" style="margin-top:10px" onclick="openRatingModal()" id="openRatingBtn">Gestrigen Hausdienst bewerten</button>
       </div>
     </div>
 
@@ -236,6 +231,26 @@
       <span>Buchungen</span>
     </a>
   </nav>
+</div>
+
+<!-- Bewertungs-Modal -->
+<div class="modal" id="ratingModal">
+  <div class="modal-box">
+    <div class="modal-title">Hausdienst bewerten</div>
+    <div id="modalRatingInfo" class="sub"></div>
+    <div class="modal-stars" id="modalStars">
+      <span class="star" data-value="1" onclick="setModalRating(1)" onmouseenter="hoverModalRating(1)" onmouseleave="hoverModalRating(0)">★</span>
+      <span class="star" data-value="2" onclick="setModalRating(2)" onmouseenter="hoverModalRating(2)" onmouseleave="hoverModalRating(0)">★</span>
+      <span class="star" data-value="3" onclick="setModalRating(3)" onmouseenter="hoverModalRating(3)" onmouseleave="hoverModalRating(0)">★</span>
+      <span class="star" data-value="4" onclick="setModalRating(4)" onmouseenter="hoverModalRating(4)" onmouseleave="hoverModalRating(0)">★</span>
+      <span class="star" data-value="5" onclick="setModalRating(5)" onmouseenter="hoverModalRating(5)" onmouseleave="hoverModalRating(0)">★</span>
+    </div>
+    <textarea id="modalComment" class="rating-comment" placeholder="Optionaler Kommentar..."></textarea>
+    <div class="modal-actions">
+      <button class="btn" id="modalSubmitBtn" onclick="submitModalRating()" disabled>Bewerten</button>
+      <button class="btn ghost" onclick="closeRatingModal()">Später</button>
+    </div>
+  </div>
 </div>
 
 <!-- Firebase -->
@@ -300,6 +315,11 @@
     if(history.pushState){
       const h = key==='plan' ? '' : '#'+key;
       history.replaceState(null,'', location.pathname + (h? h : ''));
+    }
+
+    // Bei Wechsel zur Checkliste: Bewertungs-Modal prüfen
+    if (key === 'check') {
+      checkAndShowRatingModal();
     }
   }
 
@@ -690,79 +710,10 @@
   }
 
   /* Bewertungssystem */
-  let currentRating = 0;
+  let modalRating = 0;
   let yesterdayPerson = null;
   let todayPerson = null;
   let ratingAlreadyGiven = false;
-
-  function hoverRating(val) {
-    const stars = document.querySelectorAll('#starRating .star');
-    stars.forEach((star, i) => {
-      star.classList.toggle('hovered', i < val);
-    });
-  }
-
-  function setRating(val) {
-    currentRating = val;
-    const stars = document.querySelectorAll('#starRating .star');
-    stars.forEach((star, i) => {
-      star.classList.toggle('active', i < val);
-    });
-    updateSubmitButton();
-  }
-
-  function updateSubmitButton() {
-    const btn = document.getElementById('submitRatingBtn');
-    const allDone = areAllTasksDone();
-    btn.disabled = currentRating === 0 || !allDone || ratingAlreadyGiven;
-
-    if (ratingAlreadyGiven) {
-      btn.textContent = 'Bereits bewertet';
-    } else if (!allDone) {
-      btn.textContent = 'Erst alle Aufgaben erledigen';
-    } else if (currentRating === 0) {
-      btn.textContent = 'Sterne auswählen';
-    } else {
-      btn.textContent = 'Bewertung abgeben';
-    }
-  }
-
-  function areAllTasksDone() {
-    return _tasks.length > 0 && _tasks.every(t => checked[t.id]);
-  }
-
-  async function submitRating() {
-    if (!db || currentRating === 0 || !yesterdayPerson || !todayPerson) return;
-    if (!areAllTasksDone()) {
-      alert('Bitte erst alle Aufgaben abhaken!');
-      return;
-    }
-
-    const yesterdayStr = getYesterdayStr();
-    const comment = document.getElementById('ratingComment').value.trim();
-
-    await db.collection('bewertungen').add({
-      date: yesterdayStr,
-      bewerteterHausdienst: yesterdayPerson,
-      bewertetVon: todayPerson,
-      rating: currentRating,
-      comment: comment,
-      createdAt: Date.now()
-    });
-
-    // Hausdienst als abgeschlossen markieren
-    await db.collection('hausdienst').doc(todayStr()).update({
-      completed: true,
-      completedAt: Date.now(),
-      tasksChecked: Object.keys(checked).length,
-      ratingGiven: true
-    });
-
-    document.getElementById('ratingStatus').innerHTML = '<span class="badge ok">Bewertung gespeichert!</span>';
-    ratingAlreadyGiven = true;
-    updateSubmitButton();
-    updateHdStatus();
-  }
 
   function getYesterdayStr() {
     const d = new Date();
@@ -770,16 +721,61 @@
     return d.toISOString().slice(0, 10);
   }
 
-  async function loadRatingSection() {
-    const ratingInfo = document.getElementById('ratingInfo');
-    const ratingContent = document.getElementById('ratingContent');
-    const ratingStatus = document.getElementById('ratingStatus');
+  // Modal Funktionen
+  function hoverModalRating(val) {
+    const stars = document.querySelectorAll('#modalStars .star');
+    stars.forEach((star, i) => {
+      star.classList.toggle('hovered', i < val);
+    });
+  }
 
-    if (!db) {
-      ratingInfo.innerHTML = '<span class="badge none">Offline - keine Bewertung möglich</span>';
-      ratingContent.style.display = 'none';
-      return;
-    }
+  function setModalRating(val) {
+    modalRating = val;
+    const stars = document.querySelectorAll('#modalStars .star');
+    stars.forEach((star, i) => {
+      star.classList.toggle('active', i < val);
+    });
+    document.getElementById('modalSubmitBtn').disabled = modalRating === 0;
+  }
+
+  function openRatingModal() {
+    if (!yesterdayPerson || !todayPerson || ratingAlreadyGiven) return;
+
+    modalRating = 0;
+    document.querySelectorAll('#modalStars .star').forEach(s => s.classList.remove('active', 'hovered'));
+    document.getElementById('modalComment').value = '';
+    document.getElementById('modalSubmitBtn').disabled = true;
+    document.getElementById('modalRatingInfo').innerHTML =
+      `Bewerte den Hausdienst von <b>${yesterdayPerson}</b> (${getYesterdayStr()})`;
+    document.getElementById('ratingModal').classList.add('show');
+  }
+
+  function closeRatingModal() {
+    document.getElementById('ratingModal').classList.remove('show');
+  }
+
+  async function submitModalRating() {
+    if (!db || modalRating === 0 || !yesterdayPerson || !todayPerson) return;
+
+    const comment = document.getElementById('modalComment').value.trim();
+
+    await db.collection('bewertungen').add({
+      date: getYesterdayStr(),
+      bewerteterHausdienst: yesterdayPerson,
+      bewertetVon: todayPerson,
+      rating: modalRating,
+      comment: comment,
+      createdAt: Date.now()
+    });
+
+    ratingAlreadyGiven = true;
+    closeRatingModal();
+    updateHdStatus();
+    alert('Bewertung gespeichert!');
+  }
+
+  async function checkAndShowRatingModal() {
+    if (!db) return;
 
     // Heute und Gestern laden
     const todayDoc = await db.collection('hausdienst').doc(todayStr()).get();
@@ -788,21 +784,8 @@
     todayPerson = todayDoc.exists ? todayDoc.data().person : null;
     yesterdayPerson = yesterdayDoc.exists ? yesterdayDoc.data().person : null;
 
-    // Status aktualisieren
-    updateHdStatus();
-
-    // Bewertungs-Logik
-    if (!todayPerson) {
-      ratingInfo.innerHTML = '<span class="badge none">Heute ist kein Hausdienst eingetragen</span><br><span class="sub">Nur wer heute Hausdienst hat, kann bewerten.</span>';
-      ratingContent.style.display = 'none';
-      ratingStatus.innerHTML = '';
-      return;
-    }
-
-    if (!yesterdayPerson) {
-      ratingInfo.innerHTML = `<b>${todayPerson}</b> hat heute Hausdienst.<br><span class="badge none">Gestern war kein Hausdienst eingetragen</span><br><span class="sub">Es gibt nichts zu bewerten.</span>`;
-      ratingContent.style.display = 'none';
-      ratingStatus.innerHTML = '';
+    if (!todayPerson || !yesterdayPerson) {
+      updateHdStatus();
       return;
     }
 
@@ -813,35 +796,40 @@
       .get();
 
     ratingAlreadyGiven = !existingRating.empty;
+    updateHdStatus();
 
-    ratingContent.style.display = 'block';
-    ratingInfo.innerHTML = `<b>${todayPerson}</b>, bewerte den Hausdienst von <b>${yesterdayPerson}</b> (${getYesterdayStr()}):`;
-
-    if (ratingAlreadyGiven) {
-      const existingData = existingRating.docs[0].data();
-      setRating(existingData.rating);
-      document.getElementById('ratingComment').value = existingData.comment || '';
-      ratingStatus.innerHTML = '<span class="badge ok">Bereits bewertet ✓</span>';
-      // Formular deaktivieren
-      document.querySelectorAll('#starRating .star').forEach(s => s.style.pointerEvents = 'none');
-      document.getElementById('ratingComment').disabled = true;
-    } else {
-      ratingStatus.innerHTML = '';
-      document.querySelectorAll('#starRating .star').forEach(s => s.style.pointerEvents = 'auto');
-      document.getElementById('ratingComment').disabled = false;
+    // Modal automatisch öffnen wenn noch nicht bewertet
+    if (!ratingAlreadyGiven) {
+      openRatingModal();
     }
-
-    updateSubmitButton();
   }
 
   function updateHdStatus() {
     const statusInfo = document.getElementById('hdStatusInfo');
     const progressFill = document.getElementById('progressFill');
+    const ratingBtn = document.getElementById('openRatingBtn');
 
     const totalTasks = _tasks.length;
     const doneTasks = _tasks.filter(t => checked[t.id]).length;
     const progress = totalTasks > 0 ? Math.round((doneTasks / totalTasks) * 100) : 0;
     progressFill.style.width = progress + '%';
+
+    // Bewertungs-Button aktualisieren
+    if (ratingBtn) {
+      if (!todayPerson || !yesterdayPerson) {
+        ratingBtn.style.display = 'none';
+      } else if (ratingAlreadyGiven) {
+        ratingBtn.textContent = '✓ Bewertung abgegeben';
+        ratingBtn.disabled = true;
+        ratingBtn.className = 'btn small ghost';
+        ratingBtn.style.display = 'inline-block';
+      } else {
+        ratingBtn.textContent = `${yesterdayPerson}s Hausdienst bewerten`;
+        ratingBtn.disabled = false;
+        ratingBtn.className = 'btn small';
+        ratingBtn.style.display = 'inline-block';
+      }
+    }
 
     if (!todayPerson) {
       statusInfo.innerHTML = `
@@ -851,22 +839,7 @@
       return;
     }
 
-    const allDone = totalTasks > 0 && doneTasks === totalTasks;
-    const hasRated = ratingAlreadyGiven || !yesterdayPerson;
-    const isComplete = allDone && hasRated;
-
     let statusHtml = `<div class="sub" style="margin-bottom:6px">Heute: <b>${todayPerson}</b></div>`;
-    statusHtml += `<div class="hd-status ${isComplete ? 'complete' : 'pending'}">`;
-
-    if (isComplete) {
-      statusHtml += '✓ Hausdienst abgeschlossen';
-    } else {
-      const missing = [];
-      if (!allDone) missing.push(`${totalTasks - doneTasks} Aufgaben offen`);
-      if (!hasRated && yesterdayPerson) missing.push('Bewertung ausstehend');
-      statusHtml += '○ ' + missing.join(' · ');
-    }
-    statusHtml += '</div>';
     statusHtml += `<div class="sub" style="margin-top:6px">${doneTasks}/${totalTasks} Aufgaben erledigt (${progress}%)</div>`;
 
     statusInfo.innerHTML = statusHtml;
@@ -915,24 +888,44 @@
 
   /* Initialisierung */
   async function init(){
-    pickTabFromQuery();
     renderPeopleRow();
     updateSelectionUI();
     setMode(showMode);
     renderCatTabs();
     await loadTasks();
     await Promise.all([updateTodayInfo(), renderNextDays(), renderTasks(), renderHistory()]);
-    await loadRatingSection();
+
+    // Bewertungsdaten laden
+    if (db) {
+      const todayDoc = await db.collection('hausdienst').doc(todayStr()).get();
+      const yesterdayDoc = await db.collection('hausdienst').doc(getYesterdayStr()).get();
+      todayPerson = todayDoc.exists ? todayDoc.data().person : null;
+      yesterdayPerson = yesterdayDoc.exists ? yesterdayDoc.data().person : null;
+
+      if (todayPerson && yesterdayPerson) {
+        const existingRating = await db.collection('bewertungen')
+          .where('date', '==', getYesterdayStr())
+          .where('bewertetVon', '==', todayPerson)
+          .get();
+        ratingAlreadyGiven = !existingRating.empty;
+      }
+      updateHdStatus();
+    }
+
+    // Tab auswählen (nach dem Laden der Daten)
+    pickTabFromQuery();
+
     scheduleMidnightRefresh(async ()=>{
       localStorage.removeItem(CHECKED_KEY);
       checked={};
-      currentRating = 0;
+      modalRating = 0;
       ratingAlreadyGiven = false;
+      todayPerson = null;
+      yesterdayPerson = null;
       await updateTodayInfo();
       await renderTasks(true);
       await renderNextDays();
       renderHistory();
-      await loadRatingSection();
     });
   }
   init();
