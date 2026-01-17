@@ -65,6 +65,35 @@
       color: #fff;
       width: 100px;
     }
+
+    .hd-requirements-form {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+      gap: 8px;
+      margin-top: 10px;
+    }
+    .hd-req-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 10px;
+      background: #0e1422;
+      border-radius: 8px;
+      border: 1px solid #2a3042;
+    }
+    .hd-req-item label {
+      flex: 1;
+      font-size: 13px;
+    }
+    .hd-req-item input {
+      width: 50px;
+      padding: 4px 8px;
+      border-radius: 6px;
+      border: 1px solid #2a3042;
+      background: #1c2130;
+      color: #fff;
+      text-align: center;
+    }
   </style>
 </head>
 <body>
@@ -86,7 +115,8 @@
       
       <div id="adminControls" class="admin-controls" style="display:none;">
         <div class="section-title">Admin-Bereich</div>
-        <div class="sub subtle">Gesamt-XP bearbeiten</div>
+
+        <div class="sub subtle" style="margin-top:10px">Gesamt-XP bearbeiten</div>
         <div class="edit-form">
           <select id="xpPersonSelect">
             <option value="">Person auswählen</option>
@@ -94,6 +124,10 @@
           <input type="number" id="xpEditValue" step="0.01" min="0" placeholder="Neue XP">
           <button class="btn small" onclick="updateXp()">Aktualisieren</button>
         </div>
+
+        <div class="sub subtle" style="margin-top:15px">Hausdienst-Anforderungen pro Monat</div>
+        <div id="hdRequirementsForm" class="hd-requirements-form"></div>
+        <button class="btn small" style="margin-top:10px" onclick="saveHdRequirements()">Anforderungen speichern</button>
       </div>
     </div>
 
@@ -158,10 +192,18 @@
   let db=null, prices={}, data={}, xp={}, people=[];
   let hausdienstCounts = {}; // Hausdienst-Zählung pro Person (gesamt)
   let hausdienstByMonth = {}; // Hausdienst-Zählung pro Person pro Monat: {month: {person: count}}
+  let hdRequirements = {}; // Individuelle Hausdienst-Anforderungen pro Person: {person: anzahl}
   const STATE_COLLECTION = location.search.includes("beta") ? "state_beta" : "state";
   let adminMode = false;
-  const HD_REQUIRED = 3; // Erforderliche Hausdienste pro Monat
-  const HD_EXEMPT = ["Meli"]; // Vom Hausdienst befreite Personen
+  const HD_DEFAULT_REQUIRED = 3; // Standard-Anforderung pro Monat
+
+  // Gibt die Anforderung für eine Person zurück (0 = befreit)
+  function getHdRequired(person) {
+    if (hdRequirements.hasOwnProperty(person)) {
+      return hdRequirements[person];
+    }
+    return HD_DEFAULT_REQUIRED;
+  }
 
   function levelOf(x){ x = +x||0; return Math.max(1, Math.floor(Math.sqrt(x/75))+1); }
 
@@ -328,8 +370,8 @@
     const fehlstandTotal = {}; // {person: totalMissed}
     const fehlstandByMonth = {}; // {month: {person: missed}}
 
-    // Kernteam-Mitglieder (ohne Befreite)
-    const relevantCore = CORE.filter(p => !HD_EXEMPT.includes(p));
+    // Kernteam-Mitglieder (nur mit Anforderung > 0)
+    const relevantCore = CORE.filter(p => getHdRequired(p) > 0);
 
     pastMonths.forEach(month => {
       fehlstandByMonth[month] = {};
@@ -337,7 +379,8 @@
 
       relevantCore.forEach(person => {
         const done = monthData[person] || 0;
-        const missed = Math.max(0, HD_REQUIRED - done);
+        const required = getHdRequired(person);
+        const missed = Math.max(0, required - done);
         fehlstandByMonth[month][person] = missed;
         fehlstandTotal[person] = (fehlstandTotal[person] || 0) + missed;
       });
@@ -413,11 +456,65 @@
       document.getElementById('adminBtn').textContent = '🔧✓';
       render();
       renderFehlstand();
+      renderHdRequirementsForm();
     } else {
       alert("Falsches Passwort");
     }
   }
-  
+
+  // HD-Anforderungen Formular rendern
+  function renderHdRequirementsForm() {
+    const container = document.getElementById('hdRequirementsForm');
+    if (!container) return;
+
+    container.innerHTML = CORE.map(person => {
+      const req = getHdRequired(person);
+      return `
+        <div class="hd-req-item">
+          <label>${person}</label>
+          <input type="number" min="0" max="10" step="1" value="${req}"
+                 data-person="${person}" onchange="updateHdRequirementPreview(this)">
+        </div>
+      `;
+    }).join('');
+  }
+
+  function updateHdRequirementPreview(input) {
+    // Optional: Live-Vorschau (aktuell nur visuelles Feedback)
+    const value = parseInt(input.value) || 0;
+    input.style.borderColor = value === 0 ? '#7CFC9A' : '#2a3042';
+  }
+
+  function saveHdRequirements() {
+    const inputs = document.querySelectorAll('#hdRequirementsForm input[data-person]');
+    const newRequirements = {};
+
+    inputs.forEach(input => {
+      const person = input.dataset.person;
+      const value = parseInt(input.value) || 0;
+      newRequirements[person] = value;
+    });
+
+    hdRequirements = newRequirements;
+
+    // In Firebase speichern
+    if (db) {
+      db.collection(STATE_COLLECTION).doc('global').set({ hdRequirements }, { merge: true })
+        .then(() => {
+          alert("Hausdienst-Anforderungen gespeichert!");
+          renderFehlstand();
+        })
+        .catch(err => {
+          console.error("Fehler beim Speichern:", err);
+          alert("Fehler beim Speichern");
+        });
+    } else {
+      localStorage.setItem('sick_sound_hd_requirements', JSON.stringify(hdRequirements));
+      alert("Anforderungen lokal gespeichert (Offline-Modus)");
+      renderFehlstand();
+    }
+  }
+
   function editXp(person) {
     if (!adminMode) return;
     
@@ -500,6 +597,7 @@
       xp = JSON.parse(localStorage.getItem('sick_sound_xp') || '{}');
       people = JSON.parse(localStorage.getItem('sick_sound_people') || '[]');
       CORE = JSON.parse(localStorage.getItem('sick_sound_core') || JSON.stringify(DEFAULT_CORE));
+      hdRequirements = JSON.parse(localStorage.getItem('sick_sound_hd_requirements') || '{}');
       render();
       renderFehlstand();
       return;
@@ -518,6 +616,10 @@
       // Kernteam aus Firebase laden
       if(s.core && Array.isArray(s.core) && s.core.length > 0) {
         CORE = s.core;
+      }
+      // HD-Anforderungen laden
+      if(s.hdRequirements) {
+        hdRequirements = s.hdRequirements;
       }
       render();
       renderFehlstand();

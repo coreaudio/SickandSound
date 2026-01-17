@@ -273,11 +273,19 @@ const pricesKey="sick_sound_prices", peopleKey="sick_sound_people", dataKey="sic
 let prices={"Getränk":1.5,"Mittagessen":6.0};
 let people=[], data={}, history=[], redoStack=[], bookings=[], columnOrder=Object.keys(prices), xp={};
 let guestReferences={}; // Bezugspersonen für Gäste: {guestName: coreMemberName}
+let hdRequirements={}; // Individuelle Hausdienst-Anforderungen pro Person: {person: anzahl}
 let deleteMode=false, adminMode=false, correctionMode=false, hdToday=null;
 let hdTodayCompleted = false; // Ob der heutige Hausdienst abgeschlossen ist
 let monthlyHdCounts = {}; // Hausdienste pro Person im aktuellen Monat
-const HD_REQUIRED = 3; // Jeder soll 3 Hausdienste pro Monat machen
-const HD_EXEMPT = ["Meli"]; // Personen die vom Hausdienst befreit sind
+const HD_DEFAULT_REQUIRED = 3; // Standard-Anforderung pro Monat
+
+// Gibt die Anforderung für eine Person zurück (0 = befreit)
+function getHdRequired(person) {
+  if (hdRequirements.hasOwnProperty(person)) {
+    return hdRequirements[person];
+  }
+  return HD_DEFAULT_REQUIRED;
+}
 
 /* ===== Sounds ===== */
 const makeSound = (src)=> (window.Howl ? new Howl({src:[src]}) : {play:()=>{}});
@@ -321,9 +329,10 @@ async function loadMonthlyHdCounts(){
 
 // Berechnet die noch offenen Hausdienste für eine Person
 function getOpenHdCount(person){
-  if(HD_EXEMPT.includes(person)) return 0;
+  const required = getHdRequired(person);
+  if(required === 0) return 0; // Befreit
   const done = monthlyHdCounts[person] || 0;
-  return Math.max(0, HD_REQUIRED - done);
+  return Math.max(0, required - done);
 }
 const levelOf=x=>Math.floor(Math.sqrt(x/75))+1;
 function valueOfCurrentStriche(person){
@@ -365,6 +374,10 @@ async function loadState(){
         // Bezugspersonen laden
         if(s.guestReferences) {
           guestReferences = s.guestReferences;
+        }
+        // HD-Anforderungen laden
+        if(s.hdRequirements) {
+          hdRequirements = s.hdRequirements;
         }
       }else{
         people=JSON.parse(localStorage.getItem(peopleKey))||[];
@@ -437,6 +450,10 @@ function subscribeRealtime(){
     // Bezugspersonen laden
     if(s.guestReferences) {
       guestReferences = s.guestReferences;
+    }
+    // HD-Anforderungen laden
+    if(s.hdRequirements) {
+      hdRequirements = s.hdRequirements;
     }
     CORE.forEach(n=>{ if(!people.includes(n)) people.push(n); });
     buildTable(); updateTodayBanner(); updateUndoRedoButtons();
@@ -722,10 +739,11 @@ function buildTable(){
     const personTitle = deleteMode ? ` title="Person löschen"` : '';
     const isGuest = !CORE.includes(p);
 
-    // Offene Hausdienste berechnen (nur für Kernteam)
-    const openHd = CORE.includes(p) ? getOpenHdCount(p) : null;
+    // Offene Hausdienste berechnen (nur für Kernteam mit Anforderung > 0)
+    const hdRequired = CORE.includes(p) ? getHdRequired(p) : 0;
+    const openHd = hdRequired > 0 ? getOpenHdCount(p) : null;
     const hdBadge = openHd !== null
-      ? `<span class="hd-badge ${openHd > 0 ? 'open' : 'done'}" title="Offene Hausdienste diesen Monat">${openHd}</span>`
+      ? `<span class="hd-badge ${openHd > 0 ? 'open' : 'done'}" title="Offene Hausdienste diesen Monat (${hdRequired} erforderlich)">${openHd}</span>`
       : '';
 
     // Hausdienst-Status-Icon für heute
