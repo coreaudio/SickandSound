@@ -83,6 +83,55 @@
     .modal-stars .star.hovered { color: #ffd700; }
     .modal-actions { display: flex; gap: 10px; margin-top: 15px; }
     .modal-actions .btn { flex: 1; }
+
+    /* Warnung bei unvollständigen Aufgaben */
+    .incomplete-warning {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      padding: 14px 16px;
+      margin-top: 12px;
+      background: linear-gradient(135deg, rgba(255, 107, 107, 0.2), rgba(255, 165, 0, 0.15));
+      border: 2px solid #ff6b6b;
+      border-radius: 12px;
+      animation: warningPulse 2s ease-in-out infinite;
+    }
+    @keyframes warningPulse {
+      0%, 100% { border-color: #ff6b6b; box-shadow: 0 0 0 0 rgba(255, 107, 107, 0); }
+      50% { border-color: #ff9f43; box-shadow: 0 0 15px 2px rgba(255, 107, 107, 0.3); }
+    }
+    .warning-icon { font-size: 28px; line-height: 1; }
+    .warning-text { flex: 1; }
+    .warning-text strong { display: block; color: #ff6b6b; font-size: 14px; margin-bottom: 4px; }
+    .warning-text span { font-size: 12px; opacity: 0.9; }
+
+    /* Abschluss-Button */
+    .complete-btn {
+      width: 100%;
+      padding: 14px 20px;
+      font-size: 16px;
+      font-weight: 800;
+      background: linear-gradient(135deg, #6ee7ff, #7CFC9A);
+      color: #0b0e14;
+      border: none;
+      border-radius: 12px;
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+    .complete-btn:disabled {
+      background: #2a3042;
+      color: #666;
+      cursor: not-allowed;
+      opacity: 0.6;
+    }
+    .complete-btn:not(:disabled):hover {
+      transform: scale(1.02);
+      box-shadow: 0 4px 20px rgba(110, 231, 255, 0.4);
+    }
+    .complete-btn.completed {
+      background: #7CFC9A;
+      pointer-events: none;
+    }
   </style>
 </head>
 <body>
@@ -190,6 +239,24 @@
         <div class="section-title">Hausdienst-Status</div>
         <div id="hdStatusInfo"><div class="sub">Lade Status...</div></div>
         <div class="progress-bar"><div class="fill" id="progressFill" style="width:0%"></div></div>
+
+        <!-- Warnung wenn nicht alle Aufgaben erledigt -->
+        <div id="incompleteWarning" class="incomplete-warning" style="display:none">
+          <div class="warning-icon">⚠️</div>
+          <div class="warning-text">
+            <strong>Nicht alle Aufgaben erledigt!</strong>
+            <span id="warningDetails">Es fehlen noch X Aufgaben.</span>
+          </div>
+        </div>
+
+        <!-- Abschluss-Button -->
+        <div id="completeSection" style="margin-top:12px;display:none">
+          <button class="btn complete-btn" id="completeHdBtn" onclick="completeHausdienst()" disabled>
+            ✓ Hausdienst abschließen
+          </button>
+          <div class="sub" style="margin-top:6px;font-size:11px" id="completeHint">Alle Aufgaben müssen erledigt sein.</div>
+        </div>
+
         <button class="btn small" style="margin-top:10px" onclick="openRatingModal()" id="openRatingBtn">Gestrigen Hausdienst bewerten</button>
       </div>
     </div>
@@ -795,6 +862,7 @@
   let modalRating = 0;
   let yesterdayPerson = null;
   let todayPerson = null;
+  let hdTodayCompleted = false; // Ob der heutige Hausdienst abgeschlossen ist
   let existingRatingId = null; // ID der bestehenden Bewertung
   let existingRatingData = null; // Daten der bestehenden Bewertung
 
@@ -896,6 +964,7 @@
     const yesterdayDoc = await db.collection('hausdienst').doc(getYesterdayStr()).get();
 
     todayPerson = todayDoc.exists ? todayDoc.data().person : null;
+    hdTodayCompleted = todayDoc.exists ? (todayDoc.data().completed || false) : false;
     yesterdayPerson = yesterdayDoc.exists ? yesterdayDoc.data().person : null;
 
     if (!todayPerson || !yesterdayPerson) {
@@ -930,18 +999,29 @@
     const statusInfo = document.getElementById('hdStatusInfo');
     const progressFill = document.getElementById('progressFill');
     const ratingBtn = document.getElementById('openRatingBtn');
+    const warningEl = document.getElementById('incompleteWarning');
+    const warningDetails = document.getElementById('warningDetails');
+    const completeSection = document.getElementById('completeSection');
+    const completeBtn = document.getElementById('completeHdBtn');
+    const completeHint = document.getElementById('completeHint');
 
     const totalTasks = _tasks.length;
     const doneTasks = _tasks.filter(t => checked[t.id]).length;
+    const remainingTasks = totalTasks - doneTasks;
     const progress = totalTasks > 0 ? Math.round((doneTasks / totalTasks) * 100) : 0;
+    const allDone = remainingTasks === 0 && totalTasks > 0;
+
     progressFill.style.width = progress + '%';
+    // Fortschrittsbalken-Farbe ändern basierend auf Status
+    progressFill.style.background = allDone
+      ? 'linear-gradient(90deg, #7CFC9A, #6ee7ff)'
+      : (progress < 50 ? 'linear-gradient(90deg, #ff6b6b, #ff9f43)' : 'linear-gradient(90deg, #ff9f43, #6ee7ff)');
 
     // Bewertungs-Button aktualisieren
     if (ratingBtn) {
       if (!todayPerson || !yesterdayPerson) {
         ratingBtn.style.display = 'none';
       } else if (existingRatingData) {
-        // Bewertung existiert - kann bearbeitet werden
         const stars = '★'.repeat(existingRatingData.rating) + '☆'.repeat(5 - existingRatingData.rating);
         ratingBtn.innerHTML = `✎ Bewertung bearbeiten <span style="color:#ffd700;margin-left:6px">${stars}</span>`;
         ratingBtn.disabled = false;
@@ -955,18 +1035,81 @@
       }
     }
 
+    // Kein Hausdienst eingetragen
     if (!todayPerson) {
       statusInfo.innerHTML = `
         <div class="hd-status pending">○ Kein Hausdienst eingetragen</div>
         <div class="sub" style="margin-top:6px">${doneTasks}/${totalTasks} Aufgaben erledigt (${progress}%)</div>
       `;
+      warningEl.style.display = 'none';
+      completeSection.style.display = 'none';
       return;
     }
 
+    // Status-Anzeige
     let statusHtml = `<div class="sub" style="margin-bottom:6px">Heute: <b>${todayPerson}</b></div>`;
     statusHtml += `<div class="sub" style="margin-top:6px">${doneTasks}/${totalTasks} Aufgaben erledigt (${progress}%)</div>`;
-
     statusInfo.innerHTML = statusHtml;
+
+    // Warnung und Abschluss-Bereich
+    completeSection.style.display = 'block';
+
+    if (hdTodayCompleted) {
+      // Bereits abgeschlossen
+      warningEl.style.display = 'none';
+      completeBtn.disabled = true;
+      completeBtn.textContent = '✓ Hausdienst abgeschlossen';
+      completeBtn.classList.add('completed');
+      completeHint.textContent = 'Der Hausdienst wurde bereits als erledigt markiert.';
+    } else if (allDone) {
+      // Alle Aufgaben erledigt - kann abschließen
+      warningEl.style.display = 'none';
+      completeBtn.disabled = false;
+      completeBtn.textContent = '✓ Hausdienst abschließen';
+      completeBtn.classList.remove('completed');
+      completeHint.textContent = 'Alle Aufgaben erledigt! Jetzt kannst du abschließen.';
+      completeHint.style.color = '#7CFC9A';
+    } else {
+      // Noch offene Aufgaben - Warnung zeigen
+      warningEl.style.display = 'flex';
+      warningDetails.textContent = `Es ${remainingTasks === 1 ? 'fehlt noch 1 Aufgabe' : `fehlen noch ${remainingTasks} Aufgaben`}.`;
+      completeBtn.disabled = true;
+      completeBtn.textContent = '✓ Hausdienst abschließen';
+      completeBtn.classList.remove('completed');
+      completeHint.textContent = 'Alle Aufgaben müssen erledigt sein, um den Hausdienst abzuschließen.';
+      completeHint.style.color = '';
+    }
+  }
+
+  // Hausdienst als abgeschlossen markieren
+  async function completeHausdienst() {
+    if (!db || !todayPerson) return;
+
+    const totalTasks = _tasks.length;
+    const doneTasks = _tasks.filter(t => checked[t.id]).length;
+
+    if (doneTasks < totalTasks) {
+      alert('Es sind noch nicht alle Aufgaben erledigt!');
+      return;
+    }
+
+    if (!confirm(`Hausdienst als abgeschlossen markieren?\n\nAlle ${totalTasks} Aufgaben wurden erledigt.`)) {
+      return;
+    }
+
+    try {
+      await db.collection("hausdienst").doc(todayStr()).set({
+        completed: true,
+        completedAt: Date.now()
+      }, { merge: true });
+
+      hdTodayCompleted = true;
+      updateHdStatus();
+      alert('✓ Hausdienst erfolgreich abgeschlossen!');
+    } catch (e) {
+      console.error('Fehler beim Abschließen:', e);
+      alert('Fehler beim Abschließen des Hausdienstes.');
+    }
   }
 
   /* Historie (letzte 30 Tage) */
@@ -1034,6 +1177,7 @@
       const todayDoc = await db.collection('hausdienst').doc(todayStr()).get();
       const yesterdayDoc = await db.collection('hausdienst').doc(getYesterdayStr()).get();
       todayPerson = todayDoc.exists ? todayDoc.data().person : null;
+      hdTodayCompleted = todayDoc.exists ? (todayDoc.data().completed || false) : false;
       yesterdayPerson = yesterdayDoc.exists ? yesterdayDoc.data().person : null;
 
       if (todayPerson && yesterdayPerson) {
@@ -1059,11 +1203,13 @@
       existingRatingId = null;
       existingRatingData = null;
       todayPerson = null;
+      hdTodayCompleted = false;
       yesterdayPerson = null;
       await updateTodayInfo();
       await renderTasks(true);
       await renderNextDays();
       renderHistory();
+      updateHdStatus();
     });
   }
   init();

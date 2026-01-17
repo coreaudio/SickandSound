@@ -143,7 +143,7 @@
 
     <div class="card table-wrap" id="fehlstandWrap">
       <div class="section-title">📊 Hausdienst-Fehlstand</div>
-      <div class="sub">Nicht erledigte Hausdienste pro Person und Monat (3 pro Monat erforderlich, Meli befreit)</div>
+      <div class="sub">Nicht erledigte Hausdienste pro Monat (ab Januar 2026). ✓ = alle erledigt, Zahl = fehlende Hausdienste.</div>
       <div id="fehlstandContent" class="sub" style="margin-top:10px">Lade Daten…</div>
     </div>
   </main>
@@ -356,13 +356,17 @@
     if (!container) return;
 
     const currentMonth = new Date().toISOString().slice(0, 7);
-    const months = Object.keys(hausdienstByMonth).sort().reverse();
+    const START_MONTH = '2026-01'; // Ab Januar 2026 starten
 
-    // Nur abgeschlossene Monate anzeigen (nicht der aktuelle Monat)
-    const pastMonths = months.filter(m => m < currentMonth);
+    // Alle Monate ab Januar 2026 bis zum letzten abgeschlossenen Monat
+    const allMonths = Object.keys(hausdienstByMonth).sort();
+    const pastMonths = allMonths.filter(m => m >= START_MONTH && m < currentMonth);
+
+    // Kernteam-Mitglieder (nur mit Anforderung > 0)
+    const relevantCore = CORE.filter(p => getHdRequired(p) > 0).sort();
 
     if (pastMonths.length === 0) {
-      container.innerHTML = '<div style="opacity:0.6;padding:10px">Noch keine abgeschlossenen Monate vorhanden.</div>';
+      container.innerHTML = '<div style="opacity:0.6;padding:10px">Noch keine abgeschlossenen Monate ab Januar 2026 vorhanden.</div>';
       return;
     }
 
@@ -370,8 +374,8 @@
     const fehlstandTotal = {}; // {person: totalMissed}
     const fehlstandByMonth = {}; // {month: {person: missed}}
 
-    // Kernteam-Mitglieder (nur mit Anforderung > 0)
-    const relevantCore = CORE.filter(p => getHdRequired(p) > 0);
+    // Initialisiere Totals
+    relevantCore.forEach(person => { fehlstandTotal[person] = 0; });
 
     pastMonths.forEach(month => {
       fehlstandByMonth[month] = {};
@@ -382,7 +386,7 @@
         const required = getHdRequired(person);
         const missed = Math.max(0, required - done);
         fehlstandByMonth[month][person] = missed;
-        fehlstandTotal[person] = (fehlstandTotal[person] || 0) + missed;
+        fehlstandTotal[person] += missed;
       });
     });
 
@@ -393,44 +397,41 @@
       return `${monthNames[parseInt(month) - 1]} ${year}`;
     };
 
-    // Tabelle erstellen
+    // Tabelle erstellen: Personen als Spalten, Monate als Zeilen
     let html = `<table class="rank-table" style="margin-top:10px">
       <thead>
         <tr>
-          <th>Person</th>
-          ${pastMonths.slice(0, 6).map(m => `<th class="right" style="font-size:11px">${formatMonth(m)}</th>`).join('')}
-          <th class="right" style="background:#2a3042;border-radius:6px"><b>Gesamt</b></th>
+          <th>Monat</th>
+          ${relevantCore.map(p => `<th class="right" style="font-size:12px"><b>${p}</b></th>`).join('')}
         </tr>
       </thead>
       <tbody>`;
 
-    // Sortiert nach Gesamt-Fehlstand (höchster zuerst)
-    const sortedPersons = relevantCore.sort((a, b) => (fehlstandTotal[b] || 0) - (fehlstandTotal[a] || 0));
+    // Zeilen für jeden Monat (chronologisch, älteste zuerst)
+    pastMonths.forEach(month => {
+      html += `<tr>
+        <td><b>${formatMonth(month)}</b></td>`;
 
-    sortedPersons.forEach(person => {
-      const total = fehlstandTotal[person] || 0;
-      const rowClass = total > 0 ? 'style="background:rgba(255,107,107,0.1)"' : '';
-
-      html += `<tr ${rowClass}>
-        <td><b>${person}</b></td>`;
-
-      pastMonths.slice(0, 6).forEach(month => {
+      relevantCore.forEach(person => {
         const missed = fehlstandByMonth[month][person] || 0;
         const cellStyle = missed > 0 ? 'color:#ff6b6b;font-weight:800' : 'opacity:0.5';
         html += `<td class="right" style="${cellStyle}">${missed > 0 ? missed : '✓'}</td>`;
       });
 
-      const totalStyle = total > 0 ? 'color:#ff6b6b;font-weight:800' : 'color:#7CFC9A';
-      html += `<td class="right" style="${totalStyle}"><b>${total}</b></td>
-      </tr>`;
+      html += `</tr>`;
     });
 
-    html += `</tbody></table>`;
+    // Gesamt-Zeile
+    html += `<tr style="background:#2a3042;font-weight:800">
+      <td><b>Gesamt</b></td>`;
 
-    // Hinweis wenn mehr Monate vorhanden
-    if (pastMonths.length > 6) {
-      html += `<div class="sub" style="margin-top:8px;opacity:0.6">Zeigt die letzten 6 Monate. Insgesamt ${pastMonths.length} Monate erfasst.</div>`;
-    }
+    relevantCore.forEach(person => {
+      const total = fehlstandTotal[person] || 0;
+      const totalStyle = total > 0 ? 'color:#ff6b6b' : 'color:#7CFC9A';
+      html += `<td class="right" style="${totalStyle}"><b>${total}</b></td>`;
+    });
+
+    html += `</tr></tbody></table>`;
 
     container.innerHTML = html;
   }
