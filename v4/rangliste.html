@@ -106,6 +106,12 @@
       <div class="section-title">💰 Gesamtsumme-Rangliste</div>
       <div class="sub">Lade Rangliste…</div>
     </div>
+
+    <div class="card table-wrap" id="fehlstandWrap">
+      <div class="section-title">📊 Hausdienst-Fehlstand</div>
+      <div class="sub">Nicht erledigte Hausdienste pro Person und Monat (3 pro Monat erforderlich, Meli befreit)</div>
+      <div id="fehlstandContent" class="sub" style="margin-top:10px">Lade Daten…</div>
+    </div>
   </main>
 
   <nav class="bottomnav">
@@ -150,9 +156,12 @@
   };
 
   let db=null, prices={}, data={}, xp={}, people=[];
-  let hausdienstCounts = {}; // Hausdienst-Zählung pro Person
+  let hausdienstCounts = {}; // Hausdienst-Zählung pro Person (gesamt)
+  let hausdienstByMonth = {}; // Hausdienst-Zählung pro Person pro Monat: {month: {person: count}}
   const STATE_COLLECTION = location.search.includes("beta") ? "state_beta" : "state";
   let adminMode = false;
+  const HD_REQUIRED = 3; // Erforderliche Hausdienste pro Monat
+  const HD_EXEMPT = ["Meli"]; // Vom Hausdienst befreite Personen
 
   function levelOf(x){ x = +x||0; return Math.max(1, Math.floor(Math.sqrt(x/75))+1); }
 
@@ -162,6 +171,8 @@
     try {
       const snap = await db.collection("hausdienst").get();
       hausdienstCounts = {};
+      hausdienstByMonth = {};
+
       snap.forEach(doc => {
         const person = doc.data().person;
         if(!person) return;
@@ -171,11 +182,17 @@
         const date = new Date(dateStr);
         const dayOfWeek = date.getDay(); // 0 = Sonntag, 6 = Samstag
         const isWeekend = (dayOfWeek === 0 || dayOfWeek === 6);
+        const month = dateStr.slice(0, 7); // YYYY-MM
 
         // Wochenende = 0.5, Wochentag = 1
         const points = isWeekend ? 0.5 : 1;
 
+        // Gesamt-Zählung
         hausdienstCounts[person] = (hausdienstCounts[person] || 0) + points;
+
+        // Monatliche Zählung
+        if(!hausdienstByMonth[month]) hausdienstByMonth[month] = {};
+        hausdienstByMonth[month][person] = (hausdienstByMonth[month][person] || 0) + points;
       });
     } catch(e) {
       console.error("Fehler beim Laden der Hausdienst-Zählung:", e);
@@ -291,6 +308,90 @@
     }
   }
 
+  // Fehlstand-Übersicht rendern (nicht erledigte Hausdienste pro Monat)
+  function renderFehlstand() {
+    const container = document.getElementById('fehlstandContent');
+    if (!container) return;
+
+    const currentMonth = new Date().toISOString().slice(0, 7);
+    const months = Object.keys(hausdienstByMonth).sort().reverse();
+
+    // Nur abgeschlossene Monate anzeigen (nicht der aktuelle Monat)
+    const pastMonths = months.filter(m => m < currentMonth);
+
+    if (pastMonths.length === 0) {
+      container.innerHTML = '<div style="opacity:0.6;padding:10px">Noch keine abgeschlossenen Monate vorhanden.</div>';
+      return;
+    }
+
+    // Fehlstand berechnen pro Person
+    const fehlstandTotal = {}; // {person: totalMissed}
+    const fehlstandByMonth = {}; // {month: {person: missed}}
+
+    // Kernteam-Mitglieder (ohne Befreite)
+    const relevantCore = CORE.filter(p => !HD_EXEMPT.includes(p));
+
+    pastMonths.forEach(month => {
+      fehlstandByMonth[month] = {};
+      const monthData = hausdienstByMonth[month] || {};
+
+      relevantCore.forEach(person => {
+        const done = monthData[person] || 0;
+        const missed = Math.max(0, HD_REQUIRED - done);
+        fehlstandByMonth[month][person] = missed;
+        fehlstandTotal[person] = (fehlstandTotal[person] || 0) + missed;
+      });
+    });
+
+    // Monatsnamen formatieren
+    const formatMonth = (m) => {
+      const [year, month] = m.split('-');
+      const monthNames = ['Jan', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun', 'Jul', 'Aug', 'Sep', 'Okt', 'Nov', 'Dez'];
+      return `${monthNames[parseInt(month) - 1]} ${year}`;
+    };
+
+    // Tabelle erstellen
+    let html = `<table class="rank-table" style="margin-top:10px">
+      <thead>
+        <tr>
+          <th>Person</th>
+          ${pastMonths.slice(0, 6).map(m => `<th class="right" style="font-size:11px">${formatMonth(m)}</th>`).join('')}
+          <th class="right" style="background:#2a3042;border-radius:6px"><b>Gesamt</b></th>
+        </tr>
+      </thead>
+      <tbody>`;
+
+    // Sortiert nach Gesamt-Fehlstand (höchster zuerst)
+    const sortedPersons = relevantCore.sort((a, b) => (fehlstandTotal[b] || 0) - (fehlstandTotal[a] || 0));
+
+    sortedPersons.forEach(person => {
+      const total = fehlstandTotal[person] || 0;
+      const rowClass = total > 0 ? 'style="background:rgba(255,107,107,0.1)"' : '';
+
+      html += `<tr ${rowClass}>
+        <td><b>${person}</b></td>`;
+
+      pastMonths.slice(0, 6).forEach(month => {
+        const missed = fehlstandByMonth[month][person] || 0;
+        const cellStyle = missed > 0 ? 'color:#ff6b6b;font-weight:800' : 'opacity:0.5';
+        html += `<td class="right" style="${cellStyle}">${missed > 0 ? missed : '✓'}</td>`;
+      });
+
+      const totalStyle = total > 0 ? 'color:#ff6b6b;font-weight:800' : 'color:#7CFC9A';
+      html += `<td class="right" style="${totalStyle}"><b>${total}</b></td>
+      </tr>`;
+    });
+
+    html += `</tbody></table>`;
+
+    // Hinweis wenn mehr Monate vorhanden
+    if (pastMonths.length > 6) {
+      html += `<div class="sub" style="margin-top:8px;opacity:0.6">Zeigt die letzten 6 Monate. Insgesamt ${pastMonths.length} Monate erfasst.</div>`;
+    }
+
+    container.innerHTML = html;
+  }
+
   function toggleAdminMode() {
     if (adminMode) {
       adminMode = false;
@@ -299,6 +400,7 @@
       document.body.classList.remove('edit-mode');
       document.getElementById('adminBtn').textContent = '🔧';
       render();
+      renderFehlstand();
       return;
     }
     
@@ -310,6 +412,7 @@
       document.body.classList.add('edit-mode');
       document.getElementById('adminBtn').textContent = '🔧✓';
       render();
+      renderFehlstand();
     } else {
       alert("Falsches Passwort");
     }
@@ -398,6 +501,7 @@
       people = JSON.parse(localStorage.getItem('sick_sound_people') || '[]');
       CORE = JSON.parse(localStorage.getItem('sick_sound_core') || JSON.stringify(DEFAULT_CORE));
       render();
+      renderFehlstand();
       return;
     }
 
@@ -416,12 +520,14 @@
         CORE = s.core;
       }
       render();
+      renderFehlstand();
     });
 
     // Echtzeit-Updates für Hausdienst
     db.collection("hausdienst").onSnapshot(async () => {
       await loadHausdienstCounts();
       render();
+      renderFehlstand();
     });
   })();
 </script>
