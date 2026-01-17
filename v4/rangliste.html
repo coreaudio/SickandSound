@@ -225,8 +225,9 @@
         return { n, base, today, total, lvl: levelOf(total), hdCount };
       });
 
-    // Hausdienst-Rangliste (sortiert nach Hausdienst-Anzahl)
+    // Hausdienst-Rangliste (sortiert nach Hausdienst-Anzahl, nur Kernteam)
     const hdRows = [...personData]
+      .filter(r => CORE.includes(r.n))
       .sort((a,b)=> b.hdCount - a.hdCount)
       .map((r,i)=>`
         <tr>

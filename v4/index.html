@@ -732,20 +732,14 @@ function buildTable(){
       ? `<span class="hd-status-icon ${hdTodayCompleted ? 'complete' : 'pending'}" title="${hdTodayCompleted ? 'Hausdienst abgeschlossen' : 'Hausdienst noch offen'}">${hdTodayCompleted ? '✓' : '○'}</span>`
       : '';
 
-    // Bezugsperson für Gäste
+    // Bezugsperson für Gäste (immer sichtbar, nicht nur im Admin-Modus)
     let refHtml = '';
     if (isGuest) {
       const currentRef = guestReferences[p] || '';
-      if (adminMode) {
-        // Admin kann Bezugsperson ändern
-        const options = CORE.map(c => `<option value="${c}" ${currentRef === c ? 'selected' : ''}>${c}</option>`).join('');
-        refHtml = `<select class="ref-select" onchange="setGuestReference('${p}', this.value)" onclick="event.stopPropagation()">
-          <option value="">Bezug...</option>${options}
-        </select>`;
-      } else if (currentRef) {
-        // Normale Anzeige der Bezugsperson
-        refHtml = `<span class="ref-badge">${currentRef}</span>`;
-      }
+      const options = CORE.map(c => `<option value="${c}" ${currentRef === c ? 'selected' : ''}>${c}</option>`).join('');
+      refHtml = `<select class="ref-select" onchange="setGuestReference('${p}', this.value)" onclick="event.stopPropagation()">
+        <option value="">Bezug...</option>${options}
+      </select>`;
     }
 
     let rhtml = `<tr class="${hdClass}"><th style="text-align:left">
