@@ -97,6 +97,10 @@
     .core-tag { display: inline-flex; align-items: center; gap: 6px; padding: 6px 10px; border-radius: 8px; background: #1c2130; border: 1px solid #2a3042; }
     .core-tag .remove-btn { cursor: pointer; color: #ff6b6b; font-weight: bold; padding: 0 4px; }
     .core-tag .remove-btn:hover { color: #ff4444; }
+
+    /* Bezugsperson für Gäste */
+    .ref-select { padding: 4px 8px; border-radius: 6px; border: 1px solid #2a3042; background: #1c2130; color: #e6e8ef; font-size: 11px; max-width: 90px; cursor: pointer; }
+    .ref-badge { display: inline-block; padding: 2px 8px; border-radius: 4px; background: rgba(110, 231, 255, 0.15); color: #6ee7ff; font-size: 11px; margin-left: 6px; }
   </style>
 </head>
 <body>
@@ -267,6 +271,7 @@ const pricesKey="sick_sound_prices", peopleKey="sick_sound_people", dataKey="sic
       xpKey="sick_sound_xp", redoKey="sick_sound_redo", backupsKey="sick_sound_backups";
 let prices={"Getränk":1.5,"Mittagessen":6.0};
 let people=[], data={}, history=[], redoStack=[], bookings=[], columnOrder=Object.keys(prices), xp={};
+let guestReferences={}; // Bezugspersonen für Gäste: {guestName: coreMemberName}
 let deleteMode=false, adminMode=false, correctionMode=false, hdToday=null;
 let hdTodayCompleted = false; // Ob der heutige Hausdienst abgeschlossen ist
 let monthlyHdCounts = {}; // Hausdienste pro Person im aktuellen Monat
@@ -356,6 +361,10 @@ async function loadState(){
         if(s.core && Array.isArray(s.core) && s.core.length > 0) {
           CORE = s.core;
         }
+        // Bezugspersonen laden
+        if(s.guestReferences) {
+          guestReferences = s.guestReferences;
+        }
       }else{
         people=JSON.parse(localStorage.getItem(peopleKey))||[];
         redoStack=JSON.parse(localStorage.getItem(redoKey))||[];
@@ -423,6 +432,10 @@ function subscribeRealtime(){
     // Kernteam aus Firebase laden
     if(s.core && Array.isArray(s.core) && s.core.length > 0) {
       CORE = s.core;
+    }
+    // Bezugspersonen laden
+    if(s.guestReferences) {
+      guestReferences = s.guestReferences;
     }
     CORE.forEach(n=>{ if(!people.includes(n)) people.push(n); });
     buildTable(); updateTodayBanner(); updateUndoRedoButtons();
@@ -620,6 +633,25 @@ function saveCoreTeam() {
   }
 }
 
+/* Bezugsperson für Gäste */
+function setGuestReference(guest, coreMember) {
+  if (coreMember) {
+    guestReferences[guest] = coreMember;
+  } else {
+    delete guestReferences[guest];
+  }
+  saveGuestReferences();
+  buildTable();
+}
+
+function saveGuestReferences() {
+  localStorage.setItem('sick_sound_guest_refs', JSON.stringify(guestReferences));
+  if (db) {
+    db.collection(STATE_COLLECTION).doc('global').set({ guestReferences }, { merge: true })
+      .catch(e => console.error('Fehler beim Speichern der Bezugspersonen:', e));
+  }
+}
+
 /* Correction mode */
 function toggleCorrectionMode(){
   if (correctionMode) {
@@ -687,6 +719,7 @@ function buildTable(){
     const isHdToday = hdToday === p;
     const hdClass = isHdToday ? (hdTodayCompleted ? "hd-today hd-complete" : "hd-today") : "";
     const personTitle = deleteMode ? ` title="Person löschen"` : '';
+    const isGuest = !CORE.includes(p);
 
     // Offene Hausdienste berechnen (nur für Kernteam)
     const openHd = CORE.includes(p) ? getOpenHdCount(p) : null;
@@ -699,9 +732,25 @@ function buildTable(){
       ? `<span class="hd-status-icon ${hdTodayCompleted ? 'complete' : 'pending'}" title="${hdTodayCompleted ? 'Hausdienst abgeschlossen' : 'Hausdienst noch offen'}">${hdTodayCompleted ? '✓' : '○'}</span>`
       : '';
 
+    // Bezugsperson für Gäste
+    let refHtml = '';
+    if (isGuest) {
+      const currentRef = guestReferences[p] || '';
+      if (adminMode) {
+        // Admin kann Bezugsperson ändern
+        const options = CORE.map(c => `<option value="${c}" ${currentRef === c ? 'selected' : ''}>${c}</option>`).join('');
+        refHtml = `<select class="ref-select" onchange="setGuestReference('${p}', this.value)" onclick="event.stopPropagation()">
+          <option value="">Bezug...</option>${options}
+        </select>`;
+      } else if (currentRef) {
+        // Normale Anzeige der Bezugsperson
+        refHtml = `<span class="ref-badge">${currentRef}</span>`;
+      }
+    }
+
     let rhtml = `<tr class="${hdClass}"><th style="text-align:left">
       <div class="person-cell"${personTitle} onclick="personCellClick('${p}')">
-        ${ring(xpVal,p)}<div class="p-info"><div class="p-name">${p}${hdStatusIcon}${hdBadge}</div></div>
+        ${ring(xpVal,p)}<div class="p-info"><div class="p-name">${p}${hdStatusIcon}${hdBadge}${refHtml}</div></div>
       </div></th>`;
     columnOrder.forEach(dr=>{
       if(prices[dr]!==undefined){
