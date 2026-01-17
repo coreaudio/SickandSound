@@ -48,10 +48,16 @@
     /* Sticky Header */
     .card.table-wrap thead th{
       position: sticky;
-      top: var(--sticky-top);
+      top: 0;
       z-index: 2;
       background: #111827; /* dunkler Hintergrund für Lesbarkeit */
       box-shadow: 0 2px 0 rgba(0,0,0,.25);
+    }
+
+    /* Tabelle Container mit eigenem Scroll */
+    .card.table-wrap {
+      max-height: calc(100vh - 280px);
+      overflow-y: auto;
     }
 
     /* Hausdienst-Badge */
@@ -644,7 +650,7 @@ function buildTable(){
   const core=CORE.filter(n=>people.includes(n));
   const guests=people.filter(n=>!CORE.includes(n)).sort((a,b)=>a.localeCompare(b));
 
-  let html = `<table><thead><tr><th style="min-width:240px;text-align:left">Person</th>`;
+  let html = `<table><thead><tr><th style="min-width:180px;text-align:left">Person</th>`;
   columnOrder.forEach(drink=>{
     if(prices[drink]!==undefined){
       const delTitle = deleteMode ? ` title="Zum Löschen tippen"` : '';
@@ -729,13 +735,13 @@ function buildTable(){
 
   /* Kernteam */
   if(core.length){
-    html += `<tr class="section-row"><td colspan="${columnOrder.length + (correctionMode ? 2 : 1)}">— Kernteam —</td></tr>`;
+    html += `<tr class="section-row"><td colspan="${columnOrder.length + (correctionMode ? 3 : 2)}">— Kernteam —</td></tr>`;
     core.forEach(p=> html += row(p));
   }
 
   /* Gäste immer anzeigen */
   if(guests.length){
-    html += `<tr class="section-row"><td colspan="${columnOrder.length + (correctionMode ? 2 : 1)}">— Gäste —</td></tr>`;
+    html += `<tr class="section-row"><td colspan="${columnOrder.length + (correctionMode ? 3 : 2)}">— Gäste —</td></tr>`;
     guests.forEach(p=> html += row(p));
   }
 
