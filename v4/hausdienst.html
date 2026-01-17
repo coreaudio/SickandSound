@@ -104,15 +104,15 @@
       <div class="section-title">Heute</div>
       <div id="todayInfo" class="sub">Lade…</div>
       <div class="tabs" style="margin-top:10px">
-        <button id="tabPlan" class="tabbtn active" onclick="showTab('plan')">Planen</button>
-        <button id="tabCheck" class="tabbtn" onclick="showTab('check')">Checkliste</button>
+        <button id="tabCheck" class="tabbtn active" onclick="showTab('check')">Checkliste</button>
+        <button id="tabPlan" class="tabbtn" onclick="showTab('plan')">Planen</button>
         <button id="tabHist" class="tabbtn" onclick="showTab('history')">Historie</button>
       </div>
       <div class="sub" id="connInfo" style="margin-top:6px"><span class="statusdot" id="dot"></span><span id="connTxt">Verbinde…</span></div>
     </div>
 
     <!-- Panel: Planen -->
-    <div id="panelPlan" class="panel active">
+    <div id="panelPlan" class="panel">
       <!-- Admin: Rückwirkend eintragen -->
       <div class="card admin-card" id="adminPanel" style="display:none">
         <div class="section-title">Admin: Rückwirkend eintragen</div>
@@ -159,7 +159,7 @@
     </div>
 
     <!-- Panel: Checkliste -->
-    <div id="panelCheck" class="panel">
+    <div id="panelCheck" class="panel active">
       <div class="card">
         <div class="section-title">Checkliste</div>
         <div class="sub">Aufgaben sind dauerhaft gespeichert · Haken gilt nur heute</div>
@@ -314,9 +314,9 @@
       document.getElementById(map[k]).classList.toggle('active', k===key);
       document.getElementById('tab'+(k==='history'?'Hist':k.charAt(0).toUpperCase()+k.slice(1))).classList.toggle('active', k===key);
     });
-    // Hash synchronisieren (plan = leerer Hash)
+    // Hash synchronisieren (check = leerer Hash, da Checkliste der Standard ist)
     if(history.pushState){
-      const h = key==='plan' ? '' : '#'+key;
+      const h = key==='check' ? '' : '#'+key;
       history.replaceState(null,'', location.pathname + (h? h : ''));
     }
 
@@ -333,7 +333,7 @@
       const hash=(location.hash||'').replace('#','');
       if(['check','history','plan'].includes(hash)) t = hash;
     }
-    showTab(t || 'plan');
+    showTab(t || 'check');
   }
   window.addEventListener('hashchange', pickTabFromQuery);
 
