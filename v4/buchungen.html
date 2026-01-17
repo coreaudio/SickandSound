@@ -890,15 +890,19 @@
   // --- Initialisierung ---
   (function init() {
     try {
-      firebase.initializeApp(firebaseConfig);
+      // Prüfen ob Firebase bereits initialisiert ist
+      if (!firebase.apps.length) {
+        firebase.initializeApp(firebaseConfig);
+      }
       db = firebase.firestore();
-      try { 
-        db.settings({ experimentalAutoDetectLongPolling: true, merge: true }); 
+      try {
+        db.settings({ experimentalAutoDetectLongPolling: true, merge: true });
       } catch(_) {}
-      
+
       document.getElementById('dot').classList.add('statusok');
       document.getElementById('connTxt').textContent = 'Online (Firestore verbunden)';
     } catch(e) {
+      console.error('Firebase Init Fehler:', e);
       document.getElementById('connTxt').textContent = 'Offline – Firebase konnte nicht initialisiert werden.';
       db = null;
     }
@@ -910,13 +914,18 @@
         prices = s.prices || {};
         people = s.people || [];
         render();
+      }, error => {
+        // Fehler beim Laden - Fallback auf localStorage
+        console.error('Firestore Fehler:', error);
+        bookings = JSON.parse(localStorage.getItem('sick_sound_bookings') || '[]');
+        render();
       });
     } else {
       // Offline-Modus
       bookings = JSON.parse(localStorage.getItem('sick_sound_bookings') || '[]');
       render();
     }
-    
+
     // Event-Listener für Klicks außerhalb von Modals
     document.addEventListener('click', function(event) {
       if (event.target.classList.contains('modal')) {
