@@ -37,12 +37,13 @@
     .statusok{background:#7CFC9A}
 
     /* Drag & Drop */
-    .task-row { cursor: grab; transition: background 0.2s, transform 0.2s; }
+    .task-row { cursor: grab; transition: background 0.2s, transform 0.2s; user-select: none; -webkit-user-select: none; }
     .task-row:active { cursor: grabbing; }
-    .task-row.dragging { opacity: 0.5; background: #2a3042; }
-    .task-row.drag-over { border-top: 2px solid #6ee7ff; }
-    .drag-handle { cursor: grab; padding: 0 8px; opacity: 0.5; }
+    .task-row.dragging { opacity: 0.5; background: #2a3042; transform: scale(1.02); }
+    .task-row.drag-over { border-top: 3px solid #6ee7ff; }
+    .drag-handle { cursor: grab; padding: 0 8px; opacity: 0.5; touch-action: none; }
     .drag-handle:hover { opacity: 1; }
+    .task-row.touch-dragging { position: relative; z-index: 100; background: #2a3042; box-shadow: 0 4px 12px rgba(0,0,0,0.4); }
 
     /* Bewertungssystem */
     .rating-section { margin-top: 15px; padding: 15px; background: #1c2130; border-radius: 12px; border: 1px solid #2a3042; }
@@ -258,9 +259,11 @@
 <script src="https://www.gstatic.com/firebasejs/12.0.0/firebase-analytics-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/12.0.0/firebase-firestore-compat.js"></script>
 <script>
-  const CORE=["Chris","Daniel","Elmi","Florian","Joel","Kevin","Kiste","Marco","Meli","Simon"];
+  const DEFAULT_CORE=["Chris","Daniel","Elmi","Florian","Joel","Kevin","Kiste","Marco","Meli","Simon"];
+  let CORE=[...DEFAULT_CORE]; // Wird dynamisch aus Firebase geladen
   const ADMIN_PASSWORD = "1379";
   let adminMode = false;
+  const STATE_COLLECTION = location.search.includes("beta") ? "state_beta" : "state";
 
   /* ✅ Richtiges Firebase-Config für sickandsound-8a15f */
   const firebaseConfig = {
@@ -622,7 +625,7 @@
     }
   }
 
-  // Drag & Drop Funktionen
+  // Drag & Drop Funktionen (Desktop)
   function handleDragStart(e, taskId) {
     draggedTaskId = taskId;
     e.target.classList.add('dragging');
@@ -653,9 +656,85 @@
   async function handleDrop(e, targetTaskId) {
     e.preventDefault();
     if (!draggedTaskId || draggedTaskId === targetTaskId) return;
+    await reorderTasks(draggedTaskId, targetTaskId);
+  }
 
-    const draggedIndex = _tasks.findIndex(t => t.id === draggedTaskId);
-    const targetIndex = _tasks.findIndex(t => t.id === targetTaskId);
+  // Touch Drag & Drop (Mobile/Tablet)
+  let touchDraggedRow = null;
+  let touchDraggedTaskId = null;
+  let touchStartY = 0;
+  let touchCurrentY = 0;
+  let longPressTimer = null;
+  let isDragging = false;
+
+  function handleTouchStart(e, taskId) {
+    const touch = e.touches[0];
+    touchStartY = touch.clientY;
+    touchDraggedTaskId = taskId;
+    touchDraggedRow = e.target.closest('.task-row');
+
+    // Long-press zum Starten des Drag
+    longPressTimer = setTimeout(() => {
+      if (touchDraggedRow) {
+        isDragging = true;
+        touchDraggedRow.classList.add('touch-dragging');
+        // Vibration für Feedback (falls unterstützt)
+        if (navigator.vibrate) navigator.vibrate(50);
+      }
+    }, 300);
+  }
+
+  function handleTouchMove(e) {
+    if (!isDragging || !touchDraggedRow) return;
+
+    e.preventDefault();
+    const touch = e.touches[0];
+    touchCurrentY = touch.clientY;
+
+    // Finde das Element unter dem Finger
+    const elementBelow = document.elementFromPoint(touch.clientX, touch.clientY);
+    const rowBelow = elementBelow?.closest('.task-row');
+
+    // Highlight des Ziel-Elements
+    document.querySelectorAll('.task-row').forEach(r => r.classList.remove('drag-over'));
+    if (rowBelow && rowBelow !== touchDraggedRow) {
+      rowBelow.classList.add('drag-over');
+    }
+  }
+
+  async function handleTouchEnd(e) {
+    clearTimeout(longPressTimer);
+
+    if (!isDragging) {
+      touchDraggedRow = null;
+      touchDraggedTaskId = null;
+      return;
+    }
+
+    // Finde das Ziel-Element
+    const touch = e.changedTouches[0];
+    const elementBelow = document.elementFromPoint(touch.clientX, touch.clientY);
+    const rowBelow = elementBelow?.closest('.task-row');
+    const targetTaskId = rowBelow?.dataset?.taskid;
+
+    // Aufräumen
+    if (touchDraggedRow) touchDraggedRow.classList.remove('touch-dragging');
+    document.querySelectorAll('.task-row').forEach(r => r.classList.remove('drag-over'));
+
+    // Neu ordnen wenn gültiges Ziel
+    if (targetTaskId && targetTaskId !== touchDraggedTaskId) {
+      await reorderTasks(touchDraggedTaskId, targetTaskId);
+    }
+
+    touchDraggedRow = null;
+    touchDraggedTaskId = null;
+    isDragging = false;
+  }
+
+  // Gemeinsame Funktion zum Neuordnen
+  async function reorderTasks(fromTaskId, toTaskId) {
+    const draggedIndex = _tasks.findIndex(t => t.id === fromTaskId);
+    const targetIndex = _tasks.findIndex(t => t.id === toTaskId);
     if (draggedIndex === -1 || targetIndex === -1) return;
 
     // Array neu ordnen
@@ -693,16 +772,19 @@
     }
     const rows = arr.map(t=>{
       const isDone = !!checked[t.id];
-      return `<tr class="task-row" draggable="true"
+      return `<tr class="task-row" draggable="true" data-taskid="${t.id}"
         ondragstart="handleDragStart(event, '${t.id}')"
         ondragend="handleDragEnd(event)"
         ondragover="handleDragOver(event)"
         ondragleave="handleDragLeave(event)"
-        ondrop="handleDrop(event, '${t.id}')">
+        ondrop="handleDrop(event, '${t.id}')"
+        ontouchstart="handleTouchStart(event, '${t.id}')"
+        ontouchmove="handleTouchMove(event)"
+        ontouchend="handleTouchEnd(event)">
         <td style="width:24px" class="drag-handle">⠿</td>
-        <td style="width:32px"><input type="checkbox" ${isDone?'checked':''} onclick="toggleCheck('${t.id}')"></td>
+        <td style="width:32px"><input type="checkbox" ${isDone?'checked':''} onclick="event.stopPropagation(); toggleCheck('${t.id}')"></td>
         <td>${t.text} ${t.cat!=='all'?`<span class="badge">${t.cat}</span>`:''}</td>
-        <td style="text-align:right"><button class="btn small danger" onclick="deleteTask('${t.id}')">Löschen</button></td>
+        <td style="text-align:right"><button class="btn small danger" onclick="event.stopPropagation(); deleteTask('${t.id}')">Löschen</button></td>
       </tr>`;
     }).join('');
     list.innerHTML = `<table><thead><tr><th></th><th></th><th>Aufgabe</th><th>Aktion</th></tr></thead><tbody>${rows}</tbody></table>`;
@@ -930,6 +1012,16 @@
 
   /* Initialisierung */
   async function init(){
+    // Kernteam aus Firebase laden
+    if(db) {
+      try {
+        const snap = await db.collection(STATE_COLLECTION).doc("global").get();
+        if(snap.exists && snap.data().core && Array.isArray(snap.data().core)) {
+          CORE = snap.data().core;
+        }
+      } catch(e) { console.error('Fehler beim Laden des Kernteams:', e); }
+    }
+
     renderPeopleRow();
     updateSelectionUI();
     setMode(showMode);

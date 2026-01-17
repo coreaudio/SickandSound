@@ -86,6 +86,11 @@
     .hd-status-icon { margin-left: 6px; font-size: 14px; }
     .hd-status-icon.pending { color: #ff6b6b; }
     .hd-status-icon.complete { color: #7CFC9A; }
+
+    /* Kernteam-Tags */
+    .core-tag { display: inline-flex; align-items: center; gap: 6px; padding: 6px 10px; border-radius: 8px; background: #1c2130; border: 1px solid #2a3042; }
+    .core-tag .remove-btn { cursor: pointer; color: #ff6b6b; font-weight: bold; padding: 0 4px; }
+    .core-tag .remove-btn:hover { color: #ff4444; }
   </style>
 </head>
 <body>
@@ -115,6 +120,17 @@
       <div class="cta-wrap" id="todayCta"></div>
       <div id="delInfo" class="delete-hint" style="display:none">Löschmodus aktiv: Tippe auf <b>Person</b> zum Löschen · Tippe auf <b>Spaltenkopf</b> zum Getränk löschen.</div>
       <div id="adminInfo" class="delete-hint" style="display:none">Admin-Modus aktiv: Tippe auf <b>-1 Buttons</b> zum Abziehen von Strichen.</div>
+    </div>
+
+    <!-- Admin: Kernteam verwalten -->
+    <div class="card" id="coreTeamCard" style="display:none">
+      <div class="section-title">Kernteam verwalten</div>
+      <div class="sub" style="margin-bottom:10px">Personen zum Kernteam hinzufügen oder entfernen</div>
+      <div id="coreTeamList" style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px"></div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
+        <input type="text" id="newCoreMember" placeholder="Neues Mitglied..." style="flex:1;min-width:150px;padding:8px 12px;border-radius:8px;border:1px solid #2a3042;background:#0e1422;color:#fff">
+        <button class="btn small" onclick="addCoreMember()">Hinzufügen</button>
+      </div>
     </div>
 
     <div class="card table-wrap" id="tableContainer"></div>
@@ -212,7 +228,8 @@
 
 <script>
 /* ===== Config ===== */
-const CORE = ["Chris","Daniel","Elmi","Florian","Joel","Kevin","Kiste","Marco","Meli","Simon"];
+const DEFAULT_CORE = ["Chris","Daniel","Elmi","Florian","Joel","Kevin","Kiste","Marco","Meli","Simon"];
+let CORE = [...DEFAULT_CORE]; // Wird dynamisch aus Firebase geladen
 const ADMIN_PASSWORD = "1379"; // Einfaches Admin-Passwort
 
 // Firebase sickandsound-8a15f
@@ -329,6 +346,10 @@ async function loadState(){
         prices=s.prices||prices; people=s.people||JSON.parse(localStorage.getItem(peopleKey))||[];
         data=s.data||data; history=s.history||history; redoStack=s.redoStack||JSON.parse(localStorage.getItem(redoKey))||[];
         bookings=s.bookings||bookings; columnOrder=s.columnOrder||Object.keys(prices); xp=s.xp||xp;
+        // Kernteam aus Firebase laden
+        if(s.core && Array.isArray(s.core) && s.core.length > 0) {
+          CORE = s.core;
+        }
       }else{
         people=JSON.parse(localStorage.getItem(peopleKey))||[];
         redoStack=JSON.parse(localStorage.getItem(redoKey))||[];
@@ -393,8 +414,13 @@ function subscribeRealtime(){
     const s=snap.data();
     prices=s.prices||prices; people=s.people||people; data=s.data||data; history=s.history||history;
     redoStack=s.redoStack||redoStack; bookings=s.bookings||bookings; columnOrder=s.columnOrder||columnOrder; xp=s.xp||xp;
+    // Kernteam aus Firebase laden
+    if(s.core && Array.isArray(s.core) && s.core.length > 0) {
+      CORE = s.core;
+    }
     CORE.forEach(n=>{ if(!people.includes(n)) people.push(n); });
     buildTable(); updateTodayBanner(); updateUndoRedoButtons();
+    if(adminMode) renderCoreTeamList();
   });
   db.collection("hausdienst").doc(todayStr()).onSnapshot(doc=>{
     if (doc && doc.exists) {
@@ -510,22 +536,81 @@ function toggleAdminMode(){
     document.body.classList.remove('admin-mode');
     document.getElementById('adminIndicator').style.display = 'none';
     document.getElementById('adminInfo').style.display = 'none';
+    document.getElementById('coreTeamCard').style.display = 'none';
     document.getElementById('adminBtn').textContent = '🔧';
     buildTable();
     return;
   }
-  
+
   const password = prompt("Admin-Passwort eingeben:");
   if (password === ADMIN_PASSWORD) {
     adminMode = true;
     document.body.classList.add('admin-mode');
     document.getElementById('adminIndicator').style.display = 'inline-block';
     document.getElementById('adminInfo').style.display = 'block';
+    document.getElementById('coreTeamCard').style.display = 'block';
     document.getElementById('adminBtn').textContent = '🔧✓';
+    renderCoreTeamList();
     buildTable();
   } else {
     alert("Falsches Passwort");
     sError.play();
+  }
+}
+
+/* Kernteam-Verwaltung */
+function renderCoreTeamList() {
+  const container = document.getElementById('coreTeamList');
+  container.innerHTML = CORE.map(name => `
+    <span class="core-tag">
+      ${name}
+      <span class="remove-btn" onclick="removeCoreMember('${name}')" title="Entfernen">×</span>
+    </span>
+  `).join('');
+}
+
+function addCoreMember() {
+  const input = document.getElementById('newCoreMember');
+  const name = input.value.trim();
+
+  if (!name) {
+    alert('Bitte einen Namen eingeben');
+    return;
+  }
+
+  if (CORE.includes(name)) {
+    alert('Diese Person ist bereits im Kernteam');
+    return;
+  }
+
+  CORE.push(name);
+  CORE.sort((a, b) => a.localeCompare(b));
+
+  // Auch zu people hinzufügen falls noch nicht vorhanden
+  if (!people.includes(name)) {
+    people.push(name);
+  }
+
+  saveCoreTeam();
+  renderCoreTeamList();
+  buildTable();
+  input.value = '';
+}
+
+function removeCoreMember(name) {
+  if (!confirm(`"${name}" wirklich aus dem Kernteam entfernen?`)) return;
+
+  CORE = CORE.filter(n => n !== name);
+  saveCoreTeam();
+  renderCoreTeamList();
+  buildTable();
+}
+
+function saveCoreTeam() {
+  localStorage.setItem('sick_sound_core', JSON.stringify(CORE));
+  if (db) {
+    db.collection(STATE_COLLECTION).doc('global').set({ core: CORE }, { merge: true })
+      .catch(e => console.error('Fehler beim Speichern des Kernteams:', e));
   }
 }
 

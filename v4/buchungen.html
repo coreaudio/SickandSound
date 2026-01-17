@@ -325,7 +325,8 @@
 <script src="https://www.gstatic.com/firebasejs/12.0.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/12.0.0/firebase-firestore-compat.js"></script>
 <script>
-  const CORE = ["Chris","Daniel","Elmi","Florian","Joel","Kevin","Kiste","Marco","Meli","Simon"];
+  const DEFAULT_CORE = ["Chris","Daniel","Elmi","Florian","Joel","Kevin","Kiste","Marco","Meli","Simon"];
+  let CORE = [...DEFAULT_CORE]; // Wird dynamisch aus Firebase geladen
   const ADMIN_PASSWORD = "1379"; // Einfaches Admin-Passwort
   
   const firebaseConfig = {
@@ -913,6 +914,10 @@
         bookings = Array.isArray(s.bookings) ? s.bookings : [];
         prices = s.prices || {};
         people = s.people || [];
+        // Kernteam aus Firebase laden
+        if(s.core && Array.isArray(s.core) && s.core.length > 0) {
+          CORE = s.core;
+        }
         render();
       }, error => {
         // Fehler beim Laden - Fallback auf localStorage
@@ -923,6 +928,7 @@
     } else {
       // Offline-Modus
       bookings = JSON.parse(localStorage.getItem('sick_sound_bookings') || '[]');
+      CORE = JSON.parse(localStorage.getItem('sick_sound_core') || JSON.stringify(DEFAULT_CORE));
       render();
     }
 

@@ -136,7 +136,8 @@
 <script src="https://www.gstatic.com/firebasejs/12.0.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/12.0.0/firebase-firestore-compat.js"></script>
 <script>
-  const CORE=["Chris","Daniel","Elmi","Florian","Joel","Kevin","Kiste","Marco","Meli","Simon"];
+  const DEFAULT_CORE=["Chris","Daniel","Elmi","Florian","Joel","Kevin","Kiste","Marco","Meli","Simon"];
+  let CORE=[...DEFAULT_CORE]; // Wird dynamisch aus Firebase geladen
   const ADMIN_PASSWORD = "1379"; // Admin-Passwort
   
   const firebaseConfig = {
@@ -380,7 +381,9 @@
 
   (async function init(){
     try{
-      firebase.initializeApp(firebaseConfig);
+      if (!firebase.apps.length) {
+        firebase.initializeApp(firebaseConfig);
+      }
       db = firebase.firestore();
       try{ db.settings({ experimentalAutoDetectLongPolling:true, merge:true }); }catch(_){}
       document.getElementById('dot').classList.add('statusok');
@@ -392,6 +395,7 @@
       data = JSON.parse(localStorage.getItem('sick_sound_data') || '{}');
       xp = JSON.parse(localStorage.getItem('sick_sound_xp') || '{}');
       people = JSON.parse(localStorage.getItem('sick_sound_people') || '[]');
+      CORE = JSON.parse(localStorage.getItem('sick_sound_core') || JSON.stringify(DEFAULT_CORE));
       render();
       return;
     }
@@ -406,6 +410,10 @@
       data   = s.data   || {};
       xp     = s.xp     || {};
       people = s.people || [];
+      // Kernteam aus Firebase laden
+      if(s.core && Array.isArray(s.core) && s.core.length > 0) {
+        CORE = s.core;
+      }
       render();
     });
 
