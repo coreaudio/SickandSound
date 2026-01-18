@@ -33,6 +33,68 @@
     .toolbar input, .toolbar select { flex:1 1 auto; min-width:160px; }
     .groupTitle { font-weight:800; letter-spacing:.2px; margin:6px 0 6px; }
 
+    /* Neues Checklisten-Design */
+    .status-header-card { padding: 16px; }
+    .status-header { display: flex; justify-content: space-between; align-items: center; }
+    .status-left { flex: 1; }
+    .status-person { font-size: 22px; font-weight: 800; }
+    .status-person.none { opacity: 0.5; font-size: 16px; }
+    .status-date { font-size: 12px; opacity: 0.6; margin-top: 2px; }
+
+    /* Progress Ring */
+    .progress-ring { width: 70px; height: 70px; position: relative; }
+    .progress-ring svg { transform: rotate(-90deg); width: 100%; height: 100%; }
+    .ring-bg { fill: none; stroke: #2a3042; stroke-width: 3; }
+    .ring-fill { fill: none; stroke: url(#progressGradient); stroke-width: 3; stroke-linecap: round; transition: stroke-dasharray 0.3s; }
+    .progress-text { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 800; }
+    .progress-ring.done .ring-fill { stroke: #7CFC9A; }
+    .progress-ring.done .progress-text { color: #7CFC9A; }
+
+    /* Task-Liste */
+    .task-card { padding: 0; overflow: hidden; }
+    .task-header { padding: 12px 16px; border-bottom: 1px solid #2a3042; background: #151a23; }
+    .hide-done-toggle { display: flex; align-items: center; gap: 8px; font-size: 13px; cursor: pointer; opacity: 0.8; }
+    .hide-done-toggle input { width: 18px; height: 18px; cursor: pointer; }
+    .task-list { max-height: calc(100vh - 420px); overflow-y: auto; }
+
+    /* Einzelne Task */
+    .task-item { display: flex; align-items: center; padding: 14px 16px; border-bottom: 1px solid #1c2130; transition: background 0.2s; }
+    .task-item:last-child { border-bottom: none; }
+    .task-item:active { background: #1c2130; }
+    .task-item.done { opacity: 0.5; }
+    .task-item.done .task-text { text-decoration: line-through; }
+    .task-checkbox { width: 26px; height: 26px; border-radius: 50%; border: 2px solid #3a4052; background: transparent; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: all 0.2s; }
+    .task-checkbox:hover { border-color: #6ee7ff; }
+    .task-checkbox.checked { background: linear-gradient(135deg, #6ee7ff, #7CFC9A); border-color: transparent; }
+    .task-checkbox.checked::after { content: '✓'; color: #0b0e14; font-weight: 800; font-size: 14px; }
+    .task-content { flex: 1; margin-left: 12px; min-width: 0; }
+    .task-text { font-size: 15px; line-height: 1.3; }
+    .task-cat { font-size: 11px; opacity: 0.5; margin-top: 2px; }
+    .task-actions { display: flex; gap: 4px; margin-left: 8px; opacity: 0; transition: opacity 0.2s; }
+    .task-item:hover .task-actions { opacity: 1; }
+    @media (pointer: coarse) { .task-actions { opacity: 1; } }
+    .task-action-btn { width: 32px; height: 32px; border-radius: 8px; border: none; background: transparent; color: #6ee7ff; cursor: pointer; font-size: 14px; }
+    .task-action-btn:hover { background: rgba(110, 231, 255, 0.1); }
+    .task-action-btn.delete { color: #ff6b6b; }
+    .task-action-btn.delete:hover { background: rgba(255, 107, 107, 0.1); }
+
+    /* Aufgabe hinzufügen */
+    .add-task-card { padding: 12px 16px; }
+    .add-task-row { display: flex; gap: 10px; }
+    .add-task-row input { flex: 1; padding: 12px 14px; border-radius: 10px; border: 1px solid #2a3042; background: #0e1422; color: #e6e8ef; font-size: 15px; }
+    .add-task-row input:focus { border-color: #6ee7ff; outline: none; }
+    .add-btn { width: 46px; height: 46px; border-radius: 10px; font-size: 24px; font-weight: 400; padding: 0; }
+
+    /* Complete Button */
+    .complete-btn { width: 100%; padding: 14px; font-size: 15px; }
+    .complete-btn:disabled { background: #2a3042; color: #666; cursor: not-allowed; opacity: 0.6; }
+    .complete-btn.done { background: #7CFC9A; pointer-events: none; }
+
+    /* Edit Task Modal */
+    .edit-task-input { width: 100%; padding: 12px; border-radius: 8px; border: 1px solid #2a3042; background: #0e1422; color: #e6e8ef; font-size: 15px; margin-bottom: 10px; }
+    .edit-task-input:focus { border-color: #6ee7ff; outline: none; }
+    .edit-task-select { width: 100%; padding: 12px; border-radius: 8px; border: 1px solid #2a3042; background: #0e1422; color: #e6e8ef; font-size: 14px; margin-bottom: 15px; }
+
     .statusdot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px;background:#ffadad}
     .statusok{background:#7CFC9A}
 
@@ -225,55 +287,56 @@
 
     <!-- Panel: Checkliste -->
     <div id="panelCheck" class="panel active">
-      <div class="card">
-        <div class="section-title">Checkliste</div>
-        <div class="sub">Aufgaben sind dauerhaft gespeichert · Haken gilt nur heute</div>
-
-        <div id="catTabs" class="segmented" style="margin-top:10px"></div>
-
-        <div class="toolbar">
-          <input id="newTask" placeholder="Neue Aufgabe hinzufügen…">
-          <select id="newTaskCat" title="Kategorie">
-            <option value="morgens">Morgens</option>
-            <option value="tag">Im Laufe des Tages</option>
-            <option value="abend">Bevor man geht</option>
-          </select>
-          <button class="btn" onclick="addTask()">Hinzufügen</button>
+      <!-- Status-Header -->
+      <div class="card status-header-card">
+        <div class="status-header">
+          <div class="status-left">
+            <div class="status-person" id="hdPersonName">—</div>
+            <div class="status-date" id="hdDate"></div>
+          </div>
+          <div class="status-right">
+            <div class="progress-ring" id="progressRing">
+              <svg viewBox="0 0 36 36">
+                <defs>
+                  <linearGradient id="progressGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stop-color="#6ee7ff"/>
+                    <stop offset="100%" stop-color="#a78bfa"/>
+                  </linearGradient>
+                </defs>
+                <path class="ring-bg" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"/>
+                <path class="ring-fill" id="ringFill" stroke-dasharray="0, 100" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"/>
+              </svg>
+              <div class="progress-text" id="progressText">0/0</div>
+            </div>
+          </div>
         </div>
+        <button class="btn complete-btn" id="completeHdBtn" onclick="completeHausdienst()" disabled style="margin-top:12px">
+          ✓ Hausdienst abschließen
+        </button>
+      </div>
 
-        <div id="filters" style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px">
-          <button id="fOpen" class="btn small secondary" onclick="setMode('open')">Offen</button>
-          <button id="fDone" class="btn small ghost" onclick="setMode('done')">Erledigt</button>
-          <button id="fAll"  class="btn small ghost" onclick="setMode('all')">Alle</button>
+      <!-- Task-Liste -->
+      <div class="card task-card">
+        <div class="task-header">
+          <label class="hide-done-toggle">
+            <input type="checkbox" id="hideDone" onchange="toggleHideDone()">
+            <span>Erledigte ausblenden</span>
+          </label>
+        </div>
+        <div id="taskList" class="task-list">Lade Aufgaben…</div>
+      </div>
+
+      <!-- Aufgabe hinzufügen -->
+      <div class="card add-task-card">
+        <div class="add-task-row">
+          <input id="newTask" placeholder="Neue Aufgabe…" onkeypress="if(event.key==='Enter')addTask()">
+          <button class="btn add-btn" onclick="addTask()">+</button>
         </div>
       </div>
 
-      <div class="card table-wrap" id="list"><div class="sub">Lade Aufgaben…</div></div>
-
-      <!-- Hausdienst-Status -->
-      <div class="card" id="hdStatusCard">
-        <div class="section-title">Hausdienst-Status</div>
-        <div id="hdStatusInfo"><div class="sub">Lade Status...</div></div>
-        <div class="progress-bar"><div class="fill" id="progressFill" style="width:0%"></div></div>
-
-        <!-- Warnung wenn nicht alle Aufgaben erledigt -->
-        <div id="incompleteWarning" class="incomplete-warning" style="display:none">
-          <div class="warning-icon">⚠️</div>
-          <div class="warning-text">
-            <strong>Nicht alle Aufgaben erledigt!</strong>
-            <span id="warningDetails">Es fehlen noch X Aufgaben.</span>
-          </div>
-        </div>
-
-        <!-- Abschluss-Button -->
-        <div id="completeSection" style="margin-top:12px;display:none">
-          <button class="btn complete-btn" id="completeHdBtn" onclick="completeHausdienst()" disabled>
-            ✓ Hausdienst abschließen
-          </button>
-          <div class="sub" style="margin-top:6px;font-size:11px" id="completeHint">Alle Aufgaben müssen erledigt sein.</div>
-        </div>
-
-        <button class="btn small" style="margin-top:10px" onclick="openRatingModal()" id="openRatingBtn">Gestrigen Hausdienst bewerten</button>
+      <!-- Bewertung -->
+      <div class="card" id="ratingCard" style="display:none">
+        <button class="btn small ghost" onclick="openRatingModal()" id="openRatingBtn">⭐ Gestrigen Hausdienst bewerten</button>
       </div>
     </div>
 
@@ -315,6 +378,24 @@
       <span>Buchungen</span>
     </a>
   </nav>
+</div>
+
+<!-- Task-Bearbeiten-Modal -->
+<div class="modal" id="editTaskModal">
+  <div class="modal-box">
+    <div class="modal-title">Aufgabe bearbeiten</div>
+    <input type="text" id="editTaskText" class="edit-task-input" placeholder="Aufgabentext...">
+    <select id="editTaskCat" class="edit-task-select">
+      <option value="morgens">Morgens</option>
+      <option value="tag">Im Laufe des Tages</option>
+      <option value="abend">Bevor man geht</option>
+    </select>
+    <div class="modal-actions">
+      <button class="btn" onclick="saveTaskEdit()">Speichern</button>
+      <button class="btn danger" onclick="deleteTaskFromModal()">Löschen</button>
+      <button class="btn ghost" onclick="closeEditTaskModal()">Abbrechen</button>
+    </div>
+  </div>
 </div>
 
 <!-- Abschluss-Modal -->
@@ -642,26 +723,18 @@
   let checked = {};
   try { checked = JSON.parse(localStorage.getItem(CHECKED_KEY) || "{}"); } catch(_) { checked = {}; }
 
-  function setMode(m){
-    showMode = m;
-    localStorage.setItem("hausdienst_filter_mode", m);
+  let hideDone = localStorage.getItem("hausdienst_hideDone") === "true";
+
+  function toggleHideDone() {
+    hideDone = document.getElementById('hideDone').checked;
+    localStorage.setItem("hausdienst_hideDone", hideDone);
     renderTasks();
-    document.getElementById('fOpen').className = 'btn small ' + (m==='open'?'secondary':'ghost');
-    document.getElementById('fDone').className = 'btn small ' + (m==='done'?'secondary':'ghost');
-    document.getElementById('fAll').className  = 'btn small ' + (m==='all' ?'secondary':'ghost');
   }
 
-  function setCat(cat){
-    showCat = cat;
-    localStorage.setItem("hausdienst_cat", cat);
-    renderTasks();
-    renderCatTabs();
-  }
-
-  function renderCatTabs(){
-    const wrap=document.getElementById('catTabs');
-    wrap.innerHTML = CATS.map(c=>`<button class="tabbtn ${showCat===c.key?'active':''}" onclick="setCat('${c.key}')">${c.label}</button>`).join('');
-  }
+  // Legacy Funktionen (für Kompatibilität)
+  function setMode(m){ showMode = m; renderTasks(); }
+  function setCat(cat){ showCat = cat; renderTasks(); }
+  function renderCatTabs(){}
 
   function toggleCheck(id){
     checked[id] = !checked[id];
@@ -704,7 +777,6 @@
     if(!db) return alert("Offline – kann nicht speichern.");
     const inp=document.getElementById('newTask');
     const txt=inp.value.trim();
-    const cat=(document.getElementById('newTaskCat').value||'tag');
     if(!txt) return;
 
     // Höchsten sortOrder finden und +1 für neue Aufgabe
@@ -712,12 +784,69 @@
 
     await db.collection('hausdienst_tasks').add({
       text: txt,
-      cat,
+      cat: 'tag',
       createdAt: Date.now(),
       sortOrder: maxSortOrder + 1
     });
     inp.value='';
     await renderTasks(true);
+  }
+
+  // Task bearbeiten
+  let editingTaskId = null;
+
+  function openEditTaskModal(taskId) {
+    const task = _tasks.find(t => t.id === taskId);
+    if (!task) return;
+
+    editingTaskId = taskId;
+    document.getElementById('editTaskText').value = task.text;
+    document.getElementById('editTaskCat').value = task.cat || 'tag';
+    document.getElementById('editTaskModal').classList.add('show');
+  }
+
+  function closeEditTaskModal() {
+    document.getElementById('editTaskModal').classList.remove('show');
+    editingTaskId = null;
+  }
+
+  async function saveTaskEdit() {
+    if (!db || !editingTaskId) return;
+
+    const text = document.getElementById('editTaskText').value.trim();
+    const cat = document.getElementById('editTaskCat').value;
+
+    if (!text) {
+      alert('Bitte einen Text eingeben');
+      return;
+    }
+
+    try {
+      await db.collection('hausdienst_tasks').doc(editingTaskId).update({
+        text: text,
+        cat: cat,
+        updatedAt: Date.now()
+      });
+      closeEditTaskModal();
+      await renderTasks(true);
+    } catch(e) {
+      console.error('Fehler beim Speichern:', e);
+      alert('Fehler beim Speichern');
+    }
+  }
+
+  async function deleteTaskFromModal() {
+    if (!editingTaskId) return;
+    if (!confirm('Aufgabe wirklich löschen?')) return;
+
+    try {
+      await db.collection('hausdienst_tasks').doc(editingTaskId).delete();
+      closeEditTaskModal();
+      await renderTasks(true);
+    } catch(e) {
+      console.error('Fehler beim Löschen:', e);
+      alert('Fehler beim Löschen');
+    }
   }
 
   async function deleteTask(id){
@@ -933,42 +1062,105 @@
 
   function filteredTasks(){
     let arr = [..._tasks];
-    if(showCat!=='all') arr = arr.filter(t=>t.cat===showCat);
-    if(showMode==='open') arr = arr.filter(t=>!checked[t.id]);
-    if(showMode==='done') arr = arr.filter(t=>!!checked[t.id]);
+    if (hideDone) arr = arr.filter(t => !checked[t.id]);
     return arr;
   }
 
+  const catLabels = { morgens: 'Morgens', tag: 'Tagsüber', abend: 'Abends' };
+
   async function renderTasks(reload=false){
     if(reload) await loadTasks();
-    const list=document.getElementById('list');
+    const list = document.getElementById('taskList');
     const arr = filteredTasks();
+
+    // Checkbox-Status setzen
+    const hideCheckbox = document.getElementById('hideDone');
+    if (hideCheckbox) hideCheckbox.checked = hideDone;
+
     if(!arr.length){
-      list.innerHTML = `<div class="sub">Keine Aufgaben in dieser Ansicht.</div>`;
-      updateHdStatus();
+      list.innerHTML = `<div style="padding:30px;text-align:center;opacity:0.5">${hideDone ? 'Alle Aufgaben erledigt!' : 'Keine Aufgaben vorhanden'}</div>`;
+      updateStatusHeader();
       saveProgressToFirebase();
       return;
     }
-    const rows = arr.map(t=>{
+
+    list.innerHTML = arr.map(t => {
       const isDone = !!checked[t.id];
-      return `<tr class="task-row" draggable="true" data-taskid="${t.id}"
-        ondragstart="handleDragStart(event, '${t.id}')"
-        ondragend="handleDragEnd(event)"
-        ondragover="handleDragOver(event)"
-        ondragleave="handleDragLeave(event)"
-        ondrop="handleDrop(event, '${t.id}')"
-        ontouchstart="handleTouchStart(event, '${t.id}')"
-        ontouchmove="handleTouchMove(event)"
-        ontouchend="handleTouchEnd(event)">
-        <td style="width:24px" class="drag-handle">⠿</td>
-        <td style="width:32px"><input type="checkbox" ${isDone?'checked':''} onclick="event.stopPropagation(); toggleCheck('${t.id}')"></td>
-        <td>${t.text} ${t.cat!=='all'?`<span class="badge">${t.cat}</span>`:''}</td>
-        <td style="text-align:right"><button class="btn small danger" onclick="event.stopPropagation(); deleteTask('${t.id}')">Löschen</button></td>
-      </tr>`;
+      return `
+        <div class="task-item ${isDone ? 'done' : ''}" data-taskid="${t.id}">
+          <div class="task-checkbox ${isDone ? 'checked' : ''}" onclick="toggleCheck('${t.id}')"></div>
+          <div class="task-content" onclick="toggleCheck('${t.id}')">
+            <div class="task-text">${t.text}</div>
+            <div class="task-cat">${catLabels[t.cat] || t.cat}</div>
+          </div>
+          <div class="task-actions">
+            <button class="task-action-btn" onclick="openEditTaskModal('${t.id}')" title="Bearbeiten">✏️</button>
+          </div>
+        </div>
+      `;
     }).join('');
-    list.innerHTML = `<table><thead><tr><th></th><th></th><th>Aufgabe</th><th>Aktion</th></tr></thead><tbody>${rows}</tbody></table>`;
-    updateHdStatus();
+
+    updateStatusHeader();
     saveProgressToFirebase();
+  }
+
+  function updateStatusHeader() {
+    const totalTasks = _tasks.length;
+    const doneTasks = _tasks.filter(t => checked[t.id]).length;
+    const progress = totalTasks > 0 ? Math.round((doneTasks / totalTasks) * 100) : 0;
+    const allDone = doneTasks === totalTasks && totalTasks > 0;
+
+    // Person und Datum
+    const personEl = document.getElementById('hdPersonName');
+    const dateEl = document.getElementById('hdDate');
+    if (personEl) {
+      if (todayPerson) {
+        personEl.textContent = todayPerson;
+        personEl.classList.remove('none');
+      } else {
+        personEl.textContent = 'Kein Hausdienst eingetragen';
+        personEl.classList.add('none');
+      }
+    }
+    if (dateEl) {
+      const today = new Date();
+      dateEl.textContent = today.toLocaleDateString('de-DE', { weekday: 'long', day: 'numeric', month: 'long' });
+    }
+
+    // Progress Ring
+    const ringFill = document.getElementById('ringFill');
+    const progressText = document.getElementById('progressText');
+    const progressRing = document.getElementById('progressRing');
+    if (ringFill) ringFill.setAttribute('stroke-dasharray', `${progress}, 100`);
+    if (progressText) progressText.textContent = `${doneTasks}/${totalTasks}`;
+    if (progressRing) progressRing.classList.toggle('done', allDone || hdTodayCompleted);
+
+    // Complete Button
+    const completeBtn = document.getElementById('completeHdBtn');
+    if (completeBtn) {
+      if (hdTodayCompleted) {
+        completeBtn.textContent = '✓ Abgeschlossen';
+        completeBtn.disabled = true;
+        completeBtn.classList.add('done');
+      } else if (allDone && todayPerson) {
+        completeBtn.textContent = '✓ Hausdienst abschließen';
+        completeBtn.disabled = false;
+        completeBtn.classList.remove('done');
+      } else {
+        completeBtn.textContent = `Noch ${totalTasks - doneTasks} Aufgaben offen`;
+        completeBtn.disabled = true;
+        completeBtn.classList.remove('done');
+      }
+
+      // Verstecken wenn kein Hausdienst
+      completeBtn.style.display = todayPerson ? 'block' : 'none';
+    }
+
+    // Rating Card anzeigen wenn gestern jemand Hausdienst hatte
+    const ratingCard = document.getElementById('ratingCard');
+    if (ratingCard) {
+      ratingCard.style.display = (yesterdayPerson && todayPerson) ? 'block' : 'none';
+    }
   }
 
   /* Bewertungssystem */
@@ -1108,90 +1300,9 @@
     }
   }
 
+  // Alias für Kompatibilität
   function updateHdStatus() {
-    const statusInfo = document.getElementById('hdStatusInfo');
-    const progressFill = document.getElementById('progressFill');
-    const ratingBtn = document.getElementById('openRatingBtn');
-    const warningEl = document.getElementById('incompleteWarning');
-    const warningDetails = document.getElementById('warningDetails');
-    const completeSection = document.getElementById('completeSection');
-    const completeBtn = document.getElementById('completeHdBtn');
-    const completeHint = document.getElementById('completeHint');
-
-    const totalTasks = _tasks.length;
-    const doneTasks = _tasks.filter(t => checked[t.id]).length;
-    const remainingTasks = totalTasks - doneTasks;
-    const progress = totalTasks > 0 ? Math.round((doneTasks / totalTasks) * 100) : 0;
-    const allDone = remainingTasks === 0 && totalTasks > 0;
-
-    progressFill.style.width = progress + '%';
-    // Fortschrittsbalken-Farbe ändern basierend auf Status
-    progressFill.style.background = allDone
-      ? 'linear-gradient(90deg, #7CFC9A, #6ee7ff)'
-      : (progress < 50 ? 'linear-gradient(90deg, #ff6b6b, #ff9f43)' : 'linear-gradient(90deg, #ff9f43, #6ee7ff)');
-
-    // Bewertungs-Button aktualisieren
-    if (ratingBtn) {
-      if (!todayPerson || !yesterdayPerson) {
-        ratingBtn.style.display = 'none';
-      } else if (existingRatingData) {
-        const stars = '★'.repeat(existingRatingData.rating) + '☆'.repeat(5 - existingRatingData.rating);
-        ratingBtn.innerHTML = `✎ Bewertung bearbeiten <span style="color:#ffd700;margin-left:6px">${stars}</span>`;
-        ratingBtn.disabled = false;
-        ratingBtn.className = 'btn small secondary';
-        ratingBtn.style.display = 'inline-block';
-      } else {
-        ratingBtn.textContent = `${yesterdayPerson}s Hausdienst bewerten`;
-        ratingBtn.disabled = false;
-        ratingBtn.className = 'btn small';
-        ratingBtn.style.display = 'inline-block';
-      }
-    }
-
-    // Kein Hausdienst eingetragen
-    if (!todayPerson) {
-      statusInfo.innerHTML = `
-        <div class="hd-status pending">○ Kein Hausdienst eingetragen</div>
-        <div class="sub" style="margin-top:6px">${doneTasks}/${totalTasks} Aufgaben erledigt (${progress}%)</div>
-      `;
-      warningEl.style.display = 'none';
-      completeSection.style.display = 'none';
-      return;
-    }
-
-    // Status-Anzeige
-    let statusHtml = `<div class="sub" style="margin-bottom:6px">Heute: <b>${todayPerson}</b></div>`;
-    statusHtml += `<div class="sub" style="margin-top:6px">${doneTasks}/${totalTasks} Aufgaben erledigt (${progress}%)</div>`;
-    statusInfo.innerHTML = statusHtml;
-
-    // Warnung und Abschluss-Bereich
-    completeSection.style.display = 'block';
-
-    if (hdTodayCompleted) {
-      // Bereits abgeschlossen
-      warningEl.style.display = 'none';
-      completeBtn.disabled = true;
-      completeBtn.textContent = '✓ Hausdienst abgeschlossen';
-      completeBtn.classList.add('completed');
-      completeHint.textContent = 'Der Hausdienst wurde bereits als erledigt markiert.';
-    } else if (allDone) {
-      // Alle Aufgaben erledigt - kann abschließen
-      warningEl.style.display = 'none';
-      completeBtn.disabled = false;
-      completeBtn.textContent = '✓ Hausdienst abschließen';
-      completeBtn.classList.remove('completed');
-      completeHint.textContent = 'Alle Aufgaben erledigt! Jetzt kannst du abschließen.';
-      completeHint.style.color = '#7CFC9A';
-    } else {
-      // Noch offene Aufgaben - Warnung zeigen
-      warningEl.style.display = 'flex';
-      warningDetails.textContent = `Es ${remainingTasks === 1 ? 'fehlt noch 1 Aufgabe' : `fehlen noch ${remainingTasks} Aufgaben`}.`;
-      completeBtn.disabled = true;
-      completeBtn.textContent = '✓ Hausdienst abschließen';
-      completeBtn.classList.remove('completed');
-      completeHint.textContent = 'Alle Aufgaben müssen erledigt sein, um den Hausdienst abzuschließen.';
-      completeHint.style.color = '';
-    }
+    updateStatusHeader();
   }
 
   // Hausdienst als abgeschlossen markieren
