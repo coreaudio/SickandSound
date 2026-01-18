@@ -57,26 +57,32 @@
     .hide-done-toggle input { width: 18px; height: 18px; cursor: pointer; }
     .task-list { max-height: calc(100vh - 420px); overflow-y: auto; }
 
+    /* Kategorie-Gruppen */
+    .task-group { margin-bottom: 0; }
+    .task-group-header { padding: 10px 16px 6px; font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; color: #6ee7ff; background: #151a23; position: sticky; top: 0; z-index: 1; }
+
     /* Einzelne Task */
-    .task-item { display: flex; align-items: center; padding: 14px 16px; border-bottom: 1px solid #1c2130; transition: background 0.2s; }
-    .task-item:last-child { border-bottom: none; }
-    .task-item:active { background: #1c2130; }
+    .task-item { display: flex; align-items: center; padding: 14px 16px; border-bottom: 1px solid #1c2130; transition: background 0.2s, transform 0.2s; cursor: grab; }
+    .task-item:active { cursor: grabbing; }
     .task-item.done { opacity: 0.5; }
     .task-item.done .task-text { text-decoration: line-through; }
+    .task-item.dragging { opacity: 0.5; background: #2a3042; transform: scale(1.02); }
+    .task-item.drag-over { border-top: 3px solid #6ee7ff; }
+    .task-item.touch-dragging { position: relative; z-index: 100; background: #2a3042; box-shadow: 0 4px 12px rgba(0,0,0,0.4); }
+    .drag-handle { padding: 8px; margin-right: 4px; opacity: 0.4; cursor: grab; font-size: 16px; touch-action: none; }
+    .task-item:hover .drag-handle { opacity: 0.8; }
+    @media (pointer: coarse) { .drag-handle { opacity: 0.6; padding: 10px; } }
     .task-checkbox { width: 26px; height: 26px; border-radius: 50%; border: 2px solid #3a4052; background: transparent; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: all 0.2s; }
     .task-checkbox:hover { border-color: #6ee7ff; }
     .task-checkbox.checked { background: linear-gradient(135deg, #6ee7ff, #7CFC9A); border-color: transparent; }
     .task-checkbox.checked::after { content: '✓'; color: #0b0e14; font-weight: 800; font-size: 14px; }
-    .task-content { flex: 1; margin-left: 12px; min-width: 0; }
+    .task-content { flex: 1; margin-left: 12px; min-width: 0; cursor: pointer; }
     .task-text { font-size: 15px; line-height: 1.3; }
-    .task-cat { font-size: 11px; opacity: 0.5; margin-top: 2px; }
     .task-actions { display: flex; gap: 4px; margin-left: 8px; opacity: 0; transition: opacity 0.2s; }
     .task-item:hover .task-actions { opacity: 1; }
     @media (pointer: coarse) { .task-actions { opacity: 1; } }
     .task-action-btn { width: 32px; height: 32px; border-radius: 8px; border: none; background: transparent; color: #6ee7ff; cursor: pointer; font-size: 14px; }
     .task-action-btn:hover { background: rgba(110, 231, 255, 0.1); }
-    .task-action-btn.delete { color: #ff6b6b; }
-    .task-action-btn.delete:hover { background: rgba(255, 107, 107, 0.1); }
 
     /* Aufgabe hinzufügen */
     .add-task-card { padding: 12px 16px; }
@@ -99,10 +105,10 @@
     .statusok{background:#7CFC9A}
 
     /* Drag & Drop */
-    .task-row { cursor: grab; transition: background 0.2s, transform 0.2s; user-select: none; -webkit-user-select: none; }
-    .task-row:active { cursor: grabbing; }
-    .task-row.dragging { opacity: 0.5; background: #2a3042; transform: scale(1.02); }
-    .task-row.drag-over { border-top: 3px solid #6ee7ff; }
+    .task-item { cursor: grab; transition: background 0.2s, transform 0.2s; user-select: none; -webkit-user-select: none; }
+    .task-item:active { cursor: grabbing; }
+    .task-item.dragging { opacity: 0.5; background: #2a3042; transform: scale(1.02); }
+    .task-item.drag-over { border-top: 3px solid #6ee7ff; }
     .drag-handle {
       cursor: grab;
       padding: 8px 12px;
@@ -121,7 +127,7 @@
         background: rgba(110, 231, 255, 0.05);
       }
     }
-    .task-row.touch-dragging { position: relative; z-index: 100; background: #2a3042; box-shadow: 0 4px 12px rgba(0,0,0,0.4); }
+    .task-item.touch-dragging { position: relative; z-index: 100; background: #2a3042; box-shadow: 0 4px 12px rgba(0,0,0,0.4); }
 
     /* Bewertungssystem */
     .rating-section { margin-top: 15px; padding: 15px; background: #1c2130; border-radius: 12px; border: 1px solid #2a3042; }
@@ -910,22 +916,22 @@
 
   function handleDragEnd(e) {
     e.target.classList.remove('dragging');
-    document.querySelectorAll('.task-row').forEach(row => row.classList.remove('drag-over'));
+    document.querySelectorAll('.task-item').forEach(row => row.classList.remove('drag-over'));
     draggedTaskId = null;
   }
 
   function handleDragOver(e) {
     e.preventDefault();
     e.dataTransfer.dropEffect = 'move';
-    const row = e.target.closest('.task-row');
+    const row = e.target.closest('.task-item');
     if (row && !row.classList.contains('dragging')) {
-      document.querySelectorAll('.task-row').forEach(r => r.classList.remove('drag-over'));
+      document.querySelectorAll('.task-item').forEach(r => r.classList.remove('drag-over'));
       row.classList.add('drag-over');
     }
   }
 
   function handleDragLeave(e) {
-    const row = e.target.closest('.task-row');
+    const row = e.target.closest('.task-item');
     if (row) row.classList.remove('drag-over');
   }
 
@@ -956,7 +962,7 @@
     touchStartX = touch.clientX;
     touchStartY = touch.clientY;
     touchDraggedTaskId = taskId;
-    touchDraggedRow = e.target.closest('.task-row');
+    touchDraggedRow = e.target.closest('.task-item');
     scrollDetected = false;
 
     // Long-press zum Starten des Drag
@@ -997,10 +1003,10 @@
 
     // Finde das Element unter dem Finger
     const elementBelow = document.elementFromPoint(touch.clientX, touch.clientY);
-    const rowBelow = elementBelow?.closest('.task-row');
+    const rowBelow = elementBelow?.closest('.task-item');
 
     // Highlight des Ziel-Elements
-    document.querySelectorAll('.task-row').forEach(r => r.classList.remove('drag-over'));
+    document.querySelectorAll('.task-item').forEach(r => r.classList.remove('drag-over'));
     if (rowBelow && rowBelow !== touchDraggedRow) {
       rowBelow.classList.add('drag-over');
     }
@@ -1020,12 +1026,12 @@
     // Finde das Ziel-Element
     const touch = e.changedTouches[0];
     const elementBelow = document.elementFromPoint(touch.clientX, touch.clientY);
-    const rowBelow = elementBelow?.closest('.task-row');
+    const rowBelow = elementBelow?.closest('.task-item');
     const targetTaskId = rowBelow?.dataset?.taskid;
 
     // Aufräumen
     if (touchDraggedRow) touchDraggedRow.classList.remove('touch-dragging');
-    document.querySelectorAll('.task-row').forEach(r => r.classList.remove('drag-over'));
+    document.querySelectorAll('.task-item').forEach(r => r.classList.remove('drag-over'));
 
     // Neu ordnen wenn gültiges Ziel
     if (targetTaskId && targetTaskId !== touchDraggedTaskId) {
@@ -1066,7 +1072,8 @@
     return arr;
   }
 
-  const catLabels = { morgens: 'Morgens', tag: 'Tagsüber', abend: 'Abends' };
+  const catLabels = { morgens: '☀️ Morgens', tag: '📋 Im Laufe des Tages', abend: '🌙 Bevor man geht' };
+  const catOrder = ['morgens', 'tag', 'abend'];
 
   async function renderTasks(reload=false){
     if(reload) await loadTasks();
@@ -1084,22 +1091,51 @@
       return;
     }
 
-    list.innerHTML = arr.map(t => {
-      const isDone = !!checked[t.id];
-      return `
-        <div class="task-item ${isDone ? 'done' : ''}" data-taskid="${t.id}">
-          <div class="task-checkbox ${isDone ? 'checked' : ''}" onclick="toggleCheck('${t.id}')"></div>
-          <div class="task-content" onclick="toggleCheck('${t.id}')">
-            <div class="task-text">${t.text}</div>
-            <div class="task-cat">${catLabels[t.cat] || t.cat}</div>
-          </div>
-          <div class="task-actions">
-            <button class="task-action-btn" onclick="openEditTaskModal('${t.id}')" title="Bearbeiten">✏️</button>
-          </div>
-        </div>
-      `;
-    }).join('');
+    // Nach Kategorie gruppieren
+    const grouped = {};
+    catOrder.forEach(cat => grouped[cat] = []);
+    arr.forEach(t => {
+      const cat = t.cat || 'tag';
+      if (!grouped[cat]) grouped[cat] = [];
+      grouped[cat].push(t);
+    });
 
+    let html = '';
+    catOrder.forEach(cat => {
+      const tasks = grouped[cat];
+      if (tasks.length === 0) return;
+
+      html += `<div class="task-group" data-cat="${cat}">`;
+      html += `<div class="task-group-header">${catLabels[cat]}</div>`;
+
+      tasks.forEach(t => {
+        const isDone = !!checked[t.id];
+        html += `
+          <div class="task-item ${isDone ? 'done' : ''}" data-taskid="${t.id}" draggable="true"
+            ondragstart="handleDragStart(event, '${t.id}')"
+            ondragend="handleDragEnd(event)"
+            ondragover="handleDragOver(event)"
+            ondragleave="handleDragLeave(event)"
+            ondrop="handleDrop(event, '${t.id}')"
+            ontouchstart="handleTouchStart(event, '${t.id}')"
+            ontouchmove="handleTouchMove(event)"
+            ontouchend="handleTouchEnd(event)">
+            <span class="drag-handle">⠿</span>
+            <div class="task-checkbox ${isDone ? 'checked' : ''}" onclick="event.stopPropagation(); toggleCheck('${t.id}')"></div>
+            <div class="task-content" onclick="toggleCheck('${t.id}')">
+              <div class="task-text">${t.text}</div>
+            </div>
+            <div class="task-actions">
+              <button class="task-action-btn" onclick="event.stopPropagation(); openEditTaskModal('${t.id}')" title="Bearbeiten">✏️</button>
+            </div>
+          </div>
+        `;
+      });
+
+      html += `</div>`;
+    });
+
+    list.innerHTML = html;
     updateStatusHeader();
     saveProgressToFirebase();
   }
