@@ -276,6 +276,7 @@ let guestReferences={}; // Bezugspersonen für Gäste: {guestName: coreMemberNam
 let hdRequirements={}; // Individuelle Hausdienst-Anforderungen pro Person: {person: anzahl}
 let deleteMode=false, adminMode=false, correctionMode=false, hdToday=null;
 let hdTodayCompleted = false; // Ob der heutige Hausdienst abgeschlossen ist
+let hdTaskProgress = null; // Aufgaben-Fortschritt: { done: X, total: Y }
 let monthlyHdCounts = {}; // Hausdienste pro Person im aktuellen Monat
 const HD_DEFAULT_REQUIRED = 3; // Standard-Anforderung pro Monat
 
@@ -464,9 +465,11 @@ function subscribeRealtime(){
       const data = doc.data();
       hdToday = data.person || null;
       hdTodayCompleted = data.completed || false;
+      hdTaskProgress = data.taskProgress || null;
     } else {
       hdToday = null;
       hdTodayCompleted = false;
+      hdTaskProgress = null;
     }
     updateTodayBanner(hdToday); buildTable();
   });
@@ -489,7 +492,13 @@ async function updateTodayBanner(existing){
     if(person===undefined){
       if(db){
         const d=await db.collection("hausdienst").doc(todayStr()).get();
-        person = d.exists ? d.data().person : null;
+        if (d.exists) {
+          person = d.data().person || null;
+          hdTodayCompleted = d.data().completed || false;
+          hdTaskProgress = d.data().taskProgress || null;
+        } else {
+          person = null;
+        }
       }else{ person=null; }
     }
     hdToday=person;
@@ -498,9 +507,16 @@ async function updateTodayBanner(existing){
     const ctaEl=document.getElementById("todayCta");
 
     if (person) {
-      const statusBadge = hdTodayCompleted
-        ? `<span class="badge ok">${person} ✓</span>`
-        : `<span class="badge" style="background:#ff6b6b;color:#fff">${person} ○</span>`;
+      let statusBadge;
+      if (hdTodayCompleted) {
+        statusBadge = `<span class="badge ok">${person} ✓</span>`;
+      } else if (hdTaskProgress && hdTaskProgress.total > 0) {
+        const progressPct = Math.round((hdTaskProgress.done / hdTaskProgress.total) * 100);
+        const bgColor = progressPct === 100 ? '#7CFC9A' : (progressPct >= 50 ? '#6ee7ff' : '#ff6b6b');
+        statusBadge = `<span class="badge" style="background:${bgColor};color:#0b0e14">${person} ${hdTaskProgress.done}/${hdTaskProgress.total}</span>`;
+      } else {
+        statusBadge = `<span class="badge" style="background:#ff6b6b;color:#fff">${person} ○</span>`;
+      }
       infoEl.innerHTML = `Heute Hausdienst: ${statusBadge}`;
     } else {
       infoEl.innerHTML = `Heute: <span class="badge none">Noch niemand eingetragen</span>`;
@@ -746,10 +762,19 @@ function buildTable(){
       ? `<span class="hd-badge ${openHd > 0 ? 'open' : 'done'}" title="Offene Hausdienste diesen Monat (${hdRequired} erforderlich)">${openHd}</span>`
       : '';
 
-    // Hausdienst-Status-Icon für heute
-    const hdStatusIcon = isHdToday
-      ? `<span class="hd-status-icon ${hdTodayCompleted ? 'complete' : 'pending'}" title="${hdTodayCompleted ? 'Hausdienst abgeschlossen' : 'Hausdienst noch offen'}">${hdTodayCompleted ? '✓' : '○'}</span>`
-      : '';
+    // Hausdienst-Status-Icon und Aufgaben-Fortschritt für heute
+    let hdStatusIcon = '';
+    if (isHdToday) {
+      if (hdTodayCompleted) {
+        hdStatusIcon = `<span class="hd-status-icon complete" title="Hausdienst abgeschlossen">✓</span>`;
+      } else if (hdTaskProgress && hdTaskProgress.total > 0) {
+        const progressPct = Math.round((hdTaskProgress.done / hdTaskProgress.total) * 100);
+        const progressColor = progressPct === 100 ? '#7CFC9A' : (progressPct >= 50 ? '#6ee7ff' : '#ff6b6b');
+        hdStatusIcon = `<span class="hd-progress" title="Aufgaben: ${hdTaskProgress.done} von ${hdTaskProgress.total} erledigt" style="color:${progressColor};font-weight:800;margin-left:6px;font-size:12px">${hdTaskProgress.done}/${hdTaskProgress.total}</span>`;
+      } else {
+        hdStatusIcon = `<span class="hd-status-icon pending" title="Hausdienst noch offen">○</span>`;
+      }
+    }
 
     // Bezugsperson für Gäste (immer sichtbar, nicht nur im Admin-Modus)
     let refHtml = '';

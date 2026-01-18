@@ -41,8 +41,24 @@
     .task-row:active { cursor: grabbing; }
     .task-row.dragging { opacity: 0.5; background: #2a3042; transform: scale(1.02); }
     .task-row.drag-over { border-top: 3px solid #6ee7ff; }
-    .drag-handle { cursor: grab; padding: 0 8px; opacity: 0.5; touch-action: none; }
-    .drag-handle:hover { opacity: 1; }
+    .drag-handle {
+      cursor: grab;
+      padding: 8px 12px;
+      opacity: 0.4;
+      touch-action: none;
+      font-size: 18px;
+      border-radius: 6px;
+      transition: opacity 0.2s, background 0.2s;
+    }
+    .drag-handle:hover { opacity: 1; background: rgba(110, 231, 255, 0.1); }
+    @media (pointer: coarse) {
+      /* Touch-Geräte: größerer Tap-Bereich */
+      .drag-handle {
+        padding: 12px 14px;
+        opacity: 0.6;
+        background: rgba(110, 231, 255, 0.05);
+      }
+    }
     .task-row.touch-dragging { position: relative; z-index: 100; background: #2a3042; box-shadow: 0 4px 12px rgba(0,0,0,0.4); }
 
     /* Bewertungssystem */
@@ -299,6 +315,30 @@
       <span>Buchungen</span>
     </a>
   </nav>
+</div>
+
+<!-- Abschluss-Modal -->
+<div class="modal" id="completionModal">
+  <div class="modal-box">
+    <div class="modal-title">🎉 Alle Aufgaben erledigt!</div>
+    <div class="sub" style="margin:15px 0">Du hast alle Hausdienst-Aufgaben für heute erledigt. Möchtest du den Hausdienst jetzt abschließen?</div>
+    <div class="modal-actions">
+      <button class="btn" onclick="confirmCompletion()">✓ Hausdienst abschließen</button>
+      <button class="btn ghost" onclick="closeCompletionModal()">Später</button>
+    </div>
+  </div>
+</div>
+
+<!-- Planungs-Modal für nächsten Tag -->
+<div class="modal" id="planNextModal">
+  <div class="modal-box">
+    <div class="modal-title">📅 Hausdienst für morgen planen</div>
+    <div class="sub" style="margin:10px 0" id="planNextInfo">Wähle eine Person für den Hausdienst morgen:</div>
+    <div id="planNextPeopleList" style="display:flex;flex-wrap:wrap;gap:8px;margin:15px 0"></div>
+    <div class="modal-actions">
+      <button class="btn ghost" onclick="closePlanNextModal()">Überspringen</button>
+    </div>
+  </div>
 </div>
 
 <!-- Bewertungs-Modal -->
@@ -627,6 +667,37 @@
     checked[id] = !checked[id];
     localStorage.setItem(CHECKED_KEY, JSON.stringify(checked));
     renderTasks(); // re-render für Filter
+    saveProgressToFirebase();
+    checkAllTasksCompleted();
+  }
+
+  // Fortschritt in Firebase speichern für Anzeige in Strichliste
+  async function saveProgressToFirebase() {
+    if (!db || !todayPerson) return;
+    const totalTasks = _tasks.length;
+    const doneTasks = _tasks.filter(t => checked[t.id]).length;
+
+    try {
+      await db.collection("hausdienst").doc(todayStr()).set({
+        taskProgress: { done: doneTasks, total: totalTasks }
+      }, { merge: true });
+    } catch(e) {
+      console.error('Fehler beim Speichern des Fortschritts:', e);
+    }
+  }
+
+  // Prüfen ob alle Aufgaben erledigt und Pop-up anzeigen
+  let completionPopupShown = false;
+  function checkAllTasksCompleted() {
+    if (completionPopupShown || hdTodayCompleted || !todayPerson) return;
+
+    const totalTasks = _tasks.length;
+    const doneTasks = _tasks.filter(t => checked[t.id]).length;
+
+    if (doneTasks === totalTasks && totalTasks > 0) {
+      completionPopupShown = true;
+      showCompletionModal();
+    }
   }
 
   async function addTask(){
@@ -635,7 +706,16 @@
     const txt=inp.value.trim();
     const cat=(document.getElementById('newTaskCat').value||'tag');
     if(!txt) return;
-    await db.collection('hausdienst_tasks').add({ text: txt, cat, createdAt: Date.now() });
+
+    // Höchsten sortOrder finden und +1 für neue Aufgabe
+    const maxSortOrder = _tasks.length > 0 ? Math.max(..._tasks.map(t => t.sortOrder ?? 0)) : -1;
+
+    await db.collection('hausdienst_tasks').add({
+      text: txt,
+      cat,
+      createdAt: Date.now(),
+      sortOrder: maxSortOrder + 1
+    });
     inp.value='';
     await renderTasks(true);
   }
@@ -729,31 +809,59 @@
   // Touch Drag & Drop (Mobile/Tablet)
   let touchDraggedRow = null;
   let touchDraggedTaskId = null;
+  let touchStartX = 0;
   let touchStartY = 0;
   let touchCurrentY = 0;
   let longPressTimer = null;
   let isDragging = false;
+  let scrollDetected = false;
+  const LONG_PRESS_DURATION = 600; // 600ms für Long-Press (vorher 300ms)
+  const SCROLL_THRESHOLD = 10; // Pixel Bewegung bevor als Scroll erkannt
 
   function handleTouchStart(e, taskId) {
+    // Nur auf Drag-Handle reagieren für Touch-Drag
+    const isDragHandle = e.target.closest('.drag-handle');
+    if (!isDragHandle) return; // Normales Scrollen erlauben wenn nicht auf Handle
+
     const touch = e.touches[0];
+    touchStartX = touch.clientX;
     touchStartY = touch.clientY;
     touchDraggedTaskId = taskId;
     touchDraggedRow = e.target.closest('.task-row');
+    scrollDetected = false;
 
     // Long-press zum Starten des Drag
     longPressTimer = setTimeout(() => {
-      if (touchDraggedRow) {
+      if (touchDraggedRow && !scrollDetected) {
         isDragging = true;
         touchDraggedRow.classList.add('touch-dragging');
         // Vibration für Feedback (falls unterstützt)
         if (navigator.vibrate) navigator.vibrate(50);
       }
-    }, 300);
+    }, LONG_PRESS_DURATION);
   }
 
   function handleTouchMove(e) {
-    if (!isDragging || !touchDraggedRow) return;
+    // Wenn noch nicht im Drag-Modus, prüfen ob gescrollt wird
+    if (!isDragging) {
+      if (touchDraggedRow && longPressTimer) {
+        const touch = e.touches[0];
+        const deltaX = Math.abs(touch.clientX - touchStartX);
+        const deltaY = Math.abs(touch.clientY - touchStartY);
 
+        // Wenn Bewegung erkannt, Long-Press abbrechen (User scrollt)
+        if (deltaX > SCROLL_THRESHOLD || deltaY > SCROLL_THRESHOLD) {
+          clearTimeout(longPressTimer);
+          longPressTimer = null;
+          scrollDetected = true;
+          touchDraggedRow = null;
+          touchDraggedTaskId = null;
+        }
+      }
+      return; // Normales Scrollen erlauben
+    }
+
+    // Im Drag-Modus: Scrollen verhindern
     e.preventDefault();
     const touch = e.touches[0];
     touchCurrentY = touch.clientY;
@@ -771,10 +879,12 @@
 
   async function handleTouchEnd(e) {
     clearTimeout(longPressTimer);
+    longPressTimer = null;
 
     if (!isDragging) {
       touchDraggedRow = null;
       touchDraggedTaskId = null;
+      scrollDetected = false;
       return;
     }
 
@@ -796,6 +906,7 @@
     touchDraggedRow = null;
     touchDraggedTaskId = null;
     isDragging = false;
+    scrollDetected = false;
   }
 
   // Gemeinsame Funktion zum Neuordnen
@@ -835,6 +946,7 @@
     if(!arr.length){
       list.innerHTML = `<div class="sub">Keine Aufgaben in dieser Ansicht.</div>`;
       updateHdStatus();
+      saveProgressToFirebase();
       return;
     }
     const rows = arr.map(t=>{
@@ -856,6 +968,7 @@
     }).join('');
     list.innerHTML = `<table><thead><tr><th></th><th></th><th>Aufgabe</th><th>Aktion</th></tr></thead><tbody>${rows}</tbody></table>`;
     updateHdStatus();
+    saveProgressToFirebase();
   }
 
   /* Bewertungssystem */
@@ -1097,6 +1210,11 @@
       return;
     }
 
+    await markHausdienstComplete();
+  }
+
+  // Gemeinsame Funktion zum Abschließen
+  async function markHausdienstComplete() {
     try {
       await db.collection("hausdienst").doc(todayStr()).set({
         completed: true,
@@ -1105,10 +1223,69 @@
 
       hdTodayCompleted = true;
       updateHdStatus();
-      alert('✓ Hausdienst erfolgreich abgeschlossen!');
+      showPlanNextModal();
     } catch (e) {
       console.error('Fehler beim Abschließen:', e);
       alert('Fehler beim Abschließen des Hausdienstes.');
+    }
+  }
+
+  // Abschluss-Modal Funktionen
+  function showCompletionModal() {
+    document.getElementById('completionModal').classList.add('show');
+  }
+
+  function closeCompletionModal() {
+    document.getElementById('completionModal').classList.remove('show');
+  }
+
+  async function confirmCompletion() {
+    closeCompletionModal();
+    await markHausdienstComplete();
+  }
+
+  // Planungs-Modal für nächsten Tag
+  function getTomorrowStr() {
+    const d = new Date();
+    d.setDate(d.getDate() + 1);
+    return d.toISOString().slice(0, 10);
+  }
+
+  async function showPlanNextModal() {
+    // Prüfen ob morgen schon jemand eingetragen ist
+    const tomorrowDoc = await db.collection('hausdienst').doc(getTomorrowStr()).get();
+    if (tomorrowDoc.exists && tomorrowDoc.data().person) {
+      const person = tomorrowDoc.data().person;
+      alert(`✓ Hausdienst abgeschlossen!\n\nMorgen ist bereits ${person} eingetragen.`);
+      return;
+    }
+
+    // Personen-Auswahl rendern
+    const container = document.getElementById('planNextPeopleList');
+    container.innerHTML = CORE.map(p => `
+      <button class="pill" onclick="planNextPerson('${p}')">${p}</button>
+    `).join('');
+
+    document.getElementById('planNextModal').classList.add('show');
+  }
+
+  function closePlanNextModal() {
+    document.getElementById('planNextModal').classList.remove('show');
+    alert('✓ Hausdienst erfolgreich abgeschlossen!');
+  }
+
+  async function planNextPerson(person) {
+    try {
+      await db.collection("hausdienst").doc(getTomorrowStr()).set({
+        person: person,
+        updatedAt: Date.now()
+      });
+      document.getElementById('planNextModal').classList.remove('show');
+      alert(`✓ Hausdienst abgeschlossen!\n\n${person} ist jetzt für morgen eingetragen.`);
+      await renderNextDays();
+    } catch(e) {
+      console.error('Fehler beim Planen:', e);
+      alert('Fehler beim Eintragen für morgen.');
     }
   }
 
