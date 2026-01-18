@@ -1342,6 +1342,15 @@
       } catch(e) { console.error('Fehler beim Laden des Kernteams:', e); }
     }
 
+    // Hausdienst-Daten ZUERST laden (vor renderTasks)
+    if (db) {
+      const todayDoc = await db.collection('hausdienst').doc(todayStr()).get();
+      const yesterdayDoc = await db.collection('hausdienst').doc(getYesterdayStr()).get();
+      todayPerson = todayDoc.exists ? todayDoc.data().person : null;
+      hdTodayCompleted = todayDoc.exists ? (todayDoc.data().completed || false) : false;
+      yesterdayPerson = yesterdayDoc.exists ? yesterdayDoc.data().person : null;
+    }
+
     renderPeopleRow();
     updateSelectionUI();
     setMode(showMode);
@@ -1351,12 +1360,6 @@
 
     // Bewertungsdaten laden
     if (db) {
-      const todayDoc = await db.collection('hausdienst').doc(todayStr()).get();
-      const yesterdayDoc = await db.collection('hausdienst').doc(getYesterdayStr()).get();
-      todayPerson = todayDoc.exists ? todayDoc.data().person : null;
-      hdTodayCompleted = todayDoc.exists ? (todayDoc.data().completed || false) : false;
-      yesterdayPerson = yesterdayDoc.exists ? yesterdayDoc.data().person : null;
-
       if (todayPerson && yesterdayPerson) {
         const existingRating = await db.collection('bewertungen')
           .where('date', '==', getYesterdayStr())
