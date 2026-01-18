@@ -507,16 +507,9 @@ async function updateTodayBanner(existing){
     const ctaEl=document.getElementById("todayCta");
 
     if (person) {
-      let statusBadge;
-      if (hdTodayCompleted) {
-        statusBadge = `<span class="badge ok">${person} ✓</span>`;
-      } else if (hdTaskProgress && hdTaskProgress.total > 0) {
-        const progressPct = Math.round((hdTaskProgress.done / hdTaskProgress.total) * 100);
-        const bgColor = progressPct === 100 ? '#7CFC9A' : (progressPct >= 50 ? '#6ee7ff' : '#ff6b6b');
-        statusBadge = `<span class="badge" style="background:${bgColor};color:#0b0e14">${person} ${hdTaskProgress.done}/${hdTaskProgress.total}</span>`;
-      } else {
-        statusBadge = `<span class="badge" style="background:#ff6b6b;color:#fff">${person} ○</span>`;
-      }
+      const statusBadge = hdTodayCompleted
+        ? `<span class="badge ok">${person} ✓</span>`
+        : `<span class="badge" style="background:#ff6b6b;color:#fff">${person}</span>`;
       infoEl.innerHTML = `Heute Hausdienst: ${statusBadge}`;
     } else {
       infoEl.innerHTML = `Heute: <span class="badge none">Noch niemand eingetragen</span>`;

@@ -39,13 +39,37 @@
     .avg-item .avg-score { display: flex; align-items: center; gap: 6px; }
     .avg-item .avg-value { font-size: 18px; font-weight: 800; background: linear-gradient(135deg, #6ee7ff, #a78bfa); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
     .avg-item .stars { color: #ffd700; font-size: 14px; }
+
+    /* Admin-Modus */
+    .admin-indicator { background-color: #ff6b6b; padding: 4px 8px; border-radius: 4px; margin-left: 8px; font-size: 12px; }
+    .rating-actions { display: none; margin-top: 10px; gap: 8px; }
+    .admin-mode .rating-actions { display: flex; }
+
+    /* Bearbeitungs-Modal */
+    .modal { position: fixed; inset: 0; background: rgba(0,0,0,0.8); display: none; place-items: center; z-index: 100; padding: 20px; }
+    .modal.show { display: grid; }
+    .modal-box { background: #151a23; border-radius: 16px; padding: 24px; max-width: 400px; width: 100%; border: 1px solid #2a3042; }
+    .modal-title { font-size: 18px; font-weight: 800; margin-bottom: 8px; }
+    .modal-stars { display: flex; gap: 8px; justify-content: center; margin: 20px 0; }
+    .modal-stars .star { font-size: 36px; cursor: pointer; color: #2a3042; transition: all 0.2s; }
+    .modal-stars .star:hover, .modal-stars .star.active { color: #ffd700; transform: scale(1.15); }
+    .modal-stars .star.hovered { color: #ffd700; }
+    .modal-actions { display: flex; gap: 10px; margin-top: 15px; }
+    .modal-actions .btn { flex: 1; }
+    .edit-comment { width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #2a3042; background: #0e1422; color: #e6e8ef; resize: vertical; min-height: 60px; margin-top: 10px; }
+    .edit-info { font-size: 12px; opacity: 0.7; margin-bottom: 10px; }
   </style>
 </head>
 <body>
 <div class="app">
   <header class="appbar">
-    <div class="app-title"><div class="brand-dot"></div><h1>Bewertungen</h1></div>
+    <div class="app-title">
+      <div class="brand-dot"></div>
+      <h1>Bewertungen</h1>
+      <span id="adminIndicator" class="admin-indicator" style="display:none;">Admin</span>
+    </div>
     <div class="appbar-actions">
+      <button class="btn small warning" id="adminBtn" onclick="toggleAdminMode()" title="Admin-Modus">🔧</button>
       <span class="sub"><span class="statusdot" id="dot"></span><span id="connTxt">Verbinde...</span></span>
     </div>
   </header>
@@ -126,6 +150,27 @@
   </nav>
 </div>
 
+<!-- Bearbeitungs-Modal -->
+<div class="modal" id="editModal">
+  <div class="modal-box">
+    <div class="modal-title">Bewertung bearbeiten</div>
+    <div class="edit-info" id="editInfo"></div>
+    <div class="modal-stars" id="editStars">
+      <span class="star" data-value="1" onclick="setEditRating(1)" onmouseenter="hoverEditRating(1)" onmouseleave="hoverEditRating(0)">★</span>
+      <span class="star" data-value="2" onclick="setEditRating(2)" onmouseenter="hoverEditRating(2)" onmouseleave="hoverEditRating(0)">★</span>
+      <span class="star" data-value="3" onclick="setEditRating(3)" onmouseenter="hoverEditRating(3)" onmouseleave="hoverEditRating(0)">★</span>
+      <span class="star" data-value="4" onclick="setEditRating(4)" onmouseenter="hoverEditRating(4)" onmouseleave="hoverEditRating(0)">★</span>
+      <span class="star" data-value="5" onclick="setEditRating(5)" onmouseenter="hoverEditRating(5)" onmouseleave="hoverEditRating(0)">★</span>
+    </div>
+    <textarea id="editComment" class="edit-comment" placeholder="Kommentar..."></textarea>
+    <div class="modal-actions">
+      <button class="btn" onclick="saveEditRating()">Speichern</button>
+      <button class="btn danger" onclick="deleteRating()">Löschen</button>
+      <button class="btn ghost" onclick="closeEditModal()">Abbrechen</button>
+    </div>
+  </div>
+</div>
+
 <!-- Firebase -->
 <script src="https://www.gstatic.com/firebasejs/12.0.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/12.0.0/firebase-firestore-compat.js"></script>
@@ -133,6 +178,8 @@
   const DEFAULT_CORE = ["Chris","Daniel","Elmi","Florian","Joel","Kevin","Kiste","Marco","Meli","Simon"];
   let CORE = [...DEFAULT_CORE]; // Wird dynamisch aus Firebase geladen
   const STATE_COLLECTION = location.search.includes("beta") ? "state_beta" : "state";
+  const ADMIN_PASSWORD = "1379";
+  let adminMode = false;
 
   const firebaseConfig = {
     apiKey: "AIzaSyBtZsr4QPHQbvO2qae6MoBoxJF5dNP2vh0",
@@ -253,6 +300,9 @@
           ${formatDate(r.date)} · Bewertet von ${r.bewertetVon}
         </div>
         ${r.comment ? `<div class="rating-comment">"${r.comment}"</div>` : ''}
+        <div class="rating-actions">
+          <button class="btn small" onclick="openEditModal('${r.id}')">✏️ Bearbeiten</button>
+        </div>
       </div>
     `).join('');
   }
@@ -349,6 +399,107 @@
     db.collection('bewertungen').onSnapshot(() => {
       loadRatings();
     });
+  }
+
+  // Admin-Modus
+  function toggleAdminMode() {
+    if (adminMode) {
+      adminMode = false;
+      document.body.classList.remove('admin-mode');
+      document.getElementById('adminIndicator').style.display = 'none';
+      document.getElementById('adminBtn').textContent = '🔧';
+      return;
+    }
+
+    const password = prompt("Admin-Passwort eingeben:");
+    if (password === ADMIN_PASSWORD) {
+      adminMode = true;
+      document.body.classList.add('admin-mode');
+      document.getElementById('adminIndicator').style.display = 'inline-block';
+      document.getElementById('adminBtn').textContent = '🔧✓';
+    } else {
+      alert("Falsches Passwort");
+    }
+  }
+
+  // Bearbeitungs-Modal
+  let editRatingId = null;
+  let editRatingValue = 0;
+
+  function openEditModal(ratingId) {
+    const rating = allRatings.find(r => r.id === ratingId);
+    if (!rating) return;
+
+    editRatingId = ratingId;
+    editRatingValue = rating.rating;
+
+    document.getElementById('editInfo').innerHTML =
+      `<b>${rating.bewerteterHausdienst}</b> am ${formatDate(rating.date)}<br>Bewertet von ${rating.bewertetVon}`;
+    document.getElementById('editComment').value = rating.comment || '';
+
+    // Sterne setzen
+    const stars = document.querySelectorAll('#editStars .star');
+    stars.forEach((star, i) => {
+      star.classList.toggle('active', i < rating.rating);
+    });
+
+    document.getElementById('editModal').classList.add('show');
+  }
+
+  function closeEditModal() {
+    document.getElementById('editModal').classList.remove('show');
+    editRatingId = null;
+    editRatingValue = 0;
+  }
+
+  function hoverEditRating(val) {
+    const stars = document.querySelectorAll('#editStars .star');
+    stars.forEach((star, i) => {
+      star.classList.toggle('hovered', i < val);
+    });
+  }
+
+  function setEditRating(val) {
+    editRatingValue = val;
+    const stars = document.querySelectorAll('#editStars .star');
+    stars.forEach((star, i) => {
+      star.classList.toggle('active', i < val);
+    });
+  }
+
+  async function saveEditRating() {
+    if (!db || !editRatingId || editRatingValue === 0) return;
+
+    const comment = document.getElementById('editComment').value.trim();
+
+    try {
+      await db.collection('bewertungen').doc(editRatingId).update({
+        rating: editRatingValue,
+        comment: comment,
+        updatedAt: Date.now(),
+        updatedByAdmin: true
+      });
+      alert('Bewertung aktualisiert!');
+      closeEditModal();
+    } catch(e) {
+      console.error('Fehler beim Speichern:', e);
+      alert('Fehler beim Speichern der Bewertung.');
+    }
+  }
+
+  async function deleteRating() {
+    if (!db || !editRatingId) return;
+
+    if (!confirm('Diese Bewertung wirklich löschen?')) return;
+
+    try {
+      await db.collection('bewertungen').doc(editRatingId).delete();
+      alert('Bewertung gelöscht!');
+      closeEditModal();
+    } catch(e) {
+      console.error('Fehler beim Löschen:', e);
+      alert('Fehler beim Löschen der Bewertung.');
+    }
   }
 
   loadRatings();
