@@ -345,11 +345,53 @@ function getXpForDisplay(person){
   return Math.max(base, cur);
 }
 
-/* Long-press +1 */
+/* Long-press +1 (nur Desktop) */
 let holdT=null, holdI=null;
 function startHold(handler){ stopHold(); handler(); holdT=setTimeout(()=>{holdI=setInterval(handler,120)},420); }
 function stopHold(){ if(holdT) clearTimeout(holdT); if(holdI) clearInterval(holdI); holdT=holdI=null; }
 window.onmouseup=stopHold; window.onmouseleave=stopHold;
+
+/* Touch-optimierte Strich-Logik (Tablet/Mobile) */
+let touchStartPos = null;
+let touchTriggered = false;
+const TOUCH_MOVE_THRESHOLD = 10; // Pixel bevor als Scroll erkannt
+
+function handleTouchStartBtn(e, handler) {
+  e.preventDefault(); // Verhindert Doppel-Trigger
+  touchStartPos = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+  touchTriggered = false;
+}
+
+function handleTouchEndBtn(e, handler) {
+  if (touchTriggered || !touchStartPos) {
+    touchStartPos = null;
+    return;
+  }
+
+  const touch = e.changedTouches[0];
+  const deltaX = Math.abs(touch.clientX - touchStartPos.x);
+  const deltaY = Math.abs(touch.clientY - touchStartPos.y);
+
+  // Nur auslösen wenn kein Scroll (Finger hat sich kaum bewegt)
+  if (deltaX < TOUCH_MOVE_THRESHOLD && deltaY < TOUCH_MOVE_THRESHOLD) {
+    handler();
+  }
+
+  touchStartPos = null;
+}
+
+function handleTouchMoveBtn(e) {
+  if (!touchStartPos) return;
+
+  const touch = e.touches[0];
+  const deltaX = Math.abs(touch.clientX - touchStartPos.x);
+  const deltaY = Math.abs(touch.clientY - touchStartPos.y);
+
+  // Wenn Bewegung erkannt, als Scroll markieren
+  if (deltaX > TOUCH_MOVE_THRESHOLD || deltaY > TOUCH_MOVE_THRESHOLD) {
+    touchTriggered = true; // Verhindert Auslösen bei touchend
+  }
+}
 
 /* 00:00 Refresh */
 function scheduleMidnightRefresh(cb){
@@ -788,18 +830,22 @@ function buildTable(){
       </div></th>`;
     columnOrder.forEach(dr=>{
       if(prices[dr]!==undefined){
-        const id=`${p}_${dr}`, val=data[id]||0, 
+        const id=`${p}_${dr}`, val=data[id]||0,
               incHandler=`()=>changeCount('${id}','${dr}','${p}', 1)`,
               decHandler=`()=>changeCount('${id}','${dr}','${p}', -1)`;
-        
-        rhtml += `<td><div class="cell" onclick="changeCount('${id}','${dr}','${p}', 1)">
-          ${adminMode ? `<button class="btn small minus-btn" onclick="event.stopPropagation(); changeCount('${id}','${dr}','${p}', -1)"
+
+        rhtml += `<td><div class="cell">
+          ${adminMode ? `<button class="btn small minus-btn"
             onmousedown="startHold(${decHandler})" onmouseup="stopHold()" onmouseleave="stopHold()"
-            ontouchstart="startHold(${decHandler})" ontouchend="stopHold()">-1</button>` : ''}
+            ontouchstart="handleTouchStartBtn(event, ${decHandler})"
+            ontouchmove="handleTouchMoveBtn(event)"
+            ontouchend="handleTouchEndBtn(event, ${decHandler})">-1</button>` : ''}
           <div class="count" id="${id}">${val}</div>
-          <button class="btn small plus-btn" onclick="event.stopPropagation(); changeCount('${id}','${dr}','${p}', 1)"
+          <button class="btn small plus-btn"
             onmousedown="startHold(${incHandler})" onmouseup="stopHold()" onmouseleave="stopHold()"
-            ontouchstart="startHold(${incHandler})" ontouchend="stopHold()">+1</button></div></td>`;
+            ontouchstart="handleTouchStartBtn(event, ${incHandler})"
+            ontouchmove="handleTouchMoveBtn(event)"
+            ontouchend="handleTouchEndBtn(event, ${incHandler})">+1</button></div></td>`;
       }
     });
     const total=columnOrder.reduce((s,d)=>s+(data[`${p}_${d}`]||0)*prices[d],0);
