@@ -101,6 +101,21 @@
     .edit-task-input:focus { border-color: #6ee7ff; outline: none; }
     .edit-task-select { width: 100%; padding: 12px; border-radius: 8px; border: 1px solid #2a3042; background: #0e1422; color: #e6e8ef; font-size: 14px; margin-bottom: 15px; }
 
+    /* 6-Monats-Übersicht */
+    .table-scroll { overflow-x: auto; margin: 0 -16px; padding: 0 16px; }
+    .overview-table { width: 100%; border-collapse: collapse; font-size: 13px; min-width: 600px; }
+    .overview-table th, .overview-table td { padding: 10px 8px; text-align: center; border-bottom: 1px solid #2a3042; white-space: nowrap; }
+    .overview-table th { background: #151a23; font-weight: 800; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; position: sticky; top: 0; }
+    .overview-table th:first-child { text-align: left; min-width: 80px; }
+    .overview-table td:first-child { text-align: left; font-weight: 600; }
+    .overview-table tbody tr:hover { background: rgba(110, 231, 255, 0.05); }
+    .overview-table .count-cell { font-weight: 800; }
+    .overview-table .count-cell.zero { opacity: 0.3; }
+    .overview-table .count-cell.good { color: #7CFC9A; }
+    .overview-table .count-cell.warn { color: #ff9f43; }
+    .overview-table .count-cell.bad { color: #ff6b6b; }
+    .overview-table tfoot td { font-weight: 800; background: #1c2130; border-top: 2px solid #3a4052; }
+
     .statusdot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px;background:#ffadad}
     .statusok{background:#7CFC9A}
 
@@ -354,6 +369,19 @@
           <a href="bewertungen.html" class="btn small">Alle Bewertungen</a>
         </div>
       </div>
+
+      <!-- 6-Monats-Übersicht -->
+      <div class="card">
+        <div class="section-title">Übersicht letzte 6 Monate</div>
+        <div class="sub" style="margin-bottom:10px">Hausdienste pro Person und Monat (Wochenende = 0.5)</div>
+        <div class="table-scroll">
+          <table class="overview-table" id="monthlyOverview">
+            <thead><tr><th>Monat</th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+
       <div class="card table-wrap">
         <div class="section-title">Letzte 30 Tage</div>
         <div id="histList" class="sub">Lade…</div>
@@ -1436,6 +1464,91 @@
     }
   }
 
+  /* 6-Monats-Übersicht */
+  async function renderMonthlyOverview() {
+    if (!db) return;
+
+    const table = document.getElementById('monthlyOverview');
+    if (!table) return;
+
+    // Letzte 6 Monate berechnen
+    const months = [];
+    for (let i = 0; i < 6; i++) {
+      const d = new Date();
+      d.setMonth(d.getMonth() - i);
+      months.push(d.toISOString().slice(0, 7)); // YYYY-MM
+    }
+
+    // Alle Hausdienste der letzten 6 Monate laden
+    const firstMonth = months[months.length - 1];
+    const lastMonth = months[0];
+    const snap = await db.collection("hausdienst")
+      .where(firebase.firestore.FieldPath.documentId(), ">=", firstMonth + "-01")
+      .where(firebase.firestore.FieldPath.documentId(), "<=", lastMonth + "-31")
+      .get();
+
+    // Daten pro Person und Monat aggregieren
+    const data = {}; // { "YYYY-MM": { "Person": count } }
+    months.forEach(m => data[m] = {});
+    CORE.forEach(p => months.forEach(m => data[m][p] = 0));
+
+    snap.forEach(doc => {
+      const person = doc.data().person;
+      if (!person || !CORE.includes(person)) return;
+
+      const month = doc.id.slice(0, 7);
+      if (!data[month]) return;
+
+      // Wochenende = 0.5, Wochentag = 1
+      const date = new Date(doc.id);
+      const dayOfWeek = date.getDay();
+      const isWeekend = (dayOfWeek === 0 || dayOfWeek === 6);
+      const points = isWeekend ? 0.5 : 1;
+
+      data[month][person] = (data[month][person] || 0) + points;
+    });
+
+    // Summen pro Person berechnen
+    const totals = {};
+    CORE.forEach(p => {
+      totals[p] = months.reduce((sum, m) => sum + (data[m][p] || 0), 0);
+    });
+
+    // Tabelle rendern
+    const monthNames = ['Jan', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun', 'Jul', 'Aug', 'Sep', 'Okt', 'Nov', 'Dez'];
+
+    let headerHtml = '<tr><th>Monat</th>';
+    CORE.forEach(p => headerHtml += `<th>${p}</th>`);
+    headerHtml += '</tr>';
+
+    let bodyHtml = '';
+    months.forEach(m => {
+      const [year, month] = m.split('-');
+      const monthName = monthNames[parseInt(month) - 1];
+      bodyHtml += `<tr><td>${monthName} ${year}</td>`;
+      CORE.forEach(p => {
+        const count = data[m][p] || 0;
+        let cellClass = 'count-cell';
+        if (count === 0) cellClass += ' zero';
+        else if (count >= 3) cellClass += ' good';
+        else if (count >= 2) cellClass += ' warn';
+        else cellClass += ' bad';
+        bodyHtml += `<td class="${cellClass}">${count % 1 === 0 ? count : count.toFixed(1)}</td>`;
+      });
+      bodyHtml += '</tr>';
+    });
+
+    // Summen-Zeile
+    let footerHtml = '<tr><td>Gesamt</td>';
+    CORE.forEach(p => {
+      const total = totals[p];
+      footerHtml += `<td class="count-cell">${total % 1 === 0 ? total : total.toFixed(1)}</td>`;
+    });
+    footerHtml += '</tr>';
+
+    table.innerHTML = `<thead>${headerHtml}</thead><tbody>${bodyHtml}</tbody><tfoot>${footerHtml}</tfoot>`;
+  }
+
   /* Historie (letzte 30 Tage) */
   async function renderHistory(){
     const el = document.getElementById('histList');
@@ -1503,7 +1616,7 @@
     setMode(showMode);
     renderCatTabs();
     await loadTasks();
-    await Promise.all([updateTodayInfo(), renderNextDays(), renderTasks(), renderHistory()]);
+    await Promise.all([updateTodayInfo(), renderNextDays(), renderTasks(), renderHistory(), renderMonthlyOverview()]);
 
     // Bewertungsdaten laden
     if (db) {
