@@ -99,9 +99,74 @@
     .core-tag .remove-btn:hover { color: #ff4444; }
 
     /* Bezugsperson für Gäste */
-    .person-cell-wrapper { display: flex; align-items: center; justify-content: space-between; width: 100%; }
+    .person-cell-wrapper { display: flex; align-items: center; justify-content: space-between; width: 100%; gap: 8px; }
     .ref-select { padding: 4px 8px; border-radius: 6px; border: 1px solid #2a3042; background: #1c2130; color: #e6e8ef; font-size: 11px; max-width: 90px; cursor: pointer; flex-shrink: 0; }
     .ref-badge { display: inline-block; padding: 2px 8px; border-radius: 4px; background: rgba(110, 231, 255, 0.15); color: #6ee7ff; font-size: 11px; margin-left: 6px; }
+
+    /* Tablet Hochformat Optimierung */
+    @media screen and (max-width: 900px) {
+      :root {
+        --ring: 40px;
+        --name-size: 15px;
+        --count-size: 15px;
+        --cell-gap: 6px;
+      }
+      .plus-btn, .minus-btn { padding: 6px 10px; font-size: 13px; }
+      .person-cell { gap: 6px; }
+      .drink-chip .drink-name { font-size: 10px; }
+      .drink-chip .drink-price { font-size: 9px; }
+
+      /* Bezugsperson unter den Namen */
+      .person-cell-wrapper {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 4px;
+      }
+      .ref-select {
+        max-width: 100%;
+        width: auto;
+        margin-left: 46px; /* Einrückung passend zum Ring */
+      }
+
+      /* Tabelle horizontal scrollbar */
+      .card.table-wrap {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+      }
+      .card.table-wrap table {
+        min-width: 500px;
+      }
+    }
+
+    /* Kleinere Tablets / große Phones */
+    @media screen and (max-width: 650px) {
+      :root {
+        --ring: 36px;
+        --name-size: 14px;
+        --count-size: 14px;
+        --cell-gap: 4px;
+      }
+      .plus-btn, .minus-btn { padding: 5px 8px; font-size: 12px; }
+      .ref-select { margin-left: 42px; }
+      .hd-badge { font-size: 10px; min-width: 18px; height: 18px; }
+      .hd-progress { font-size: 10px !important; }
+      .appbar h1 { font-size: 16px; }
+    }
+
+    /* Touch-Geräte: größere Tap-Targets */
+    @media (pointer: coarse) {
+      .plus-btn, .minus-btn {
+        min-width: 44px;
+        min-height: 44px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .ref-select {
+        min-height: 36px;
+        padding: 8px 10px;
+      }
+    }
   </style>
 </head>
 <body>
