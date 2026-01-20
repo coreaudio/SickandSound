@@ -214,6 +214,45 @@
     .progress-bar { height: 4px; background: #2a3042; border-radius: 2px; overflow: hidden; margin-top: 6px; }
     .progress-bar .fill { height: 100%; background: linear-gradient(90deg, #6ee7ff, #7CFC9A); transition: width 0.3s; }
 
+    /* Bewertungs-Prompt */
+    .rating-prompt-card {
+      background: linear-gradient(135deg, rgba(255, 215, 0, 0.15), rgba(255, 165, 0, 0.1));
+      border: 1px solid rgba(255, 215, 0, 0.3);
+    }
+    .rating-prompt {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .rating-prompt-icon {
+      font-size: 32px;
+      flex-shrink: 0;
+    }
+    .rating-prompt-text {
+      flex: 1;
+      min-width: 0;
+    }
+    .rating-prompt-text strong {
+      display: block;
+      font-size: 14px;
+      margin-bottom: 2px;
+    }
+    .rating-prompt-text span {
+      font-size: 12px;
+      opacity: 0.7;
+    }
+    .rating-prompt-btn {
+      background: linear-gradient(135deg, #ffd700, #ff9f43) !important;
+      color: #0b0e14 !important;
+      font-weight: 800;
+      padding: 10px 16px;
+      flex-shrink: 0;
+    }
+    .rating-prompt-btn:hover {
+      transform: scale(1.05);
+      box-shadow: 0 4px 15px rgba(255, 215, 0, 0.4);
+    }
+
     /* Admin-Modus */
     .admin-indicator { background-color: #ff6b6b; padding: 4px 8px; border-radius: 4px; margin-left: 8px; font-size: 12px; }
     .admin-card { background: rgba(255, 107, 107, 0.1); border: 1px solid rgba(255, 107, 107, 0.3); }
@@ -428,8 +467,15 @@
       </div>
 
       <!-- Bewertung -->
-      <div class="card" id="ratingCard" style="display:none">
-        <button class="btn small ghost" onclick="openRatingModal()" id="openRatingBtn">⭐ Gestrigen Hausdienst bewerten</button>
+      <div class="card rating-prompt-card" id="ratingCard" style="display:none">
+        <div class="rating-prompt">
+          <div class="rating-prompt-icon">⭐</div>
+          <div class="rating-prompt-text">
+            <strong>Wie war der Hausdienst gestern?</strong>
+            <span id="ratingPromptPerson"></span>
+          </div>
+          <button class="btn rating-prompt-btn" onclick="openRatingModal()">Bewerten</button>
+        </div>
       </div>
     </div>
 
@@ -1309,6 +1355,10 @@
     const ratingCard = document.getElementById('ratingCard');
     if (ratingCard) {
       ratingCard.style.display = (yesterdayPerson && todayPerson) ? 'block' : 'none';
+      const ratingPersonEl = document.getElementById('ratingPromptPerson');
+      if (ratingPersonEl && yesterdayPerson) {
+        ratingPersonEl.textContent = `Bewerte ${yesterdayPerson}s Arbeit von gestern`;
+      }
     }
 
     // Notiz-Eingabe aktualisieren
