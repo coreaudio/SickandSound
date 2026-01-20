@@ -101,6 +101,57 @@
     .edit-task-input:focus { border-color: #6ee7ff; outline: none; }
     .edit-task-select { width: 100%; padding: 12px; border-radius: 8px; border: 1px solid #2a3042; background: #0e1422; color: #e6e8ef; font-size: 14px; margin-bottom: 15px; }
 
+    /* Notiz-Karten */
+    .note-card {
+      background: linear-gradient(135deg, rgba(167, 139, 250, 0.15), rgba(110, 231, 255, 0.1));
+      border: 1px solid rgba(167, 139, 250, 0.3);
+    }
+    .note-header { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+    .note-icon { font-size: 20px; }
+    .note-title { font-weight: 800; font-size: 14px; }
+    .note-content {
+      padding: 12px;
+      background: rgba(0, 0, 0, 0.2);
+      border-radius: 8px;
+      font-size: 14px;
+      line-height: 1.5;
+      white-space: pre-wrap;
+    }
+    .note-input-card { }
+    .note-textarea {
+      width: 100%;
+      min-height: 80px;
+      padding: 12px;
+      border-radius: 8px;
+      border: 1px solid #2a3042;
+      background: #0e1422;
+      color: #e6e8ef;
+      font-size: 14px;
+      resize: vertical;
+      font-family: inherit;
+    }
+    .note-textarea:focus { border-color: #6ee7ff; outline: none; }
+    .note-actions { display: flex; align-items: center; gap: 10px; margin-top: 8px; }
+    .note-status { font-size: 12px; color: #7CFC9A; }
+
+    /* Notiz-Popup Modal */
+    .note-modal-box {
+      background: linear-gradient(135deg, #1c2130, #151a23);
+      border: 2px solid rgba(167, 139, 250, 0.4);
+    }
+    .note-modal-icon { font-size: 48px; text-align: center; margin-bottom: 10px; }
+    .note-modal-from { text-align: center; font-size: 13px; opacity: 0.7; margin-bottom: 15px; }
+    .note-modal-content {
+      padding: 16px;
+      background: rgba(0, 0, 0, 0.3);
+      border-radius: 10px;
+      font-size: 15px;
+      line-height: 1.6;
+      white-space: pre-wrap;
+      max-height: 200px;
+      overflow-y: auto;
+    }
+
     /* 6-Monats-Übersicht */
     .table-scroll { overflow-x: auto; margin: 0 -16px; padding: 0 16px; }
     .overview-table { width: 100%; border-collapse: collapse; font-size: 13px; min-width: 600px; }
@@ -336,6 +387,27 @@
         </button>
       </div>
 
+      <!-- Notiz vom Vortag -->
+      <div class="card note-card" id="yesterdayNoteCard" style="display:none">
+        <div class="note-header">
+          <span class="note-icon">📝</span>
+          <span class="note-title">Notiz von <span id="noteFromPerson">—</span></span>
+        </div>
+        <div class="note-content" id="yesterdayNoteContent"></div>
+        <button class="btn small ghost" onclick="dismissNote()" style="margin-top:8px">Verstanden</button>
+      </div>
+
+      <!-- Notiz für morgen hinterlassen -->
+      <div class="card note-input-card" id="noteInputCard" style="display:none">
+        <div class="section-title">💬 Notiz für morgen</div>
+        <div class="sub" style="margin-bottom:8px">Hinterlasse eine Nachricht für den nächsten Hausdienst</div>
+        <textarea id="noteForTomorrow" class="note-textarea" placeholder="z.B. Müll wurde nicht abgeholt, bitte morgen rausstellen..."></textarea>
+        <div class="note-actions">
+          <button class="btn small" onclick="saveNoteForTomorrow()">Speichern</button>
+          <span class="note-status" id="noteStatus"></span>
+        </div>
+      </div>
+
       <!-- Task-Liste -->
       <div class="card task-card">
         <div class="task-header">
@@ -412,6 +484,19 @@
       <span>Buchungen</span>
     </a>
   </nav>
+</div>
+
+<!-- Notiz-Popup-Modal -->
+<div class="modal" id="noteModal">
+  <div class="modal-box note-modal-box">
+    <div class="note-modal-icon">📝</div>
+    <div class="modal-title" style="text-align:center">Nachricht vom Vortag</div>
+    <div class="note-modal-from" id="noteModalFrom"></div>
+    <div class="note-modal-content" id="noteModalContent"></div>
+    <div class="modal-actions" style="margin-top:15px">
+      <button class="btn" onclick="closeNoteModal()">Verstanden</button>
+    </div>
+  </div>
 </div>
 
 <!-- Task-Bearbeiten-Modal -->
@@ -1225,6 +1310,9 @@
     if (ratingCard) {
       ratingCard.style.display = (yesterdayPerson && todayPerson) ? 'block' : 'none';
     }
+
+    // Notiz-Eingabe aktualisieren
+    updateNoteCards();
   }
 
   /* Bewertungssystem */
@@ -1590,6 +1678,98 @@
     el.innerHTML = `<table><thead><tr><th>Datum</th><th>Person</th><th>Bewertung</th></tr></thead><tbody>${rows.join('')}</tbody></table>`;
   }
 
+  /* Notiz-System */
+  let noteShownThisSession = false;
+  const NOTE_DISMISSED_KEY = 'hausdienst_note_dismissed_' + todayStr();
+
+  async function saveNoteForTomorrow() {
+    if (!db || !todayPerson) return;
+
+    const noteText = document.getElementById('noteForTomorrow').value.trim();
+    const statusEl = document.getElementById('noteStatus');
+
+    try {
+      // Notiz im heutigen Hausdienst-Dokument speichern (wird dann für morgen angezeigt)
+      await db.collection("hausdienst").doc(todayStr()).set({
+        noteForTomorrow: noteText,
+        noteFromPerson: todayPerson,
+        noteCreatedAt: Date.now()
+      }, { merge: true });
+
+      if (noteText) {
+        statusEl.textContent = '✓ Gespeichert';
+        setTimeout(() => { statusEl.textContent = ''; }, 2000);
+      } else {
+        statusEl.textContent = '✓ Notiz gelöscht';
+        setTimeout(() => { statusEl.textContent = ''; }, 2000);
+      }
+    } catch (e) {
+      console.error('Fehler beim Speichern der Notiz:', e);
+      statusEl.textContent = 'Fehler beim Speichern';
+    }
+  }
+
+  async function loadYesterdayNote() {
+    if (!db) return;
+
+    // Notiz vom gestrigen Hausdienst laden
+    const yesterdayDoc = await db.collection('hausdienst').doc(getYesterdayStr()).get();
+    if (!yesterdayDoc.exists) return;
+
+    const data = yesterdayDoc.data();
+    const noteText = data.noteForTomorrow;
+    const noteFrom = data.noteFromPerson || yesterdayPerson;
+
+    if (!noteText || !noteText.trim()) return;
+
+    // Notiz-Karte anzeigen
+    document.getElementById('noteFromPerson').textContent = noteFrom;
+    document.getElementById('yesterdayNoteContent').textContent = noteText;
+    document.getElementById('yesterdayNoteCard').style.display = 'block';
+
+    // Modal nur beim ersten Öffnen zeigen (wenn noch nicht dismissed)
+    const dismissed = localStorage.getItem(NOTE_DISMISSED_KEY);
+    if (!dismissed && !noteShownThisSession) {
+      noteShownThisSession = true;
+      showNoteModal(noteFrom, noteText);
+    }
+  }
+
+  function showNoteModal(from, content) {
+    document.getElementById('noteModalFrom').textContent = `Von: ${from}`;
+    document.getElementById('noteModalContent').textContent = content;
+    document.getElementById('noteModal').classList.add('show');
+  }
+
+  function closeNoteModal() {
+    document.getElementById('noteModal').classList.remove('show');
+    // Als dismissed markieren für heute
+    localStorage.setItem(NOTE_DISMISSED_KEY, 'true');
+  }
+
+  function dismissNote() {
+    document.getElementById('yesterdayNoteCard').style.display = 'none';
+    localStorage.setItem(NOTE_DISMISSED_KEY, 'true');
+  }
+
+  async function loadMyNote() {
+    if (!db || !todayPerson) return;
+
+    // Meine bereits gespeicherte Notiz laden
+    const todayDoc = await db.collection('hausdienst').doc(todayStr()).get();
+    if (todayDoc.exists && todayDoc.data().noteForTomorrow) {
+      document.getElementById('noteForTomorrow').value = todayDoc.data().noteForTomorrow;
+    }
+  }
+
+  function updateNoteCards() {
+    // Notiz-Eingabe nur anzeigen wenn man der heutige Hausdienst ist
+    const noteInputCard = document.getElementById('noteInputCard');
+    if (noteInputCard) {
+      noteInputCard.style.display = todayPerson ? 'block' : 'none';
+    }
+  }
+
   /* Initialisierung */
   async function init(){
     // Kernteam aus Firebase laden
@@ -1618,6 +1798,11 @@
     await loadTasks();
     await Promise.all([updateTodayInfo(), renderNextDays(), renderTasks(), renderHistory(), renderMonthlyOverview()]);
 
+    // Notiz-System initialisieren
+    updateNoteCards();
+    await loadYesterdayNote();
+    await loadMyNote();
+
     // Bewertungsdaten laden
     if (db) {
       if (todayPerson && yesterdayPerson) {
@@ -1638,6 +1823,8 @@
 
     scheduleMidnightRefresh(async ()=>{
       localStorage.removeItem(CHECKED_KEY);
+      // Alte Notiz-Dismissed-Keys bereinigen (alle außer heute)
+      Object.keys(localStorage).filter(k => k.startsWith('hausdienst_note_dismissed_') && k !== NOTE_DISMISSED_KEY).forEach(k => localStorage.removeItem(k));
       checked={};
       modalRating = 0;
       existingRatingId = null;
@@ -1645,11 +1832,15 @@
       todayPerson = null;
       hdTodayCompleted = false;
       yesterdayPerson = null;
+      noteShownThisSession = false;
       await updateTodayInfo();
       await renderTasks(true);
       await renderNextDays();
       renderHistory();
       updateHdStatus();
+      // Notiz-System neu laden
+      await loadYesterdayNote();
+      await loadMyNote();
     });
   }
   init();
