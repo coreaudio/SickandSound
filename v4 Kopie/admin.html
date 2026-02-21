@@ -48,33 +48,11 @@
     /* Sticky Header */
     .card.table-wrap thead th{
       position: sticky;
-      top: 0;
+      top: var(--sticky-top);
       z-index: 2;
       background: #111827; /* dunkler Hintergrund für Lesbarkeit */
       box-shadow: 0 2px 0 rgba(0,0,0,.25);
     }
-
-    /* Tabelle Container mit eigenem Scroll */
-    .card.table-wrap {
-      max-height: calc(100vh - 280px);
-      overflow-y: auto;
-    }
-
-    /* Hausdienst-Badge */
-    .hd-badge {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      min-width: 20px;
-      height: 20px;
-      padding: 0 6px;
-      border-radius: 10px;
-      font-size: 11px;
-      font-weight: 800;
-      margin-left: 6px;
-    }
-    .hd-badge.open { background: #ff6b6b; color: #fff; }
-    .hd-badge.done { background: #2a3042; color: #7CFC9A; }
 
     /* Hinweis im Löschmodus */
     .delete-hint{ opacity:.75; font-size:12px; margin-top:4px }
@@ -85,142 +63,6 @@
     .backup-actions{ display: flex; gap: 10px; margin-top: 15px; }
     .backup-list{ max-height: 200px; overflow-y: auto; margin: 10px 0; }
     .backup-item{ padding: 8px; border-bottom: 1px solid rgba(255,255,255,0.1); display: flex; justify-content: space-between; }
-
-    /* Hausdienst-Status in Strichliste */
-    .hd-today { background: rgba(255, 107, 107, 0.1); }
-    .hd-today.hd-complete { background: rgba(124, 252, 154, 0.1); }
-    .hd-status-icon { margin-left: 6px; font-size: 14px; }
-    .hd-status-icon.pending { color: #ff6b6b; }
-    .hd-status-icon.complete { color: #7CFC9A; }
-
-    /* Kernteam-Tags */
-    .core-tag { display: inline-flex; align-items: center; gap: 6px; padding: 6px 10px; border-radius: 8px; background: #1c2130; border: 1px solid #2a3042; }
-    .core-tag .remove-btn { cursor: pointer; color: #ff6b6b; font-weight: bold; padding: 0 4px; }
-    .core-tag .remove-btn:hover { color: #ff4444; }
-
-    /* Bezugsperson für Gäste */
-    .person-cell-wrapper { display: flex; align-items: center; justify-content: space-between; width: 100%; gap: 8px; }
-    .ref-select { padding: 4px 8px; border-radius: 6px; border: 1px solid #2a3042; background: #1c2130; color: #e6e8ef; font-size: 11px; max-width: 90px; cursor: pointer; flex-shrink: 0; }
-    .ref-badge { display: inline-block; padding: 2px 8px; border-radius: 4px; background: rgba(110, 231, 255, 0.15); color: #6ee7ff; font-size: 11px; margin-left: 6px; }
-
-    /* Tablet Hochformat Optimierung */
-    @media screen and (max-width: 900px) {
-      :root {
-        --ring: 36px;
-        --name-size: 13px;
-        --count-size: 13px;
-        --cell-gap: 4px;
-      }
-      .plus-btn, .minus-btn { padding: 4px 6px; font-size: 11px; min-width: 32px; }
-      .person-cell { gap: 4px; }
-      .drink-chip .drink-name { font-size: 9px; white-space: nowrap; }
-      .drink-chip .drink-price { font-size: 8px; }
-      .count { font-size: 12px; min-width: 20px; }
-
-      /* Bezugsperson unter den Namen */
-      .person-cell-wrapper {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 4px;
-      }
-      .ref-select {
-        max-width: 100%;
-        width: auto;
-        margin-left: 42px; /* Einrückung passend zum Ring */
-      }
-
-      /* Tabelle horizontal scrollbar */
-      .card.table-wrap {
-        overflow-x: auto;
-        -webkit-overflow-scrolling: touch;
-      }
-      .card.table-wrap table {
-        min-width: 600px;
-        table-layout: fixed;
-      }
-      .card.table-wrap table th:first-child {
-        width: 140px;
-        min-width: 140px;
-      }
-      .card.table-wrap table th:not(:first-child):not(:last-child) {
-        min-width: 70px;
-        padding: 4px 2px;
-      }
-      .card.table-wrap table td {
-        padding: 4px 2px;
-      }
-      .cell {
-        flex-wrap: nowrap;
-        justify-content: center;
-      }
-    }
-
-    /* Kleinere Tablets / große Phones */
-    @media screen and (max-width: 650px) {
-      :root {
-        --ring: 32px;
-        --name-size: 12px;
-        --count-size: 12px;
-        --cell-gap: 2px;
-      }
-      .plus-btn, .minus-btn { padding: 3px 5px; font-size: 10px; min-width: 28px; }
-      .ref-select { margin-left: 38px; font-size: 10px; }
-      .hd-badge { font-size: 9px; min-width: 16px; height: 16px; }
-      .hd-progress { font-size: 9px !important; }
-      .appbar h1 { font-size: 14px; }
-      .card.table-wrap table th:first-child {
-        width: 120px;
-        min-width: 120px;
-      }
-      .card.table-wrap table th:not(:first-child):not(:last-child) {
-        min-width: 60px;
-      }
-      .p-name { font-size: 11px; }
-      .lvl-ring .val { font-size: 10px; }
-    }
-
-    /* Touch-Geräte: größere Tap-Targets */
-    @media (pointer: coarse) {
-      .plus-btn, .minus-btn {
-        min-width: 44px;
-        min-height: 44px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-      }
-      .ref-select {
-        min-height: 36px;
-        padding: 8px 10px;
-      }
-    }
-
-    /* Drag & Drop für Getränke-Spalten */
-    .drink-header {
-      cursor: grab;
-      user-select: none;
-      transition: transform 0.15s ease, opacity 0.15s ease, background 0.15s ease;
-    }
-    .drink-header:active {
-      cursor: grabbing;
-    }
-    .drink-header.dragging {
-      opacity: 0.5;
-      transform: scale(0.95);
-      background: rgba(110, 231, 255, 0.2);
-    }
-    .drink-header.drag-over {
-      background: rgba(167, 139, 250, 0.3);
-      transform: scale(1.02);
-    }
-    .drag-hint {
-      font-size: 10px;
-      opacity: 0.6;
-      display: block;
-      margin-top: 2px;
-    }
-    @media screen and (max-width: 900px) {
-      .drag-hint { font-size: 8px; }
-    }
   </style>
 </head>
 <body>
@@ -252,17 +94,6 @@
       <div id="adminInfo" class="delete-hint" style="display:none">Admin-Modus aktiv: Tippe auf <b>-1 Buttons</b> zum Abziehen von Strichen.</div>
     </div>
 
-    <!-- Admin: Kernteam verwalten -->
-    <div class="card" id="coreTeamCard" style="display:none">
-      <div class="section-title">Kernteam verwalten</div>
-      <div class="sub" style="margin-bottom:10px">Personen zum Kernteam hinzufügen oder entfernen</div>
-      <div id="coreTeamList" style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px"></div>
-      <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
-        <input type="text" id="newCoreMember" placeholder="Neues Mitglied..." style="flex:1;min-width:150px;padding:8px 12px;border-radius:8px;border:1px solid #2a3042;background:#0e1422;color:#fff">
-        <button class="btn small" onclick="addCoreMember()">Hinzufügen</button>
-      </div>
-    </div>
-
     <div class="card table-wrap" id="tableContainer"></div>
 
     <div class="card" style="margin-top:8px">
@@ -285,21 +116,21 @@
       <svg viewBox="0 0 24 24" fill="currentColor"><path d="M4 6h16v2H4zM4 11h16v2H4zM4 16h10v2H4z"/></svg>
       <span>Liste</span>
     </a>
-    <a class="tab" href="hausdienst.html#check" aria-label="Hausdienst">
+    <a class="tab" href="hausdienst.html#plan" aria-label="Hausdienst">
       <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 3l9 7-1.2 1.6L18 10.1V20h-5v-6H11v6H6v-9.9L4.2 11.6 3 10z"/></svg>
       <span>Hausdienst</span>
-    </a>
-    <a class="tab" href="vorraete.html" aria-label="Vorräte">
-      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M20 2H4c-1 0-2 1-2 2v3c0 1 1 2 2 2v11c0 1 1 2 2 2h12c1 0 2-1 2-2V9c1 0 2-1 2-2V4c0-1-1-2-2-2zm-5 12h-2v2c0 .6-.4 1-1 1s-1-.4-1-1v-2H9c-.6 0-1-.4-1-1s.4-1 1-1h2v-2c0-.6.4-1 1-1s1 .4 1 1v2h2c.6 0 1 .4 1 1s-.4 1-1 1zm5-7H4V4h16v3z"/></svg>
-      <span>Vorräte</span>
     </a>
     <a class="tab" href="rangliste.html" aria-label="Ranglisten">
       <svg viewBox="0 0 24 24" fill="currentColor"><path d="M7 17H3V7h4v10zm7 0h-4V3h4v14zm7 0h-4v-8h4v8z"/></svg>
       <span>Rang</span>
     </a>
-    <a class="tab" href="bewertungen.html" aria-label="Bewertungen">
+    <a class="tab" href="badges.html" aria-label="Badges">
       <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 1l3.09 6.26L22 8.27l-5 4.87L18.18 22 12 18.56 5.82 22 7 13.14 2 8.27l6.91-1.01L12 1z"/></svg>
-      <span>Bewertungen</span>
+      <span>Badges</span>
+    </a>
+    <a class="tab" href="buchungen.html" aria-label="Buchungen">
+      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 2h9l5 5v13a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2zm8 1.5V8h4.5L14 3.5z"/></svg>
+      <span>Buchungen</span>
     </a>
   </nav>
 </div>
@@ -358,8 +189,7 @@
 
 <script>
 /* ===== Config ===== */
-const DEFAULT_CORE = ["Chris","Daniel","Elmi","Florian","Joel","Kevin","Kiste","Marco","Meli","Simon"];
-let CORE = [...DEFAULT_CORE]; // Wird dynamisch aus Firebase geladen
+const CORE = ["Chris","Daniel","Elmi","Florian","Joel","Kevin","Kiste","Marco","Meli","Simon"];
 const ADMIN_PASSWORD = "1379"; // Einfaches Admin-Passwort
 
 // Firebase sickandsound-8a15f
@@ -391,21 +221,7 @@ const pricesKey="sick_sound_prices", peopleKey="sick_sound_people", dataKey="sic
       xpKey="sick_sound_xp", redoKey="sick_sound_redo", backupsKey="sick_sound_backups";
 let prices={"Getränk":1.5,"Mittagessen":6.0};
 let people=[], data={}, history=[], redoStack=[], bookings=[], columnOrder=Object.keys(prices), xp={};
-let guestReferences={}; // Bezugspersonen für Gäste: {guestName: coreMemberName}
-let hdRequirements={}; // Individuelle Hausdienst-Anforderungen pro Person: {person: anzahl}
 let deleteMode=false, adminMode=false, correctionMode=false, hdToday=null;
-let hdTodayCompleted = false; // Ob der heutige Hausdienst abgeschlossen ist
-let hdTaskProgress = null; // Aufgaben-Fortschritt: { done: X, total: Y }
-let monthlyHdCounts = {}; // Hausdienste pro Person im aktuellen Monat
-const HD_DEFAULT_REQUIRED = 3; // Standard-Anforderung pro Monat
-
-// Gibt die Anforderung für eine Person zurück (0 = befreit)
-function getHdRequired(person) {
-  if (hdRequirements.hasOwnProperty(person)) {
-    return hdRequirements[person];
-  }
-  return HD_DEFAULT_REQUIRED;
-}
 
 /* ===== Sounds ===== */
 const makeSound = (src)=> (window.Howl ? new Howl({src:[src]}) : {play:()=>{}});
@@ -415,45 +231,6 @@ const sError = makeSound("https://cdn.jsdelivr.net/gh/jshawl/howler-examples@mas
 
 /* ===== Helpers / XP ===== */
 const todayStr=()=>new Date().toISOString().slice(0,10);
-const currentMonthStr=()=>new Date().toISOString().slice(0,7); // YYYY-MM
-
-// Lädt die Hausdienste für den aktuellen Monat
-async function loadMonthlyHdCounts(){
-  if(!db) return;
-  try {
-    const month = currentMonthStr();
-    const snap = await db.collection("hausdienst")
-      .where(firebase.firestore.FieldPath.documentId(), ">=", month + "-01")
-      .where(firebase.firestore.FieldPath.documentId(), "<=", month + "-31")
-      .get();
-
-    monthlyHdCounts = {};
-    snap.forEach(doc => {
-      const person = doc.data().person;
-      if(!person) return;
-
-      // Prüfen ob das Datum ein Wochenende ist
-      const dateStr = doc.id;
-      const date = new Date(dateStr);
-      const dayOfWeek = date.getDay();
-      const isWeekend = (dayOfWeek === 0 || dayOfWeek === 6);
-
-      // Wochenende = 0.5, Wochentag = 1
-      const points = isWeekend ? 0.5 : 1;
-      monthlyHdCounts[person] = (monthlyHdCounts[person] || 0) + points;
-    });
-  } catch(e) {
-    console.error("Fehler beim Laden der monatlichen Hausdienste:", e);
-  }
-}
-
-// Berechnet die noch offenen Hausdienste für eine Person
-function getOpenHdCount(person){
-  const required = getHdRequired(person);
-  if(required === 0) return 0; // Befreit
-  const done = monthlyHdCounts[person] || 0;
-  return Math.max(0, required - done);
-}
 const levelOf=x=>Math.floor(Math.sqrt(x/75))+1;
 function valueOfCurrentStriche(person){
   return (columnOrder||[]).reduce((sum,d)=> sum + ((data[`${person}_${d}`]||0)*(prices[d]||0)), 0);
@@ -464,53 +241,11 @@ function getXpForDisplay(person){
   return Math.max(base, cur);
 }
 
-/* Long-press +1 (nur Desktop) */
+/* Long-press +1 */
 let holdT=null, holdI=null;
 function startHold(handler){ stopHold(); handler(); holdT=setTimeout(()=>{holdI=setInterval(handler,120)},420); }
 function stopHold(){ if(holdT) clearTimeout(holdT); if(holdI) clearInterval(holdI); holdT=holdI=null; }
 window.onmouseup=stopHold; window.onmouseleave=stopHold;
-
-/* Touch-optimierte Strich-Logik (Tablet/Mobile) */
-let touchStartPos = null;
-let touchTriggered = false;
-const TOUCH_MOVE_THRESHOLD = 10; // Pixel bevor als Scroll erkannt
-
-function handleTouchStartBtn(e, handler) {
-  e.preventDefault(); // Verhindert Doppel-Trigger
-  touchStartPos = { x: e.touches[0].clientX, y: e.touches[0].clientY };
-  touchTriggered = false;
-}
-
-function handleTouchEndBtn(e, handler) {
-  if (touchTriggered || !touchStartPos) {
-    touchStartPos = null;
-    return;
-  }
-
-  const touch = e.changedTouches[0];
-  const deltaX = Math.abs(touch.clientX - touchStartPos.x);
-  const deltaY = Math.abs(touch.clientY - touchStartPos.y);
-
-  // Nur auslösen wenn kein Scroll (Finger hat sich kaum bewegt)
-  if (deltaX < TOUCH_MOVE_THRESHOLD && deltaY < TOUCH_MOVE_THRESHOLD) {
-    handler();
-  }
-
-  touchStartPos = null;
-}
-
-function handleTouchMoveBtn(e) {
-  if (!touchStartPos) return;
-
-  const touch = e.touches[0];
-  const deltaX = Math.abs(touch.clientX - touchStartPos.x);
-  const deltaY = Math.abs(touch.clientY - touchStartPos.y);
-
-  // Wenn Bewegung erkannt, als Scroll markieren
-  if (deltaX > TOUCH_MOVE_THRESHOLD || deltaY > TOUCH_MOVE_THRESHOLD) {
-    touchTriggered = true; // Verhindert Auslösen bei touchend
-  }
-}
 
 /* 00:00 Refresh */
 function scheduleMidnightRefresh(cb){
@@ -529,18 +264,6 @@ async function loadState(){
         prices=s.prices||prices; people=s.people||JSON.parse(localStorage.getItem(peopleKey))||[];
         data=s.data||data; history=s.history||history; redoStack=s.redoStack||JSON.parse(localStorage.getItem(redoKey))||[];
         bookings=s.bookings||bookings; columnOrder=s.columnOrder||Object.keys(prices); xp=s.xp||xp;
-        // Kernteam aus Firebase laden
-        if(s.core && Array.isArray(s.core) && s.core.length > 0) {
-          CORE = s.core;
-        }
-        // Bezugspersonen laden
-        if(s.guestReferences) {
-          guestReferences = s.guestReferences;
-        }
-        // HD-Anforderungen laden
-        if(s.hdRequirements) {
-          hdRequirements = s.hdRequirements;
-        }
       }else{
         people=JSON.parse(localStorage.getItem(peopleKey))||[];
         redoStack=JSON.parse(localStorage.getItem(redoKey))||[];
@@ -550,7 +273,6 @@ async function loadState(){
 
   CORE.forEach(n=>{ if(!people.includes(n)) people.push(n); });
 
-  await loadMonthlyHdCounts();
   saveAll(); buildTable(); updateTodayBanner(); subscribeRealtime(); updateUndoRedoButtons();
   await ensureXpFromExistingStricheAfterLoad();
   scheduleMidnightRefresh(()=>{ updateTodayBanner(); buildTable(); });
@@ -605,45 +327,13 @@ function subscribeRealtime(){
     const s=snap.data();
     prices=s.prices||prices; people=s.people||people; data=s.data||data; history=s.history||history;
     redoStack=s.redoStack||redoStack; bookings=s.bookings||bookings; columnOrder=s.columnOrder||columnOrder; xp=s.xp||xp;
-    // Kernteam aus Firebase laden
-    if(s.core && Array.isArray(s.core) && s.core.length > 0) {
-      CORE = s.core;
-    }
-    // Bezugspersonen laden
-    if(s.guestReferences) {
-      guestReferences = s.guestReferences;
-    }
-    // HD-Anforderungen laden
-    if(s.hdRequirements) {
-      hdRequirements = s.hdRequirements;
-    }
     CORE.forEach(n=>{ if(!people.includes(n)) people.push(n); });
     buildTable(); updateTodayBanner(); updateUndoRedoButtons();
-    if(adminMode) renderCoreTeamList();
   });
   db.collection("hausdienst").doc(todayStr()).onSnapshot(doc=>{
-    if (doc && doc.exists) {
-      const data = doc.data();
-      hdToday = data.person || null;
-      hdTodayCompleted = data.completed || false;
-      hdTaskProgress = data.taskProgress || null;
-    } else {
-      hdToday = null;
-      hdTodayCompleted = false;
-      hdTaskProgress = null;
-    }
+    hdToday = doc && doc.exists ? doc.data().person : null;
     updateTodayBanner(hdToday); buildTable();
   });
-
-  // Echtzeit-Updates für monatliche Hausdienste
-  const month = currentMonthStr();
-  db.collection("hausdienst")
-    .where(firebase.firestore.FieldPath.documentId(), ">=", month + "-01")
-    .where(firebase.firestore.FieldPath.documentId(), "<=", month + "-31")
-    .onSnapshot(async () => {
-      await loadMonthlyHdCounts();
-      buildTable();
-    });
 }
 
 /* Heute-Banner + CTA */
@@ -653,13 +343,7 @@ async function updateTodayBanner(existing){
     if(person===undefined){
       if(db){
         const d=await db.collection("hausdienst").doc(todayStr()).get();
-        if (d.exists) {
-          person = d.data().person || null;
-          hdTodayCompleted = d.data().completed || false;
-          hdTaskProgress = d.data().taskProgress || null;
-        } else {
-          person = null;
-        }
+        person = d.exists ? d.data().person : null;
       }else{ person=null; }
     }
     hdToday=person;
@@ -667,14 +351,9 @@ async function updateTodayBanner(existing){
     const infoEl=document.getElementById("todayInfo");
     const ctaEl=document.getElementById("todayCta");
 
-    if (person) {
-      const statusBadge = hdTodayCompleted
-        ? `<span class="badge ok">${person} ✓</span>`
-        : `<span class="badge" style="background:#ff6b6b;color:#fff">${person}</span>`;
-      infoEl.innerHTML = `Heute Hausdienst: ${statusBadge}`;
-    } else {
-      infoEl.innerHTML = `Heute: <span class="badge none">Noch niemand eingetragen</span>`;
-    }
+    infoEl.innerHTML = person
+      ? `Heute eingetragener Hausdienst: <span class="badge ok">${person}</span>`
+      : `Heute: <span class="badge none">Noch niemand eingetragen</span>`;
 
     ctaEl.innerHTML = `
       <button class="cta-check" onclick="openChecklist()">
@@ -743,100 +422,22 @@ function toggleAdminMode(){
     document.body.classList.remove('admin-mode');
     document.getElementById('adminIndicator').style.display = 'none';
     document.getElementById('adminInfo').style.display = 'none';
-    document.getElementById('coreTeamCard').style.display = 'none';
     document.getElementById('adminBtn').textContent = '🔧';
     buildTable();
     return;
   }
-
+  
   const password = prompt("Admin-Passwort eingeben:");
   if (password === ADMIN_PASSWORD) {
     adminMode = true;
     document.body.classList.add('admin-mode');
     document.getElementById('adminIndicator').style.display = 'inline-block';
     document.getElementById('adminInfo').style.display = 'block';
-    document.getElementById('coreTeamCard').style.display = 'block';
     document.getElementById('adminBtn').textContent = '🔧✓';
-    renderCoreTeamList();
     buildTable();
   } else {
     alert("Falsches Passwort");
     sError.play();
-  }
-}
-
-/* Kernteam-Verwaltung */
-function renderCoreTeamList() {
-  const container = document.getElementById('coreTeamList');
-  container.innerHTML = CORE.map(name => `
-    <span class="core-tag">
-      ${name}
-      <span class="remove-btn" onclick="removeCoreMember('${name}')" title="Entfernen">×</span>
-    </span>
-  `).join('');
-}
-
-function addCoreMember() {
-  const input = document.getElementById('newCoreMember');
-  const name = input.value.trim();
-
-  if (!name) {
-    alert('Bitte einen Namen eingeben');
-    return;
-  }
-
-  if (CORE.includes(name)) {
-    alert('Diese Person ist bereits im Kernteam');
-    return;
-  }
-
-  CORE.push(name);
-  CORE.sort((a, b) => a.localeCompare(b));
-
-  // Auch zu people hinzufügen falls noch nicht vorhanden
-  if (!people.includes(name)) {
-    people.push(name);
-  }
-
-  saveCoreTeam();
-  renderCoreTeamList();
-  buildTable();
-  input.value = '';
-}
-
-function removeCoreMember(name) {
-  if (!confirm(`"${name}" wirklich aus dem Kernteam entfernen?`)) return;
-
-  CORE = CORE.filter(n => n !== name);
-  saveCoreTeam();
-  renderCoreTeamList();
-  buildTable();
-}
-
-function saveCoreTeam() {
-  localStorage.setItem('sick_sound_core', JSON.stringify(CORE));
-  if (db) {
-    db.collection(STATE_COLLECTION).doc('global').set({ core: CORE }, { merge: true })
-      .catch(e => console.error('Fehler beim Speichern des Kernteams:', e));
-  }
-}
-
-/* Bezugsperson für Gäste */
-function setGuestReference(guest, coreMember) {
-  if (coreMember) {
-    guestReferences[guest] = coreMember;
-  } else {
-    delete guestReferences[guest];
-  }
-  saveGuestReferences();
-  buildTable();
-}
-
-function saveGuestReferences() {
-  localStorage.setItem('sick_sound_guest_refs', JSON.stringify(guestReferences));
-  if (db) {
-    db.collection(STATE_COLLECTION).doc('global').set({ guestReferences }, { merge: true })
-      .catch(e => console.error('Fehler beim Speichern der Bezugspersonen:', e));
   }
 }
 
@@ -870,12 +471,11 @@ function buildTable(){
   const core=CORE.filter(n=>people.includes(n));
   const guests=people.filter(n=>!CORE.includes(n)).sort((a,b)=>a.localeCompare(b));
 
-  let html = `<table><thead><tr><th style="min-width:180px;text-align:left">Person</th>`;
-  columnOrder.forEach((drink, idx)=>{
+  let html = `<table><thead><tr><th style="min-width:240px;text-align:left">Person</th>`;
+  columnOrder.forEach(drink=>{
     if(prices[drink]!==undefined){
       const delTitle = deleteMode ? ` title="Zum Löschen tippen"` : '';
-      const dragAttrs = !deleteMode ? `draggable="true" ondragstart="dragStart(event, ${idx})" ondragover="dragOver(event, ${idx})" ondragenter="dragEnter(event)" ondragleave="dragLeave(event)" ondrop="drop(event, ${idx})" ondragend="dragEnd(event)"` : '';
-      html += `<th class="drink-header" data-idx="${idx}" onclick="headerClick('${drink}')"${delTitle} ${dragAttrs}>
+      html += `<th onclick="headerClick('${drink}')"${delTitle}>
         <span class="drink-chip"><span class="drink-name">${drink.replace('_',' ')}</span>
         <span class="drink-price">${prices[drink]} €</span></span>
       </th>`;
@@ -905,67 +505,26 @@ function buildTable(){
 
   const row=(p)=>{
     const xpVal=getXpForDisplay(p);
-    const isHdToday = hdToday === p;
-    const hdClass = isHdToday ? (hdTodayCompleted ? "hd-today hd-complete" : "hd-today") : "";
+    const hdClass=(hdToday===p)?"hd-today":"";
     const personTitle = deleteMode ? ` title="Person löschen"` : '';
-    const isGuest = !CORE.includes(p);
-
-    // Offene Hausdienste berechnen (nur für Kernteam mit Anforderung > 0)
-    const hdRequired = CORE.includes(p) ? getHdRequired(p) : 0;
-    const openHd = hdRequired > 0 ? getOpenHdCount(p) : null;
-    const hdBadge = openHd !== null
-      ? `<span class="hd-badge ${openHd > 0 ? 'open' : 'done'}" title="Offene Hausdienste diesen Monat (${hdRequired} erforderlich)">${openHd}</span>`
-      : '';
-
-    // Hausdienst-Status-Icon und Aufgaben-Fortschritt für heute
-    let hdStatusIcon = '';
-    if (isHdToday) {
-      if (hdTodayCompleted) {
-        hdStatusIcon = `<span class="hd-status-icon complete" title="Hausdienst abgeschlossen">✓</span>`;
-      } else if (hdTaskProgress && hdTaskProgress.total > 0) {
-        const progressPct = Math.round((hdTaskProgress.done / hdTaskProgress.total) * 100);
-        const progressColor = progressPct === 100 ? '#7CFC9A' : (progressPct >= 50 ? '#6ee7ff' : '#ff6b6b');
-        hdStatusIcon = `<span class="hd-progress" title="Aufgaben: ${hdTaskProgress.done} von ${hdTaskProgress.total} erledigt" style="color:${progressColor};font-weight:800;margin-left:6px;font-size:12px">${hdTaskProgress.done}/${hdTaskProgress.total}</span>`;
-      } else {
-        hdStatusIcon = `<span class="hd-status-icon pending" title="Hausdienst noch offen">○</span>`;
-      }
-    }
-
-    // Bezugsperson für Gäste (immer sichtbar, nicht nur im Admin-Modus)
-    let refHtml = '';
-    if (isGuest) {
-      const currentRef = guestReferences[p] || '';
-      const options = CORE.map(c => `<option value="${c}" ${currentRef === c ? 'selected' : ''}>${c}</option>`).join('');
-      refHtml = `<select class="ref-select" onchange="setGuestReference('${p}', this.value)" onclick="event.stopPropagation()">
-        <option value="">Bezug...</option>${options}
-      </select>`;
-    }
-
     let rhtml = `<tr class="${hdClass}"><th style="text-align:left">
-      <div class="person-cell-wrapper">
-        <div class="person-cell"${personTitle} onclick="personCellClick('${p}')">
-          ${ring(xpVal,p)}<div class="p-info"><div class="p-name">${p}${hdStatusIcon}${hdBadge}</div></div>
-        </div>
-        ${refHtml}
+      <div class="person-cell"${personTitle} onclick="personCellClick('${p}')">
+        ${ring(xpVal,p)}<div class="p-info"><div class="p-name">${p}</div></div>
       </div></th>`;
     columnOrder.forEach(dr=>{
       if(prices[dr]!==undefined){
-        const id=`${p}_${dr}`, val=data[id]||0,
+        const id=`${p}_${dr}`, val=data[id]||0, 
               incHandler=`()=>changeCount('${id}','${dr}','${p}', 1)`,
               decHandler=`()=>changeCount('${id}','${dr}','${p}', -1)`;
-
-        rhtml += `<td><div class="cell">
-          ${adminMode ? `<button class="btn small minus-btn"
+        
+        rhtml += `<td><div class="cell" onclick="changeCount('${id}','${dr}','${p}', 1)">
+          ${adminMode ? `<button class="btn small minus-btn" onclick="event.stopPropagation(); changeCount('${id}','${dr}','${p}', -1)"
             onmousedown="startHold(${decHandler})" onmouseup="stopHold()" onmouseleave="stopHold()"
-            ontouchstart="handleTouchStartBtn(event, ${decHandler})"
-            ontouchmove="handleTouchMoveBtn(event)"
-            ontouchend="handleTouchEndBtn(event, ${decHandler})">-1</button>` : ''}
+            ontouchstart="startHold(${decHandler})" ontouchend="stopHold()">-1</button>` : ''}
           <div class="count" id="${id}">${val}</div>
-          <button class="btn small plus-btn"
+          <button class="btn small plus-btn" onclick="event.stopPropagation(); changeCount('${id}','${dr}','${p}', 1)"
             onmousedown="startHold(${incHandler})" onmouseup="stopHold()" onmouseleave="stopHold()"
-            ontouchstart="handleTouchStartBtn(event, ${incHandler})"
-            ontouchmove="handleTouchMoveBtn(event)"
-            ontouchend="handleTouchEndBtn(event, ${incHandler})">+1</button></div></td>`;
+            ontouchstart="startHold(${incHandler})" ontouchend="stopHold()">+1</button></div></td>`;
       }
     });
     const total=columnOrder.reduce((s,d)=>s+(data[`${p}_${d}`]||0)*prices[d],0);
@@ -984,21 +543,19 @@ function buildTable(){
 
   /* Kernteam */
   if(core.length){
-    html += `<tr class="section-row"><td colspan="${columnOrder.length + (correctionMode ? 3 : 2)}">— Kernteam —</td></tr>`;
+    html += `<tr class="section-row"><td colspan="${columnOrder.length + (correctionMode ? 2 : 1)}">— Kernteam —</td></tr>`;
     core.forEach(p=> html += row(p));
   }
 
   /* Gäste immer anzeigen */
   if(guests.length){
-    html += `<tr class="section-row"><td colspan="${columnOrder.length + (correctionMode ? 3 : 2)}">— Gäste —</td></tr>`;
+    html += `<tr class="section-row"><td colspan="${columnOrder.length + (correctionMode ? 2 : 1)}">— Gäste —</td></tr>`;
     guests.forEach(p=> html += row(p));
   }
 
   html += `</tbody></table>`;
   document.getElementById("tableContainer").innerHTML = html;
   requestAnimationFrame(adjustToOnePage);
-  // Touch-Drag für Mobile/Tablet initialisieren
-  setTimeout(initTouchDrag, 50);
 }
 
 /* Onepage fit (für Kernteam-Spaltenhöhen) */
@@ -1022,150 +579,6 @@ function adjustToOnePage(){
   document.documentElement.style.setProperty('--name-size', name+'px');
   document.documentElement.style.setProperty('--count-size', count+'px');
   document.documentElement.style.setProperty('--cell-gap', Math.max(8, Math.floor(rowH*0.22))+'px');
-}
-
-/* Drag & Drop für Getränke-Spalten */
-let draggedColIdx = null;
-
-function dragStart(e, idx) {
-  if (deleteMode) return;
-  draggedColIdx = idx;
-  e.target.classList.add('dragging');
-  e.dataTransfer.effectAllowed = 'move';
-  e.dataTransfer.setData('text/plain', idx);
-}
-
-function dragOver(e, idx) {
-  e.preventDefault();
-  e.dataTransfer.dropEffect = 'move';
-}
-
-function dragEnter(e) {
-  e.preventDefault();
-  e.target.closest('.drink-header')?.classList.add('drag-over');
-}
-
-function dragLeave(e) {
-  e.target.closest('.drink-header')?.classList.remove('drag-over');
-}
-
-function drop(e, targetIdx) {
-  e.preventDefault();
-  const header = e.target.closest('.drink-header');
-  if (header) header.classList.remove('drag-over');
-
-  if (draggedColIdx === null || draggedColIdx === targetIdx) return;
-
-  // Spaltenreihenfolge ändern
-  const movedDrink = columnOrder[draggedColIdx];
-  columnOrder.splice(draggedColIdx, 1);
-  columnOrder.splice(targetIdx, 0, movedDrink);
-
-  saveAll();
-  buildTable();
-}
-
-function dragEnd(e) {
-  draggedColIdx = null;
-  document.querySelectorAll('.drink-header').forEach(h => {
-    h.classList.remove('dragging', 'drag-over');
-  });
-}
-
-/* Touch-basiertes Drag & Drop für Mobile/Tablet */
-let touchDragIdx = null;
-let touchDragEl = null;
-let touchClone = null;
-
-function initTouchDrag() {
-  document.querySelectorAll('.drink-header').forEach((header, idx) => {
-    header.addEventListener('touchstart', (e) => touchDragStart(e, idx), { passive: false });
-  });
-}
-
-function touchDragStart(e, idx) {
-  if (deleteMode) return;
-
-  // Long press detection
-  const touch = e.touches[0];
-  const startX = touch.clientX;
-  const startY = touch.clientY;
-  let moved = false;
-
-  const longPressTimer = setTimeout(() => {
-    if (!moved) {
-      e.preventDefault();
-      touchDragIdx = idx;
-      touchDragEl = e.target.closest('.drink-header');
-      touchDragEl.classList.add('dragging');
-
-      // Visual feedback
-      if (navigator.vibrate) navigator.vibrate(50);
-
-      document.addEventListener('touchmove', touchDragMove, { passive: false });
-      document.addEventListener('touchend', touchDragEnd);
-    }
-  }, 400);
-
-  const moveHandler = (ev) => {
-    const t = ev.touches[0];
-    if (Math.abs(t.clientX - startX) > 10 || Math.abs(t.clientY - startY) > 10) {
-      moved = true;
-      clearTimeout(longPressTimer);
-      document.removeEventListener('touchmove', moveHandler);
-    }
-  };
-
-  document.addEventListener('touchmove', moveHandler, { passive: true });
-
-  e.target.addEventListener('touchend', () => {
-    clearTimeout(longPressTimer);
-    document.removeEventListener('touchmove', moveHandler);
-  }, { once: true });
-}
-
-function touchDragMove(e) {
-  if (touchDragIdx === null) return;
-  e.preventDefault();
-
-  const touch = e.touches[0];
-  const elementBelow = document.elementFromPoint(touch.clientX, touch.clientY);
-  const targetHeader = elementBelow?.closest('.drink-header');
-
-  document.querySelectorAll('.drink-header').forEach(h => h.classList.remove('drag-over'));
-  if (targetHeader && targetHeader !== touchDragEl) {
-    targetHeader.classList.add('drag-over');
-  }
-}
-
-function touchDragEnd(e) {
-  if (touchDragIdx === null) return;
-
-  const touch = e.changedTouches[0];
-  const elementBelow = document.elementFromPoint(touch.clientX, touch.clientY);
-  const targetHeader = elementBelow?.closest('.drink-header');
-
-  if (targetHeader && targetHeader !== touchDragEl) {
-    const targetIdx = parseInt(targetHeader.dataset.idx);
-    if (!isNaN(targetIdx) && targetIdx !== touchDragIdx) {
-      const movedDrink = columnOrder[touchDragIdx];
-      columnOrder.splice(touchDragIdx, 1);
-      columnOrder.splice(targetIdx, 0, movedDrink);
-      saveAll();
-    }
-  }
-
-  document.querySelectorAll('.drink-header').forEach(h => {
-    h.classList.remove('dragging', 'drag-over');
-  });
-
-  touchDragIdx = null;
-  touchDragEl = null;
-
-  document.removeEventListener('touchmove', touchDragMove);
-  document.removeEventListener('touchend', touchDragEnd);
-
-  buildTable();
 }
 
 /* Interactions */

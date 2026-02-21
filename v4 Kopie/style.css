@@ -1,0 +1,142 @@
+:root{
+  --bg:#0b0e14; --panel:#141926; --panel-2:#101521; --txt:#e9eefb; --muted:#94a3b8;
+  --accent:#00e0b8; --accent-2:#7c3aed; --danger:#ff4d4f; --gold:#ffd700;
+  --appbar-h:64px; --nav-h:72px;
+}
+
+/* Reset & base */
+*{box-sizing:border-box}
+html,body{height:100%;margin:0}
+body{
+  color:var(--txt);
+  font-family: ui-sans-serif, -apple-system, BlinkMacSystemFont, "SF Pro Display",
+               "Segoe UI", Roboto, "Helvetica Neue", Arial, "Orbitron", sans-serif;
+  background:
+    radial-gradient(1000px 700px at 100% -20%, #0f1b2d 0%, rgba(11,14,20,0) 60%) no-repeat fixed,
+    var(--bg);
+}
+
+/* ===== App Shell ======================================================= */
+.app{height:100dvh; width:100%; display:flex; flex-direction:column}
+
+/* AppBar */
+.appbar{
+  position:sticky; top:0; z-index:50; height:var(--appbar-h);
+  display:flex; align-items:center; justify-content:space-between; gap:8px;
+  padding:0 calc(14px + env(safe-area-inset-right)) 0 calc(14px + env(safe-area-inset-left));
+  background:rgba(16,21,33,.68); border-bottom:1px solid rgba(255,255,255,.08);
+  backdrop-filter: saturate(160%) blur(16px);
+}
+.app-title{display:flex; align-items:center; gap:10px}
+.brand-dot{
+  width:28px; height:28px; border-radius:9px;
+  background:linear-gradient(140deg,var(--accent),var(--accent-2));
+  box-shadow:0 6px 20px rgba(0,224,184,.25);
+}
+.app-title h1{font-size:20px; letter-spacing:.3px; margin:0}
+.appbar-actions{display:flex; gap:8px}
+
+/* Content area (only this scrolls) */
+.content{
+  flex:1; min-height:0; /* enables child scrolling */
+  padding:14px;
+  padding-left: calc(14px + env(safe-area-inset-left));
+  padding-right: calc(14px + env(safe-area-inset-right));
+  overflow:auto;
+}
+
+/* Bottom navigation */
+.bottomnav{
+  position:sticky; bottom:0; z-index:50; height:calc(var(--nav-h) + env(safe-area-inset-bottom));
+  padding-bottom: env(safe-area-inset-bottom);
+  display:flex; justify-content:space-around; align-items:center;
+  background:rgba(16,21,33,.68); border-top:1px solid rgba(255,255,255,.08);
+  backdrop-filter: saturate(160%) blur(16px);
+}
+.tab{display:flex; flex-direction:column; align-items:center; gap:4px; color:#cbd5e1; text-decoration:none; font-size:11px}
+.tab svg{width:22px; height:22px; opacity:.9}
+.tab.active{color:#fff}
+.tab.active svg{opacity:1; filter: drop-shadow(0 2px 8px rgba(0,224,184,.35))}
+
+/* ===== Cards / Surfaces =============================================== */
+.card{
+  background: linear-gradient(180deg, #141926, #101521);
+  border:1px solid rgba(255,255,255,.06);
+  border-radius:16px;
+  box-shadow: 0 10px 30px rgba(0,0,0,.35), inset 0 1px 0 rgba(255,255,255,.03);
+  padding:14px;
+}
+.section-title{margin:0 0 8px 0; font-size:17px; font-weight:800}
+.sub{color:var(--muted); font-size:13px}
+
+/* ===== Table (Strichliste) ============================================ */
+.table-wrap{overflow:auto}
+table{width:100%; border-collapse:collapse; table-layout:fixed}
+th,td{padding:10px; border-bottom:1px solid rgba(255,255,255,.06); text-align:center}
+th{font-weight:900; font-size:15px; color:#fff}
+td{font-size:15px}
+td:last-child{font-weight:900; color:var(--gold)}
+.section-row td{padding:10px; background:rgba(255,255,255,.05); font-weight:900; letter-spacing:.3px; color:#cbd5e1}
+@media (min-width: 900px){
+  thead th{position:sticky; top:0; background:linear-gradient(180deg,#141926,#101521); z-index:2}
+}
+
+/* Drink header chip */
+.drink-chip{display:inline-block; min-width:120px; padding:8px 12px; border-radius:14px;
+  background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.09)}
+.drink-name{font-size:15px; font-weight:900; display:block}
+.drink-price{font-size:12px; color:#cdd5e1}
+
+/* Person cell + Level */
+.person-cell{display:flex; gap:12px; align-items:center; text-align:left}
+.p-info{flex:1; min-width:140px}
+.p-name{font-size:19px; font-weight:900; letter-spacing:.2px}
+.lvl-wrap{margin-top:4px}
+.lvl-line{font-size:12px; color:#cbd5e1; display:flex; justify-content:space-between}
+.progress{height:8px; background:#0e1422; border-radius:6px; overflow:hidden}
+.progress > span{display:block; height:100%; background:linear-gradient(90deg,var(--accent),var(--accent-2))}
+
+/* Circular Level Ring */
+.lvl-ring{position:relative; width:52px; height:52px}
+.lvl-ring svg{transform:rotate(-90deg)}
+.lvl-ring .val{position:absolute; inset:0; display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:900}
+.ring-bg{stroke:rgba(255,255,255,.12); stroke-width:6; fill:none}
+.ring-fg{stroke:url(#grad); stroke-width:6; fill:none; stroke-linecap:round; transition:stroke-dashoffset .25s ease}
+
+/* Cell content & counter */
+.cell{display:flex; flex-direction:column; gap:6px; align-items:center}
+.count{font-size:18px; font-weight:900}
+.count.bump{animation:bump .16s ease}
+@keyframes bump{0%{transform:scale(1)}50%{transform:scale(1.2)}100%{transform:scale(1)}}
+
+/* Buttons */
+.btn{-webkit-tap-highlight-color:transparent; padding:10px 14px; border:none; border-radius:12px;
+  font-weight:900; font-size:14px; color:#000; background:var(--accent);
+  box-shadow:0 10px 20px rgba(0,224,184,.15), inset 0 1px 0 rgba(255,255,255,.25);
+  cursor:pointer; user-select:none}
+.btn:active{transform:translateY(1px)}
+.btn.small{padding:8px 10px; font-size:13px}
+.btn.secondary{background:#3b82f6; color:#fff}
+.btn.dark{background:#242b3a; color:#fff}
+.btn.danger{background:var(--danger); color:#fff}
+.btn.warning{background:#f59e0b; color:#141414}
+.btn.ghost{background:transparent; color:#fff; border:1px solid rgba(255,255,255,.18)}
+.plus-btn{width:100%; max-width:120px}
+
+/* Footer buttons (legacy row) */
+.footer{display:flex; flex-wrap:wrap; gap:10px; justify-content:center}
+
+/* Modals */
+.modal{position:fixed; inset:0; display:none; align-items:center; justify-content:center; background:rgba(0,0,0,.6); z-index:60}
+.modal.show{display:flex}
+.modal .box{width:min(92vw,520px); background:#141926; border:1px solid rgba(255,255,255,.07); border-radius:16px; padding:16px}
+
+/* Inputs */
+input,select{width:100%; padding:12px; border-radius:10px; border:1px solid rgba(255,255,255,.08);
+  background:#0e1422; color:#fff; font-size:15px; outline:none}
+input::placeholder{color:#91a0b5}
+
+/* Misc */
+.qr{max-width:60%; max-height:60%; border:8px solid #fff; border-radius:16px}
+button,.btn{min-height:44px}
+.hd-today{background:rgba(0,224,184,.10)}

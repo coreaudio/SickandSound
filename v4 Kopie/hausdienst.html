@@ -214,49 +214,18 @@
     .progress-bar { height: 4px; background: #2a3042; border-radius: 2px; overflow: hidden; margin-top: 6px; }
     .progress-bar .fill { height: 100%; background: linear-gradient(90deg, #6ee7ff, #7CFC9A); transition: width 0.3s; }
 
-    /* Bewertungs-Prompt - Prominent */
+    /* Bewertungs-Prompt */
     .rating-prompt-card {
-      background: linear-gradient(135deg, rgba(255, 215, 0, 0.25), rgba(255, 165, 0, 0.2));
-      border: 2px solid rgba(255, 215, 0, 0.6);
-      animation: ratingPulse 2s ease-in-out infinite;
-      position: relative;
-      overflow: hidden;
-    }
-    .rating-prompt-card::before {
-      content: '';
-      position: absolute;
-      top: -50%;
-      left: -50%;
-      width: 200%;
-      height: 200%;
-      background: linear-gradient(45deg, transparent, rgba(255, 215, 0, 0.1), transparent);
-      animation: ratingShine 3s ease-in-out infinite;
-    }
-    @keyframes ratingPulse {
-      0%, 100% { border-color: rgba(255, 215, 0, 0.6); box-shadow: 0 0 0 0 rgba(255, 215, 0, 0); }
-      50% { border-color: rgba(255, 215, 0, 1); box-shadow: 0 0 20px 4px rgba(255, 215, 0, 0.3); }
-    }
-    @keyframes ratingShine {
-      0% { transform: translateX(-100%) rotate(45deg); }
-      100% { transform: translateX(100%) rotate(45deg); }
-    }
-    .rating-prompt-card.rated {
-      animation: none;
-      border-color: rgba(124, 252, 154, 0.6);
-      background: linear-gradient(135deg, rgba(124, 252, 154, 0.15), rgba(110, 231, 255, 0.1));
-    }
-    .rating-prompt-card.rated::before {
-      display: none;
+      background: linear-gradient(135deg, rgba(255, 215, 0, 0.15), rgba(255, 165, 0, 0.1));
+      border: 1px solid rgba(255, 215, 0, 0.3);
     }
     .rating-prompt {
       display: flex;
       align-items: center;
       gap: 12px;
-      position: relative;
-      z-index: 1;
     }
     .rating-prompt-icon {
-      font-size: 40px;
+      font-size: 32px;
       flex-shrink: 0;
     }
     .rating-prompt-text {
@@ -265,80 +234,23 @@
     }
     .rating-prompt-text strong {
       display: block;
-      font-size: 15px;
-      margin-bottom: 4px;
-      color: #ffd700;
-    }
-    .rating-prompt-card.rated .rating-prompt-text strong {
-      color: #7CFC9A;
+      font-size: 14px;
+      margin-bottom: 2px;
     }
     .rating-prompt-text span {
-      font-size: 13px;
-      opacity: 0.9;
+      font-size: 12px;
+      opacity: 0.7;
     }
     .rating-prompt-btn {
       background: linear-gradient(135deg, #ffd700, #ff9f43) !important;
       color: #0b0e14 !important;
       font-weight: 800;
-      padding: 12px 20px;
+      padding: 10px 16px;
       flex-shrink: 0;
-      font-size: 14px;
-      border-radius: 10px;
     }
     .rating-prompt-btn:hover {
       transform: scale(1.05);
       box-shadow: 0 4px 15px rgba(255, 215, 0, 0.4);
-    }
-    .rating-prompt-card.rated .rating-prompt-btn {
-      background: linear-gradient(135deg, #7CFC9A, #6ee7ff) !important;
-    }
-    /* Inline-Schnellbewertung */
-    .quick-rating {
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
-      margin-top: 12px;
-      position: relative;
-      z-index: 1;
-    }
-    .quick-rating-stars {
-      display: flex;
-      gap: 6px;
-      justify-content: center;
-    }
-    .quick-rating-stars .star {
-      font-size: 32px;
-      cursor: pointer;
-      color: #3a4052;
-      transition: all 0.2s;
-      padding: 4px;
-    }
-    .quick-rating-stars .star:hover,
-    .quick-rating-stars .star.active {
-      color: #ffd700;
-      transform: scale(1.15);
-    }
-    .quick-rating-stars .star.hovered {
-      color: #ffd700;
-    }
-    .quick-rating-comment {
-      width: 100%;
-      padding: 10px 12px;
-      border-radius: 8px;
-      border: 1px solid rgba(255, 215, 0, 0.3);
-      background: rgba(0, 0, 0, 0.3);
-      color: #e6e8ef;
-      font-size: 14px;
-      resize: none;
-    }
-    .quick-rating-comment:focus {
-      border-color: #ffd700;
-      outline: none;
-    }
-    .quick-rating-actions {
-      display: flex;
-      gap: 10px;
-      justify-content: center;
     }
 
     /* Admin-Modus */
@@ -408,53 +320,6 @@
     .complete-btn.completed {
       background: #7CFC9A;
       pointer-events: none;
-    }
-
-    /* Vorrats-Warnung */
-    .inventory-alert-card {
-      background: linear-gradient(135deg, rgba(255, 107, 107, 0.2), rgba(255, 159, 67, 0.15));
-      border: 2px solid #ff6b6b;
-    }
-    .inventory-alert-header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 10px;
-    }
-    .inventory-alert-title {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      font-weight: 800;
-      color: #ff6b6b;
-    }
-    .inventory-alert-title .icon { font-size: 20px; }
-    .inventory-alert-list {
-      margin-top: 10px;
-      display: flex;
-      flex-direction: column;
-      gap: 6px;
-    }
-    .inventory-alert-item {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 8px 12px;
-      background: rgba(0, 0, 0, 0.2);
-      border-radius: 8px;
-      font-size: 14px;
-    }
-    .inventory-alert-item .item-name { font-weight: 600; }
-    .inventory-alert-item .item-stock {
-      font-weight: 800;
-      color: #ff6b6b;
-      padding: 2px 8px;
-      background: rgba(255, 107, 107, 0.2);
-      border-radius: 4px;
-    }
-    .inventory-alert-item.empty .item-stock {
-      background: #ff6b6b;
-      color: #fff;
     }
   </style>
 </head>
@@ -561,42 +426,6 @@
         </button>
       </div>
 
-      <!-- Bewertung - Prominent nach oben verschoben -->
-      <div class="card rating-prompt-card" id="ratingCard" style="display:none">
-        <div class="rating-prompt">
-          <div class="rating-prompt-icon" id="ratingIcon">⭐</div>
-          <div class="rating-prompt-text">
-            <strong id="ratingTitle">Wie war der Hausdienst gestern?</strong>
-            <span id="ratingPromptPerson"></span>
-          </div>
-        </div>
-        <div class="quick-rating" id="quickRating">
-          <div class="quick-rating-stars" id="quickStars">
-            <span class="star" data-value="1" onclick="setQuickRating(1)" onmouseenter="hoverQuickRating(1)" onmouseleave="hoverQuickRating(0)">★</span>
-            <span class="star" data-value="2" onclick="setQuickRating(2)" onmouseenter="hoverQuickRating(2)" onmouseleave="hoverQuickRating(0)">★</span>
-            <span class="star" data-value="3" onclick="setQuickRating(3)" onmouseenter="hoverQuickRating(3)" onmouseleave="hoverQuickRating(0)">★</span>
-            <span class="star" data-value="4" onclick="setQuickRating(4)" onmouseenter="hoverQuickRating(4)" onmouseleave="hoverQuickRating(0)">★</span>
-            <span class="star" data-value="5" onclick="setQuickRating(5)" onmouseenter="hoverQuickRating(5)" onmouseleave="hoverQuickRating(0)">★</span>
-          </div>
-          <textarea id="quickComment" class="quick-rating-comment" placeholder="Optionaler Kommentar..." rows="2" oninput="updateQuickSubmitButton()"></textarea>
-          <div class="quick-rating-actions">
-            <button class="btn rating-prompt-btn" id="quickSubmitBtn" onclick="submitQuickRating()" disabled>⭐ Bewertung abschicken</button>
-          </div>
-        </div>
-      </div>
-
-      <!-- Vorrats-Warnung -->
-      <div class="card inventory-alert-card" id="inventoryAlertCard" style="display:none">
-        <div class="inventory-alert-header">
-          <div class="inventory-alert-title">
-            <span class="icon">📦</span>
-            <span>Vorräte nachbestellen!</span>
-          </div>
-          <a href="vorraete.html" class="btn small">Zur Vorratsliste</a>
-        </div>
-        <div class="inventory-alert-list" id="inventoryAlertList"></div>
-      </div>
-
       <!-- Notiz vom Vortag -->
       <div class="card note-card" id="yesterdayNoteCard" style="display:none">
         <div class="note-header">
@@ -637,6 +466,17 @@
         </div>
       </div>
 
+      <!-- Bewertung -->
+      <div class="card rating-prompt-card" id="ratingCard" style="display:none">
+        <div class="rating-prompt">
+          <div class="rating-prompt-icon">⭐</div>
+          <div class="rating-prompt-text">
+            <strong>Wie war der Hausdienst gestern?</strong>
+            <span id="ratingPromptPerson"></span>
+          </div>
+          <button class="btn rating-prompt-btn" onclick="openRatingModal()">Bewerten</button>
+        </div>
+      </div>
     </div>
 
     <!-- Panel: Historie -->
@@ -676,10 +516,7 @@
       <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 3l9 7-1.2 1.6L18 10.1V20h-5v-6H11v6H6v-9.9L4.2 11.6 3 10z"/></svg>
       <span>Hausdienst</span>
     </a>
-    <a class="tab" href="vorraete.html">
-      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M20 2H4c-1 0-2 1-2 2v3c0 1 1 2 2 2v11c0 1 1 2 2 2h12c1 0 2-1 2-2V9c1 0 2-1 2-2V4c0-1-1-2-2-2zm-5 12h-2v2c0 .6-.4 1-1 1s-1-.4-1-1v-2H9c-.6 0-1-.4-1-1s.4-1 1-1h2v-2c0-.6.4-1 1-1s1 .4 1 1v2h2c.6 0 1 .4 1 1s-.4 1-1 1zm5-7H4V4h16v3z"/></svg>
-      <span>Vorräte</span>
-    </a>
+    <a class="tab" href="hausdienst.html#check" style="display:none"></a><!-- Reserve -->
     <a class="tab" href="rangliste.html">
       <svg viewBox="0 0 24 24" fill="currentColor"><path d="M7 17H3V7h4v10zm7 0h-4V3h4v14zm7 0h-4v-8h4v8z"/></svg>
       <span>Rang</span>
@@ -687,6 +524,10 @@
     <a class="tab" href="bewertungen.html">
       <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 1l3.09 6.26L22 8.27l-5 4.87L18.18 22 12 18.56 5.82 22 7 13.14 2 8.27l6.91-1.01L12 1z"/></svg>
       <span>Bewertungen</span>
+    </a>
+    <a class="tab" href="buchungen.html">
+      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 2h9l5 5v13a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V4a2 0 0 1 2-2zm8 1.5V8h4.5L14 3.5z"/></svg>
+      <span>Buchungen</span>
     </a>
   </nav>
 </div>
@@ -758,7 +599,7 @@
       <span class="star" data-value="4" onclick="setModalRating(4)" onmouseenter="hoverModalRating(4)" onmouseleave="hoverModalRating(0)">★</span>
       <span class="star" data-value="5" onclick="setModalRating(5)" onmouseenter="hoverModalRating(5)" onmouseleave="hoverModalRating(0)">★</span>
     </div>
-    <textarea id="modalComment" class="rating-comment" placeholder="Optionaler Kommentar..." oninput="updateModalSubmitButton()"></textarea>
+    <textarea id="modalComment" class="rating-comment" placeholder="Optionaler Kommentar..."></textarea>
     <div class="modal-actions">
       <button class="btn" id="modalSubmitBtn" onclick="submitModalRating()" disabled>Bewerten</button>
       <button class="btn ghost" onclick="closeRatingModal()">Später</button>
@@ -1513,13 +1354,10 @@
     // Rating Card anzeigen wenn gestern jemand Hausdienst hatte
     const ratingCard = document.getElementById('ratingCard');
     if (ratingCard) {
-      const showRating = yesterdayPerson && todayPerson;
-      ratingCard.style.display = showRating ? 'block' : 'none';
-
-      if (showRating) {
-        // Prüfen ob bereits bewertet und UI entsprechend setzen
-        const hasRating = existingRatingData && existingRatingData.rating > 0;
-        updateRatingCardUI(hasRating);
+      ratingCard.style.display = (yesterdayPerson && todayPerson) ? 'block' : 'none';
+      const ratingPersonEl = document.getElementById('ratingPromptPerson');
+      if (ratingPersonEl && yesterdayPerson) {
+        ratingPersonEl.textContent = `Bewerte ${yesterdayPerson}s Arbeit von gestern`;
       }
     }
 
@@ -1555,32 +1393,7 @@
     stars.forEach((star, i) => {
       star.classList.toggle('active', i < val);
     });
-
-    // Bei weniger als 5 Sternen: Kommentar erforderlich
-    const commentField = document.getElementById('modalComment');
-
-    if (val > 0 && val < 5) {
-      commentField.placeholder = 'Begründung erforderlich bei weniger als 5 Sternen...';
-      commentField.style.borderColor = '#ff9f43';
-      updateModalSubmitButton();
-    } else {
-      commentField.placeholder = 'Optionaler Kommentar...';
-      commentField.style.borderColor = '';
-      document.getElementById('modalSubmitBtn').disabled = modalRating === 0;
-    }
-  }
-
-  function updateModalSubmitButton() {
-    const submitBtn = document.getElementById('modalSubmitBtn');
-    const comment = document.getElementById('modalComment').value.trim();
-
-    if (modalRating === 0) {
-      submitBtn.disabled = true;
-    } else if (modalRating < 5 && !comment) {
-      submitBtn.disabled = true;
-    } else {
-      submitBtn.disabled = false;
-    }
+    document.getElementById('modalSubmitBtn').disabled = modalRating === 0;
   }
 
   async function openRatingModal() {
@@ -1623,13 +1436,6 @@
     if (!db || modalRating === 0 || !yesterdayPerson || !todayPerson) return;
 
     const comment = document.getElementById('modalComment').value.trim();
-
-    // Validierung: Bei weniger als 5 Sternen muss eine Begründung angegeben werden
-    if (modalRating < 5 && !comment) {
-      alert('Bitte gib eine Begründung an, wenn du weniger als 5 Sterne vergibst.');
-      document.getElementById('modalComment').focus();
-      return;
-    }
 
     if (existingRatingId) {
       // Bestehende Bewertung aktualisieren
@@ -1690,197 +1496,15 @@
 
     updateHdStatus();
 
-    // Erinnerung JEDES MAL zeigen, wenn noch nicht bewertet
+    // Modal automatisch öffnen wenn noch nicht bewertet
     if (!hasRating) {
-      // Kurze Verzögerung, damit die Seite erst lädt
-      setTimeout(() => {
-        showRatingReminder();
-      }, 500);
-    }
-  }
-
-  // Erinnerungs-Popup anzeigen
-  function showRatingReminder() {
-    // Zur Bewertungskarte scrollen und sie hervorheben
-    const ratingCard = document.getElementById('ratingCard');
-    if (ratingCard && ratingCard.style.display !== 'none') {
-      ratingCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
-
-      // Extra Animation für Aufmerksamkeit
-      ratingCard.style.transform = 'scale(1.05)';
-      ratingCard.style.transition = 'transform 0.3s ease';
-      setTimeout(() => {
-        ratingCard.style.transform = '';
-      }, 400);
-
-      // Vibration für mobile Geräte (falls unterstützt)
-      if (navigator.vibrate) {
-        navigator.vibrate([100, 50, 100]);
-      }
+      openRatingModal();
     }
   }
 
   // Alias für Kompatibilität
   function updateHdStatus() {
     updateStatusHeader();
-  }
-
-  /* Schnellbewertung (Inline im Card) */
-  let quickRating = 0;
-
-  function hoverQuickRating(val) {
-    const stars = document.querySelectorAll('#quickStars .star');
-    stars.forEach((star, i) => {
-      star.classList.toggle('hovered', val > 0 && i < val);
-    });
-  }
-
-  function setQuickRating(val) {
-    quickRating = val;
-    const stars = document.querySelectorAll('#quickStars .star');
-    stars.forEach((star, i) => {
-      star.classList.toggle('active', i < val);
-    });
-
-    // Bei weniger als 5 Sternen: Kommentar erforderlich
-    const commentField = document.getElementById('quickComment');
-    const submitBtn = document.getElementById('quickSubmitBtn');
-
-    if (val > 0 && val < 5) {
-      commentField.placeholder = 'Begründung erforderlich bei weniger als 5 Sternen...';
-      commentField.required = true;
-      commentField.style.borderColor = '#ff9f43';
-      // Button nur aktivieren wenn Kommentar vorhanden
-      updateQuickSubmitButton();
-    } else {
-      commentField.placeholder = 'Optionaler Kommentar...';
-      commentField.required = false;
-      commentField.style.borderColor = '';
-      submitBtn.disabled = quickRating === 0;
-    }
-  }
-
-  function updateQuickSubmitButton() {
-    const submitBtn = document.getElementById('quickSubmitBtn');
-    const comment = document.getElementById('quickComment').value.trim();
-
-    if (quickRating === 0) {
-      submitBtn.disabled = true;
-    } else if (quickRating < 5 && !comment) {
-      submitBtn.disabled = true;
-    } else {
-      submitBtn.disabled = false;
-    }
-  }
-
-  async function submitQuickRating() {
-    if (!db || quickRating === 0 || !yesterdayPerson || !todayPerson) return;
-
-    const comment = document.getElementById('quickComment').value.trim();
-
-    // Validierung: Bei weniger als 5 Sternen muss eine Begründung angegeben werden
-    if (quickRating < 5 && !comment) {
-      alert('Bitte gib eine Begründung an, wenn du weniger als 5 Sterne vergibst.');
-      document.getElementById('quickComment').focus();
-      return;
-    }
-    const submitBtn = document.getElementById('quickSubmitBtn');
-    submitBtn.disabled = true;
-    submitBtn.textContent = 'Speichert...';
-
-    try {
-      if (existingRatingId) {
-        // Bestehende Bewertung aktualisieren
-        await db.collection('bewertungen').doc(existingRatingId).update({
-          rating: quickRating,
-          comment: comment,
-          updatedAt: Date.now()
-        });
-      } else {
-        // Neue Bewertung erstellen
-        const newDoc = await db.collection('bewertungen').add({
-          date: getYesterdayStr(),
-          bewerteterHausdienst: yesterdayPerson,
-          bewertetVon: todayPerson,
-          rating: quickRating,
-          comment: comment,
-          createdAt: Date.now()
-        });
-        existingRatingId = newDoc.id;
-      }
-
-      existingRatingData = { rating: quickRating, comment: comment };
-
-      // UI aktualisieren - Karte als "bewertet" markieren
-      updateRatingCardUI(true);
-
-    } catch (e) {
-      console.error('Fehler beim Speichern:', e);
-      alert('Fehler beim Speichern der Bewertung');
-      submitBtn.disabled = false;
-      submitBtn.textContent = '⭐ Bewertung abschicken';
-    }
-  }
-
-  function updateRatingCardUI(hasRating) {
-    const card = document.getElementById('ratingCard');
-    const icon = document.getElementById('ratingIcon');
-    const title = document.getElementById('ratingTitle');
-    const personSpan = document.getElementById('ratingPromptPerson');
-    const quickRatingDiv = document.getElementById('quickRating');
-    const submitBtn = document.getElementById('quickSubmitBtn');
-
-    if (hasRating && existingRatingData) {
-      card.classList.add('rated');
-      icon.textContent = '✅';
-      title.textContent = 'Bewertung abgegeben!';
-
-      const starsHtml = '★'.repeat(existingRatingData.rating) +
-                        '<span style="opacity:0.3">' + '★'.repeat(5 - existingRatingData.rating) + '</span>';
-      personSpan.innerHTML = `${yesterdayPerson}: <span style="color:#ffd700">${starsHtml}</span>`;
-
-      // Schnellbewertung ausblenden aber Card sichtbar lassen
-      quickRatingDiv.style.display = 'none';
-
-      // Einen "Bearbeiten" Button anzeigen
-      const actionsDiv = document.querySelector('.quick-rating-actions');
-      if (actionsDiv) {
-        actionsDiv.innerHTML = `<button class="btn small ghost" onclick="editQuickRating()">✏️ Bewertung ändern</button>`;
-        actionsDiv.style.display = 'flex';
-        actionsDiv.style.marginTop = '10px';
-      }
-    } else {
-      card.classList.remove('rated');
-      icon.textContent = '⭐';
-      title.textContent = 'Wie war der Hausdienst gestern?';
-      if (yesterdayPerson) {
-        personSpan.textContent = `Bewerte ${yesterdayPerson}s Arbeit`;
-      }
-      quickRatingDiv.style.display = 'flex';
-      submitBtn.disabled = quickRating === 0;
-      submitBtn.textContent = '⭐ Bewertung abschicken';
-    }
-  }
-
-  function editQuickRating() {
-    // Schnellbewertung wieder anzeigen mit vorhandenen Werten
-    const quickRatingDiv = document.getElementById('quickRating');
-    quickRatingDiv.style.display = 'flex';
-
-    if (existingRatingData) {
-      setQuickRating(existingRatingData.rating);
-      document.getElementById('quickComment').value = existingRatingData.comment || '';
-    }
-
-    const submitBtn = document.getElementById('quickSubmitBtn');
-    submitBtn.textContent = '✏️ Bewertung aktualisieren';
-    submitBtn.disabled = false;
-
-    // Bearbeiten-Button verstecken
-    const actionsDiv = document.querySelector('.quick-rating-actions');
-    if (actionsDiv) {
-      actionsDiv.innerHTML = `<button class="btn rating-prompt-btn" id="quickSubmitBtn" onclick="submitQuickRating()">✏️ Bewertung aktualisieren</button>`;
-    }
   }
 
   // Hausdienst als abgeschlossen markieren
@@ -2196,44 +1820,6 @@
     }
   }
 
-  /* Vorrats-Warnungen */
-  let lowStockItems = [];
-
-  async function loadInventoryAlerts() {
-    if (!db) return;
-
-    // Echtzeit-Listener für niedrige Bestände
-    db.collection('vorraete').onSnapshot(snap => {
-      const items = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-      lowStockItems = items.filter(item => item.stock <= item.minStock);
-      renderInventoryAlerts();
-    });
-  }
-
-  function renderInventoryAlerts() {
-    const card = document.getElementById('inventoryAlertCard');
-    const list = document.getElementById('inventoryAlertList');
-
-    if (!card || !list) return;
-
-    if (lowStockItems.length === 0) {
-      card.style.display = 'none';
-      return;
-    }
-
-    card.style.display = 'block';
-
-    list.innerHTML = lowStockItems.map(item => {
-      const isEmpty = item.stock === 0;
-      return `
-        <div class="inventory-alert-item ${isEmpty ? 'empty' : ''}">
-          <span class="item-name">${item.name}</span>
-          <span class="item-stock">${isEmpty ? 'LEER' : `Noch ${item.stock} ${item.unit || ''}`}</span>
-        </div>
-      `;
-    }).join('');
-  }
-
   /* Initialisierung */
   async function init(){
     // Kernteam aus Firebase laden
@@ -2266,9 +1852,6 @@
     updateNoteCards();
     await loadYesterdayNote();
     await loadMyNote();
-
-    // Vorrats-Warnungen laden
-    loadInventoryAlerts();
 
     // Bewertungsdaten laden
     if (db) {

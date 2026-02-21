@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <title>Kalender</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <link rel="stylesheet" href="style.css" />
+  <!-- FullCalendar -->
+  <link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.14/index.global.min.css" rel="stylesheet">
+  <style>
+    body { background:#0b0e14; color:#e6e8ef; }
+    .appbar{ display:flex; align-items:center; justify-content:space-between; padding:10px 14px; border-bottom:1px solid #23293a;}
+    h1{ font-size:18px; margin:0; display:flex; align-items:center; gap:8px; }
+    .actions{ display:flex; gap:8px; }
+    #calendar{ max-width:1000px; margin:12px auto; background:#0f1625; border:1px solid #23293a; border-radius:16px; padding:10px; }
+    .btn { padding:8px 12px; border-radius:10px; border:1px solid #2a3042; background:#1c2130; color:#e6e8ef; cursor:pointer; }
+    .btn.primary{ background:linear-gradient(135deg,#6ee7ff,#a78bfa); color:#0b0e14; border-color:transparent; font-weight:800; }
+    .sub{ opacity:.8; font-size:12px; margin-left:6px; }
+  </style>
+</head>
+<body>
+  <header class="appbar">
+    <h1>📅 Team-Kalender <span id="status" class="sub">nicht verbunden</span></h1>
+    <div class="actions">
+      <button class="btn" onclick="goHome()">🏠 Liste</button>
+      <button id="signin" class="btn primary" onclick="handleAuthClick()">Bei Google anmelden</button>
+      <button id="signout" class="btn" style="display:none" onclick="handleSignoutClick()">Abmelden</button>
+    </div>
+  </header>
+
+  <main>
+    <div id="calendar"></div>
+  </main>
+
+  <!-- FullCalendar -->
+  <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.14/index.global.min.js"></script>
+  <!-- Google APIs & Identity Services -->
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
+  <script src="https://apis.google.com/js/api.js" async defer></script>
+
+  <script>
+  /* ====== KONFIG ====== */
+  const CLIENT_ID = 'HIER_DEINE_OAUTH_CLIENT_ID.apps.googleusercontent.com';  // <-- ersetzen
+  const API_KEY   = 'HIER_DEIN_API_KEY';                                      // <-- ersetzen
+  const CALENDAR_ID = 'primary'; // oder 'deine-kalender-id@group.calendar.google.com'
+  const SCOPES = 'https://www.googleapis.com/auth/calendar'; // read+write
+
+  /* ====== STATE ====== */
+  let tokenClient;
+  let gapiInited = false;
+  let gisInited  = false;
+  let accessToken = null;
+  let calendar; // FullCalendar-Instanz
+
+  function goHome(){ location.href = 'index.html'; }
+
+  /* ====== INIT GAPI ====== */
+  window.onload = () => {
+    // FullCalendar initialisieren (ohne Daten, Events werden später geladen)
+    initCalendar();
+  };
+
+  window.gapiLoaded = function gapiLoaded(){};
+  // gapi lädt async; wenn fertig:
+  window.addEventListener('load', () => {
+    if (window.gapi) {
+      gapi.load('client', async () => {
+        try{
+          await gapi.client.init({
+            apiKey: API_KEY,
+            discoveryDocs: ['https://www.googleapis.com/discovery/v1/apis/calendar/v3/rest'],
+          });
+          gapiInited = true;
+          maybeEnableButtons();
+        }catch(e){ console.error(e); }
+      });
+    }
+  });
+
+  // GIS initialisieren (Sign-in)
+  window.onGoogleLibraryLoad = function(){};
+  document.addEventListener('DOMContentLoaded', () => {
+    const ready = () => {
+      if (!window.google || !google.accounts || !google.accounts.oauth2) return false;
+      tokenClient = google.accounts.oauth2.initTokenClient({
+        client_id: CLIENT_ID,
+        scope: SCOPES,
+        callback: (resp) => {
+          if (resp.error) { console.error(resp); return; }
+          accessToken = resp.access_token;
+          gapi.client.setToken({ access_token: accessToken });
+          onSignedIn();
+        }
+      });
+      gisInited = true;
+      maybeEnableButtons();
+    };
+    // Warten bis das GIS-Script wirklich da ist
+    const iv = setInterval(()=>{
+      if (ready()){ clearInterval(iv); }
+    }, 200);
+  });
+
+  function maybeEnableButtons(){
+    const ready = gapiInited && gisInited;
+    document.getElementById('signin').disabled = !ready;
+    setStatus(ready ? 'bereit' : 'lädt…');
+  }
+
+  function setStatus(text){
+    const el = document.getElementById('status');
+    if (el) el.textContent = text;
+  }
+
+  /* ====== AUTH ====== */
+  function handleAuthClick(){
+    if (!tokenClient) return;
+    tokenClient.requestAccessToken({ prompt: 'consent' }); // fragt interaktiv nach
+  }
+  function handleSignoutClick(){
+    if (accessToken) {
+      // Token verwerfen
+      google.accounts.oauth2.revoke(accessToken, () => {
+        accessToken = null;
+        gapi.client.setToken(null);
+        onSignedOut();
+      });
+    } else {
+      onSignedOut();
+    }
+  }
+  function onSignedIn(){
+    setStatus('angemeldet');
+    document.getElementById('signin').style.display='none';
+    document.getElementById('signout').style.display='inline-block';
+    // Events laden
+    refreshEvents();
+  }
+  function onSignedOut(){
+    setStatus('abgemeldet');
+    document.getElementById('signin').style.display='inline-block';
+    document.getElementById('signout').style.display='none';
+    // Kalender leeren
+    if (calendar) { calendar.getEvents().forEach(e=>e.remove()); }
+  }
+
+  /* ====== FULLCALENDAR ====== */
+  function initCalendar(){
+    const calendarEl = document.getElementById('calendar');
+    calendar = new FullCalendar.Calendar(calendarEl, {
+      initialView: 'dayGridMonth',
+      height: 'auto',
+      headerToolbar: {
+        left: 'prev,next today',
+        center: 'title',
+        right: 'dayGridMonth,timeGridWeek,timeGridDay'
+      },
+      locale: 'de',
+      firstDay: 1,
+      selectable: true,
+      selectMirror: true,
+      select: onDateSelect,
+      eventClick: onEventClick
+    });
+    calendar.render();
+  }
+
+  async function refreshEvents(){
+    if(!accessToken){ return; }
+    // Zeitraum aus aktuellem View bestimmen
+    const view = calendar.view;
+    const timeMin = view.activeStart.toISOString();
+    const timeMax = view.activeEnd.toISOString();
+
+    try{
+      const res = await gapi.client.calendar.events.list({
+        calendarId: CALENDAR_ID,
+        timeMin, timeMax,
+        singleEvents: true,
+        orderBy: 'startTime',
+        maxResults: 2500
+      });
+      const items = res.result.items || [];
+      // Vorherige Events entfernen
+      calendar.getEvents().forEach(e=>e.remove());
+      // Neue Events hinzufügen
+      items.forEach(ev=>{
+        const start = ev.start.dateTime || ev.start.date;
+        const end   = ev.end?.dateTime || ev.end?.date;
+        calendar.addEvent({
+          id: ev.id,
+          title: ev.summary || '(Ohne Titel)',
+          start,
+          end,
+          allDay: !!ev.start.date,
+        });
+      });
+      setStatus(`angemeldet · ${items.length} Termine geladen`);
+    }catch(e){
+      console.error(e);
+      setStatus('Fehler beim Laden');
+      if (e.status === 401) { onSignedOut(); }
+    }
+  }
+
+  calendarViewChangeHook();
+  function calendarViewChangeHook(){
+    // Wenn der View wechselt, Events neu laden (sofern angemeldet)
+    const orig = FullCalendar.Calendar.prototype.changeView;
+    FullCalendar.Calendar.prototype.changeView = function(){
+      orig.apply(this, arguments);
+      if(accessToken) refreshEvents();
+    };
+    const origNav = FullCalendar.Calendar.prototype.next;
+    FullCalendar.Calendar.prototype.next = function(){
+      origNav.apply(this, arguments);
+      if(accessToken) refreshEvents();
+    };
+    const origPrev = FullCalendar.Calendar.prototype.prev;
+    FullCalendar.Calendar.prototype.prev = function(){
+      origPrev.apply(this, arguments);
+      if(accessToken) refreshEvents();
+    };
+    const origToday = FullCalendar.Calendar.prototype.today;
+    FullCalendar.Calendar.prototype.today = function(){
+      origToday.apply(this, arguments);
+      if(accessToken) refreshEvents();
+    };
+  }
+
+  /* ====== CREATE / EDIT ====== */
+  async function onDateSelect(info){
+    if(!accessToken){ alert('Bitte zuerst bei Google anmelden.'); return; }
+    const title = prompt('Titel für Termin eingeben:');
+    if(!title){ calendar.unselect(); return; }
+
+    const isAllDay = info.allDay;
+    const startISO = info.startStr;
+    const endISO   = info.endStr;
+
+    try{
+      const ev = await gapi.client.calendar.events.insert({
+        calendarId: CALENDAR_ID,
+        resource: isAllDay ? {
+          summary: title,
+          start: { date: startISO.slice(0,10) },
+          end:   { date: endISO.slice(0,10) }
+        } : {
+          summary: title,
+          start: { dateTime: info.start.toISOString() },
+          end:   { dateTime: info.end.toISOString() }
+        }
+      });
+      // Im UI anzeigen
+      const created = ev.result;
+      calendar.addEvent({
+        id: created.id,
+        title: created.summary || title,
+        start: created.start.dateTime || created.start.date,
+        end:   created.end?.dateTime || created.end?.date,
+        allDay: !!created.start.date
+      });
+    }catch(e){
+      console.error(e);
+      alert('Konnte Termin nicht erstellen.');
+      if (e.status === 401) { onSignedOut(); }
+    }finally{
+      calendar.unselect();
+    }
+  }
+
+  async function onEventClick(info){
+    if(!confirm(`Termin "${info.event.title}" löschen?`)) return;
+    if(!accessToken){ alert('Bitte zuerst bei Google anmelden.'); return; }
+    try{
+      await gapi.client.calendar.events.delete({
+        calendarId: CALENDAR_ID,
+        eventId: info.event.id
+      });
+      info.event.remove();
+    }catch(e){
+      console.error(e);
+      alert('Konnte Termin nicht löschen.');
+      if (e.status === 401) { onSignedOut(); }
+    }
+  }
+  </script>
+</body>
+</html>

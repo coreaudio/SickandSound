@@ -106,16 +106,15 @@
     /* Tablet Hochformat Optimierung */
     @media screen and (max-width: 900px) {
       :root {
-        --ring: 36px;
-        --name-size: 13px;
-        --count-size: 13px;
-        --cell-gap: 4px;
+        --ring: 40px;
+        --name-size: 15px;
+        --count-size: 15px;
+        --cell-gap: 6px;
       }
-      .plus-btn, .minus-btn { padding: 4px 6px; font-size: 11px; min-width: 32px; }
-      .person-cell { gap: 4px; }
-      .drink-chip .drink-name { font-size: 9px; white-space: nowrap; }
-      .drink-chip .drink-price { font-size: 8px; }
-      .count { font-size: 12px; min-width: 20px; }
+      .plus-btn, .minus-btn { padding: 6px 10px; font-size: 13px; }
+      .person-cell { gap: 6px; }
+      .drink-chip .drink-name { font-size: 10px; }
+      .drink-chip .drink-price { font-size: 9px; }
 
       /* Bezugsperson unter den Namen */
       .person-cell-wrapper {
@@ -126,7 +125,7 @@
       .ref-select {
         max-width: 100%;
         width: auto;
-        margin-left: 42px; /* Einrückung passend zum Ring */
+        margin-left: 46px; /* Einrückung passend zum Ring */
       }
 
       /* Tabelle horizontal scrollbar */
@@ -135,48 +134,23 @@
         -webkit-overflow-scrolling: touch;
       }
       .card.table-wrap table {
-        min-width: 600px;
-        table-layout: fixed;
-      }
-      .card.table-wrap table th:first-child {
-        width: 140px;
-        min-width: 140px;
-      }
-      .card.table-wrap table th:not(:first-child):not(:last-child) {
-        min-width: 70px;
-        padding: 4px 2px;
-      }
-      .card.table-wrap table td {
-        padding: 4px 2px;
-      }
-      .cell {
-        flex-wrap: nowrap;
-        justify-content: center;
+        min-width: 500px;
       }
     }
 
     /* Kleinere Tablets / große Phones */
     @media screen and (max-width: 650px) {
       :root {
-        --ring: 32px;
-        --name-size: 12px;
-        --count-size: 12px;
-        --cell-gap: 2px;
+        --ring: 36px;
+        --name-size: 14px;
+        --count-size: 14px;
+        --cell-gap: 4px;
       }
-      .plus-btn, .minus-btn { padding: 3px 5px; font-size: 10px; min-width: 28px; }
-      .ref-select { margin-left: 38px; font-size: 10px; }
-      .hd-badge { font-size: 9px; min-width: 16px; height: 16px; }
-      .hd-progress { font-size: 9px !important; }
-      .appbar h1 { font-size: 14px; }
-      .card.table-wrap table th:first-child {
-        width: 120px;
-        min-width: 120px;
-      }
-      .card.table-wrap table th:not(:first-child):not(:last-child) {
-        min-width: 60px;
-      }
-      .p-name { font-size: 11px; }
-      .lvl-ring .val { font-size: 10px; }
+      .plus-btn, .minus-btn { padding: 5px 8px; font-size: 12px; }
+      .ref-select { margin-left: 42px; }
+      .hd-badge { font-size: 10px; min-width: 18px; height: 18px; }
+      .hd-progress { font-size: 10px !important; }
+      .appbar h1 { font-size: 16px; }
     }
 
     /* Touch-Geräte: größere Tap-Targets */
@@ -192,34 +166,6 @@
         min-height: 36px;
         padding: 8px 10px;
       }
-    }
-
-    /* Drag & Drop für Getränke-Spalten */
-    .drink-header {
-      cursor: grab;
-      user-select: none;
-      transition: transform 0.15s ease, opacity 0.15s ease, background 0.15s ease;
-    }
-    .drink-header:active {
-      cursor: grabbing;
-    }
-    .drink-header.dragging {
-      opacity: 0.5;
-      transform: scale(0.95);
-      background: rgba(110, 231, 255, 0.2);
-    }
-    .drink-header.drag-over {
-      background: rgba(167, 139, 250, 0.3);
-      transform: scale(1.02);
-    }
-    .drag-hint {
-      font-size: 10px;
-      opacity: 0.6;
-      display: block;
-      margin-top: 2px;
-    }
-    @media screen and (max-width: 900px) {
-      .drag-hint { font-size: 8px; }
     }
   </style>
 </head>
@@ -289,10 +235,6 @@
       <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 3l9 7-1.2 1.6L18 10.1V20h-5v-6H11v6H6v-9.9L4.2 11.6 3 10z"/></svg>
       <span>Hausdienst</span>
     </a>
-    <a class="tab" href="vorraete.html" aria-label="Vorräte">
-      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M20 2H4c-1 0-2 1-2 2v3c0 1 1 2 2 2v11c0 1 1 2 2 2h12c1 0 2-1 2-2V9c1 0 2-1 2-2V4c0-1-1-2-2-2zm-5 12h-2v2c0 .6-.4 1-1 1s-1-.4-1-1v-2H9c-.6 0-1-.4-1-1s.4-1 1-1h2v-2c0-.6.4-1 1-1s1 .4 1 1v2h2c.6 0 1 .4 1 1s-.4 1-1 1zm5-7H4V4h16v3z"/></svg>
-      <span>Vorräte</span>
-    </a>
     <a class="tab" href="rangliste.html" aria-label="Ranglisten">
       <svg viewBox="0 0 24 24" fill="currentColor"><path d="M7 17H3V7h4v10zm7 0h-4V3h4v14zm7 0h-4v-8h4v8z"/></svg>
       <span>Rang</span>
@@ -300,6 +242,10 @@
     <a class="tab" href="bewertungen.html" aria-label="Bewertungen">
       <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 1l3.09 6.26L22 8.27l-5 4.87L18.18 22 12 18.56 5.82 22 7 13.14 2 8.27l6.91-1.01L12 1z"/></svg>
       <span>Bewertungen</span>
+    </a>
+    <a class="tab" href="buchungen.html" aria-label="Buchungen">
+      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 2h9l5 5v13a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2zm8 1.5V8h4.5L14 3.5z"/></svg>
+      <span>Buchungen</span>
     </a>
   </nav>
 </div>
@@ -871,11 +817,10 @@ function buildTable(){
   const guests=people.filter(n=>!CORE.includes(n)).sort((a,b)=>a.localeCompare(b));
 
   let html = `<table><thead><tr><th style="min-width:180px;text-align:left">Person</th>`;
-  columnOrder.forEach((drink, idx)=>{
+  columnOrder.forEach(drink=>{
     if(prices[drink]!==undefined){
       const delTitle = deleteMode ? ` title="Zum Löschen tippen"` : '';
-      const dragAttrs = !deleteMode ? `draggable="true" ondragstart="dragStart(event, ${idx})" ondragover="dragOver(event, ${idx})" ondragenter="dragEnter(event)" ondragleave="dragLeave(event)" ondrop="drop(event, ${idx})" ondragend="dragEnd(event)"` : '';
-      html += `<th class="drink-header" data-idx="${idx}" onclick="headerClick('${drink}')"${delTitle} ${dragAttrs}>
+      html += `<th onclick="headerClick('${drink}')"${delTitle}>
         <span class="drink-chip"><span class="drink-name">${drink.replace('_',' ')}</span>
         <span class="drink-price">${prices[drink]} €</span></span>
       </th>`;
@@ -997,8 +942,6 @@ function buildTable(){
   html += `</tbody></table>`;
   document.getElementById("tableContainer").innerHTML = html;
   requestAnimationFrame(adjustToOnePage);
-  // Touch-Drag für Mobile/Tablet initialisieren
-  setTimeout(initTouchDrag, 50);
 }
 
 /* Onepage fit (für Kernteam-Spaltenhöhen) */
@@ -1022,150 +965,6 @@ function adjustToOnePage(){
   document.documentElement.style.setProperty('--name-size', name+'px');
   document.documentElement.style.setProperty('--count-size', count+'px');
   document.documentElement.style.setProperty('--cell-gap', Math.max(8, Math.floor(rowH*0.22))+'px');
-}
-
-/* Drag & Drop für Getränke-Spalten */
-let draggedColIdx = null;
-
-function dragStart(e, idx) {
-  if (deleteMode) return;
-  draggedColIdx = idx;
-  e.target.classList.add('dragging');
-  e.dataTransfer.effectAllowed = 'move';
-  e.dataTransfer.setData('text/plain', idx);
-}
-
-function dragOver(e, idx) {
-  e.preventDefault();
-  e.dataTransfer.dropEffect = 'move';
-}
-
-function dragEnter(e) {
-  e.preventDefault();
-  e.target.closest('.drink-header')?.classList.add('drag-over');
-}
-
-function dragLeave(e) {
-  e.target.closest('.drink-header')?.classList.remove('drag-over');
-}
-
-function drop(e, targetIdx) {
-  e.preventDefault();
-  const header = e.target.closest('.drink-header');
-  if (header) header.classList.remove('drag-over');
-
-  if (draggedColIdx === null || draggedColIdx === targetIdx) return;
-
-  // Spaltenreihenfolge ändern
-  const movedDrink = columnOrder[draggedColIdx];
-  columnOrder.splice(draggedColIdx, 1);
-  columnOrder.splice(targetIdx, 0, movedDrink);
-
-  saveAll();
-  buildTable();
-}
-
-function dragEnd(e) {
-  draggedColIdx = null;
-  document.querySelectorAll('.drink-header').forEach(h => {
-    h.classList.remove('dragging', 'drag-over');
-  });
-}
-
-/* Touch-basiertes Drag & Drop für Mobile/Tablet */
-let touchDragIdx = null;
-let touchDragEl = null;
-let touchClone = null;
-
-function initTouchDrag() {
-  document.querySelectorAll('.drink-header').forEach((header, idx) => {
-    header.addEventListener('touchstart', (e) => touchDragStart(e, idx), { passive: false });
-  });
-}
-
-function touchDragStart(e, idx) {
-  if (deleteMode) return;
-
-  // Long press detection
-  const touch = e.touches[0];
-  const startX = touch.clientX;
-  const startY = touch.clientY;
-  let moved = false;
-
-  const longPressTimer = setTimeout(() => {
-    if (!moved) {
-      e.preventDefault();
-      touchDragIdx = idx;
-      touchDragEl = e.target.closest('.drink-header');
-      touchDragEl.classList.add('dragging');
-
-      // Visual feedback
-      if (navigator.vibrate) navigator.vibrate(50);
-
-      document.addEventListener('touchmove', touchDragMove, { passive: false });
-      document.addEventListener('touchend', touchDragEnd);
-    }
-  }, 400);
-
-  const moveHandler = (ev) => {
-    const t = ev.touches[0];
-    if (Math.abs(t.clientX - startX) > 10 || Math.abs(t.clientY - startY) > 10) {
-      moved = true;
-      clearTimeout(longPressTimer);
-      document.removeEventListener('touchmove', moveHandler);
-    }
-  };
-
-  document.addEventListener('touchmove', moveHandler, { passive: true });
-
-  e.target.addEventListener('touchend', () => {
-    clearTimeout(longPressTimer);
-    document.removeEventListener('touchmove', moveHandler);
-  }, { once: true });
-}
-
-function touchDragMove(e) {
-  if (touchDragIdx === null) return;
-  e.preventDefault();
-
-  const touch = e.touches[0];
-  const elementBelow = document.elementFromPoint(touch.clientX, touch.clientY);
-  const targetHeader = elementBelow?.closest('.drink-header');
-
-  document.querySelectorAll('.drink-header').forEach(h => h.classList.remove('drag-over'));
-  if (targetHeader && targetHeader !== touchDragEl) {
-    targetHeader.classList.add('drag-over');
-  }
-}
-
-function touchDragEnd(e) {
-  if (touchDragIdx === null) return;
-
-  const touch = e.changedTouches[0];
-  const elementBelow = document.elementFromPoint(touch.clientX, touch.clientY);
-  const targetHeader = elementBelow?.closest('.drink-header');
-
-  if (targetHeader && targetHeader !== touchDragEl) {
-    const targetIdx = parseInt(targetHeader.dataset.idx);
-    if (!isNaN(targetIdx) && targetIdx !== touchDragIdx) {
-      const movedDrink = columnOrder[touchDragIdx];
-      columnOrder.splice(touchDragIdx, 1);
-      columnOrder.splice(targetIdx, 0, movedDrink);
-      saveAll();
-    }
-  }
-
-  document.querySelectorAll('.drink-header').forEach(h => {
-    h.classList.remove('dragging', 'drag-over');
-  });
-
-  touchDragIdx = null;
-  touchDragEl = null;
-
-  document.removeEventListener('touchmove', touchDragMove);
-  document.removeEventListener('touchend', touchDragEnd);
-
-  buildTable();
 }
 
 /* Interactions */

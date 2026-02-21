@@ -1,0 +1,662 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <title>Vorräte – Sick & Sound</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#0b0e14" />
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="stylesheet" href="style.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;800&display=swap" rel="stylesheet" />
+  <style>
+    .inventory-list { display: flex; flex-direction: column; gap: 8px; }
+
+    .inventory-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 14px 16px;
+      background: #1c2130;
+      border-radius: 12px;
+      border: 1px solid #2a3042;
+      transition: all 0.2s;
+    }
+    .inventory-item.low {
+      background: linear-gradient(135deg, rgba(255, 107, 107, 0.2), rgba(255, 159, 67, 0.15));
+      border-color: #ff6b6b;
+    }
+    .inventory-item.low .item-stock { color: #ff6b6b; }
+    .inventory-item.empty {
+      background: linear-gradient(135deg, rgba(255, 107, 107, 0.3), rgba(255, 67, 67, 0.2));
+      border-color: #ff4444;
+      animation: emptyPulse 1.5s ease-in-out infinite;
+    }
+    @keyframes emptyPulse {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(255, 68, 68, 0); }
+      50% { box-shadow: 0 0 15px 2px rgba(255, 68, 68, 0.3); }
+    }
+
+    .item-info { flex: 1; min-width: 0; }
+    .item-name { font-weight: 800; font-size: 15px; margin-bottom: 2px; }
+    .item-meta { font-size: 12px; opacity: 0.6; display: flex; gap: 8px; align-items: center; }
+    .item-min { background: #2a3042; padding: 2px 6px; border-radius: 4px; }
+    .item-min.warning { background: rgba(255, 107, 107, 0.3); color: #ff6b6b; }
+
+    .item-stock {
+      font-size: 24px;
+      font-weight: 800;
+      min-width: 50px;
+      text-align: center;
+    }
+
+    .item-controls { display: flex; gap: 6px; align-items: center; }
+    .stock-btn {
+      width: 44px;
+      height: 44px;
+      border-radius: 10px;
+      font-size: 20px;
+      font-weight: 800;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .stock-btn.minus { background: #ff6b6b; }
+    .stock-btn.plus { background: linear-gradient(135deg, #6ee7ff, #7CFC9A); color: #0b0e14; }
+
+    .item-actions {
+      display: flex;
+      gap: 4px;
+    }
+    .item-action-btn {
+      width: 36px;
+      height: 36px;
+      border-radius: 8px;
+      border: none;
+      background: transparent;
+      color: #6ee7ff;
+      cursor: pointer;
+      font-size: 14px;
+    }
+    .item-action-btn:hover { background: rgba(110, 231, 255, 0.1); }
+
+    /* Kategorien */
+    .category-header {
+      font-size: 12px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: #6ee7ff;
+      padding: 12px 0 6px;
+      border-bottom: 1px solid #2a3042;
+      margin-bottom: 8px;
+    }
+
+    /* Hinzufügen-Formular */
+    .add-form { display: flex; flex-direction: column; gap: 10px; }
+    .form-row { display: flex; gap: 10px; flex-wrap: wrap; }
+    .form-row input, .form-row select {
+      flex: 1;
+      min-width: 100px;
+      padding: 12px 14px;
+      border-radius: 10px;
+      border: 1px solid #2a3042;
+      background: #0e1422;
+      color: #e6e8ef;
+      font-size: 14px;
+    }
+    .form-row input:focus, .form-row select:focus {
+      border-color: #6ee7ff;
+      outline: none;
+    }
+    .form-row input[type="number"] { width: 80px; flex: 0 0 auto; }
+
+    /* Bearbeitungs-Modal */
+    .modal { position: fixed; inset: 0; background: rgba(0,0,0,0.8); display: none; place-items: center; z-index: 100; padding: 20px; }
+    .modal.show { display: grid; }
+    .modal-box { background: #151a23; border-radius: 16px; padding: 24px; max-width: 400px; width: 100%; border: 1px solid #2a3042; }
+    .modal-title { font-size: 18px; font-weight: 800; margin-bottom: 15px; }
+    .modal-form { display: flex; flex-direction: column; gap: 12px; }
+    .modal-form label { font-size: 13px; opacity: 0.7; margin-bottom: -8px; }
+    .modal-form input, .modal-form select {
+      padding: 12px 14px;
+      border-radius: 10px;
+      border: 1px solid #2a3042;
+      background: #0e1422;
+      color: #e6e8ef;
+      font-size: 14px;
+    }
+    .modal-actions { display: flex; gap: 10px; margin-top: 10px; }
+    .modal-actions .btn { flex: 1; }
+
+    /* Statistik-Karten */
+    .stats-row { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 8px; }
+    .stat-card {
+      flex: 1;
+      min-width: 100px;
+      padding: 12px 16px;
+      background: #1c2130;
+      border-radius: 10px;
+      text-align: center;
+    }
+    .stat-value { font-size: 28px; font-weight: 800; }
+    .stat-label { font-size: 11px; opacity: 0.6; text-transform: uppercase; letter-spacing: 0.5px; }
+    .stat-card.warning { background: rgba(255, 107, 107, 0.15); }
+    .stat-card.warning .stat-value { color: #ff6b6b; }
+
+    /* Leere Liste */
+    .empty-state {
+      text-align: center;
+      padding: 40px 20px;
+      opacity: 0.6;
+    }
+    .empty-state-icon { font-size: 48px; margin-bottom: 10px; }
+
+    /* Schnelländerung */
+    .quick-amount {
+      display: flex;
+      gap: 6px;
+      margin-top: 8px;
+    }
+    .quick-amount .btn {
+      padding: 6px 12px;
+      font-size: 12px;
+    }
+  </style>
+</head>
+<body>
+<div class="app">
+  <header class="appbar">
+    <div class="app-title">
+      <div class="brand-dot"></div>
+      <h1>Vorräte</h1>
+    </div>
+    <div class="appbar-actions">
+      <button class="btn small" onclick="openAddModal()" title="Artikel hinzufügen">+</button>
+      <a class="btn small dark" href="hausdienst.html#check" title="Zur Checkliste">📋</a>
+    </div>
+  </header>
+
+  <main class="content">
+    <!-- Statistiken -->
+    <div class="stats-row">
+      <div class="stat-card">
+        <div class="stat-value" id="totalItems">0</div>
+        <div class="stat-label">Artikel</div>
+      </div>
+      <div class="stat-card warning" id="lowStockCard">
+        <div class="stat-value" id="lowStockCount">0</div>
+        <div class="stat-label">Nachbestellen</div>
+      </div>
+    </div>
+
+    <!-- Filter -->
+    <div class="card" style="padding: 12px 16px;">
+      <div class="form-row">
+        <select id="categoryFilter" onchange="renderInventory()">
+          <option value="">Alle Kategorien</option>
+        </select>
+        <select id="stockFilter" onchange="renderInventory()">
+          <option value="">Alle Bestände</option>
+          <option value="low">Niedrig/Leer</option>
+          <option value="ok">Ausreichend</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Inventarliste -->
+    <div class="card">
+      <div class="inventory-list" id="inventoryList">
+        <div class="empty-state">
+          <div class="empty-state-icon">📦</div>
+          <div>Noch keine Artikel vorhanden</div>
+          <button class="btn small" style="margin-top:12px" onclick="openAddModal()">Ersten Artikel hinzufügen</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Schnell hinzufügen -->
+    <div class="card">
+      <div class="section-title">Artikel hinzufügen</div>
+      <div class="add-form">
+        <div class="form-row">
+          <input type="text" id="newItemName" placeholder="Artikelname">
+          <input type="number" id="newItemStock" placeholder="Bestand" min="0" value="0">
+        </div>
+        <div class="form-row">
+          <input type="number" id="newItemMin" placeholder="Mindestbestand" min="0" value="5">
+          <select id="newItemCategory">
+            <option value="Getränke">Getränke</option>
+            <option value="Lebensmittel">Lebensmittel</option>
+            <option value="Haushalt">Haushalt</option>
+            <option value="Hygiene">Hygiene</option>
+            <option value="Sonstiges">Sonstiges</option>
+          </select>
+          <input type="text" id="newItemUnit" placeholder="Einheit" value="Stück" style="max-width:80px">
+        </div>
+        <button class="btn" onclick="addItem()">Hinzufügen</button>
+      </div>
+    </div>
+  </main>
+
+  <nav class="bottomnav">
+    <a class="tab" href="index.html">
+      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M4 6h16v2H4zM4 11h16v2H4zM4 16h10v2H4z"/></svg>
+      <span>Liste</span>
+    </a>
+    <a class="tab" href="hausdienst.html">
+      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 3l9 7-1.2 1.6L18 10.1V20h-5v-6H11v6H6v-9.9L4.2 11.6 3 10z"/></svg>
+      <span>Hausdienst</span>
+    </a>
+    <a class="tab active" href="vorraete.html">
+      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M20 2H4c-1 0-2 1-2 2v3c0 1 1 2 2 2v11c0 1 1 2 2 2h12c1 0 2-1 2-2V9c1 0 2-1 2-2V4c0-1-1-2-2-2zm-5 12h-2v2c0 .6-.4 1-1 1s-1-.4-1-1v-2H9c-.6 0-1-.4-1-1s.4-1 1-1h2v-2c0-.6.4-1 1-1s1 .4 1 1v2h2c.6 0 1 .4 1 1s-.4 1-1 1zm5-7H4V4h16v3z"/></svg>
+      <span>Vorräte</span>
+    </a>
+    <a class="tab" href="rangliste.html">
+      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M7 17H3V7h4v10zm7 0h-4V3h4v14zm7 0h-4v-8h4v8z"/></svg>
+      <span>Rang</span>
+    </a>
+    <a class="tab" href="bewertungen.html">
+      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 1l3.09 6.26L22 8.27l-5 4.87L18.18 22 12 18.56 5.82 22 7 13.14 2 8.27l6.91-1.01L12 1z"/></svg>
+      <span>Bewertungen</span>
+    </a>
+  </nav>
+</div>
+
+<!-- Bearbeitungs-Modal -->
+<div class="modal" id="editModal">
+  <div class="modal-box">
+    <div class="modal-title">Artikel bearbeiten</div>
+    <div class="modal-form">
+      <label>Name</label>
+      <input type="text" id="editName">
+      <label>Aktueller Bestand</label>
+      <input type="number" id="editStock" min="0">
+      <label>Mindestbestand</label>
+      <input type="number" id="editMin" min="0">
+      <label>Kategorie</label>
+      <select id="editCategory">
+        <option value="Getränke">Getränke</option>
+        <option value="Lebensmittel">Lebensmittel</option>
+        <option value="Haushalt">Haushalt</option>
+        <option value="Hygiene">Hygiene</option>
+        <option value="Sonstiges">Sonstiges</option>
+      </select>
+      <label>Einheit</label>
+      <input type="text" id="editUnit">
+    </div>
+    <div class="modal-actions">
+      <button class="btn" onclick="saveEdit()">Speichern</button>
+      <button class="btn danger" onclick="deleteItem()">Löschen</button>
+      <button class="btn ghost" onclick="closeEditModal()">Abbrechen</button>
+    </div>
+  </div>
+</div>
+
+<!-- Verbrauch-Modal -->
+<div class="modal" id="consumeModal">
+  <div class="modal-box">
+    <div class="modal-title" id="consumeTitle">Verbrauch eintragen</div>
+    <div class="sub" id="consumeInfo" style="margin-bottom:15px"></div>
+    <div class="modal-form">
+      <label>Menge verbraucht</label>
+      <div style="display:flex;align-items:center;gap:10px">
+        <input type="number" id="consumeAmount" min="1" value="1" style="flex:1">
+        <span id="consumeUnit" style="opacity:0.7"></span>
+      </div>
+      <div class="quick-amount">
+        <button class="btn small ghost" onclick="setConsumeAmount(1)">1</button>
+        <button class="btn small ghost" onclick="setConsumeAmount(2)">2</button>
+        <button class="btn small ghost" onclick="setConsumeAmount(5)">5</button>
+        <button class="btn small ghost" onclick="setConsumeAmount(10)">10</button>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn" onclick="confirmConsume()">Verbrauch eintragen</button>
+      <button class="btn ghost" onclick="closeConsumeModal()">Abbrechen</button>
+    </div>
+  </div>
+</div>
+
+<!-- Firebase -->
+<script src="https://www.gstatic.com/firebasejs/12.0.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/12.0.0/firebase-firestore-compat.js"></script>
+<script>
+  const firebaseConfig = {
+    apiKey: "AIzaSyBtZsr4QPHQbvO2qae6MoBoxJF5dNP2vh0",
+    authDomain: "sickandsound-8a15f.firebaseapp.com",
+    projectId: "sickandsound-8a15f",
+    storageBucket: "sickandsound-8a15f.appspot.com",
+    messagingSenderId: "32138160959",
+    appId: "1:32138160959:web:a65c7f4ad7d44e757fc18a"
+  };
+
+  let db = null;
+  try {
+    firebase.initializeApp(firebaseConfig);
+    db = firebase.firestore();
+    try { db.settings({ experimentalAutoDetectLongPolling: true, merge: true }); } catch(_) {}
+  } catch(e) {
+    console.error('Firebase init error:', e);
+  }
+
+  let inventory = [];
+  let editingItemId = null;
+  let consumingItemId = null;
+
+  // Kategorien
+  const defaultCategories = ['Getränke', 'Lebensmittel', 'Haushalt', 'Hygiene', 'Sonstiges'];
+
+  // Laden
+  async function loadInventory() {
+    if (!db) return;
+
+    db.collection('vorraete').orderBy('category').orderBy('name').onSnapshot(snap => {
+      inventory = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      renderInventory();
+      updateStats();
+      updateCategoryFilter();
+      checkAndCreateOrderTasks();
+    });
+  }
+
+  // Rendern
+  function renderInventory() {
+    const list = document.getElementById('inventoryList');
+    const categoryFilter = document.getElementById('categoryFilter').value;
+    const stockFilter = document.getElementById('stockFilter').value;
+
+    let filtered = [...inventory];
+
+    if (categoryFilter) {
+      filtered = filtered.filter(item => item.category === categoryFilter);
+    }
+
+    if (stockFilter === 'low') {
+      filtered = filtered.filter(item => item.stock <= item.minStock);
+    } else if (stockFilter === 'ok') {
+      filtered = filtered.filter(item => item.stock > item.minStock);
+    }
+
+    if (filtered.length === 0) {
+      list.innerHTML = `
+        <div class="empty-state">
+          <div class="empty-state-icon">📦</div>
+          <div>${inventory.length === 0 ? 'Noch keine Artikel vorhanden' : 'Keine Artikel gefunden'}</div>
+          ${inventory.length === 0 ? '<button class="btn small" style="margin-top:12px" onclick="openAddModal()">Ersten Artikel hinzufügen</button>' : ''}
+        </div>
+      `;
+      return;
+    }
+
+    // Nach Kategorie gruppieren
+    const grouped = {};
+    filtered.forEach(item => {
+      const cat = item.category || 'Sonstiges';
+      if (!grouped[cat]) grouped[cat] = [];
+      grouped[cat].push(item);
+    });
+
+    let html = '';
+    Object.keys(grouped).sort().forEach(category => {
+      html += `<div class="category-header">${category}</div>`;
+
+      grouped[category].forEach(item => {
+        const isLow = item.stock <= item.minStock && item.stock > 0;
+        const isEmpty = item.stock === 0;
+        const statusClass = isEmpty ? 'empty' : (isLow ? 'low' : '');
+        const minClass = item.stock <= item.minStock ? 'warning' : '';
+
+        html += `
+          <div class="inventory-item ${statusClass}" data-id="${item.id}">
+            <div class="item-info">
+              <div class="item-name">${item.name}</div>
+              <div class="item-meta">
+                <span class="item-min ${minClass}">Min: ${item.minStock} ${item.unit || ''}</span>
+                ${isEmpty ? '<span style="color:#ff6b6b;font-weight:800">LEER!</span>' : ''}
+                ${isLow && !isEmpty ? '<span style="color:#ff9f43;font-weight:600">Nachbestellen</span>' : ''}
+              </div>
+            </div>
+            <div class="item-stock">${item.stock}</div>
+            <div class="item-controls">
+              <button class="btn stock-btn minus" onclick="openConsumeModal('${item.id}')">−</button>
+              <button class="btn stock-btn plus" onclick="incrementStock('${item.id}')">+</button>
+            </div>
+            <div class="item-actions">
+              <button class="item-action-btn" onclick="openEditModal('${item.id}')" title="Bearbeiten">✏️</button>
+            </div>
+          </div>
+        `;
+      });
+    });
+
+    list.innerHTML = html;
+  }
+
+  // Statistiken aktualisieren
+  function updateStats() {
+    document.getElementById('totalItems').textContent = inventory.length;
+
+    const lowCount = inventory.filter(item => item.stock <= item.minStock).length;
+    document.getElementById('lowStockCount').textContent = lowCount;
+
+    const lowCard = document.getElementById('lowStockCard');
+    if (lowCount > 0) {
+      lowCard.classList.add('warning');
+    } else {
+      lowCard.classList.remove('warning');
+    }
+  }
+
+  // Kategorie-Filter aktualisieren
+  function updateCategoryFilter() {
+    const select = document.getElementById('categoryFilter');
+    const currentValue = select.value;
+
+    const categories = [...new Set(inventory.map(item => item.category || 'Sonstiges'))].sort();
+
+    select.innerHTML = '<option value="">Alle Kategorien</option>';
+    categories.forEach(cat => {
+      select.innerHTML += `<option value="${cat}" ${cat === currentValue ? 'selected' : ''}>${cat}</option>`;
+    });
+  }
+
+  // Artikel hinzufügen
+  async function addItem() {
+    if (!db) return alert('Offline - kann nicht speichern');
+
+    const name = document.getElementById('newItemName').value.trim();
+    const stock = parseInt(document.getElementById('newItemStock').value) || 0;
+    const minStock = parseInt(document.getElementById('newItemMin').value) || 5;
+    const category = document.getElementById('newItemCategory').value;
+    const unit = document.getElementById('newItemUnit').value.trim() || 'Stück';
+
+    if (!name) return alert('Bitte einen Artikelnamen eingeben');
+
+    await db.collection('vorraete').add({
+      name,
+      stock,
+      minStock,
+      category,
+      unit,
+      createdAt: Date.now(),
+      updatedAt: Date.now()
+    });
+
+    // Felder zurücksetzen
+    document.getElementById('newItemName').value = '';
+    document.getElementById('newItemStock').value = '0';
+    document.getElementById('newItemMin').value = '5';
+  }
+
+  // Bestand erhöhen
+  async function incrementStock(itemId) {
+    if (!db) return;
+
+    const item = inventory.find(i => i.id === itemId);
+    if (!item) return;
+
+    await db.collection('vorraete').doc(itemId).update({
+      stock: item.stock + 1,
+      updatedAt: Date.now()
+    });
+  }
+
+  // Verbrauchs-Modal
+  function openConsumeModal(itemId) {
+    const item = inventory.find(i => i.id === itemId);
+    if (!item) return;
+
+    consumingItemId = itemId;
+    document.getElementById('consumeTitle').textContent = `${item.name} verbraucht`;
+    document.getElementById('consumeInfo').textContent = `Aktueller Bestand: ${item.stock} ${item.unit || ''}`;
+    document.getElementById('consumeAmount').value = 1;
+    document.getElementById('consumeAmount').max = item.stock;
+    document.getElementById('consumeUnit').textContent = item.unit || 'Stück';
+    document.getElementById('consumeModal').classList.add('show');
+  }
+
+  function closeConsumeModal() {
+    document.getElementById('consumeModal').classList.remove('show');
+    consumingItemId = null;
+  }
+
+  function setConsumeAmount(amount) {
+    document.getElementById('consumeAmount').value = amount;
+  }
+
+  async function confirmConsume() {
+    if (!db || !consumingItemId) return;
+
+    const item = inventory.find(i => i.id === consumingItemId);
+    if (!item) return;
+
+    const amount = parseInt(document.getElementById('consumeAmount').value) || 1;
+    const newStock = Math.max(0, item.stock - amount);
+
+    await db.collection('vorraete').doc(consumingItemId).update({
+      stock: newStock,
+      updatedAt: Date.now()
+    });
+
+    closeConsumeModal();
+
+    // Warnung wenn Mindestbestand erreicht
+    if (newStock <= item.minStock && item.stock > item.minStock) {
+      setTimeout(() => {
+        alert(`Achtung: ${item.name} hat den Mindestbestand erreicht und sollte nachbestellt werden!`);
+      }, 300);
+    }
+  }
+
+  // Bearbeitungs-Modal
+  function openEditModal(itemId) {
+    const item = inventory.find(i => i.id === itemId);
+    if (!item) return;
+
+    editingItemId = itemId;
+    document.getElementById('editName').value = item.name;
+    document.getElementById('editStock').value = item.stock;
+    document.getElementById('editMin').value = item.minStock;
+    document.getElementById('editCategory').value = item.category || 'Sonstiges';
+    document.getElementById('editUnit').value = item.unit || 'Stück';
+    document.getElementById('editModal').classList.add('show');
+  }
+
+  function closeEditModal() {
+    document.getElementById('editModal').classList.remove('show');
+    editingItemId = null;
+  }
+
+  async function saveEdit() {
+    if (!db || !editingItemId) return;
+
+    const name = document.getElementById('editName').value.trim();
+    const stock = parseInt(document.getElementById('editStock').value) || 0;
+    const minStock = parseInt(document.getElementById('editMin').value) || 0;
+    const category = document.getElementById('editCategory').value;
+    const unit = document.getElementById('editUnit').value.trim();
+
+    if (!name) return alert('Bitte einen Namen eingeben');
+
+    await db.collection('vorraete').doc(editingItemId).update({
+      name,
+      stock,
+      minStock,
+      category,
+      unit,
+      updatedAt: Date.now()
+    });
+
+    closeEditModal();
+  }
+
+  async function deleteItem() {
+    if (!editingItemId) return;
+    if (!confirm('Artikel wirklich löschen?')) return;
+
+    await db.collection('vorraete').doc(editingItemId).delete();
+    closeEditModal();
+  }
+
+  function openAddModal() {
+    document.getElementById('newItemName').focus();
+  }
+
+  // Automatische Bestellaufgaben erstellen
+  async function checkAndCreateOrderTasks() {
+    if (!db) return;
+
+    const lowStockItems = inventory.filter(item => item.stock <= item.minStock);
+
+    for (const item of lowStockItems) {
+      // Prüfen ob bereits eine Aufgabe existiert
+      const taskText = `${item.name} nachbestellen (Bestand: ${item.stock})`;
+      const existingTask = await db.collection('hausdienst_tasks')
+        .where('autoCreated', '==', true)
+        .where('itemId', '==', item.id)
+        .get();
+
+      if (existingTask.empty) {
+        // Neue Aufgabe erstellen
+        await db.collection('hausdienst_tasks').add({
+          text: `🛒 ${item.name} nachbestellen (nur noch ${item.stock} ${item.unit || 'Stück'})`,
+          cat: 'tag',
+          createdAt: Date.now(),
+          sortOrder: 999, // Am Ende der Liste
+          autoCreated: true,
+          itemId: item.id
+        });
+      } else {
+        // Aufgabentext aktualisieren wenn sich Bestand geändert hat
+        const taskDoc = existingTask.docs[0];
+        const newText = `🛒 ${item.name} nachbestellen (nur noch ${item.stock} ${item.unit || 'Stück'})`;
+        if (taskDoc.data().text !== newText) {
+          await db.collection('hausdienst_tasks').doc(taskDoc.id).update({
+            text: newText,
+            updatedAt: Date.now()
+          });
+        }
+      }
+    }
+
+    // Alte Aufgaben entfernen wenn Bestand wieder OK
+    const okItems = inventory.filter(item => item.stock > item.minStock);
+    for (const item of okItems) {
+      const oldTasks = await db.collection('hausdienst_tasks')
+        .where('autoCreated', '==', true)
+        .where('itemId', '==', item.id)
+        .get();
+
+      oldTasks.forEach(async (doc) => {
+        await db.collection('hausdienst_tasks').doc(doc.id).delete();
+      });
+    }
+  }
+
+  // Init
+  loadInventory();
+</script>
+</body>
+</html>
