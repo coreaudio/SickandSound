@@ -226,6 +226,7 @@
         </div>
         <div class="form-row">
           <input type="number" id="newItemMin" placeholder="Mindestbestand" min="0" value="5">
+          <input type="number" id="newItemOrder" placeholder="Bestellbestand" min="0" value="20">
           <select id="newItemCategory">
             <option value="Getränke">Getränke</option>
             <option value="Lebensmittel">Lebensmittel</option>
@@ -261,6 +262,14 @@
       <svg viewBox="0 0 24 24" fill="currentColor"><path d="M7 17H3V7h4v10zm7 0h-4V3h4v14zm7 0h-4v-8h4v8z"/></svg>
       <span>Rang</span>
     </a>
+    <a class="tab" href="bewertungen.html">
+      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 1l3.09 6.26L22 8.27l-5 4.87L18.18 22 12 18.56 5.82 22 7 13.14 2 8.27l6.91-1.01L12 1z"/></svg>
+      <span>Bewertungen</span>
+    </a>
+    <a class="tab" href="buchungen.html">
+      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 2h9l5 5v13a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2zm8 1.5V8h4.5L14 3.5z"/></svg>
+      <span>Buchungen</span>
+    </a>
   </nav>
 </div>
 
@@ -275,6 +284,8 @@
       <input type="number" id="editStock" min="0">
       <label>Mindestbestand</label>
       <input type="number" id="editMin" min="0">
+      <label>Bestellbestand</label>
+      <input type="number" id="editOrder" min="0">
       <label>Kategorie</label>
       <select id="editCategory">
         <option value="Getränke">Getränke</option>
@@ -433,7 +444,7 @@
             </div>
             <div class="item-stock">${item.stock}</div>
             <div class="item-controls">
-              <button class="btn stock-btn minus" onclick="openConsumeModal('${item.id}')">−</button>
+              <button class="btn stock-btn minus" onclick="decrementStock('${item.id}')">−</button>
               <button class="btn stock-btn plus" onclick="incrementStock('${item.id}')">+</button>
             </div>
             <div class="item-actions">
@@ -482,6 +493,7 @@
     const name = document.getElementById('newItemName').value.trim();
     const stock = parseInt(document.getElementById('newItemStock').value) || 0;
     const minStock = parseInt(document.getElementById('newItemMin').value) || 5;
+    const orderStock = parseInt(document.getElementById('newItemOrder').value) || 20;
     const category = document.getElementById('newItemCategory').value;
     const unit = document.getElementById('newItemUnit').value.trim() || 'Stück';
 
@@ -491,6 +503,7 @@
       name,
       stock,
       minStock,
+      orderStock,
       category,
       unit,
       createdAt: Date.now(),
@@ -501,6 +514,7 @@
     document.getElementById('newItemName').value = '';
     document.getElementById('newItemStock').value = '0';
     document.getElementById('newItemMin').value = '5';
+    document.getElementById('newItemOrder').value = '20';
   }
 
   // Bestand erhöhen
@@ -512,6 +526,20 @@
 
     await db.collection('vorraete').doc(itemId).update({
       stock: item.stock + 1,
+      updatedAt: Date.now()
+    });
+  }
+
+  // Bestand direkt um 1 verringern
+  async function decrementStock(itemId) {
+    if (!db) return;
+
+    const item = inventory.find(i => i.id === itemId);
+    if (!item) return;
+
+    const newStock = Math.max(0, item.stock - 1);
+    await db.collection('vorraete').doc(itemId).update({
+      stock: newStock,
       updatedAt: Date.now()
     });
   }
@@ -572,6 +600,7 @@
     document.getElementById('editName').value = item.name;
     document.getElementById('editStock').value = item.stock;
     document.getElementById('editMin').value = item.minStock;
+    document.getElementById('editOrder').value = item.orderStock ?? 20;
     document.getElementById('editCategory').value = item.category || 'Sonstiges';
     document.getElementById('editUnit').value = item.unit || 'Stück';
     document.getElementById('editModal').classList.add('show');
@@ -588,6 +617,7 @@
     const name = document.getElementById('editName').value.trim();
     const stock = parseInt(document.getElementById('editStock').value) || 0;
     const minStock = parseInt(document.getElementById('editMin').value) || 0;
+    const orderStock = parseInt(document.getElementById('editOrder').value) || 20;
     const category = document.getElementById('editCategory').value;
     const unit = document.getElementById('editUnit').value.trim();
 
@@ -597,6 +627,7 @@
       name,
       stock,
       minStock,
+      orderStock,
       category,
       unit,
       updatedAt: Date.now()
@@ -624,27 +655,26 @@
     const lowStockItems = inventory.filter(item => item.stock <= item.minStock);
 
     for (const item of lowStockItems) {
-      // Prüfen ob bereits eine Aufgabe existiert
-      const taskText = `${item.name} nachbestellen (Bestand: ${item.stock})`;
+      const orderQty = (item.orderStock ?? 20) - (item.minStock ?? 0);
+      const unit = item.unit || 'Stück';
+      const newText = `🛒 ${item.name} nachbestellen (${orderQty} ${unit})`;
+
       const existingTask = await db.collection('hausdienst_tasks')
         .where('autoCreated', '==', true)
         .where('itemId', '==', item.id)
         .get();
 
       if (existingTask.empty) {
-        // Neue Aufgabe erstellen
         await db.collection('hausdienst_tasks').add({
-          text: `🛒 ${item.name} nachbestellen (nur noch ${item.stock} ${item.unit || 'Stück'})`,
+          text: newText,
           cat: 'tag',
           createdAt: Date.now(),
-          sortOrder: 999, // Am Ende der Liste
+          sortOrder: 999,
           autoCreated: true,
           itemId: item.id
         });
       } else {
-        // Aufgabentext aktualisieren wenn sich Bestand geändert hat
         const taskDoc = existingTask.docs[0];
-        const newText = `🛒 ${item.name} nachbestellen (nur noch ${item.stock} ${item.unit || 'Stück'})`;
         if (taskDoc.data().text !== newText) {
           await db.collection('hausdienst_tasks').doc(taskDoc.id).update({
             text: newText,

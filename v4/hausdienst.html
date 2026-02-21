@@ -585,17 +585,6 @@
         </div>
       </div>
 
-      <!-- Vorrats-Warnung -->
-      <div class="card inventory-alert-card" id="inventoryAlertCard" style="display:none">
-        <div class="inventory-alert-header">
-          <div class="inventory-alert-title">
-            <span class="icon">📦</span>
-            <span>Vorräte nachbestellen!</span>
-          </div>
-          <a href="vorraete.html" class="btn small">Zur Vorratsliste</a>
-        </div>
-        <div class="inventory-alert-list" id="inventoryAlertList"></div>
-      </div>
 
       <!-- Notiz vom Vortag -->
       <div class="card note-card" id="yesterdayNoteCard" style="display:none">
@@ -687,6 +676,14 @@
     <a class="tab" href="rangliste.html">
       <svg viewBox="0 0 24 24" fill="currentColor"><path d="M7 17H3V7h4v10zm7 0h-4V3h4v14zm7 0h-4v-8h4v8z"/></svg>
       <span>Rang</span>
+    </a>
+    <a class="tab" href="bewertungen.html">
+      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 1l3.09 6.26L22 8.27l-5 4.87L18.18 22 12 18.56 5.82 22 7 13.14 2 8.27l6.91-1.01L12 1z"/></svg>
+      <span>Bewertungen</span>
+    </a>
+    <a class="tab" href="buchungen.html">
+      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 2h9l5 5v13a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2zm8 1.5V8h4.5L14 3.5z"/></svg>
+      <span>Buchungen</span>
     </a>
   </nav>
 </div>
@@ -1062,11 +1059,29 @@
   function renderCatTabs(){}
 
   function toggleCheck(id){
-    checked[id] = !checked[id];
+    const nowChecked = !checked[id];
+    checked[id] = nowChecked;
     localStorage.setItem(CHECKED_KEY, JSON.stringify(checked));
     renderTasks(); // re-render für Filter
     saveProgressToFirebase();
     checkAllTasksCompleted();
+    // Wenn eine Auto-Bestellaufgabe abgehakt wird: Bestand in Vorratsliste erhöhen
+    if (nowChecked && db) {
+      const task = _tasks.find(t => t.id === id);
+      if (task && task.autoCreated && task.itemId) {
+        db.collection('vorraete').doc(task.itemId).get().then(doc => {
+          if (!doc.exists) return;
+          const item = doc.data();
+          const addQty = (item.orderStock ?? 20) - (item.minStock ?? 0);
+          if (addQty > 0) {
+            db.collection('vorraete').doc(task.itemId).update({
+              stock: (item.stock ?? 0) + addQty,
+              updatedAt: Date.now()
+            });
+          }
+        }).catch(() => {});
+      }
+    }
   }
 
   // Fortschritt in Firebase speichern für Anzeige in Strichliste
@@ -2211,43 +2226,6 @@
     }
   }
 
-  /* Vorrats-Warnungen */
-  let lowStockItems = [];
-
-  async function loadInventoryAlerts() {
-    if (!db) return;
-
-    // Echtzeit-Listener für niedrige Bestände
-    db.collection('vorraete').onSnapshot(snap => {
-      const items = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-      lowStockItems = items.filter(item => item.stock <= item.minStock);
-      renderInventoryAlerts();
-    });
-  }
-
-  function renderInventoryAlerts() {
-    const card = document.getElementById('inventoryAlertCard');
-    const list = document.getElementById('inventoryAlertList');
-
-    if (!card || !list) return;
-
-    if (lowStockItems.length === 0) {
-      card.style.display = 'none';
-      return;
-    }
-
-    card.style.display = 'block';
-
-    list.innerHTML = lowStockItems.map(item => {
-      const isEmpty = item.stock === 0;
-      return `
-        <div class="inventory-alert-item ${isEmpty ? 'empty' : ''}">
-          <span class="item-name">${item.name}</span>
-          <span class="item-stock">${isEmpty ? 'LEER' : `Noch ${item.stock} ${item.unit || ''}`}</span>
-        </div>
-      `;
-    }).join('');
-  }
 
   /* Initialisierung */
   async function init(){
@@ -2281,9 +2259,6 @@
     updateNoteCards();
     await loadYesterdayNote();
     await loadMyNote();
-
-    // Vorrats-Warnungen laden
-    loadInventoryAlerts();
 
     // Bewertungsdaten laden
     if (db) {
