@@ -49,15 +49,15 @@
     .admin-mode .person-cell{ cursor: pointer; }
     .admin-indicator{ background-color: var(--admin-color); padding: 4px 8px; border-radius: 4px; margin-left: 8px; font-size: 12px; }
 
-    /* Quickbar */
-    .quickbar{
-      position:sticky; top:52px; z-index:49;
-      display:flex; gap:8px; padding:6px 14px;
-      background:rgba(16,21,33,.85); border-bottom:1px solid rgba(255,255,255,.07);
-      backdrop-filter:blur(10px);
+    /* Sticky Action Bar */
+    .action-bar{
+      position:sticky; top:52px; z-index:48;
+      display:flex; gap:6px; padding:6px 12px;
+      background:rgba(11,14,20,.9); border-bottom:1px solid rgba(255,255,255,.07);
+      backdrop-filter:blur(12px);
     }
-    .quickbar .btn{ flex:1; min-width:0; font-size:13px; padding:7px 10px; }
-    .quickbar .btn:disabled{ opacity:.35; }
+    .action-bar .btn{ flex:1; min-width:0; font-size:13px; padding:7px 8px; white-space:nowrap; }
+    .action-bar .btn:disabled{ opacity:.3; cursor:default; }
 
     /* CTA Checkliste */
     .cta-wrap{ display:flex; flex-wrap:wrap; gap:10px; align-items:center; margin-top:8px; }
@@ -292,11 +292,11 @@
     </div>
   </header>
 
-  <!-- Quickbar -->
-  <div class="quickbar">
-    <button class="btn warning" id="undoBtnQ" onclick="undoLast()" disabled>↩ Rückgängig</button>
-    <button class="btn" onclick="openSplitModal()">💰 Verrechnen</button>
-    <button class="btn secondary" id="redoBtnQ" onclick="redoLast()" disabled>↪ Wiederholen</button>
+  <!-- Sticky Action Bar -->
+  <div class="action-bar">
+    <button class="btn small warning" id="undoBtnQ" onclick="undoLast()" disabled>↩ Rückgängig</button>
+    <button class="btn small" onclick="openSplitModal()">💰 Verrechnen</button>
+    <button class="btn small secondary" id="redoBtnQ" onclick="redoLast()" disabled>↪ Wiederholen</button>
   </div>
 
   <!-- Content -->
