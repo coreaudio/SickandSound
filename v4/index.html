@@ -540,6 +540,15 @@
   </div>
 </div></div>
 
+<!-- Kostenaufstellung-Modal -->
+<div class="modal" id="breakdownModal"><div class="box modal-content">
+  <h2>📊 Kostenaufstellung</h2>
+  <div id="breakdownContent" style="margin:12px 0"></div>
+  <div style="margin-top:14px">
+    <button class="btn dark" onclick="closeModal('breakdownModal')">Schließen</button>
+  </div>
+</div></div>
+
 <!-- Firebase + Howler -->
 <script src="https://www.gstatic.com/firebasejs/12.0.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/12.0.0/firebase-analytics-compat.js"></script>
@@ -735,8 +744,15 @@ async function loadState(){
         if(s.hdRequirements) {
           hdRequirements = s.hdRequirements;
         }
-        // Manuelle Buchungen laden
-        if(s.manualCharges) manualCharges = s.manualCharges;
+        // Manuelle Buchungen laden (mit Migration von altem number-Format)
+        if(s.manualCharges) {
+          const mc = s.manualCharges;
+          Object.keys(mc).forEach(p => {
+            if (typeof mc[p] === 'number' && mc[p] > 0) mc[p] = [{date:'?', amount: mc[p]}];
+            else if (typeof mc[p] === 'number') mc[p] = [];
+          });
+          manualCharges = mc;
+        }
         // Monatsbeitrag laden
         if(s.monthlyFee !== undefined) monthlyFee = s.monthlyFee;
         if(s.monthlyFeePersons) monthlyFeePersons = s.monthlyFeePersons;
@@ -771,7 +787,15 @@ function fallbackLoad(){
   bookings=JSON.parse(localStorage.getItem(bookingsKey))||bookings;
   columnOrder=JSON.parse(localStorage.getItem(orderKey))||Object.keys(prices);
   xp=JSON.parse(localStorage.getItem(xpKey))||xp;
-  manualCharges=JSON.parse(localStorage.getItem(manualChargesKey))||manualCharges;
+  const rawMC = JSON.parse(localStorage.getItem(manualChargesKey));
+  if (rawMC) {
+    // migrate old {person: number} format to {person: [{date, amount}]}
+    Object.keys(rawMC).forEach(p => {
+      if (typeof rawMC[p] === 'number' && rawMC[p] > 0) rawMC[p] = [{date:'?', amount: rawMC[p]}];
+      else if (typeof rawMC[p] === 'number') rawMC[p] = [];
+    });
+    manualCharges = rawMC;
+  }
 }
 
 async function ensureXpFromExistingStricheAfterLoad(){
@@ -1200,9 +1224,10 @@ function buildTable(){
             ontouchend="handleTouchEndBtn(event, ${incHandler})">+1</button></div></td>`;
       }
     });
-    const total=columnOrder.reduce((s,d)=>s+(data[`${p}_${d}`]||0)*prices[d],0) + (manualCharges[p]||0);
-    const manualBadge = (manualCharges[p]||0) > 0 ? ` <span title="inkl. ${manualCharges[p].toFixed(2)} € manuell" style="font-size:10px;opacity:.6">+M</span>` : '';
-    rhtml += `<td id="${p}_Total">${total.toFixed(2)}${manualBadge}</td>`;
+    const manualTotal = getManualTotal(p);
+    const total=columnOrder.reduce((s,d)=>s+(data[`${p}_${d}`]||0)*prices[d],0) + manualTotal;
+    const hasManual = manualTotal > 0;
+    rhtml += `<td id="${p}_Total" ${hasManual ? `onclick="showTotalBreakdown('${p}')" style="cursor:pointer;text-decoration:underline dotted;text-underline-offset:3px"` : ''}>${total.toFixed(2)}</td>`;
     
     if (correctionMode) {
       rhtml += `<td>
@@ -1392,7 +1417,7 @@ function correctTotal(person, newTotal) {
 }
 
 function updateTotalsFor(person){
-  const tot=columnOrder.reduce((s,d)=>s+(data[`${person}_${d}`]||0)*prices[d],0) + (manualCharges[person]||0);
+  const tot=columnOrder.reduce((s,d)=>s+(data[`${person}_${d}`]||0)*prices[d],0) + getManualTotal(person);
   const el=document.getElementById(`${person}_Total`); if(el) el.textContent=tot.toFixed(2);
   buildTable();
 }
@@ -1420,10 +1445,10 @@ function resetAll(){
   const pw=prompt("Passwort eingeben:"); if(pw!=="1379"){alert("Falsches Passwort");return;}
   if(!confirm("Alle Striche abrechnen und zurücksetzen?")) return;
   people.forEach(p=>{
-    const sum=columnOrder.reduce((s,d)=>s+(data[`${p}_${d}`]||0)*prices[d],0) + (manualCharges[p]||0);
+    const sum=columnOrder.reduce((s,d)=>s+(data[`${p}_${d}`]||0)*prices[d],0) + getManualTotal(p);
     if(sum>0) bookings.push({date:new Date().toLocaleDateString("de-DE"), person:p, sum});
     xp[p]=(xp[p]||0)+sum; columnOrder.forEach(d=>data[`${p}_${d}`]=0);
-    manualCharges[p]=0;
+    manualCharges[p]=[];
   });
   history=[]; redoStack=[]; saveAll(); buildTable(); updateUndoRedoButtons();
 }
@@ -1702,13 +1727,50 @@ function updateSplitCalc() {
   }
 }
 
+function getManualTotal(person) {
+  const entries = manualCharges[person];
+  if (!entries) return 0;
+  if (typeof entries === 'number') return entries; // migration fallback
+  if (!Array.isArray(entries)) return 0;
+  return entries.reduce((s, e) => s + (e.amount || 0), 0);
+}
+
+function showTotalBreakdown(person) {
+  const drinkRows = columnOrder
+    .filter(d => (data[`${person}_${d}`] || 0) > 0)
+    .map(d => {
+      const cnt = data[`${person}_${d}`] || 0;
+      const subtotal = cnt * prices[d];
+      return `<tr><td style="padding:4px 8px 4px 0">${d}</td><td style="padding:4px 0;text-align:right">${cnt}×</td><td style="padding:4px 0 4px 8px;text-align:right">${prices[d].toFixed(2)} €</td><td style="padding:4px 0;text-align:right;font-weight:700">${subtotal.toFixed(2)} €</td></tr>`;
+    }).join('');
+
+  const entries = Array.isArray(manualCharges[person]) ? manualCharges[person] : [];
+  const manualRows = entries.map(e =>
+    `<tr><td style="padding:4px 8px 4px 0;opacity:.7">${e.date}</td><td colspan="2" style="padding:4px 8px;opacity:.7">manuell</td><td style="padding:4px 0;text-align:right;font-weight:700">${e.amount.toFixed(2)} €</td></tr>`
+  ).join('');
+
+  const total = columnOrder.reduce((s,d)=>s+(data[`${person}_${d}`]||0)*prices[d],0) + getManualTotal(person);
+  const separator = (drinkRows && manualRows) ? `<tr><td colspan="4" style="border-top:1px solid rgba(255,255,255,.15);padding:6px 0"></td></tr>` : '';
+
+  document.getElementById('breakdownContent').innerHTML = `
+    <div style="font-weight:800;font-size:16px;margin-bottom:10px">${person}</div>
+    <table style="width:100%;border-collapse:collapse;font-size:14px">
+      ${drinkRows}${separator}${manualRows}
+      <tr><td colspan="4" style="border-top:1px solid rgba(255,255,255,.3);padding:8px 0 0"></td></tr>
+      <tr><td colspan="3" style="padding:4px 0;font-weight:800">Gesamt</td><td style="text-align:right;font-weight:800;color:#6ee7ff;font-size:16px">${total.toFixed(2)} €</td></tr>
+    </table>`;
+  document.getElementById('breakdownModal').classList.add('show');
+}
+
 function confirmSplit() {
   const amount = parseFloat(document.getElementById('splitAmount').value);
   if (!amount || amount <= 0) { sError.play(); return alert('Bitte einen gültigen Betrag eingeben.'); }
   if (splitSelected.size === 0) { sError.play(); return alert('Bitte mindestens eine Person auswählen.'); }
   const perPerson = amount / splitSelected.size;
+  const today = new Date().toLocaleDateString("de-DE");
   splitSelected.forEach(person => {
-    manualCharges[person] = (manualCharges[person] || 0) + perPerson;
+    if (!Array.isArray(manualCharges[person])) manualCharges[person] = [];
+    manualCharges[person].push({date: today, amount: perPerson});
   });
   saveAll();
   buildTable();
