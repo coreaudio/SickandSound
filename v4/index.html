@@ -299,6 +299,21 @@
       <button class="btn" onclick="openLayoutModal()">⚙️ Layout-Einstellungen öffnen</button>
     </div>
 
+    <!-- Admin: Monatsbeitrag -->
+    <div class="card" id="monthlyFeeCard" style="display:none">
+      <div class="section-title">💶 Monatsbeitrag</div>
+      <div class="sub" style="margin-bottom:12px">Wird automatisch am 1. des Monats auf die ausgewählten Personen als Buchung angerechnet.</div>
+      <label style="display:block;font-size:13px;opacity:.8;margin-bottom:4px">Betrag pro Person (€)</label>
+      <input id="monthlyFeeAmount" type="number" step="0.5" min="0" placeholder="z.B. 20.00" style="margin-bottom:12px">
+      <label style="display:block;font-size:13px;opacity:.8;margin-bottom:6px">Personen auswählen</label>
+      <div id="monthlyFeePersonList" style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px"></div>
+      <div id="monthlyFeeStatus" class="sub" style="margin-bottom:10px;color:#6ee7ff"></div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn small" onclick="saveMonthlyFeeSettings()">💾 Speichern</button>
+        <button class="btn small warning" onclick="applyMonthlyFeeNow()">▶ Jetzt anwenden</button>
+      </div>
+    </div>
+
     <div class="card table-wrap" id="tableContainer"></div>
 
     <div class="card" style="margin-top:8px">
@@ -532,11 +547,15 @@ const STATE_COLLECTION = location.search.includes("beta") ? "state_beta" : "stat
 /* ===== Keys & State ===== */
 const pricesKey="sick_sound_prices", peopleKey="sick_sound_people", dataKey="sick_sound_data",
       historyKey="sick_sound_history", bookingsKey="sick_sound_bookings", orderKey="sick_sound_order",
-      xpKey="sick_sound_xp", redoKey="sick_sound_redo", backupsKey="sick_sound_backups";
+      xpKey="sick_sound_xp", redoKey="sick_sound_redo", backupsKey="sick_sound_backups",
+      manualChargesKey="sick_sound_manual_charges";
 let prices={"Getränk":1.5,"Mittagessen":6.0};
-let people=[], data={}, history=[], redoStack=[], bookings=[], columnOrder=Object.keys(prices), xp={};
+let people=[], data={}, history=[], redoStack=[], bookings=[], columnOrder=Object.keys(prices), xp={}, manualCharges={};
 let guestReferences={}; // Bezugspersonen für Gäste: {guestName: coreMemberName}
 let hdRequirements={}; // Individuelle Hausdienst-Anforderungen pro Person: {person: anzahl}
+let monthlyFee=0; // Monatsbeitrag pro Person (€)
+let monthlyFeePersons=[]; // Personen, auf die der Monatsbeitrag angerechnet wird
+let monthlyFeeLastApplied=''; // YYYY-MM des letzten Anwendens
 let deleteMode=false, adminMode=false, correctionMode=false, hdToday=null;
 let hdTodayCompleted = false; // Ob der heutige Hausdienst abgeschlossen ist
 let hdTaskProgress = null; // Aufgaben-Fortschritt: { done: X, total: Y }
@@ -685,6 +704,12 @@ async function loadState(){
         if(s.hdRequirements) {
           hdRequirements = s.hdRequirements;
         }
+        // Manuelle Buchungen laden
+        if(s.manualCharges) manualCharges = s.manualCharges;
+        // Monatsbeitrag laden
+        if(s.monthlyFee !== undefined) monthlyFee = s.monthlyFee;
+        if(s.monthlyFeePersons) monthlyFeePersons = s.monthlyFeePersons;
+        if(s.monthlyFeeLastApplied) monthlyFeeLastApplied = s.monthlyFeeLastApplied;
       }else{
         people=JSON.parse(localStorage.getItem(peopleKey))||[];
         redoStack=JSON.parse(localStorage.getItem(redoKey))||[];
@@ -695,9 +720,10 @@ async function loadState(){
   CORE.forEach(n=>{ if(!people.includes(n)) people.push(n); });
 
   await loadMonthlyHdCounts();
+  applyMonthlyFeeIfNeeded();
   saveAll(); buildTable(); updateTodayBanner(); subscribeRealtime(); updateUndoRedoButtons();
   await ensureXpFromExistingStricheAfterLoad();
-  scheduleMidnightRefresh(()=>{ updateTodayBanner(); buildTable(); });
+  scheduleMidnightRefresh(()=>{ updateTodayBanner(); buildTable(); applyMonthlyFeeIfNeeded(); });
   
   // Automatisches Backup einmal täglich
   const lastBackup = localStorage.getItem('lastBackup');
@@ -714,6 +740,7 @@ function fallbackLoad(){
   bookings=JSON.parse(localStorage.getItem(bookingsKey))||bookings;
   columnOrder=JSON.parse(localStorage.getItem(orderKey))||Object.keys(prices);
   xp=JSON.parse(localStorage.getItem(xpKey))||xp;
+  manualCharges=JSON.parse(localStorage.getItem(manualChargesKey))||manualCharges;
 }
 
 async function ensureXpFromExistingStricheAfterLoad(){
@@ -735,9 +762,10 @@ function saveAll(){
   localStorage.setItem(bookingsKey,JSON.stringify(bookings));
   localStorage.setItem(orderKey,JSON.stringify(columnOrder));
   localStorage.setItem(xpKey,JSON.stringify(xp));
+  localStorage.setItem(manualChargesKey,JSON.stringify(manualCharges));
   if(db){
     db.collection(STATE_COLLECTION).doc("global").set(
-      {prices,people,data,history,redoStack,bookings,columnOrder,xp},
+      {prices,people,data,history,redoStack,bookings,columnOrder,xp,manualCharges,monthlyFee,monthlyFeePersons,monthlyFeeLastApplied},
       {merge:true}
     ).catch(()=>{});
   }
@@ -889,6 +917,7 @@ function toggleAdminMode(){
     document.getElementById('adminInfo').style.display = 'none';
     document.getElementById('coreTeamCard').style.display = 'none';
     document.getElementById('layoutCard').style.display = 'none';
+    document.getElementById('monthlyFeeCard').style.display = 'none';
     document.getElementById('adminBtn').textContent = '🔧';
     buildTable();
     return;
@@ -902,8 +931,10 @@ function toggleAdminMode(){
     document.getElementById('adminInfo').style.display = 'block';
     document.getElementById('coreTeamCard').style.display = 'block';
     document.getElementById('layoutCard').style.display = 'block';
+    document.getElementById('monthlyFeeCard').style.display = 'block';
     document.getElementById('adminBtn').textContent = '🔧✓';
     renderCoreTeamList();
+    renderMonthlyFeeCard();
     buildTable();
   } else {
     alert("Falsches Passwort");
@@ -1114,8 +1145,9 @@ function buildTable(){
             ontouchend="handleTouchEndBtn(event, ${incHandler})">+1</button></div></td>`;
       }
     });
-    const total=columnOrder.reduce((s,d)=>s+(data[`${p}_${d}`]||0)*prices[d],0);
-    rhtml += `<td id="${p}_Total">${total.toFixed(2)}</td>`;
+    const total=columnOrder.reduce((s,d)=>s+(data[`${p}_${d}`]||0)*prices[d],0) + (manualCharges[p]||0);
+    const manualBadge = (manualCharges[p]||0) > 0 ? ` <span title="inkl. ${manualCharges[p].toFixed(2)} € manuell" style="font-size:10px;opacity:.6">+M</span>` : '';
+    rhtml += `<td id="${p}_Total">${total.toFixed(2)}${manualBadge}</td>`;
     
     if (correctionMode) {
       rhtml += `<td>
@@ -1305,7 +1337,7 @@ function correctTotal(person, newTotal) {
 }
 
 function updateTotalsFor(person){
-  const tot=columnOrder.reduce((s,d)=>s+(data[`${person}_${d}`]||0)*prices[d],0);
+  const tot=columnOrder.reduce((s,d)=>s+(data[`${person}_${d}`]||0)*prices[d],0) + (manualCharges[person]||0);
   const el=document.getElementById(`${person}_Total`); if(el) el.textContent=tot.toFixed(2);
   buildTable();
 }
@@ -1333,9 +1365,10 @@ function resetAll(){
   const pw=prompt("Passwort eingeben:"); if(pw!=="1379"){alert("Falsches Passwort");return;}
   if(!confirm("Alle Striche abrechnen und zurücksetzen?")) return;
   people.forEach(p=>{
-    const sum=columnOrder.reduce((s,d)=>s+(data[`${p}_${d}`]||0)*prices[d],0);
+    const sum=columnOrder.reduce((s,d)=>s+(data[`${p}_${d}`]||0)*prices[d],0) + (manualCharges[p]||0);
     if(sum>0) bookings.push({date:new Date().toLocaleDateString("de-DE"), person:p, sum});
     xp[p]=(xp[p]||0)+sum; columnOrder.forEach(d=>data[`${p}_${d}`]=0);
+    manualCharges[p]=0;
   });
   history=[]; redoStack=[]; saveAll(); buildTable(); updateUndoRedoButtons();
 }
@@ -1490,6 +1523,77 @@ function confirmAddDrink(){
   saveAll(); buildTable(); closeModal('drinkModal'); document.getElementById("drinkName").value=""; document.getElementById("drinkPrice").value="";
 }
 
+/* ===== Monatsbeitrag ===== */
+function renderMonthlyFeeCard() {
+  document.getElementById('monthlyFeeAmount').value = monthlyFee > 0 ? monthlyFee : '';
+  const list = document.getElementById('monthlyFeePersonList');
+  list.innerHTML = people.map(p => {
+    const sel = monthlyFeePersons.includes(p);
+    return `<button class="btn small ${sel ? '' : 'dark'} fee-pill" onclick="toggleFeePerson(this)" data-person="${p.replace(/"/g,'&quot;')}">${p}</button>`;
+  }).join('');
+  updateMonthlyFeeStatus();
+}
+
+function toggleFeePerson(btn) {
+  const name = btn.dataset.person;
+  if (monthlyFeePersons.includes(name)) {
+    monthlyFeePersons = monthlyFeePersons.filter(p => p !== name);
+    btn.className = 'btn small dark fee-pill';
+  } else {
+    monthlyFeePersons.push(name);
+    btn.className = 'btn small fee-pill';
+  }
+}
+
+function updateMonthlyFeeStatus() {
+  const el = document.getElementById('monthlyFeeStatus');
+  if (!el) return;
+  if (monthlyFeeLastApplied) {
+    const [y, m] = monthlyFeeLastApplied.split('-');
+    el.textContent = `Zuletzt angewendet: ${m}/${y} · ${monthlyFeePersons.length} Person(en) · ${(monthlyFee||0).toFixed(2)} €`;
+  } else {
+    el.textContent = monthlyFee > 0 ? 'Noch nie angewendet.' : 'Kein Beitrag konfiguriert.';
+  }
+}
+
+function saveMonthlyFeeSettings() {
+  const amount = parseFloat(document.getElementById('monthlyFeeAmount').value);
+  if (isNaN(amount) || amount < 0) return alert('Bitte einen gültigen Betrag eingeben.');
+  monthlyFee = amount;
+  saveAll();
+  sClick.play();
+  const el = document.getElementById('monthlyFeeStatus');
+  if (el) { el.textContent = '✓ Gespeichert'; setTimeout(updateMonthlyFeeStatus, 1500); }
+}
+
+function applyMonthlyFeeNow() {
+  if (!monthlyFee || monthlyFee <= 0) return alert('Kein Beitrag konfiguriert. Bitte zuerst Betrag eingeben und speichern.');
+  if (monthlyFeePersons.length === 0) return alert('Keine Personen ausgewählt.');
+  if (!confirm(`${monthlyFee.toFixed(2)} € für ${monthlyFeePersons.length} Person(en) jetzt verrechnen?`)) return;
+  applyMonthlyFee(true);
+}
+
+function applyMonthlyFeeIfNeeded() {
+  applyMonthlyFee(false);
+}
+
+function applyMonthlyFee(force) {
+  const currentMonth = currentMonthStr();
+  if (!force && monthlyFeeLastApplied === currentMonth) return;
+  if (!monthlyFee || monthlyFee <= 0 || monthlyFeePersons.length === 0) return;
+  const date = new Date().toLocaleDateString('de-DE');
+  monthlyFeePersons.forEach(person => {
+    if (!people.includes(person)) return;
+    xp[person] = (xp[person] || 0) + monthlyFee;
+    bookings.push({ date, person, sum: monthlyFee });
+  });
+  monthlyFeeLastApplied = currentMonth;
+  saveAll();
+  buildTable();
+  if (adminMode) updateMonthlyFeeStatus();
+  if (force) sClick.play();
+}
+
 /* ===== Betrag verrechnen ===== */
 let splitSelected = new Set();
 
@@ -1533,10 +1637,8 @@ function confirmSplit() {
   if (!amount || amount <= 0) { sError.play(); return alert('Bitte einen gültigen Betrag eingeben.'); }
   if (splitSelected.size === 0) { sError.play(); return alert('Bitte mindestens eine Person auswählen.'); }
   const perPerson = amount / splitSelected.size;
-  const date = new Date().toLocaleDateString('de-DE');
   splitSelected.forEach(person => {
-    xp[person] = (xp[person] || 0) + perPerson;
-    bookings.push({ date, person, sum: perPerson });
+    manualCharges[person] = (manualCharges[person] || 0) + perPerson;
   });
   saveAll();
   buildTable();
