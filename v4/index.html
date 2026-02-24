@@ -330,7 +330,7 @@
     <!-- Admin: Monatsbeitrag -->
     <div class="card" id="monthlyFeeCard" style="display:none">
       <div class="section-title">💶 Monatsbeitrag</div>
-      <div class="sub" style="margin-bottom:12px">Wird automatisch am 1. des Monats auf die ausgewählten Personen als Buchung angerechnet.</div>
+      <div class="sub" style="margin-bottom:12px">Wird automatisch am 1. des nächsten Monats auf die ausgewählten Personen zur Gesamtsumme hinzugerechnet.</div>
       <label style="display:block;font-size:13px;opacity:.8;margin-bottom:4px">Betrag pro Person (€)</label>
       <input id="monthlyFeeAmount" type="number" step="0.5" min="0" placeholder="z.B. 20.00" style="margin-bottom:12px">
       <label style="display:block;font-size:13px;opacity:.8;margin-bottom:6px">Personen auswählen</label>
@@ -338,7 +338,6 @@
       <div id="monthlyFeeStatus" class="sub" style="margin-bottom:10px;color:#6ee7ff"></div>
       <div style="display:flex;gap:8px;flex-wrap:wrap">
         <button class="btn small" onclick="saveMonthlyFeeSettings()">💾 Speichern</button>
-        <button class="btn small warning" onclick="applyMonthlyFeeNow()">▶ Jetzt anwenden</button>
       </div>
     </div>
 
@@ -1672,50 +1671,40 @@ function toggleFeePerson(btn) {
 function updateMonthlyFeeStatus() {
   const el = document.getElementById('monthlyFeeStatus');
   if (!el) return;
-  if (monthlyFeeLastApplied) {
-    const [y, m] = monthlyFeeLastApplied.split('-');
-    el.textContent = `Zuletzt angewendet: ${m}/${y} · ${monthlyFeePersons.length} Person(en) · ${(monthlyFee||0).toFixed(2)} €`;
-  } else {
-    el.textContent = monthlyFee > 0 ? 'Noch nie angewendet.' : 'Kein Beitrag konfiguriert.';
-  }
+  if (!monthlyFee || monthlyFee <= 0) { el.textContent = 'Kein Beitrag konfiguriert.'; return; }
+  // Compute next month label
+  const now = new Date();
+  const nextMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+  const nextLabel = `${String(nextMonth.getMonth()+1).padStart(2,'0')}/${nextMonth.getFullYear()}`;
+  el.textContent = `${(monthlyFee).toFixed(2)} € · ${monthlyFeePersons.length} Person(en) · wird angewendet: ${nextLabel}`;
 }
 
 function saveMonthlyFeeSettings() {
   const amount = parseFloat(document.getElementById('monthlyFeeAmount').value);
   if (isNaN(amount) || amount < 0) return alert('Bitte einen gültigen Betrag eingeben.');
   monthlyFee = amount;
+  // Mark current month as already handled so fee only fires from next month onwards
+  monthlyFeeLastApplied = currentMonthStr();
   saveAll();
   sClick.play();
   const el = document.getElementById('monthlyFeeStatus');
   if (el) { el.textContent = '✓ Gespeichert'; setTimeout(updateMonthlyFeeStatus, 1500); }
 }
 
-function applyMonthlyFeeNow() {
-  if (!monthlyFee || monthlyFee <= 0) return alert('Kein Beitrag konfiguriert. Bitte zuerst Betrag eingeben und speichern.');
-  if (monthlyFeePersons.length === 0) return alert('Keine Personen ausgewählt.');
-  if (!confirm(`${monthlyFee.toFixed(2)} € für ${monthlyFeePersons.length} Person(en) jetzt verrechnen?`)) return;
-  applyMonthlyFee(true);
-}
-
 function applyMonthlyFeeIfNeeded() {
-  applyMonthlyFee(false);
-}
-
-function applyMonthlyFee(force) {
   const currentMonth = currentMonthStr();
-  if (!force && monthlyFeeLastApplied === currentMonth) return;
+  if (monthlyFeeLastApplied === currentMonth) return;
   if (!monthlyFee || monthlyFee <= 0 || monthlyFeePersons.length === 0) return;
   const date = new Date().toLocaleDateString('de-DE');
   monthlyFeePersons.forEach(person => {
     if (!people.includes(person)) return;
-    xp[person] = (xp[person] || 0) + monthlyFee;
-    bookings.push({ date, person, sum: monthlyFee });
+    if (!Array.isArray(manualCharges[person])) manualCharges[person] = [];
+    manualCharges[person].push({ date, amount: monthlyFee });
   });
   monthlyFeeLastApplied = currentMonth;
   saveAll();
   buildTable();
   if (adminMode) updateMonthlyFeeStatus();
-  if (force) sClick.play();
 }
 
 /* ===== Betrag verrechnen ===== */
