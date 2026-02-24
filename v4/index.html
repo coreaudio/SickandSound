@@ -49,6 +49,16 @@
     .admin-mode .person-cell{ cursor: pointer; }
     .admin-indicator{ background-color: var(--admin-color); padding: 4px 8px; border-radius: 4px; margin-left: 8px; font-size: 12px; }
 
+    /* Quickbar */
+    .quickbar{
+      position:sticky; top:52px; z-index:49;
+      display:flex; gap:8px; padding:6px 14px;
+      background:rgba(16,21,33,.85); border-bottom:1px solid rgba(255,255,255,.07);
+      backdrop-filter:blur(10px);
+    }
+    .quickbar .btn{ flex:1; min-width:0; font-size:13px; padding:7px 10px; }
+    .quickbar .btn:disabled{ opacity:.35; }
+
     /* CTA Checkliste */
     .cta-wrap{ display:flex; flex-wrap:wrap; gap:10px; align-items:center; margin-top:8px; }
     .cta-check{ display:inline-flex; align-items:center; gap:10px; padding:12px 16px; border-radius:14px;
@@ -92,6 +102,17 @@
     /* Hinweis im Löschmodus */
     .delete-hint{ opacity:.75; font-size:12px; margin-top:4px }
     .delete-mode .person-cell{ cursor:pointer }
+
+    /* Toast */
+    .toast{
+      position:fixed; bottom:76px; left:50%; transform:translateX(-50%) translateY(8px);
+      background:rgba(17,24,39,.96); color:#e6e8ef; padding:10px 18px; border-radius:12px;
+      font-size:14px; font-weight:600; z-index:9999; pointer-events:none;
+      box-shadow:0 4px 20px rgba(0,0,0,.5); border:1px solid rgba(110,231,255,.25);
+      white-space:nowrap; max-width:92vw; overflow:hidden; text-overflow:ellipsis;
+      opacity:0; transition:opacity .18s, transform .18s;
+    }
+    .toast.show{ opacity:1; transform:translateX(-50%) translateY(0); }
 
     /* Backup Modal */
     .modal-content{ max-width: 500px; }
@@ -270,6 +291,13 @@
       <button class="btn small secondary" id="backupBtn" onclick="openBackupModal()" title="Backup">💾</button>
     </div>
   </header>
+
+  <!-- Quickbar -->
+  <div class="quickbar">
+    <button class="btn warning" id="undoBtnQ" onclick="undoLast()" disabled>↩ Rückgängig</button>
+    <button class="btn" onclick="openSplitModal()">💰 Verrechnen</button>
+    <button class="btn secondary" id="redoBtnQ" onclick="redoLast()" disabled>↪ Wiederholen</button>
+  </div>
 
   <!-- Content -->
   <main class="content">
@@ -493,6 +521,8 @@
     <button class="btn dark" onclick="closeModal('layoutModal')">Schließen</button>
   </div>
 </div></div>
+
+<div id="toast" class="toast"></div>
 
 <!-- Betrag-Verrechnen-Modal -->
 <div class="modal" id="splitModal"><div class="box modal-content">
@@ -864,8 +894,9 @@ function openChecklist(){ location.href = 'hausdienst.html#check'; }
 
 /* Undo/Redo */
 function updateUndoRedoButtons(){
-  const u=document.getElementById("undoBtn"), r=document.getElementById("redoBtn");
-  if(!u||!r) return; u.disabled = history.length===0; r.disabled = redoStack.length===0;
+  const empty = history.length===0, noRedo = redoStack.length===0;
+  ['undoBtn','undoBtnQ'].forEach(id=>{ const el=document.getElementById(id); if(el) el.disabled=empty; });
+  ['redoBtn','redoBtnQ'].forEach(id=>{ const el=document.getElementById(id); if(el) el.disabled=noRedo; });
 }
 function applyAction(a){
   if(a.type==="inc"){
@@ -893,8 +924,31 @@ function applyInverse(a){
     xp[person] = Math.max(0,(xp[person]||0) - (prices[drink]||0));
   }
 }
-function undoLast(){ const last=history.pop(); if(!last) return; applyInverse(last); redoStack.push(last); saveAll(); buildTable(); updateUndoRedoButtons(); }
-function redoLast(){ const act=redoStack.pop(); if(!act) return; applyAction(act); history.push(act); saveAll(); buildTable(); updateUndoRedoButtons(); }
+let _toastTimer=null;
+function showToast(msg){
+  const el=document.getElementById('toast'); if(!el) return;
+  el.textContent=msg; el.classList.add('show');
+  if(_toastTimer) clearTimeout(_toastTimer);
+  _toastTimer=setTimeout(()=>el.classList.remove('show'), 2800);
+}
+function _actionLabel(a){
+  if(!a) return '';
+  const person = a.person || a.id.split('_')[0];
+  const drinkKey = a.person ? a.id.slice(a.person.length+1) : a.id.split('_').slice(1).join('_');
+  const drink = drinkKey.replace(/_/g,' ');
+  const arrow = a.type==='inc' ? '+1' : a.type==='dec' ? '−1' : '±';
+  return `${person} – ${drink} (${arrow})`;
+}
+function undoLast(){
+  const last=history.pop(); if(!last) return;
+  applyInverse(last); redoStack.push(last); saveAll(); buildTable(); updateUndoRedoButtons();
+  showToast('↩ Rückgängig: ' + _actionLabel(last));
+}
+function redoLast(){
+  const act=redoStack.pop(); if(!act) return;
+  applyAction(act); history.push(act); saveAll(); buildTable(); updateUndoRedoButtons();
+  showToast('↪ Wiederholt: ' + _actionLabel(act));
+}
 
 /* Delete mode inkl. Personen löschen */
 function toggleDeleteMode(){
