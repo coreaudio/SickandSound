@@ -549,6 +549,19 @@
   </div>
 </div></div>
 
+<!-- Manuelle Buchung bearbeiten -->
+<div class="modal" id="editManualModal"><div class="box modal-content">
+  <h2>✏️ Verrechnung bearbeiten</h2>
+  <label style="display:block;font-size:13px;opacity:.8;margin-bottom:4px">Datum</label>
+  <input id="editManualDate" type="date" style="width:100%;margin-bottom:12px">
+  <label style="display:block;font-size:13px;opacity:.8;margin-bottom:4px">Betrag (€)</label>
+  <input id="editManualAmount" type="number" step="0.01" min="0.01" placeholder="z.B. 5.00">
+  <div style="display:flex;gap:10px;margin-top:14px">
+    <button class="btn" onclick="saveEditManualEntry()">Speichern</button>
+    <button class="btn dark" onclick="closeModal('editManualModal')">Abbrechen</button>
+  </div>
+</div></div>
+
 <!-- Firebase + Howler -->
 <script src="https://www.gstatic.com/firebasejs/12.0.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/12.0.0/firebase-analytics-compat.js"></script>
@@ -934,6 +947,11 @@ function applyAction(a){
     data[a.id] = (a.prev||0) + 1;
     const parts=a.id.split('_'); const person=parts[0]; const drink=parts.slice(1).join('_');
     xp[person] = (xp[person]||0) + (prices[drink]||0);
+  } else if (a.type==="split"){
+    a.entries.forEach(e => {
+      if(!Array.isArray(manualCharges[e.person])) manualCharges[e.person]=[];
+      manualCharges[e.person].push({date:e.date, amount:e.amount});
+    });
   }
 }
 function applyInverse(a){
@@ -947,6 +965,14 @@ function applyInverse(a){
     data[a.id] = a.prev;
     const parts=a.id.split('_'); const person=parts[0]; const drink=parts.slice(1).join('_');
     xp[person] = Math.max(0,(xp[person]||0) - (prices[drink]||0));
+  } else if (a.type==="split"){
+    a.entries.forEach(e => {
+      const arr = manualCharges[e.person];
+      if(!Array.isArray(arr)) return;
+      for(let i=arr.length-1;i>=0;i--){
+        if(arr[i].date===e.date && Math.abs(arr[i].amount-e.amount)<0.001){ arr.splice(i,1); break; }
+      }
+    });
   }
 }
 let _toastTimer=null;
@@ -958,6 +984,9 @@ function showToast(msg){
 }
 function _actionLabel(a){
   if(!a) return '';
+  if(a.type==='split'){
+    return `Verrechnung ${a.totalAmount.toFixed(2)} € (${a.entries.length} Person${a.entries.length!==1?'en':''})`;
+  }
   const person = a.person || a.id.split('_')[0];
   const drinkKey = a.person ? a.id.slice(a.person.length+1) : a.id.split('_').slice(1).join('_');
   const drink = drinkKey.replace(/_/g,' ');
@@ -1735,7 +1764,19 @@ function getManualTotal(person) {
   return entries.reduce((s, e) => s + (e.amount || 0), 0);
 }
 
+let _breakdownPerson = null;
+let _editManualIndex = -1;
+
 function showTotalBreakdown(person) {
+  _breakdownPerson = person;
+  _renderBreakdown();
+  document.getElementById('breakdownModal').classList.add('show');
+}
+
+function _renderBreakdown() {
+  const person = _breakdownPerson;
+  if (!person) return;
+
   const drinkRows = columnOrder
     .filter(d => (data[`${person}_${d}`] || 0) > 0)
     .map(d => {
@@ -1745,21 +1786,68 @@ function showTotalBreakdown(person) {
     }).join('');
 
   const entries = Array.isArray(manualCharges[person]) ? manualCharges[person] : [];
-  const manualRows = entries.map(e =>
-    `<tr><td style="padding:4px 8px 4px 0;opacity:.7">${e.date}</td><td colspan="2" style="padding:4px 8px;opacity:.7">manuell</td><td style="padding:4px 0;text-align:right;font-weight:700">${e.amount.toFixed(2)} €</td></tr>`
-  ).join('');
+  const manualRows = entries.map((e, i) => {
+    const adminBtns = adminMode
+      ? `<td style="padding:2px 0 2px 8px;white-space:nowrap">
+           <button class="btn small" style="padding:3px 7px;font-size:11px;margin-right:4px" onclick="openEditManualEntry(${i})">✏️</button>
+           <button class="btn small warning" style="padding:3px 7px;font-size:11px" onclick="deleteManualEntry(${i})">🗑</button>
+         </td>`
+      : '';
+    return `<tr><td style="padding:4px 8px 4px 0;opacity:.7">${e.date}</td><td style="padding:4px 8px;opacity:.7">manuell</td><td style="padding:4px 0;text-align:right;font-weight:700">${e.amount.toFixed(2)} €</td>${adminBtns}</tr>`;
+  }).join('');
 
   const total = columnOrder.reduce((s,d)=>s+(data[`${person}_${d}`]||0)*prices[d],0) + getManualTotal(person);
-  const separator = (drinkRows && manualRows) ? `<tr><td colspan="4" style="border-top:1px solid rgba(255,255,255,.15);padding:6px 0"></td></tr>` : '';
+  const separator = (drinkRows && manualRows) ? `<tr><td colspan="${adminMode?5:4}" style="border-top:1px solid rgba(255,255,255,.15);padding:6px 0"></td></tr>` : '';
+  const cols = adminMode ? 4 : 3;
 
   document.getElementById('breakdownContent').innerHTML = `
     <div style="font-weight:800;font-size:16px;margin-bottom:10px">${person}</div>
     <table style="width:100%;border-collapse:collapse;font-size:14px">
       ${drinkRows}${separator}${manualRows}
-      <tr><td colspan="4" style="border-top:1px solid rgba(255,255,255,.3);padding:8px 0 0"></td></tr>
-      <tr><td colspan="3" style="padding:4px 0;font-weight:800">Gesamt</td><td style="text-align:right;font-weight:800;color:#6ee7ff;font-size:16px">${total.toFixed(2)} €</td></tr>
+      <tr><td colspan="${adminMode?5:4}" style="border-top:1px solid rgba(255,255,255,.3);padding:8px 0 0"></td></tr>
+      <tr><td colspan="${cols}" style="padding:4px 0;font-weight:800">Gesamt</td><td style="text-align:right;font-weight:800;color:#6ee7ff;font-size:16px">${total.toFixed(2)} €</td></tr>
     </table>`;
-  document.getElementById('breakdownModal').classList.add('show');
+}
+
+function openEditManualEntry(index) {
+  const entries = Array.isArray(manualCharges[_breakdownPerson]) ? manualCharges[_breakdownPerson] : [];
+  if (index < 0 || index >= entries.length) return;
+  _editManualIndex = index;
+  const e = entries[index];
+  // Convert DE date (DD.MM.YYYY) to input format (YYYY-MM-DD)
+  const parts = e.date.split('.');
+  const inputDate = parts.length === 3 ? `${parts[2]}-${parts[1].padStart(2,'0')}-${parts[0].padStart(2,'0')}` : '';
+  document.getElementById('editManualDate').value = inputDate;
+  document.getElementById('editManualAmount').value = e.amount;
+  document.getElementById('editManualModal').classList.add('show');
+}
+
+function saveEditManualEntry() {
+  const person = _breakdownPerson;
+  const entries = manualCharges[person];
+  if (!Array.isArray(entries) || _editManualIndex < 0 || _editManualIndex >= entries.length) return;
+  const dateVal = document.getElementById('editManualDate').value;
+  const amountVal = parseFloat(document.getElementById('editManualAmount').value);
+  if (!dateVal || isNaN(amountVal) || amountVal <= 0) return alert('Bitte Datum und Betrag korrekt eingeben.');
+  const parts = dateVal.split('-');
+  entries[_editManualIndex] = {
+    date: `${parts[2]}.${parts[1]}.${parts[0]}`,
+    amount: amountVal
+  };
+  saveAll(); buildTable();
+  closeModal('editManualModal');
+  _renderBreakdown();
+}
+
+function deleteManualEntry(index) {
+  const person = _breakdownPerson;
+  const entries = manualCharges[person];
+  if (!Array.isArray(entries) || index < 0 || index >= entries.length) return;
+  const e = entries[index];
+  if (!confirm(`Verrechnung löschen?\n${e.date} – ${e.amount.toFixed(2)} €`)) return;
+  entries.splice(index, 1);
+  saveAll(); buildTable();
+  _renderBreakdown();
 }
 
 function confirmSplit() {
@@ -1768,10 +1856,15 @@ function confirmSplit() {
   if (splitSelected.size === 0) { sError.play(); return alert('Bitte mindestens eine Person auswählen.'); }
   const perPerson = amount / splitSelected.size;
   const today = new Date().toLocaleDateString("de-DE");
+  const entries = [];
   splitSelected.forEach(person => {
     if (!Array.isArray(manualCharges[person])) manualCharges[person] = [];
     manualCharges[person].push({date: today, amount: perPerson});
+    entries.push({person, date: today, amount: perPerson});
   });
+  history.push({type:'split', entries, totalAmount: amount});
+  redoStack=[];
+  updateUndoRedoButtons();
   saveAll();
   buildTable();
   closeModal('splitModal');

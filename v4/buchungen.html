@@ -502,8 +502,8 @@
 
   function startEditing(index) {
     if (!adminMode) return;
-    
-    const filtered = bookings.filter(withinRange);
+
+    const filtered = getSortedFiltered();
     if (index < 0 || index >= filtered.length) return;
     
     // Finde den originalen Index der Buchung
@@ -651,12 +651,20 @@
     alert('Buchung erfolgreich hinzugefügt!');
   }
 
+  function getSortedFiltered() {
+    return bookings.filter(withinRange).slice().sort((a, b) => {
+      const dateA = parseDE(a.date) || new Date(a.date || 0);
+      const dateB = parseDE(b.date) || new Date(b.date || 0);
+      return dateB - dateA || a.person.localeCompare(b.person);
+    });
+  }
+
   function deleteBooking(index) {
     if (!deleteMode) return;
-    
-    const filtered = bookings.filter(withinRange);
+
+    const filtered = getSortedFiltered();
     if (index < 0 || index >= filtered.length) return;
-    
+
     const row = filtered[index];
     if (!row) return;
     
