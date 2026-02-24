@@ -347,12 +347,9 @@
     <div class="card" style="margin-top:8px">
       <div class="section-title">Aktionen</div>
       <div class="footer" style="gap:8px;flex-wrap:wrap">
-        <button class="btn warning" id="undoBtn" onclick="undoLast()">↩ Rückgängig</button>
-        <button class="btn secondary" id="redoBtn" onclick="redoLast()">↪ Wiederholen</button>
         <button class="btn danger" id="deleteBtn" onclick="toggleDeleteMode()">🗑 Löschen</button>
         <button class="btn" onclick="openPersonModal()">👤 Person hinzufügen</button>
         <button class="btn dark" onclick="resetAll()">♻ Abrechnen & zurücksetzen</button>
-        <button class="btn" onclick="openSplitModal()">💰 Betrag verrechnen</button>
         <button class="btn ghost" onclick="window.location='buchungen.html'">📖 Buchungen</button>
         <button class="btn warning" id="correctionBtn" onclick="toggleCorrectionMode()">✏️ Korrekturmodus</button>
       </div>
@@ -899,8 +896,8 @@ function openChecklist(){ location.href = 'hausdienst.html#check'; }
 /* Undo/Redo */
 function updateUndoRedoButtons(){
   const empty = history.length===0, noRedo = redoStack.length===0;
-  ['undoBtn','undoBtnQ'].forEach(id=>{ const el=document.getElementById(id); if(el) el.disabled=empty; });
-  ['redoBtn','redoBtnQ'].forEach(id=>{ const el=document.getElementById(id); if(el) el.disabled=noRedo; });
+  const u=document.getElementById('undoBtnQ'); if(u) u.disabled=empty;
+  const r=document.getElementById('redoBtnQ'); if(r) r.disabled=noRedo;
 }
 function applyAction(a){
   if(a.type==="inc"){
