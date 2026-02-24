@@ -222,11 +222,11 @@
       <div class="add-form">
         <div class="form-row">
           <input type="text" id="newItemName" placeholder="Artikelname">
-          <input type="number" id="newItemStock" placeholder="Bestand" min="0" value="0">
+          <input type="number" id="newItemStock" placeholder="Bestand" min="0">
         </div>
         <div class="form-row">
-          <input type="number" id="newItemMin" placeholder="Mindestbestand" min="0" value="5">
-          <input type="number" id="newItemOrder" placeholder="Bestellbestand" min="0" value="20">
+          <input type="number" id="newItemMin" placeholder="Mindestbestand" min="0">
+          <input type="number" id="newItemOrder" placeholder="Bestellbestand" min="0">
           <select id="newItemCategory">
             <option value="Getränke">Getränke</option>
             <option value="Lebensmittel">Lebensmittel</option>
@@ -655,9 +655,9 @@
     const lowStockItems = inventory.filter(item => item.stock <= item.minStock);
 
     for (const item of lowStockItems) {
-      const orderQty = (item.orderStock ?? 20) - (item.minStock ?? 0);
+      const orderQty = Math.max(1, (item.orderStock ?? 20) - item.stock);
       const unit = item.unit || 'Stück';
-      const newText = `🛒 ${item.name} nachbestellen (${orderQty} ${unit})`;
+      const newText = `🛒 ${item.name}: ${orderQty} ${unit} kaufen`;
 
       const existingTask = await db.collection('hausdienst_tasks')
         .where('autoCreated', '==', true)

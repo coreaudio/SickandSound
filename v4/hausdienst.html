@@ -833,6 +833,7 @@
     if (key === 'check') {
       resetRatingReminderFlag();
       checkAndShowRatingModal();
+      showNoteModalIfNeeded();
     }
   }
 
@@ -1072,7 +1073,7 @@
         db.collection('vorraete').doc(task.itemId).get().then(doc => {
           if (!doc.exists) return;
           const item = doc.data();
-          const addQty = (item.orderStock ?? 20) - (item.minStock ?? 0);
+          const addQty = Math.max(1, (item.orderStock ?? 20) - (item.stock ?? 0));
           if (addQty > 0) {
             db.collection('vorraete').doc(task.itemId).update({
               stock: (item.stock ?? 0) + addQty,
@@ -2136,6 +2137,8 @@
 
   /* Notiz-System */
   let noteShownThisSession = false;
+  let cachedNoteFrom = null;
+  let cachedNoteText = null;
   const NOTE_DISMISSED_KEY = 'hausdienst_note_dismissed_' + todayStr();
 
   async function saveNoteForTomorrow() {
@@ -2183,12 +2186,16 @@
     document.getElementById('yesterdayNoteContent').textContent = noteText;
     document.getElementById('yesterdayNoteCard').style.display = 'block';
 
-    // Modal nur beim ersten Öffnen zeigen (wenn noch nicht dismissed)
-    const dismissed = localStorage.getItem(NOTE_DISMISSED_KEY);
-    if (!dismissed && !noteShownThisSession) {
-      noteShownThisSession = true;
-      showNoteModal(noteFrom, noteText);
-    }
+    // Daten cachen – Modal wird bei jedem Wechsel zur Checkliste angezeigt
+    cachedNoteFrom = noteFrom;
+    cachedNoteText = noteText;
+  }
+
+  // Zeigt das Notiz-Modal, sofern noch nicht mit "Verstanden" bestätigt
+  function showNoteModalIfNeeded() {
+    if (!cachedNoteText) return;
+    if (localStorage.getItem(NOTE_DISMISSED_KEY)) return;
+    showNoteModal(cachedNoteFrom, cachedNoteText);
   }
 
   function showNoteModal(from, content) {
@@ -2290,6 +2297,8 @@
       hdTodayCompleted = false;
       yesterdayPerson = null;
       noteShownThisSession = false;
+      cachedNoteFrom = null;
+      cachedNoteText = null;
       await updateTodayInfo();
       await renderTasks(true);
       await renderNextDays();

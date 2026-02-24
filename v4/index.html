@@ -309,6 +309,7 @@
         <button class="btn danger" id="deleteBtn" onclick="toggleDeleteMode()">🗑 Löschen</button>
         <button class="btn" onclick="openPersonModal()">👤 Person hinzufügen</button>
         <button class="btn dark" onclick="resetAll()">♻ Abrechnen & zurücksetzen</button>
+        <button class="btn" onclick="openSplitModal()">💰 Betrag verrechnen</button>
         <button class="btn ghost" onclick="window.location='buchungen.html'">📖 Buchungen</button>
         <button class="btn warning" id="correctionBtn" onclick="toggleCorrectionMode()">✏️ Korrekturmodus</button>
       </div>
@@ -475,6 +476,21 @@
     <button class="btn" onclick="saveLayoutSettings()">💾 Speichern</button>
     <button class="btn secondary" onclick="resetLayoutSettings()">↩ Zurücksetzen</button>
     <button class="btn dark" onclick="closeModal('layoutModal')">Schließen</button>
+  </div>
+</div></div>
+
+<!-- Betrag-Verrechnen-Modal -->
+<div class="modal" id="splitModal"><div class="box modal-content">
+  <h2>💰 Betrag verrechnen</h2>
+  <div class="sub" style="margin-bottom:12px">Betrag gleichmäßig auf ausgewählte Personen aufteilen und als Buchung eintragen.</div>
+  <label style="display:block;font-size:13px;opacity:.8;margin-bottom:4px">Gesamtbetrag (€)</label>
+  <input id="splitAmount" type="number" step="0.5" min="0.5" placeholder="z.B. 10.00" oninput="updateSplitCalc()">
+  <label style="display:block;font-size:13px;opacity:.8;margin:12px 0 6px">Personen auswählen</label>
+  <div id="splitPersonList" style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px"></div>
+  <div id="splitInfo" class="sub" style="margin:8px 0;min-height:1.4em;font-weight:700;color:#6ee7ff"></div>
+  <div style="display:flex;gap:10px;margin-top:10px">
+    <button class="btn" onclick="confirmSplit()">Verrechnen</button>
+    <button class="btn dark" onclick="closeModal('splitModal')">Abbrechen</button>
   </div>
 </div></div>
 
@@ -1472,6 +1488,60 @@ function confirmAddDrink(){
   if(!name||isNaN(price)||price<=0) return alert("Bitte gültige Eingaben");
   const key=name.replace(/\s+/g,'_'); prices[key]=price; if(!columnOrder.includes(key)) columnOrder.push(key);
   saveAll(); buildTable(); closeModal('drinkModal'); document.getElementById("drinkName").value=""; document.getElementById("drinkPrice").value="";
+}
+
+/* ===== Betrag verrechnen ===== */
+let splitSelected = new Set();
+
+function openSplitModal() {
+  splitSelected = new Set();
+  document.getElementById('splitAmount').value = '';
+  document.getElementById('splitInfo').textContent = '';
+  const list = document.getElementById('splitPersonList');
+  list.innerHTML = people.map(p =>
+    `<button class="btn small dark split-pill" onclick="toggleSplitPerson(this)" data-person="${p.replace(/"/g,'&quot;')}">${p}</button>`
+  ).join('');
+  document.getElementById('splitModal').classList.add('show');
+}
+
+function toggleSplitPerson(btn) {
+  const name = btn.dataset.person;
+  if (splitSelected.has(name)) {
+    splitSelected.delete(name);
+    btn.className = 'btn small dark split-pill';
+  } else {
+    splitSelected.add(name);
+    btn.className = 'btn small split-pill';
+  }
+  updateSplitCalc();
+}
+
+function updateSplitCalc() {
+  const amount = parseFloat(document.getElementById('splitAmount').value) || 0;
+  const count = splitSelected.size;
+  const info = document.getElementById('splitInfo');
+  if (amount > 0 && count > 0) {
+    const perPerson = (amount / count).toFixed(2);
+    info.textContent = `${count} Person${count !== 1 ? 'en' : ''} × ${perPerson} € = ${amount.toFixed(2)} €`;
+  } else {
+    info.textContent = '';
+  }
+}
+
+function confirmSplit() {
+  const amount = parseFloat(document.getElementById('splitAmount').value);
+  if (!amount || amount <= 0) { sError.play(); return alert('Bitte einen gültigen Betrag eingeben.'); }
+  if (splitSelected.size === 0) { sError.play(); return alert('Bitte mindestens eine Person auswählen.'); }
+  const perPerson = amount / splitSelected.size;
+  const date = new Date().toLocaleDateString('de-DE');
+  splitSelected.forEach(person => {
+    xp[person] = (xp[person] || 0) + perPerson;
+    bookings.push({ date, person, sum: perPerson });
+  });
+  saveAll();
+  buildTable();
+  closeModal('splitModal');
+  sClick.play();
 }
 
 /* SW */

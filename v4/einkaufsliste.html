@@ -510,15 +510,18 @@
 
     // Alle offenen Items (nicht gecheckt)
     const openItems = [
-      ...lowStock.map(item => ({
-        id: 'auto_' + item.id,
-        name: item.name,
-        type: 'auto',
-        category: item.category || 'Sonstiges',
-        amount: `${item.stock}/${item.minStock} ${item.unit || ''}`,
-        needAmount: Math.max(1, item.minStock - item.stock + 1),
-        itemRef: item
-      })),
+      ...lowStock.map(item => {
+        const orderQty = Math.max(1, (item.orderStock ?? item.minStock + 1) - item.stock);
+        return {
+          id: 'auto_' + item.id,
+          name: item.name,
+          type: 'auto',
+          category: item.category || 'Sonstiges',
+          amount: `${orderQty} ${item.unit || 'Stück'} kaufen`,
+          needAmount: orderQty,
+          itemRef: item
+        };
+      }),
       ...manualItems.map(item => ({
         id: 'manual_' + item.id,
         name: item.name,
@@ -639,8 +642,8 @@
       const vorratId = itemId.replace('auto_', '');
       const item = inventory.find(i => i.id === vorratId);
       if (item && db) {
-        // Bestand auf Mindestbestand + 1 setzen (oder höher)
-        const newStock = Math.max(item.minStock + 1, item.stock + 1);
+        // Bestand auf Bestellbestand setzen
+        const newStock = item.orderStock ?? Math.max(item.minStock + 1, item.stock + 1);
         await db.collection('vorraete').doc(vorratId).update({
           stock: newStock,
           updatedAt: Date.now()
