@@ -648,6 +648,12 @@
           stock: newStock,
           updatedAt: Date.now()
         });
+        // Entsprechenden Hausdienst-Task löschen (bidirektionale Sync)
+        const taskSnap = await db.collection('hausdienst_tasks')
+          .where('autoCreated', '==', true)
+          .where('itemId', '==', vorratId)
+          .get();
+        taskSnap.forEach(doc => doc.ref.delete());
       }
     } else if (itemId.startsWith('manual_')) {
       // Manuelles Item: Löschen

@@ -1066,7 +1066,7 @@
     renderTasks(); // re-render für Filter
     saveProgressToFirebase();
     checkAllTasksCompleted();
-    // Wenn eine Auto-Bestellaufgabe abgehakt wird: Bestand in Vorratsliste erhöhen
+    // Wenn eine Auto-Bestellaufgabe abgehakt wird: Bestand erhöhen + Task löschen
     if (nowChecked && db) {
       const task = _tasks.find(t => t.id === id);
       if (task && task.autoCreated && task.itemId) {
@@ -1080,6 +1080,10 @@
               updatedAt: Date.now()
             });
           }
+          // Task direkt aus Firestore löschen (entfernt ihn auch aus Einkaufsliste)
+          db.collection('hausdienst_tasks').doc(id).delete().catch(() => {});
+          delete checked[id];
+          localStorage.setItem(CHECKED_KEY, JSON.stringify(checked));
         }).catch(() => {});
       }
     }
@@ -1199,6 +1203,7 @@
 
   let _tasks = [];
   let draggedTaskId = null;
+  let _tasksListener = null;
 
   async function loadTasks(){
     if(!db){ _tasks=[]; renderTasks(); return; }
@@ -2260,6 +2265,13 @@
     setMode(showMode);
     renderCatTabs();
     await loadTasks();
+    // Real-time listener für Aufgaben (reagiert auf externe Löschungen/Änderungen)
+    if (db && !_tasksListener) {
+      _tasksListener = db.collection('hausdienst_tasks').orderBy('sortOrder','asc').onSnapshot(snap => {
+        _tasks = snap.docs.map(d => ({id: d.id, ...d.data()}));
+        renderTasks();
+      });
+    }
     await Promise.all([updateTodayInfo(), renderNextDays(), renderTasks(), renderHistory(), renderMonthlyOverview()]);
 
     // Notiz-System initialisieren
