@@ -211,6 +211,15 @@ function _setupSwipeNav(activePage) {
   const idx = ORDER.indexOf(activePage);
   if (idx === -1) return;
 
+  // Nachbarseiten (zirkulär) vorausladen
+  const _prefetch = href => {
+    const l = document.createElement('link');
+    l.rel = 'prefetch'; l.href = href;
+    document.head.appendChild(l);
+  };
+  _prefetch(HREFS[ORDER[(idx - 1 + ORDER.length) % ORDER.length]]);
+  _prefetch(HREFS[ORDER[(idx + 1) % ORDER.length]]);
+
   const MIN_DX       = 55;
   const MAX_DY_RATIO = 0.5;
 
