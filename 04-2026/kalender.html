@@ -10,26 +10,25 @@
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="stylesheet" href="style.css" />
   <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;800&display=swap" rel="stylesheet" />
-  <!-- FullCalendar -->
   <link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.14/index.global.min.css" rel="stylesheet">
   <style>
-    /* ── FullCalendar Dark Theme ─────────────────────────────────────────── */
+    /* ── FullCalendar Dark Theme ─────────────────────────────────────── */
     :root {
-      --fc-border-color:           rgba(255,255,255,.07);
-      --fc-page-bg-color:          transparent;
-      --fc-neutral-bg-color:       rgba(255,255,255,.04);
-      --fc-today-bg-color:         rgba(0,224,184,.09);
-      --fc-event-bg-color:         #7c3aed;
-      --fc-event-border-color:     #7c3aed;
-      --fc-event-text-color:       #fff;
-      --fc-button-bg-color:        #1c2130;
-      --fc-button-border-color:    #2a3042;
-      --fc-button-text-color:      #e9eefb;
-      --fc-button-hover-bg-color:  #252e42;
+      --fc-border-color:              rgba(255,255,255,.07);
+      --fc-page-bg-color:             transparent;
+      --fc-neutral-bg-color:          rgba(255,255,255,.04);
+      --fc-today-bg-color:            rgba(0,224,184,.09);
+      --fc-event-bg-color:            #7c3aed;
+      --fc-event-border-color:        #7c3aed;
+      --fc-event-text-color:          #fff;
+      --fc-button-bg-color:           #1c2130;
+      --fc-button-border-color:       #2a3042;
+      --fc-button-text-color:         #e9eefb;
+      --fc-button-hover-bg-color:     #252e42;
       --fc-button-hover-border-color: #3a4258;
-      --fc-button-active-bg-color: #00e0b8;
-      --fc-button-active-border-color: #00e0b8;
-      --fc-button-active-text-color: #000;
+      --fc-button-active-bg-color:    #00e0b8;
+      --fc-button-active-border-color:#00e0b8;
+      --fc-button-active-text-color:  #000;
       --fc-list-event-hover-bg-color: rgba(255,255,255,.05);
     }
     .fc { color: #e9eefb; font-family: inherit; }
@@ -37,10 +36,8 @@
     .fc-col-header-cell {
       background: rgba(20,25,38,.9);
       padding: 8px 0 !important;
-      font-size: 12px;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: .5px;
+      font-size: 12px; font-weight: 700;
+      text-transform: uppercase; letter-spacing: .5px;
     }
     .fc-col-header-cell-cushion { color: #94a3b8 !important; text-decoration: none !important; }
     .fc-daygrid-day-number { color: #94a3b8 !important; text-decoration: none !important; font-size: 13px; }
@@ -54,48 +51,44 @@
     .fc-event:hover { filter: brightness(1.15); }
     .fc-timegrid-slot { height: 32px !important; }
     .fc-timegrid-slot-label { font-size: 11px; color: #64748b; }
-    .fc-scrollgrid { border-color: var(--fc-border-color) !important; }
-    .fc-scrollgrid-section > * { border-color: var(--fc-border-color) !important; }
+    .fc-scrollgrid, .fc-scrollgrid-section > *,
     .fc-theme-standard td, .fc-theme-standard th { border-color: var(--fc-border-color) !important; }
     .fc-list-event-title { color: #e9eefb; }
     .fc-list-day-cushion { background: rgba(20,25,38,.9) !important; }
     .fc-highlight { background: rgba(0,224,184,.15) !important; }
+    @media (min-width: 900px) { .fc-toolbar-title { font-size: 20px !important; } }
 
-    /* ── Auth-Banner ────────────────────────────────────────────────────── */
+    /* ── Auth-Banner ────────────────────────────────────────────────── */
     .auth-banner {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 12px;
-      padding: 12px 16px;
+      display: flex; align-items: center; justify-content: space-between; gap: 12px;
+      padding: 12px 16px; margin-bottom: 12px;
       background: linear-gradient(135deg, rgba(124,58,237,.2), rgba(0,224,184,.1));
-      border: 1px solid rgba(124,58,237,.35);
-      border-radius: 14px;
-      margin-bottom: 12px;
+      border: 1px solid rgba(124,58,237,.35); border-radius: 14px;
     }
     .auth-banner.hidden { display: none; }
     .auth-banner-text { font-size: 13px; font-weight: 700; }
     .auth-banner-sub  { font-size: 11px; color: var(--muted); margin-top: 2px; }
 
-    /* ── Status Dot ─────────────────────────────────────────────────────── */
-    .status-pill {
-      display: flex; align-items: center; gap: 6px;
-      font-size: 12px; color: var(--muted);
-    }
-    .status-dot {
-      width: 7px; height: 7px; border-radius: 50%; background: #64748b;
-      transition: background .3s;
-    }
+    /* ── Status Dot ─────────────────────────────────────────────────── */
+    .status-pill { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--muted); }
+    .status-dot  { width: 7px; height: 7px; border-radius: 50%; background: #64748b; transition: background .3s; }
     .status-dot.online  { background: #7CFC9A; box-shadow: 0 0 6px rgba(124,252,154,.5); }
-    .status-dot.loading { background: #f59e0b; animation: pulse-dot .8s infinite; }
-    @keyframes pulse-dot { 0%,100%{opacity:1} 50%{opacity:.3} }
+    .status-dot.loading { background: #f59e0b; animation: pdot .8s infinite; }
+    @keyframes pdot { 0%,100%{opacity:1} 50%{opacity:.3} }
 
-    /* ── Calendar Card ───────────────────────────────────────────────────── */
-    .cal-card { padding: 14px; }
-    @media (min-width: 900px) {
-      .cal-card { padding: 18px; }
-      .fc-toolbar-title { font-size: 20px !important; }
+    /* ── Modal: All-Day toggle ──────────────────────────────────────── */
+    .allday-toggle {
+      display: flex; align-items: center; gap: 8px;
+      font-size: 13px; font-weight: 700; cursor: pointer;
+      padding: 10px 0; user-select: none;
     }
+    .allday-toggle input { width: auto; accent-color: var(--accent); }
+    .form-row { display: flex; gap: 8px; margin-bottom: 10px; }
+    .form-col { flex: 1; display: flex; flex-direction: column; gap: 4px; }
+    .form-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; color: var(--muted); }
+
+    .cal-card { padding: 14px; }
+    @media (min-width: 900px) { .cal-card { padding: 18px; } }
   </style>
 </head>
 <body>
@@ -111,13 +104,12 @@
         <div class="status-dot" id="statusDot"></div>
         <span id="statusText">lädt…</span>
       </div>
+      <button class="btn small" id="addEventBtn" style="display:none" onclick="openNewEventModal()">+ Termin</button>
       <button class="btn small danger" id="signoutBtn" style="display:none" onclick="handleSignout()">Abmelden</button>
     </div>
   </header>
 
   <main class="content">
-
-    <!-- Auth-Banner (wird ausgeblendet sobald angemeldet) -->
     <div class="auth-banner" id="authBanner">
       <div>
         <div class="auth-banner-text">Google-Konto verbinden</div>
@@ -126,23 +118,55 @@
       <button class="btn small" id="signinBtn" onclick="handleSignin()" disabled>Anmelden</button>
     </div>
 
-    <!-- Kalender -->
     <div class="card cal-card">
       <div id="calendar"></div>
     </div>
-
   </main>
 
   <nav class="bottomnav" id="bottomNav"></nav>
 </div>
 
-<!-- Neuer Termin Modal -->
+<!-- ── Termin erstellen / bearbeiten ─────────────────────────────── -->
 <div class="modal" id="createEventModal">
   <div class="box">
-    <p style="font-weight:800;font-size:17px;margin:0 0 4px">Neuer Termin</p>
-    <p id="evDatePreview" class="sub" style="margin:0 0 14px;font-size:12px"></p>
-    <input type="text" id="evTitle" placeholder="Titel des Termins"
+    <p style="font-weight:800;font-size:17px;margin:0 0 12px" id="createModalTitle">Neuer Termin</p>
+
+    <input type="text" id="evTitle" placeholder="Titel" style="margin-bottom:4px"
            onkeypress="if(event.key==='Enter')submitCreateEvent()">
+
+    <label class="allday-toggle">
+      <input type="checkbox" id="evAllDay" onchange="toggleAllDayMode()">
+      Ganztägig
+    </label>
+
+    <!-- Datum+Uhrzeit (nicht ganztägig) -->
+    <div id="evDateTimeGroup">
+      <div class="form-row">
+        <div class="form-col">
+          <span class="form-label">Start</span>
+          <input type="datetime-local" id="evStart">
+        </div>
+        <div class="form-col">
+          <span class="form-label">Ende</span>
+          <input type="datetime-local" id="evEnd">
+        </div>
+      </div>
+    </div>
+
+    <!-- Nur Datum (ganztägig) -->
+    <div id="evDateGroup" style="display:none">
+      <div class="form-row">
+        <div class="form-col">
+          <span class="form-label">Von</span>
+          <input type="date" id="evStartDate">
+        </div>
+        <div class="form-col">
+          <span class="form-label">Bis</span>
+          <input type="date" id="evEndDate">
+        </div>
+      </div>
+    </div>
+
     <div style="display:flex;gap:10px;margin-top:14px">
       <button class="btn" style="flex:1" onclick="submitCreateEvent()">Erstellen</button>
       <button class="btn dark" style="flex:1" onclick="cancelCreate()">Abbrechen</button>
@@ -150,12 +174,12 @@
   </div>
 </div>
 
-<!-- Termin-Detail Modal -->
+<!-- ── Termin-Detail ──────────────────────────────────────────────── -->
 <div class="modal" id="eventDetailModal">
   <div class="box">
     <p id="evDetailTitle" style="font-weight:800;font-size:17px;margin:0 0 6px;word-break:break-word"></p>
-    <p id="evDetailDate"  class="sub" style="margin:0 0 16px;font-size:12px"></p>
-    <div id="evDetailDesc" class="sub" style="margin:0 0 16px;font-size:13px;display:none"></div>
+    <p id="evDetailDate"  class="sub" style="margin:0 0 6px;font-size:12px"></p>
+    <p id="evDetailDesc"  class="sub" style="margin:0 0 14px;font-size:13px;display:none"></p>
     <div style="display:flex;gap:10px">
       <button class="btn danger" style="flex:1" onclick="deleteCurrentEvent()">Löschen</button>
       <button class="btn dark"   style="flex:1" onclick="closeModal('eventDetailModal')">Schließen</button>
@@ -172,47 +196,44 @@
 "></div>
 <style>#toast.show { opacity: 1; }</style>
 
-<!-- Firebase -->
 <script src="https://www.gstatic.com/firebasejs/12.0.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/12.0.0/firebase-firestore-compat.js"></script>
 <script src="shared.js"></script>
-
-<!-- FullCalendar -->
 <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.14/index.global.min.js"></script>
-
-<!-- Google APIs -->
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 <script src="https://apis.google.com/js/api.js" async defer></script>
 
 <script>
   renderBottomNav('kalender');
 
-  /* ══════════════════════════════════════════════════════════════════════
-     KONFIG  –  hier eure Werte eintragen (siehe Setup-Anleitung)
-     ══════════════════════════════════════════════════════════════════════ */
+  /* ── Konfig ─────────────────────────────────────────────────────── */
   const GC_CLIENT_ID   = '561126572891-le6tijqq4hqrabdmsr1d767qf9l14jvk.apps.googleusercontent.com';
   const GC_API_KEY     = 'AIzaSyCwYdz2dqaxCjQ60nTfVVRqy74XspsX224';
   const GC_CALENDAR_ID = 'c_c2fab374a80cfc318314f0ff3692a3928a1e0a7f5892ab346e156d90bad30dec@group.calendar.google.com';
   const GC_SCOPES      = 'https://www.googleapis.com/auth/calendar';
-  /* ══════════════════════════════════════════════════════════════════════ */
 
-  // ── State ────────────────────────────────────────────────────────────────
-  let tokenClient  = null;
-  let gapiInited   = false;
-  let gisInited    = false;
-  let accessToken  = sessionStorage.getItem('gc_token') || null;
-  let calInstance  = null;
-  let pendingSelectInfo = null;
-  let currentEventObj   = null;
+  /* ── State ──────────────────────────────────────────────────────── */
+  let tokenClient    = null;
+  let gapiInited     = false;
+  let gisInited      = false;
+  let accessToken    = sessionStorage.getItem('gc_token') || null;
+  let calInstance    = null;
+  let pendingSelect  = null;   // Info-Objekt von FullCalendar-Selektion
+  let currentEvtObj  = null;   // Angeklicktes Event (für Löschen)
 
-  // ── Status-Anzeige ────────────────────────────────────────────────────────
-  function setStatus(text, state) { // state: '' | 'online' | 'loading'
+  /* ── Hilfsfunktionen ────────────────────────────────────────────── */
+  const toLocalDT = d => new Date(d - d.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+  const toLocalD  = d => new Date(d - d.getTimezoneOffset() * 60000).toISOString().slice(0, 10);
+  const fmtTime   = d => d.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
+  const fmtDate   = d => d.toLocaleDateString('de-DE', { weekday: 'short', day: '2-digit', month: '2-digit', year: 'numeric' });
+
+  /* ── Status ─────────────────────────────────────────────────────── */
+  function setStatus(text, state) {
     document.getElementById('statusText').textContent = text;
-    const dot = document.getElementById('statusDot');
-    dot.className = 'status-dot' + (state ? ' ' + state : '');
+    document.getElementById('statusDot').className = 'status-dot' + (state ? ' ' + state : '');
   }
 
-  // ── GAPI initialisieren ───────────────────────────────────────────────────
+  /* ── GAPI init ──────────────────────────────────────────────────── */
   function waitForGapi() {
     if (window.gapi) {
       gapi.load('client', async () => {
@@ -223,56 +244,42 @@
           });
           gapiInited = true;
           onLibsReady();
-        } catch(e) {
-          console.error('GAPI init error:', e);
-          setStatus('API-Fehler');
-        }
+        } catch(e) { console.error('GAPI:', e); setStatus('API-Fehler'); }
       });
-    } else {
-      setTimeout(waitForGapi, 300);
-    }
+    } else { setTimeout(waitForGapi, 300); }
   }
 
-  // ── GIS initialisieren ────────────────────────────────────────────────────
+  /* ── GIS init ───────────────────────────────────────────────────── */
   function waitForGis() {
     if (window.google?.accounts?.oauth2) {
       tokenClient = google.accounts.oauth2.initTokenClient({
         client_id: GC_CLIENT_ID,
-        scope: GC_SCOPES,
-        callback: onTokenReceived,
+        scope:     GC_SCOPES,
+        callback:  onTokenReceived,
       });
       gisInited = true;
       onLibsReady();
-    } else {
-      setTimeout(waitForGis, 300);
-    }
+    } else { setTimeout(waitForGis, 300); }
   }
 
   function onLibsReady() {
     if (!gapiInited || !gisInited) return;
-
-    const btn = document.getElementById('signinBtn');
-    btn.disabled = false;
+    document.getElementById('signinBtn').disabled = false;
     setStatus('bereit');
-
-    // Bereits eingeloggtes Token wiederherstellen
     if (accessToken) {
       gapi.client.setToken({ access_token: accessToken });
       onSignedIn(false);
     }
   }
 
-  // ── Auth ──────────────────────────────────────────────────────────────────
+  /* ── Auth ───────────────────────────────────────────────────────── */
   function handleSignin() {
     if (!tokenClient) return;
-    // prompt: '' → kein Dialog wenn Token noch gültig; 'consent' → immer neu
     tokenClient.requestAccessToken({ prompt: accessToken ? '' : 'consent' });
   }
 
   function handleSignout() {
-    if (accessToken) {
-      google.accounts.oauth2.revoke(accessToken, () => {});
-    }
+    if (accessToken) google.accounts.oauth2.revoke(accessToken, () => {});
     accessToken = null;
     sessionStorage.removeItem('gc_token');
     gapi.client.setToken(null);
@@ -280,7 +287,7 @@
   }
 
   function onTokenReceived(resp) {
-    if (resp.error) { console.error(resp); setStatus('Anmelde-Fehler'); return; }
+    if (resp.error) { console.error(resp); setStatus('Fehler'); return; }
     accessToken = resp.access_token;
     sessionStorage.setItem('gc_token', accessToken);
     gapi.client.setToken({ access_token: accessToken });
@@ -289,7 +296,8 @@
 
   function onSignedIn(freshLogin) {
     document.getElementById('authBanner').classList.add('hidden');
-    document.getElementById('signoutBtn').style.display = 'inline-flex';
+    document.getElementById('addEventBtn').style.display = 'inline-flex';
+    document.getElementById('signoutBtn').style.display  = 'inline-flex';
     setStatus('angemeldet', 'online');
     if (freshLogin) showToast('Angemeldet ✓');
     refreshEvents();
@@ -297,54 +305,56 @@
 
   function onSignedOut() {
     document.getElementById('authBanner').classList.remove('hidden');
-    document.getElementById('signoutBtn').style.display = 'none';
+    document.getElementById('addEventBtn').style.display = 'none';
+    document.getElementById('signoutBtn').style.display  = 'none';
     setStatus('abgemeldet');
     if (calInstance) calInstance.getEvents().forEach(e => e.remove());
     showToast('Abgemeldet');
   }
 
-  // ── Events laden ──────────────────────────────────────────────────────────
+  /* ── Events laden ───────────────────────────────────────────────── */
   async function refreshEvents() {
     if (!accessToken || !calInstance) return;
     setStatus('lädt…', 'loading');
-
     const view    = calInstance.view;
     const timeMin = view.activeStart.toISOString();
     const timeMax = view.activeEnd.toISOString();
-
     try {
-      const res = await gapi.client.calendar.events.list({
-        calendarId:   GC_CALENDAR_ID,
-        timeMin, timeMax,
-        singleEvents: true,
-        orderBy:      'startTime',
-        maxResults:   2500,
+      const res   = await gapi.client.calendar.events.list({
+        calendarId: GC_CALENDAR_ID, timeMin, timeMax,
+        singleEvents: true, orderBy: 'startTime', maxResults: 2500,
       });
       const items = res.result.items || [];
       calInstance.getEvents().forEach(e => e.remove());
-      items.forEach(ev => {
-        calInstance.addEvent({
-          id:     ev.id,
-          title:  ev.summary || '(Ohne Titel)',
-          start:  ev.start.dateTime || ev.start.date,
-          end:    ev.end?.dateTime  || ev.end?.date,
-          allDay: !!ev.start.date,
-          extendedProps: { description: ev.description || '' },
-        });
-      });
+      items.forEach(ev => calInstance.addEvent({
+        id:     ev.id,
+        title:  ev.summary || '(Ohne Titel)',
+        start:  ev.start.dateTime || ev.start.date,
+        end:    ev.end?.dateTime  || ev.end?.date,
+        allDay: !!ev.start.date,
+        extendedProps: { description: ev.description || '' },
+      }));
       setStatus(`${items.length} Termine`, 'online');
+      saveTodayCache();
     } catch(e) {
-      console.error(e);
-      setStatus('Ladefehler');
-      if (e.status === 401) {
-        accessToken = null;
-        sessionStorage.removeItem('gc_token');
-        onSignedOut();
-      }
+      console.error(e); setStatus('Ladefehler');
+      if (e.status === 401) { accessToken = null; sessionStorage.removeItem('gc_token'); onSignedOut(); }
     }
   }
 
-  // ── FullCalendar ──────────────────────────────────────────────────────────
+  /* ── Firestore-Cache: heute ─────────────────────────────────────── */
+  function saveTodayCache() {
+    if (!db || !calInstance) return;
+    const today = todayStr();
+    const events = calInstance.getEvents()
+      .filter(e => e.startStr.startsWith(today))
+      .map(e => ({ title: e.title, start: e.startStr, allDay: e.allDay }));
+    db.collection('calendar_cache').doc('today')
+      .set({ date: today, events, updatedAt: Date.now() })
+      .catch(() => {});
+  }
+
+  /* ── FullCalendar ───────────────────────────────────────────────── */
   function initCalendar() {
     calInstance = new FullCalendar.Calendar(document.getElementById('calendar'), {
       initialView:  'dayGridMonth',
@@ -359,76 +369,88 @@
         center: 'title',
         right:  'dayGridMonth,timeGridWeek,listWeek',
       },
-      buttonText: {
-        today:      'Heute',
-        month:      'Monat',
-        week:       'Woche',
-        list:       'Liste',
-      },
-      datesSet: () => {
-        if (accessToken) refreshEvents();
-      },
-      select:       onDateSelect,
-      eventClick:   onEventClick,
+      buttonText: { today: 'Heute', month: 'Monat', week: 'Woche', list: 'Liste' },
+      datesSet:    () => { if (accessToken) refreshEvents(); },
+      select:      onDateSelect,
+      eventClick:  onEventClick,
     });
     calInstance.render();
   }
 
-  // ── Termin erstellen ───────────────────────────────────────────────────────
-  function onDateSelect(info) {
-    if (!accessToken) {
-      showToast('Bitte zuerst anmelden');
-      calInstance.unselect();
-      return;
-    }
-    pendingSelectInfo = info;
+  /* ── Termin erstellen ───────────────────────────────────────────── */
 
-    // Datum-Preview für Modal
-    const fmt = d => d.toLocaleDateString('de-DE', { weekday: 'short', day: '2-digit', month: '2-digit' });
-    const endDisplay = info.allDay ? new Date(info.end.getTime() - 86400000) : info.end;
-    const isSameDay  = fmt(info.start) === fmt(endDisplay);
-    const preview    = isSameDay
-      ? fmt(info.start) + (info.allDay ? '' : ` · ${fmtTime(info.start)}–${fmtTime(info.end)}`)
-      : `${fmt(info.start)} – ${fmt(endDisplay)}`;
-
-    document.getElementById('evDatePreview').textContent = preview;
-    document.getElementById('evTitle').value = '';
+  // Öffnet Modal mit leerem Formular (heute als Default)
+  function openNewEventModal() {
+    if (!accessToken) { showToast('Bitte zuerst anmelden'); return; }
+    pendingSelect = null;
+    const now = new Date();
+    const in1h = new Date(now.getTime() + 3600000);
+    document.getElementById('evTitle').value    = '';
+    document.getElementById('evAllDay').checked = false;
+    document.getElementById('evStart').value     = toLocalDT(now);
+    document.getElementById('evEnd').value       = toLocalDT(in1h);
+    document.getElementById('evStartDate').value = toLocalD(now);
+    document.getElementById('evEndDate').value   = toLocalD(now);
+    toggleAllDayMode();
     openModal('createEventModal');
     setTimeout(() => document.getElementById('evTitle').focus(), 350);
   }
 
-  function fmtTime(d) {
-    return d.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
+  // Wird aufgerufen wenn Nutzer Bereich im Kalender markiert
+  function onDateSelect(info) {
+    if (!accessToken) { showToast('Bitte zuerst anmelden'); calInstance.unselect(); return; }
+    pendingSelect = info;
+    document.getElementById('evTitle').value    = '';
+    document.getElementById('evAllDay').checked = info.allDay;
+    if (info.allDay) {
+      document.getElementById('evStartDate').value = toLocalD(info.start);
+      // FullCalendar gibt allDay-Ende exklusiv zurück → 1 Tag abziehen für Anzeige
+      document.getElementById('evEndDate').value   = toLocalD(new Date(info.end.getTime() - 86400000));
+    } else {
+      document.getElementById('evStart').value = toLocalDT(info.start);
+      document.getElementById('evEnd').value   = toLocalDT(info.end);
+    }
+    toggleAllDayMode();
+    openModal('createEventModal');
+    setTimeout(() => document.getElementById('evTitle').focus(), 350);
+  }
+
+  function toggleAllDayMode() {
+    const allDay = document.getElementById('evAllDay').checked;
+    document.getElementById('evDateTimeGroup').style.display = allDay ? 'none' : '';
+    document.getElementById('evDateGroup').style.display     = allDay ? '' : 'none';
   }
 
   function cancelCreate() {
     closeModal('createEventModal');
     if (calInstance) calInstance.unselect();
-    pendingSelectInfo = null;
+    pendingSelect = null;
   }
 
   async function submitCreateEvent() {
-    const title = document.getElementById('evTitle').value.trim();
+    const title  = document.getElementById('evTitle').value.trim();
     if (!title) { document.getElementById('evTitle').focus(); return; }
-
+    const allDay = document.getElementById('evAllDay').checked;
     closeModal('createEventModal');
-    const info = pendingSelectInfo;
-    pendingSelectInfo = null;
-    if (!info) return;
+    if (calInstance) calInstance.unselect();
+    pendingSelect = null;
 
-    const isAllDay = info.allDay;
     let resource;
-    if (isAllDay) {
-      resource = {
-        summary: title,
-        start: { date: info.startStr.slice(0, 10) },
-        end:   { date: info.endStr.slice(0, 10) },
-      };
+    if (allDay) {
+      const startD = document.getElementById('evStartDate').value;
+      const endD   = document.getElementById('evEndDate').value   || startD;
+      if (!startD) return;
+      // Google Calendar: allDay-Ende muss exklusiv sein (+ 1 Tag)
+      const endExcl = new Date(new Date(endD).getTime() + 86400000).toISOString().slice(0, 10);
+      resource = { summary: title, start: { date: startD }, end: { date: endExcl } };
     } else {
+      const startDT = document.getElementById('evStart').value;
+      const endDT   = document.getElementById('evEnd').value || startDT;
+      if (!startDT) return;
       resource = {
         summary: title,
-        start: { dateTime: info.start.toISOString() },
-        end:   { dateTime: info.end.toISOString() },
+        start: { dateTime: new Date(startDT).toISOString() },
+        end:   { dateTime: new Date(endDT).toISOString() },
       };
     }
 
@@ -443,28 +465,31 @@
         allDay: !!created.start.date,
       });
       showToast(`„${title}" erstellt`);
+      saveTodayCache();
     } catch(e) {
-      console.error(e);
-      showToast('Fehler beim Erstellen');
+      console.error(e); showToast('Fehler beim Erstellen');
       if (e.status === 401) { accessToken = null; sessionStorage.removeItem('gc_token'); onSignedOut(); }
-    } finally {
-      if (calInstance) calInstance.unselect();
     }
   }
 
-  // ── Termin-Detail & Löschen ───────────────────────────────────────────────
+  /* ── Termin-Detail & Löschen ────────────────────────────────────── */
   function onEventClick(info) {
-    currentEventObj = info.event;
+    currentEvtObj = info.event;
     document.getElementById('evDetailTitle').textContent = info.event.title || '(Ohne Titel)';
 
-    const start = info.event.start;
-    const end   = info.event.allDay ? null : info.event.end;
-    const fmt   = d => d ? d.toLocaleDateString('de-DE', { weekday: 'short', day: '2-digit', month: '2-digit', year: 'numeric' }) : '';
-    const fmtDT = d => d ? fmt(d) + (info.event.allDay ? '' : ' · ' + fmtTime(d)) : '';
-    const dateStr = end ? `${fmtDT(start)} – ${fmtDT(end)}` : fmtDT(start);
+    const s    = info.event.start;
+    const e    = info.event.end;
+    const aDay = info.event.allDay;
+    let dateStr;
+    if (aDay) {
+      const eDisp = e ? new Date(e.getTime() - 86400000) : s;
+      dateStr = fmtDate(s) + (eDisp > s ? ' – ' + fmtDate(eDisp) : '');
+    } else {
+      dateStr = fmtDate(s) + ' · ' + fmtTime(s) + (e ? ' – ' + fmtTime(e) : '');
+    }
     document.getElementById('evDetailDate').textContent = dateStr;
 
-    const desc = info.event.extendedProps?.description;
+    const desc   = info.event.extendedProps?.description;
     const descEl = document.getElementById('evDetailDesc');
     if (desc) { descEl.textContent = desc; descEl.style.display = ''; }
     else       { descEl.style.display = 'none'; }
@@ -473,26 +498,24 @@
   }
 
   async function deleteCurrentEvent() {
-    if (!currentEventObj) return;
+    if (!currentEvtObj) return;
     closeModal('eventDetailModal');
-
-    const id    = currentEventObj.id;
-    const title = currentEventObj.title;
-    currentEventObj.remove(); // optimistic UI
-    currentEventObj = null;
-
+    const id    = currentEvtObj.id;
+    const title = currentEvtObj.title;
+    currentEvtObj.remove(); // optimistisch entfernen
+    currentEvtObj = null;
     try {
       await gapi.client.calendar.events.delete({ calendarId: GC_CALENDAR_ID, eventId: id });
       showToast(`„${title}" gelöscht`);
+      saveTodayCache();
     } catch(e) {
-      console.error(e);
-      showToast('Fehler beim Löschen');
-      refreshEvents(); // Rückgängig machen
+      console.error(e); showToast('Fehler beim Löschen');
+      refreshEvents();
       if (e.status === 401) { accessToken = null; sessionStorage.removeItem('gc_token'); onSignedOut(); }
     }
   }
 
-  // ── Init ──────────────────────────────────────────────────────────────────
+  /* ── Init ───────────────────────────────────────────────────────── */
   window.addEventListener('load', () => {
     initCalendar();
     waitForGapi();
