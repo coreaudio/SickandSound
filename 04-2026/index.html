@@ -1,0 +1,2052 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <title>Sick & Sound – Strichliste</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#0b0e14" />
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="stylesheet" href="style.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;800&display=swap" rel="stylesheet" />
+  <style>
+    :root{
+      /* Layout-Parameter (anpassbar im Admin-Bereich) */
+      --ring: 48px;
+      --row-pad: 6px;
+      --name-size: 18px;
+      --count-size: 17px;
+      --cell-gap: 10px;
+      --btn-padding-v: 8px;
+      --btn-padding-h: 12px;
+      --btn-font-size: 14px;
+      --btn-min-width: 40px;
+      --drink-name-size: 12px;
+      --drink-price-size: 11px;
+      --col-min-width: 90px;
+      --person-col-width: 180px;
+      --sticky-top: 56px;
+      --admin-color: #ff6b6b;
+    }
+    .content{ padding-bottom: 88px; }
+    .appbar{ min-height: 52px; }
+    .bottomnav{ height: 64px; }
+    .card.table-wrap table td, .card.table-wrap table th{ padding-top: var(--row-pad); padding-bottom: var(--row-pad); }
+    .lvl-ring{ width: var(--ring); height: var(--ring); position:relative; display:inline-grid; place-items:center; }
+    .lvl-ring .val{ position:absolute; font-size: 12px; font-weight: 800; line-height:1; }
+    .person-cell{ display:flex; align-items:center; gap:10px; cursor:default; }
+    .p-name{ font-size: var(--name-size); font-weight: 800; letter-spacing:.2px; }
+    .drink-chip .drink-name{ font-size: var(--drink-name-size); }
+    .drink-chip .drink-price{ font-size: var(--drink-price-size); opacity:.8 }
+    .cell{ display:flex; align-items:center; justify-content:flex-end; gap: var(--cell-gap); }
+    .count{ font-size: var(--count-size); min-width: 26px; text-align:right; }
+    .plus-btn{ padding: var(--btn-padding-v) var(--btn-padding-h); font-size: var(--btn-font-size); min-width: var(--btn-min-width); }
+    .minus-btn{ padding: var(--btn-padding-v) var(--btn-padding-h); font-size: var(--btn-font-size); min-width: var(--btn-min-width); background-color: var(--admin-color); }
+    .section-row td{ font-size:12px; opacity:.7 }
+    .section-title{ font-size: 14px; }
+    .admin-mode .minus-btn{ display: inline-block !important; }
+    .admin-mode .person-cell{ cursor: pointer; }
+    .admin-indicator{ background-color: var(--admin-color); padding: 4px 8px; border-radius: 4px; margin-left: 8px; font-size: 12px; }
+
+    /* Sticky Action Bar */
+    .action-bar{
+      position:sticky; top:52px; z-index:48;
+      display:flex; gap:6px; padding:6px 12px;
+      background:rgba(11,14,20,.9); border-bottom:1px solid rgba(255,255,255,.07);
+      backdrop-filter:blur(12px);
+    }
+    .action-bar .btn{ flex:1; min-width:0; font-size:13px; padding:7px 8px; white-space:nowrap; }
+    .action-bar .btn:disabled{ opacity:.3; cursor:default; }
+
+    /* CTA Checkliste */
+    .cta-wrap{ display:flex; flex-wrap:wrap; gap:10px; align-items:center; margin-top:8px; }
+    .cta-check{ display:inline-flex; align-items:center; gap:10px; padding:12px 16px; border-radius:14px;
+      background: linear-gradient(135deg,#6ee7ff,#a78bfa); color:#0b0e14; font-weight:900; letter-spacing:.2px;
+      text-decoration:none; border:none; box-shadow:0 8px 24px rgba(0,0,0,.25); cursor:pointer;
+    }
+    .cta-check svg{ width:20px; height:20px; }
+    .cta-sub{ font-size:12px; opacity:.85; }
+
+    /* Sticky Header */
+    .card.table-wrap thead th{
+      position: sticky;
+      top: 0;
+      z-index: 2;
+      background: #111827; /* dunkler Hintergrund für Lesbarkeit */
+      box-shadow: 0 2px 0 rgba(0,0,0,.25);
+    }
+
+    /* Tabelle Container mit eigenem Scroll */
+    .card.table-wrap {
+      max-height: calc(100vh - 280px);
+      overflow-y: auto;
+    }
+
+    /* Hausdienst-Badge */
+    .hd-badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 20px;
+      height: 20px;
+      padding: 0 6px;
+      border-radius: 10px;
+      font-size: 11px;
+      font-weight: 800;
+      margin-left: 6px;
+    }
+    .hd-badge.open { background: #ff6b6b; color: #fff; }
+    .hd-badge.done { background: #2a3042; color: #7CFC9A; }
+
+    /* Hinweis im Löschmodus */
+    .delete-hint{ opacity:.75; font-size:12px; margin-top:4px }
+    .delete-mode .person-cell{ cursor:pointer }
+
+    /* Toast */
+    .toast{
+      position:fixed; bottom:76px; left:50%; transform:translateX(-50%) translateY(8px);
+      background:rgba(17,24,39,.96); color:#e6e8ef; padding:10px 18px; border-radius:12px;
+      font-size:14px; font-weight:600; z-index:9999; pointer-events:none;
+      box-shadow:0 4px 20px rgba(0,0,0,.5); border:1px solid rgba(110,231,255,.25);
+      white-space:nowrap; max-width:92vw; overflow:hidden; text-overflow:ellipsis;
+      opacity:0; transition:opacity .18s, transform .18s;
+    }
+    .toast.show{ opacity:1; transform:translateX(-50%) translateY(0); }
+
+    /* Backup Modal */
+    .modal-content{ max-width: 500px; }
+    .backup-actions{ display: flex; gap: 10px; margin-top: 15px; }
+    .backup-list{ max-height: 200px; overflow-y: auto; margin: 10px 0; }
+    .backup-item{ padding: 8px; border-bottom: 1px solid rgba(255,255,255,0.1); display: flex; justify-content: space-between; }
+
+    /* Hausdienst-Status in Strichliste */
+    .hd-today { background: rgba(255, 107, 107, 0.1); }
+    .hd-today.hd-complete { background: rgba(124, 252, 154, 0.1); }
+    .hd-status-icon { margin-left: 6px; font-size: 14px; }
+    .hd-status-icon.pending { color: #ff6b6b; }
+    .hd-status-icon.complete { color: #7CFC9A; }
+
+    /* Kernteam-Tags */
+    .core-tag { display: inline-flex; align-items: center; gap: 6px; padding: 6px 10px; border-radius: 8px; background: #1c2130; border: 1px solid #2a3042; }
+    .core-tag .remove-btn { cursor: pointer; color: #ff6b6b; font-weight: bold; padding: 0 4px; }
+    .core-tag .remove-btn:hover { color: #ff4444; }
+
+    /* Bezugsperson für Gäste */
+    .person-cell-wrapper { display: flex; align-items: center; justify-content: space-between; width: 100%; gap: 8px; }
+    .ref-select { padding: 4px 8px; border-radius: 6px; border: 1px solid #2a3042; background: #1c2130; color: #e6e8ef; font-size: 11px; max-width: 90px; cursor: pointer; flex-shrink: 0; }
+    .ref-badge { display: inline-block; padding: 2px 8px; border-radius: 4px; background: rgba(110, 231, 255, 0.15); color: #6ee7ff; font-size: 11px; margin-left: 6px; }
+
+    /* Tablet Hochformat Optimierung */
+    @media screen and (max-width: 900px) {
+      :root {
+        --ring: 36px;
+        --name-size: 13px;
+        --count-size: 13px;
+        --cell-gap: 4px;
+      }
+      .plus-btn, .minus-btn { padding: 4px 6px; font-size: 11px; min-width: 32px; }
+      .person-cell { gap: 4px; }
+      .drink-chip .drink-name { font-size: 9px; white-space: nowrap; }
+      .drink-chip .drink-price { font-size: 8px; }
+      .count { font-size: 12px; min-width: 20px; }
+
+      /* Bezugsperson unter den Namen */
+      .person-cell-wrapper {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 4px;
+      }
+      .ref-select {
+        max-width: 100%;
+        width: auto;
+        margin-left: 42px; /* Einrückung passend zum Ring */
+      }
+
+      /* Tabelle horizontal scrollbar */
+      .card.table-wrap {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+      }
+      .card.table-wrap table {
+        min-width: 600px;
+        table-layout: fixed;
+      }
+      .card.table-wrap table th:first-child {
+        width: 140px;
+        min-width: 140px;
+      }
+      .card.table-wrap table th:not(:first-child):not(:last-child) {
+        min-width: 70px;
+        padding: 4px 2px;
+      }
+      .card.table-wrap table td {
+        padding: 4px 2px;
+      }
+      .cell {
+        flex-wrap: nowrap;
+        justify-content: center;
+      }
+    }
+
+    /* Kleinere Tablets / große Phones */
+    @media screen and (max-width: 650px) {
+      :root {
+        --ring: 32px;
+        --name-size: 12px;
+        --count-size: 12px;
+        --cell-gap: 2px;
+      }
+      .plus-btn, .minus-btn { padding: 3px 5px; font-size: 10px; min-width: 28px; }
+      .ref-select { margin-left: 38px; font-size: 10px; }
+      .hd-badge { font-size: 9px; min-width: 16px; height: 16px; }
+      .hd-progress { font-size: 9px !important; }
+      .appbar h1 { font-size: 14px; }
+      .card.table-wrap table th:first-child {
+        width: 120px;
+        min-width: 120px;
+      }
+      .card.table-wrap table th:not(:first-child):not(:last-child) {
+        min-width: 60px;
+      }
+      .p-name { font-size: 11px; }
+      .lvl-ring .val { font-size: 10px; }
+    }
+
+    /* Touch-Geräte: größere Tap-Targets */
+    @media (pointer: coarse) {
+      .plus-btn, .minus-btn {
+        min-width: 44px;
+        min-height: 44px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .ref-select {
+        min-height: 36px;
+        padding: 8px 10px;
+      }
+    }
+
+    /* Drag & Drop für Getränke-Spalten */
+    .drink-header {
+      cursor: grab;
+      user-select: none;
+      transition: transform 0.15s ease, opacity 0.15s ease, background 0.15s ease;
+    }
+    .drink-header:active {
+      cursor: grabbing;
+    }
+    .drink-header.dragging {
+      opacity: 0.5;
+      transform: scale(0.95);
+      background: rgba(110, 231, 255, 0.2);
+    }
+    .drink-header.drag-over {
+      background: rgba(167, 139, 250, 0.3);
+      transform: scale(1.02);
+    }
+    .drag-hint {
+      font-size: 10px;
+      opacity: 0.6;
+      display: block;
+      margin-top: 2px;
+    }
+    @media screen and (max-width: 900px) {
+      .drag-hint { font-size: 8px; }
+    }
+
+    /* ===== Prio 2: iPad Portrait – solidere Touch-Buttons (750–1099px) ===== */
+    @media screen and (min-width: 750px) and (max-width: 1099px) and (pointer: coarse) {
+      .plus-btn, .minus-btn {
+        min-width: 52px;
+        min-height: 52px;
+        font-size: 15px;
+        padding: 10px 14px;
+        border-radius: 12px;
+      }
+      .count { font-size: 17px; min-width: 28px; }
+      .cell  { gap: 10px; }
+      :root  { --ring: 40px; --name-size: 15px; --count-size: 15px; }
+    }
+
+    /* ===== Prio 2: iPad Landscape – große, komfortable Tap-Flächen (≥ 1100px) ===== */
+    @media screen and (min-width: 1100px) and (pointer: coarse) {
+      .plus-btn, .minus-btn {
+        min-width: 64px;
+        min-height: 64px;
+        font-size: 18px;
+        padding: 0;
+        border-radius: 16px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .count { font-size: 22px; min-width: 36px; }
+      .cell  { gap: 16px; }
+      :root  {
+        --ring: 52px;
+        --name-size: 20px;
+        --count-size: 20px;
+        --person-col-width: 220px;
+        --col-min-width: 120px;
+      }
+    }
+
+    /* ===== Prio 1: iPad Split-Layout (≥ 1100px) ===== */
+    @media screen and (min-width: 1100px) {
+      /* Zweispaltiges Grid: Tabelle links, Sidebar rechts */
+      .content {
+        display: grid;
+        grid-template-columns: 1fr 360px;
+        column-gap: 12px;
+        padding: 14px 14px 88px 14px;
+        align-items: start;
+      }
+
+      /* Tabelle: linke Spalte, klebt am oberen Rand */
+      #tableContainer {
+        grid-column: 1;
+        grid-row: 1 / span 20;
+        max-height: calc(100dvh - 128px); /* AppBar 52 + ActionBar ~44 + 32 Puffer */
+        position: sticky;
+        top: 0;
+        align-self: start;
+      }
+
+      /* Alle anderen Cards → rechte Spalte */
+      .content > .card:not(#tableContainer) {
+        grid-column: 2;
+      }
+
+      /* Action Bar: luftiger, etwas höher */
+      .action-bar {
+        padding: 8px 16px;
+        gap: 12px;
+      }
+      .action-bar .btn {
+        min-height: 52px;
+        font-size: 15px;
+        padding: 8px 14px;
+      }
+
+      /* Etwas mehr Luft in der Typografie */
+      .section-title { font-size: 17px; }
+      .sub { font-size: 14px; }
+
+      /* Heute-Card: visuell als Sidebar-Header */
+      .content > .card:first-child {
+        border-color: rgba(110, 231, 255, 0.18);
+      }
+    }
+
+    /* Layout-Einstellungen Modal */
+    .layout-settings { max-width: 500px; }
+    .setting-group { margin-bottom: 20px; }
+    .setting-group-title { font-size: 13px; font-weight: 800; color: #6ee7ff; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 0.5px; }
+    .setting-row { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
+    .setting-label { flex: 1; font-size: 13px; min-width: 120px; }
+    .setting-value { font-size: 12px; min-width: 45px; text-align: right; opacity: 0.7; font-family: monospace; }
+    .setting-slider { flex: 2; -webkit-appearance: none; appearance: none; height: 6px; border-radius: 3px; background: #2a3042; outline: none; }
+    .setting-slider::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 28px; height: 28px; margin-top: -11px; border-radius: 50%; background: linear-gradient(135deg, #6ee7ff, #a78bfa); cursor: pointer; box-shadow: 0 2px 6px rgba(0,0,0,.4); }
+    .setting-slider::-moz-range-thumb { width: 28px; height: 28px; border-radius: 50%; background: linear-gradient(135deg, #6ee7ff, #a78bfa); cursor: pointer; border: none; box-shadow: 0 2px 6px rgba(0,0,0,.4); }
+    .setting-actions { display: flex; gap: 10px; margin-top: 20px; flex-wrap: wrap; }
+    .setting-actions .btn { flex: 1; min-width: 100px; }
+    .preview-box { padding: 12px; background: #0e1422; border-radius: 8px; margin-top: 15px; }
+    .preview-title { font-size: 11px; opacity: 0.6; margin-bottom: 8px; text-transform: uppercase; }
+    .preview-btn { padding: var(--btn-padding-v) var(--btn-padding-h); font-size: var(--btn-font-size); min-width: var(--btn-min-width); }
+  </style>
+</head>
+<body>
+<div class="app">
+
+  <!-- AppBar -->
+  <header class="appbar">
+    <div class="app-title">
+      <div class="brand-dot"></div>
+      <h1>Sick &amp; Sound</h1>
+      <span id="adminIndicator" class="admin-indicator" style="display:none;">Admin-Modus</span>
+    </div>
+    <div class="appbar-actions">
+      <button class="btn small dark" onclick="togglePayPal()" title="PayPal">💸</button>
+      <button class="btn small" onclick="openDrinkModal()" title="Getränk hinzufügen">➕</button>
+      <button class="btn small" onclick="openPersonModal()" title="Person hinzufügen">👤+</button>
+      <button class="btn small warning" id="adminBtn" onclick="toggleAdminMode()" title="Admin-Modus">🔧</button>
+      <button class="btn small secondary" id="backupBtn" onclick="openBackupModal()" title="Backup">💾</button>
+    </div>
+  </header>
+
+  <!-- Sticky Action Bar -->
+  <div class="action-bar">
+    <button class="btn small warning" id="undoBtnQ" onclick="undoLast()" disabled>↩ Rückgängig</button>
+    <button class="btn small" onclick="openSplitModal()">💰 Verrechnen</button>
+    <button class="btn small secondary" id="redoBtnQ" onclick="redoLast()" disabled>↪ Wiederholen</button>
+  </div>
+
+  <!-- Content -->
+  <main class="content">
+    <div class="card" style="margin-bottom:8px">
+      <div class="section-title">Heute</div>
+      <div id="todayInfo" class="sub">Lade Tagesstatus…</div>
+      <div class="cta-wrap" id="todayCta"></div>
+      <div id="delInfo" class="delete-hint" style="display:none">Löschmodus aktiv: Tippe auf <b>Person</b> zum Löschen · Tippe auf <b>Spaltenkopf</b> zum Getränk löschen.</div>
+      <div id="adminInfo" class="delete-hint" style="display:none">Admin-Modus aktiv: Tippe auf <b>-1 Buttons</b> zum Abziehen von Strichen.</div>
+    </div>
+
+    <!-- Admin: Kernteam verwalten -->
+    <div class="card" id="coreTeamCard" style="display:none">
+      <div class="section-title">Kernteam verwalten</div>
+      <div class="sub" style="margin-bottom:10px">Personen zum Kernteam hinzufügen oder entfernen</div>
+      <div id="coreTeamList" style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px"></div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
+        <input type="text" id="newCoreMember" placeholder="Neues Mitglied..." style="flex:1;min-width:150px;padding:8px 12px;border-radius:8px;border:1px solid #2a3042;background:#0e1422;color:#fff">
+        <button class="btn small" onclick="addCoreMember()">Hinzufügen</button>
+      </div>
+    </div>
+
+    <!-- Admin: Layout-Einstellungen -->
+    <div class="card" id="layoutCard" style="display:none">
+      <div class="section-title">Layout anpassen</div>
+      <div class="sub" style="margin-bottom:10px">Button-Größen, Spaltenbreiten und Schriftgrößen anpassen</div>
+      <button class="btn" onclick="openLayoutModal()">⚙️ Layout-Einstellungen öffnen</button>
+    </div>
+
+    <!-- Admin: Monatsbeitrag -->
+    <div class="card" id="monthlyFeeCard" style="display:none">
+      <div class="section-title">💶 Monatsbeitrag</div>
+      <div class="sub" style="margin-bottom:12px">Wird automatisch am 1. des nächsten Monats auf die ausgewählten Personen zur Gesamtsumme hinzugerechnet.</div>
+      <label style="display:block;font-size:13px;opacity:.8;margin-bottom:4px">Betrag pro Person (€)</label>
+      <input id="monthlyFeeAmount" type="number" step="0.5" min="0" placeholder="z.B. 20.00" style="margin-bottom:12px">
+      <label style="display:block;font-size:13px;opacity:.8;margin-bottom:6px">Personen auswählen</label>
+      <div id="monthlyFeePersonList" style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px"></div>
+      <div id="monthlyFeeStatus" class="sub" style="margin-bottom:10px;color:#6ee7ff"></div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn small" onclick="saveMonthlyFeeSettings()">💾 Speichern</button>
+      </div>
+    </div>
+
+    <div class="card table-wrap" id="tableContainer"></div>
+
+    <div class="card" style="margin-top:8px">
+      <div class="section-title">Aktionen</div>
+      <div class="footer" style="gap:8px;flex-wrap:wrap">
+        <button class="btn danger" id="deleteBtn" onclick="toggleDeleteMode()">🗑 Löschen</button>
+        <button class="btn" onclick="openPersonModal()">👤 Person hinzufügen</button>
+        <button class="btn dark" onclick="resetAll()">♻ Abrechnen & zurücksetzen</button>
+        <button class="btn ghost" onclick="window.location='buchungen.html'">📖 Buchungen</button>
+        <button class="btn warning" id="correctionBtn" onclick="toggleCorrectionMode()">✏️ Korrekturmodus</button>
+      </div>
+    </div>
+  </main>
+
+  <!-- BottomNav -->
+  <nav class="bottomnav" id="bottomNav"></nav>
+</div>
+
+<!-- Modals -->
+<div class="modal" id="paypalModal" onclick="togglePayPal()"><img class="qr" src="frame.png" alt="PayPal QR"></div>
+
+<div class="modal" id="personModal"><div class="box">
+  <h2>➕ Person hinzufügen</h2>
+  <input id="personName" placeholder="Name eintippen" />
+  <label style="display:block;font-size:13px;opacity:.8;margin:10px 0 4px">Bezugsperson <span style="color:#ff6b6b">*</span></label>
+  <select id="personRef" style="width:100%;padding:10px 12px;border-radius:8px;border:1px solid #2a3042;background:#0e1422;color:#e6e8ef;font-size:15px">
+    <option value="">– Bezugsperson wählen –</option>
+  </select>
+  <div style="display:flex;gap:10px;margin-top:12px">
+    <button class="btn" onclick="confirmAddPerson()">Speichern</button>
+    <button class="btn dark" onclick="closeModal('personModal')">Abbrechen</button>
+  </div>
+</div></div>
+
+<div class="modal" id="drinkModal"><div class="box">
+  <h2>🥤 Getränk hinzufügen</h2>
+  <input id="drinkName" placeholder="Name des Getränks">
+  <input id="drinkPrice" type="number" step="0.1" placeholder="Preis (€)">
+  <div style="display:flex;gap:10px;margin-top:10px">
+    <button class="btn" onclick="confirmAddDrink()">Speichern</button>
+    <button class="btn dark" onclick="closeModal('drinkModal')">Abbrechen</button>
+  </div>
+</div></div>
+
+<div class="modal" id="backupModal"><div class="box modal-content">
+  <h2>💾 Backup & Wiederherstellung</h2>
+  <div class="sub">Automatische Backups werden täglich erstellt. Manuelle Backups werden lokal gespeichert.</div>
+  
+  <div class="section-title">Manuelles Backup erstellen</div>
+  <div class="backup-actions">
+    <button class="btn" onclick="createBackup()">Backup erstellen</button>
+    <button class="btn secondary" onclick="exportBackup()">Backup exportieren</button>
+  </div>
+  
+  <div class="section-title">Wiederherstellung</div>
+  <input type="file" id="restoreFile" accept=".json" style="display: none" onchange="restoreBackup(this.files[0])">
+  <div class="backup-actions">
+    <button class="btn" onclick="document.getElementById('restoreFile').click()">Backup importieren</button>
+    <button class="btn warning" onclick="showBackupList()">Lokale Backups anzeigen</button>
+  </div>
+  
+  <div id="backupList" class="backup-list"></div>
+  
+  <div style="display:flex;gap:10px;margin-top:15px">
+    <button class="btn dark" onclick="closeModal('backupModal')">Schließen</button>
+  </div>
+</div></div>
+
+<!-- Layout-Einstellungen Modal -->
+<div class="modal" id="layoutModal"><div class="box layout-settings">
+  <h2>⚙️ Layout-Einstellungen</h2>
+  <div class="sub">Passe das Aussehen der Strichliste an deine Bedürfnisse an.</div>
+
+  <div class="setting-group">
+    <div class="setting-group-title">Buttons</div>
+    <div class="setting-row">
+      <span class="setting-label">Button-Breite</span>
+      <input type="range" class="setting-slider" id="setBtnWidth" min="30" max="80" value="40" oninput="updateLayoutSetting('btn-min-width', this.value + 'px')">
+      <span class="setting-value" id="valBtnWidth">40px</span>
+    </div>
+    <div class="setting-row">
+      <span class="setting-label">Button Padding V</span>
+      <input type="range" class="setting-slider" id="setBtnPadV" min="2" max="16" value="8" oninput="updateLayoutSetting('btn-padding-v', this.value + 'px')">
+      <span class="setting-value" id="valBtnPadV">8px</span>
+    </div>
+    <div class="setting-row">
+      <span class="setting-label">Button Padding H</span>
+      <input type="range" class="setting-slider" id="setBtnPadH" min="4" max="20" value="12" oninput="updateLayoutSetting('btn-padding-h', this.value + 'px')">
+      <span class="setting-value" id="valBtnPadH">12px</span>
+    </div>
+    <div class="setting-row">
+      <span class="setting-label">Button Schriftgröße</span>
+      <input type="range" class="setting-slider" id="setBtnFont" min="10" max="20" value="14" oninput="updateLayoutSetting('btn-font-size', this.value + 'px')">
+      <span class="setting-value" id="valBtnFont">14px</span>
+    </div>
+  </div>
+
+  <div class="setting-group">
+    <div class="setting-group-title">Spalten</div>
+    <div class="setting-row">
+      <span class="setting-label">Getränke-Spaltenbreite</span>
+      <input type="range" class="setting-slider" id="setColWidth" min="60" max="150" value="90" oninput="updateLayoutSetting('col-min-width', this.value + 'px')">
+      <span class="setting-value" id="valColWidth">90px</span>
+    </div>
+    <div class="setting-row">
+      <span class="setting-label">Personen-Spaltenbreite</span>
+      <input type="range" class="setting-slider" id="setPersonCol" min="120" max="250" value="180" oninput="updateLayoutSetting('person-col-width', this.value + 'px')">
+      <span class="setting-value" id="valPersonCol">180px</span>
+    </div>
+    <div class="setting-row">
+      <span class="setting-label">Zellen-Abstand</span>
+      <input type="range" class="setting-slider" id="setCellGap" min="2" max="20" value="10" oninput="updateLayoutSetting('cell-gap', this.value + 'px')">
+      <span class="setting-value" id="valCellGap">10px</span>
+    </div>
+  </div>
+
+  <div class="setting-group">
+    <div class="setting-group-title">Schrift & Ring</div>
+    <div class="setting-row">
+      <span class="setting-label">Level-Ring Größe</span>
+      <input type="range" class="setting-slider" id="setRing" min="24" max="64" value="48" oninput="updateLayoutSetting('ring', this.value + 'px')">
+      <span class="setting-value" id="valRing">48px</span>
+    </div>
+    <div class="setting-row">
+      <span class="setting-label">Namen-Schriftgröße</span>
+      <input type="range" class="setting-slider" id="setNameSize" min="10" max="24" value="18" oninput="updateLayoutSetting('name-size', this.value + 'px')">
+      <span class="setting-value" id="valNameSize">18px</span>
+    </div>
+    <div class="setting-row">
+      <span class="setting-label">Zähler-Schriftgröße</span>
+      <input type="range" class="setting-slider" id="setCountSize" min="10" max="24" value="17" oninput="updateLayoutSetting('count-size', this.value + 'px')">
+      <span class="setting-value" id="valCountSize">17px</span>
+    </div>
+    <div class="setting-row">
+      <span class="setting-label">Getränkename-Größe</span>
+      <input type="range" class="setting-slider" id="setDrinkName" min="8" max="18" value="12" oninput="updateLayoutSetting('drink-name-size', this.value + 'px')">
+      <span class="setting-value" id="valDrinkName">12px</span>
+    </div>
+  </div>
+
+  <div class="preview-box">
+    <div class="preview-title">Vorschau Button</div>
+    <button class="btn small preview-btn">+1</button>
+  </div>
+
+  <div class="setting-actions">
+    <button class="btn" onclick="saveLayoutSettings()">💾 Speichern</button>
+    <button class="btn secondary" onclick="resetLayoutSettings()">↩ Zurücksetzen</button>
+    <button class="btn dark" onclick="closeModal('layoutModal')">Schließen</button>
+  </div>
+</div></div>
+
+<div id="toast" class="toast"></div>
+
+<!-- Betrag-Verrechnen-Modal -->
+<div class="modal" id="splitModal"><div class="box modal-content">
+  <h2>💰 Betrag verrechnen</h2>
+  <div class="sub" style="margin-bottom:12px">Betrag gleichmäßig auf ausgewählte Personen aufteilen und als Buchung eintragen.</div>
+  <label style="display:block;font-size:13px;opacity:.8;margin-bottom:4px">Gesamtbetrag (€)</label>
+  <input id="splitAmount" type="number" step="0.5" min="0.5" placeholder="z.B. 10.00" oninput="updateSplitCalc()">
+  <label style="display:block;font-size:13px;opacity:.8;margin:12px 0 6px">Personen auswählen</label>
+  <div id="splitPersonList" style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px"></div>
+  <div id="splitInfo" class="sub" style="margin:8px 0;min-height:1.4em;font-weight:700;color:#6ee7ff"></div>
+  <div style="display:flex;gap:10px;margin-top:10px">
+    <button class="btn" onclick="confirmSplit()">Verrechnen</button>
+    <button class="btn dark" onclick="closeModal('splitModal')">Abbrechen</button>
+  </div>
+</div></div>
+
+<!-- Kostenaufstellung-Modal -->
+<div class="modal" id="breakdownModal"><div class="box modal-content">
+  <h2>📊 Kostenaufstellung</h2>
+  <div id="breakdownContent" style="margin:12px 0"></div>
+  <div style="margin-top:14px">
+    <button class="btn dark" onclick="closeModal('breakdownModal')">Schließen</button>
+  </div>
+</div></div>
+
+<!-- Manuelle Buchung bearbeiten -->
+<div class="modal" id="editManualModal"><div class="box modal-content">
+  <h2>✏️ Verrechnung bearbeiten</h2>
+  <label style="display:block;font-size:13px;opacity:.8;margin-bottom:4px">Datum</label>
+  <input id="editManualDate" type="date" style="width:100%;margin-bottom:12px">
+  <label style="display:block;font-size:13px;opacity:.8;margin-bottom:4px">Betrag (€)</label>
+  <input id="editManualAmount" type="number" step="0.01" min="0.01" placeholder="z.B. 5.00">
+  <div style="display:flex;gap:10px;margin-top:14px">
+    <button class="btn" onclick="saveEditManualEntry()">Speichern</button>
+    <button class="btn dark" onclick="closeModal('editManualModal')">Abbrechen</button>
+  </div>
+</div></div>
+
+<!-- Firebase + Howler -->
+<script src="https://www.gstatic.com/firebasejs/12.0.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/12.0.0/firebase-analytics-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/12.0.0/firebase-firestore-compat.js"></script>
+<script src="shared.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/howler@2.2.4/dist/howler.core.min.js"></script>
+
+<script>
+/* ===== State ===== */
+let prices={"Getränk":1.5,"Mittagessen":6.0};
+let people=[], data={}, history=[], redoStack=[], bookings=[], columnOrder=Object.keys(prices), xp={}, manualCharges={};
+let guestReferences={}; // Bezugspersonen für Gäste: {guestName: coreMemberName}
+let hdRequirements={}; // Individuelle Hausdienst-Anforderungen pro Person: {person: anzahl}
+let monthlyFee=0; // Monatsbeitrag pro Person (€)
+let monthlyFeePersons=[]; // Personen, auf die der Monatsbeitrag angerechnet wird
+let monthlyFeeLastApplied=''; // YYYY-MM des letzten Anwendens
+let deleteMode=false, adminMode=false, correctionMode=false, hdToday=null;
+let hdTodayCompleted = false; // Ob der heutige Hausdienst abgeschlossen ist
+let hdTaskProgress = null; // Aufgaben-Fortschritt: { done: X, total: Y }
+let monthlyHdCounts = {}; // Hausdienste pro Person im aktuellen Monat
+const HD_DEFAULT_REQUIRED = 3; // Standard-Anforderung pro Monat
+
+// Gibt die Anforderung für eine Person zurück (0 = befreit)
+function getHdRequired(person) {
+  if (hdRequirements.hasOwnProperty(person)) {
+    return hdRequirements[person];
+  }
+  return HD_DEFAULT_REQUIRED;
+}
+
+/* ===== Sounds ===== */
+const makeSound = (src)=> (window.Howl ? new Howl({src:[src]}) : {play:()=>{}});
+const sClick = makeSound("https://cdn.jsdelivr.net/gh/jshawl/howler-examples@master/audio/sfx/coin1.wav");
+const sLevel = makeSound("https://cdn.jsdelivr.net/gh/jshawl/howler-examples@master/audio/sfx/powerUp5.wav");
+const sError = makeSound("https://cdn.jsdelivr.net/gh/jshawl/howler-examples@master/audio/sfx/error1.wav");
+
+/* ===== Helpers / XP ===== */
+
+// Lädt die Hausdienste für den aktuellen Monat
+async function loadMonthlyHdCounts(){
+  if(!db) return;
+  try {
+    const month = currentMonthStr();
+    const snap = await db.collection("hausdienst")
+      .where(firebase.firestore.FieldPath.documentId(), ">=", month + "-01")
+      .where(firebase.firestore.FieldPath.documentId(), "<=", month + "-31")
+      .get();
+
+    monthlyHdCounts = {};
+    snap.forEach(doc => {
+      const person = doc.data().person;
+      if(!person) return;
+
+      // Prüfen ob das Datum ein Wochenende ist
+      const dateStr = doc.id;
+      const date = new Date(dateStr);
+      const dayOfWeek = date.getDay();
+      const isWeekend = (dayOfWeek === 0 || dayOfWeek === 6);
+
+      // Wochenende = 0.5, Wochentag = 1
+      const points = isWeekend ? 0.5 : 1;
+      monthlyHdCounts[person] = (monthlyHdCounts[person] || 0) + points;
+    });
+  } catch(e) {
+    console.error("Fehler beim Laden der monatlichen Hausdienste:", e);
+  }
+}
+
+// Berechnet die noch offenen Hausdienste für eine Person
+function getOpenHdCount(person){
+  const required = getHdRequired(person);
+  if(required === 0) return 0; // Befreit
+  const done = monthlyHdCounts[person] || 0;
+  return Math.max(0, required - done);
+}
+function valueOfCurrentStriche(person){
+  return (columnOrder||[]).reduce((sum,d)=> sum + ((data[`${person}_${d}`]||0)*(prices[d]||0)), 0);
+}
+function getXpForDisplay(person){
+  const base=+(xp[person]||0);
+  const cur=valueOfCurrentStriche(person);
+  return Math.max(base, cur);
+}
+
+/* Long-press +1 (nur Desktop) */
+let holdT=null, holdI=null;
+function startHold(handler){ stopHold(); handler(); holdT=setTimeout(()=>{holdI=setInterval(handler,120)},420); }
+function stopHold(){ if(holdT) clearTimeout(holdT); if(holdI) clearInterval(holdI); holdT=holdI=null; }
+window.onmouseup=stopHold; window.onmouseleave=stopHold;
+
+/* Touch-optimierte Strich-Logik (Tablet/Mobile) */
+let touchStartPos = null;
+let touchTriggered = false;
+const TOUCH_MOVE_THRESHOLD = 10; // Pixel bevor als Scroll erkannt
+
+function handleTouchStartBtn(e, handler) {
+  e.preventDefault(); // Verhindert Doppel-Trigger
+  touchStartPos = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+  touchTriggered = false;
+}
+
+function handleTouchEndBtn(e, handler) {
+  if (touchTriggered || !touchStartPos) {
+    touchStartPos = null;
+    return;
+  }
+
+  const touch = e.changedTouches[0];
+  const deltaX = Math.abs(touch.clientX - touchStartPos.x);
+  const deltaY = Math.abs(touch.clientY - touchStartPos.y);
+
+  // Nur auslösen wenn kein Scroll (Finger hat sich kaum bewegt)
+  if (deltaX < TOUCH_MOVE_THRESHOLD && deltaY < TOUCH_MOVE_THRESHOLD) {
+    handler();
+  }
+
+  touchStartPos = null;
+}
+
+function handleTouchMoveBtn(e) {
+  if (!touchStartPos) return;
+
+  const touch = e.touches[0];
+  const deltaX = Math.abs(touch.clientX - touchStartPos.x);
+  const deltaY = Math.abs(touch.clientY - touchStartPos.y);
+
+  // Wenn Bewegung erkannt, als Scroll markieren
+  if (deltaX > TOUCH_MOVE_THRESHOLD || deltaY > TOUCH_MOVE_THRESHOLD) {
+    touchTriggered = true; // Verhindert Auslösen bei touchend
+  }
+}
+
+/* 00:00 Refresh */
+function scheduleMidnightRefresh(cb){
+  const now=new Date(); const mid=new Date(now.getFullYear(),now.getMonth(),now.getDate()+1,0,0,2);
+  setTimeout(()=>{ try{ cb(); } finally{ scheduleMidnightRefresh(cb);} }, mid-now);
+}
+document.addEventListener('visibilitychange', ()=>{ if(!document.hidden){ updateTodayBanner(); buildTable(); } });
+
+/* ===== Load ===== */
+async function loadState(){
+  if(db){
+    try{
+      const [globalSnap, bookingsSnap, historySnap] = await Promise.all([
+        db.collection(STATE_COLLECTION).doc("global").get(),
+        db.collection(STATE_COLLECTION).doc("bookings").get(),
+        db.collection(STATE_COLLECTION).doc("history").get()
+      ]);
+
+      if(globalSnap.exists){
+        const s=globalSnap.data();
+        prices=s.prices||prices; people=s.people||JSON.parse(localStorage.getItem(peopleKey))||[];
+        data=s.data||data; columnOrder=s.columnOrder||Object.keys(prices); xp=s.xp||xp;
+        // Kernteam aus Firebase laden
+        if(s.core && Array.isArray(s.core) && s.core.length > 0) {
+          CORE = s.core;
+        }
+        // Bezugspersonen laden
+        if(s.guestReferences) {
+          guestReferences = s.guestReferences;
+        }
+        // HD-Anforderungen laden
+        if(s.hdRequirements) {
+          hdRequirements = s.hdRequirements;
+        }
+        // Manuelle Buchungen laden (mit Migration von altem number-Format)
+        if(s.manualCharges) {
+          const mc = s.manualCharges;
+          Object.keys(mc).forEach(p => {
+            if (typeof mc[p] === 'number' && mc[p] > 0) mc[p] = [{date:'?', amount: mc[p]}];
+            else if (typeof mc[p] === 'number') mc[p] = [];
+          });
+          manualCharges = mc;
+        }
+        // Monatsbeitrag laden
+        if(s.monthlyFee !== undefined) monthlyFee = s.monthlyFee;
+        if(s.monthlyFeePersons) monthlyFeePersons = s.monthlyFeePersons;
+        if(s.monthlyFeeLastApplied) monthlyFeeLastApplied = s.monthlyFeeLastApplied;
+
+        // Auto-Migration: bookings/history aus global in neue Docs verschieben
+        const deleteFields = {};
+        if(s.bookings !== undefined) {
+          if(Array.isArray(s.bookings) && s.bookings.length > 0) {
+            await db.collection(STATE_COLLECTION).doc("bookings").set({bookings: s.bookings}, {merge:true});
+          }
+          deleteFields.bookings = firebase.firestore.FieldValue.delete();
+        }
+        if(s.history !== undefined || s.redoStack !== undefined) {
+          const hSnap = historySnap.exists ? historySnap.data() : {};
+          const mergedHistory = (s.history || hSnap.history || []).slice(-30);
+          const mergedRedo    = (s.redoStack || hSnap.redoStack || []).slice(-15);
+          await db.collection(STATE_COLLECTION).doc("history").set({history: mergedHistory, redoStack: mergedRedo}, {merge:true});
+          deleteFields.history   = firebase.firestore.FieldValue.delete();
+          deleteFields.redoStack = firebase.firestore.FieldValue.delete();
+        }
+        if(Object.keys(deleteFields).length > 0) {
+          await db.collection(STATE_COLLECTION).doc("global").update(deleteFields);
+        }
+      } else {
+        people=JSON.parse(localStorage.getItem(peopleKey))||[];
+      }
+
+      // bookings aus state/bookings laden
+      if(bookingsSnap.exists){
+        const b=bookingsSnap.data();
+        if(Array.isArray(b.bookings)) bookings=b.bookings;
+      } else {
+        bookings=JSON.parse(localStorage.getItem(bookingsKey))||bookings;
+      }
+
+      // history aus state/history laden
+      if(historySnap.exists){
+        const h=historySnap.data();
+        if(Array.isArray(h.history)) history=h.history;
+        if(Array.isArray(h.redoStack)) redoStack=h.redoStack;
+      } else {
+        history=JSON.parse(localStorage.getItem(historyKey))||history;
+        redoStack=JSON.parse(localStorage.getItem(redoKey))||[];
+      }
+
+    }catch(e){ fallbackLoad(); }
+  }else{ fallbackLoad(); }
+
+  CORE.forEach(n=>{ if(!people.includes(n)) people.push(n); });
+
+  await loadMonthlyHdCounts();
+  applyMonthlyFeeIfNeeded();
+  saveAll(); buildTable(); updateTodayBanner(); subscribeRealtime(); updateUndoRedoButtons();
+  await ensureXpFromExistingStricheAfterLoad();
+  scheduleMidnightRefresh(()=>{ updateTodayBanner(); buildTable(); applyMonthlyFeeIfNeeded(); });
+  
+  // Automatisches Backup einmal täglich
+  const lastBackup = localStorage.getItem(lastBackupKey);
+  if (!lastBackup || new Date().toDateString() !== new Date(parseInt(lastBackup)).toDateString()) {
+    createBackup();
+  }
+}
+function fallbackLoad(){
+  prices=JSON.parse(localStorage.getItem(pricesKey))||prices;
+  people=JSON.parse(localStorage.getItem(peopleKey))||[];
+  data=JSON.parse(localStorage.getItem(dataKey))||data;
+  history=JSON.parse(localStorage.getItem(historyKey))||history;
+  redoStack=JSON.parse(localStorage.getItem(redoKey))||[];
+  bookings=JSON.parse(localStorage.getItem(bookingsKey))||bookings;
+  columnOrder=JSON.parse(localStorage.getItem(orderKey))||Object.keys(prices);
+  xp=JSON.parse(localStorage.getItem(xpKey))||xp;
+  const rawMC = JSON.parse(localStorage.getItem(manualChargesKey));
+  if (rawMC) {
+    // migrate old {person: number} format to {person: [{date, amount}]}
+    Object.keys(rawMC).forEach(p => {
+      if (typeof rawMC[p] === 'number' && rawMC[p] > 0) rawMC[p] = [{date:'?', amount: rawMC[p]}];
+      else if (typeof rawMC[p] === 'number') rawMC[p] = [];
+    });
+    manualCharges = rawMC;
+  }
+}
+
+async function ensureXpFromExistingStricheAfterLoad(){
+  const drinks=Object.keys(prices); let changed=false;
+  people.forEach(p=>{
+    let x=0; drinks.forEach(d=>{ const cnt=data[`${p}_${d}`]||0; x += cnt*(prices[d]||0); });
+    if((xp[p]||0) < x){ xp[p]=x; changed=true; }
+  });
+  if(changed){ saveAll(); buildTable(); }
+}
+
+/* Save + Realtime */
+function saveAll(){
+  localStorage.setItem(pricesKey,JSON.stringify(prices));
+  localStorage.setItem(peopleKey,JSON.stringify(people));
+  localStorage.setItem(dataKey,JSON.stringify(data));
+  localStorage.setItem(historyKey,JSON.stringify(history));
+  localStorage.setItem(redoKey,JSON.stringify(redoStack));
+  localStorage.setItem(bookingsKey,JSON.stringify(bookings));
+  localStorage.setItem(orderKey,JSON.stringify(columnOrder));
+  localStorage.setItem(xpKey,JSON.stringify(xp));
+  localStorage.setItem(manualChargesKey,JSON.stringify(manualCharges));
+  if(db){
+    db.collection(STATE_COLLECTION).doc("global").set(
+      {prices,people,data,columnOrder,xp,core:CORE,hdRequirements,guestReferences,
+       manualCharges,monthlyFee,monthlyFeePersons,monthlyFeeLastApplied},
+      {merge:true}
+    ).catch(()=>{});
+    db.collection(STATE_COLLECTION).doc("bookings").set(
+      {bookings},
+      {merge:true}
+    ).catch(()=>{});
+    db.collection(STATE_COLLECTION).doc("history").set(
+      {history: history.slice(-30), redoStack: redoStack.slice(-15)},
+      {merge:true}
+    ).catch(()=>{});
+  }
+}
+function subscribeRealtime(){
+  if(!db) return;
+  db.collection(STATE_COLLECTION).doc("global").onSnapshot(snap=>{
+    if(!snap.exists) return;
+    const s=snap.data();
+    prices=s.prices||prices; people=s.people||people; data=s.data||data;
+    columnOrder=s.columnOrder||columnOrder; xp=s.xp||xp;
+    // Kernteam aus Firebase laden
+    if(s.core && Array.isArray(s.core) && s.core.length > 0) {
+      CORE = s.core;
+    }
+    // Bezugspersonen laden
+    if(s.guestReferences) {
+      guestReferences = s.guestReferences;
+    }
+    // HD-Anforderungen laden
+    if(s.hdRequirements) {
+      hdRequirements = s.hdRequirements;
+    }
+    CORE.forEach(n=>{ if(!people.includes(n)) people.push(n); });
+    buildTable(); updateTodayBanner(); updateUndoRedoButtons();
+    if(adminMode) renderCoreTeamList();
+  });
+  db.collection(STATE_COLLECTION).doc("bookings").onSnapshot(snap=>{
+    if(!snap.exists) return;
+    const s=snap.data();
+    if(Array.isArray(s.bookings)) bookings=s.bookings;
+  });
+  db.collection(STATE_COLLECTION).doc("history").onSnapshot(snap=>{
+    if(!snap.exists) return;
+    const s=snap.data();
+    if(Array.isArray(s.history)) history=s.history;
+    if(Array.isArray(s.redoStack)) redoStack=s.redoStack;
+    updateUndoRedoButtons();
+  });
+  db.collection("hausdienst").doc(todayStr()).onSnapshot(doc=>{
+    if (doc && doc.exists) {
+      const data = doc.data();
+      hdToday = data.person || null;
+      hdTodayCompleted = data.completed || false;
+      hdTaskProgress = data.taskProgress || null;
+    } else {
+      hdToday = null;
+      hdTodayCompleted = false;
+      hdTaskProgress = null;
+    }
+    updateTodayBanner(hdToday); buildTable();
+  });
+
+  // Echtzeit-Updates für monatliche Hausdienste
+  const month = currentMonthStr();
+  db.collection("hausdienst")
+    .where(firebase.firestore.FieldPath.documentId(), ">=", month + "-01")
+    .where(firebase.firestore.FieldPath.documentId(), "<=", month + "-31")
+    .onSnapshot(async () => {
+      await loadMonthlyHdCounts();
+      buildTable();
+    });
+}
+
+/* Heute-Banner + CTA */
+async function updateTodayBanner(existing){
+  try{
+    let person=existing;
+    if(person===undefined){
+      if(db){
+        const d=await db.collection("hausdienst").doc(todayStr()).get();
+        if (d.exists) {
+          person = d.data().person || null;
+          hdTodayCompleted = d.data().completed || false;
+          hdTaskProgress = d.data().taskProgress || null;
+        } else {
+          person = null;
+        }
+      }else{ person=null; }
+    }
+    hdToday=person;
+
+    const infoEl=document.getElementById("todayInfo");
+    const ctaEl=document.getElementById("todayCta");
+
+    if (person) {
+      const statusBadge = hdTodayCompleted
+        ? `<span class="badge ok">${person} ✓</span>`
+        : `<span class="badge" style="background:#ff6b6b;color:#fff">${person}</span>`;
+      infoEl.innerHTML = `Heute Hausdienst: ${statusBadge}`;
+    } else {
+      infoEl.innerHTML = `Heute: <span class="badge none">Noch niemand eingetragen</span>`;
+    }
+
+    ctaEl.innerHTML = `
+      <button class="cta-check" onclick="openChecklist()">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M9 16.2l-3.5-3.5-1.4 1.4L9 19 20.3 7.7l-1.4-1.4z"/></svg>
+        Checkliste öffnen
+      </button>
+      <span class="cta-sub">Direkt zur Aufgabenübersicht</span>
+    `;
+  }catch(e){
+    document.getElementById("todayInfo").textContent="Heute: Status nicht verfügbar (offline?)";
+    document.getElementById("todayCta").innerHTML = `<button class="cta-check" onclick="openChecklist()">Checkliste öffnen</button>`;
+  }
+}
+function openChecklist(){ location.href = 'hausdienst.html#check'; }
+
+/* Undo/Redo */
+function updateUndoRedoButtons(){
+  const empty = history.length===0, noRedo = redoStack.length===0;
+  const u=document.getElementById('undoBtnQ'); if(u) u.disabled=empty;
+  const r=document.getElementById('redoBtnQ'); if(r) r.disabled=noRedo;
+}
+function applyAction(a){
+  if(a.type==="inc"){
+    data[a.id] = (a.prev||0) + 1;
+    if(a.person){ xp[a.person] = (xp[a.person]||0) + (a.xpDelta||0); }
+  } else if (a.type==="dec"){
+    data[a.id] = (a.prev||0) - 1;
+    if(a.person){ xp[a.person] = Math.max(0, (xp[a.person]||0) - (a.xpDelta||0)); }
+  } else if (a.action==="change"){
+    data[a.id] = (a.prev||0) + 1;
+    const parts=a.id.split('_'); const person=parts[0]; const drink=parts.slice(1).join('_');
+    xp[person] = (xp[person]||0) + (prices[drink]||0);
+  } else if (a.type==="split"){
+    a.entries.forEach(e => {
+      if(!Array.isArray(manualCharges[e.person])) manualCharges[e.person]=[];
+      manualCharges[e.person].push({date:e.date, amount:e.amount});
+    });
+  }
+}
+function applyInverse(a){
+  if(a.type==="inc"){
+    data[a.id] = a.prev;
+    if(a.person){ xp[a.person] = Math.max(0,(xp[a.person]||0) - (a.xpDelta||0)); }
+  } else if (a.type==="dec"){
+    data[a.id] = a.prev;
+    if(a.person){ xp[a.person] = (xp[a.person]||0) + (a.xpDelta||0); }
+  } else if (a.action==="change"){
+    data[a.id] = a.prev;
+    const parts=a.id.split('_'); const person=parts[0]; const drink=parts.slice(1).join('_');
+    xp[person] = Math.max(0,(xp[person]||0) - (prices[drink]||0));
+  } else if (a.type==="split"){
+    a.entries.forEach(e => {
+      const arr = manualCharges[e.person];
+      if(!Array.isArray(arr)) return;
+      for(let i=arr.length-1;i>=0;i--){
+        if(arr[i].date===e.date && Math.abs(arr[i].amount-e.amount)<0.001){ arr.splice(i,1); break; }
+      }
+    });
+  }
+}
+function _actionLabel(a){
+  if(!a) return '';
+  if(a.type==='split'){
+    return `Verrechnung ${a.totalAmount.toFixed(2)} € (${a.entries.length} Person${a.entries.length!==1?'en':''})`;
+  }
+  const person = a.person || a.id.split('_')[0];
+  const drinkKey = a.person ? a.id.slice(a.person.length+1) : a.id.split('_').slice(1).join('_');
+  const drink = drinkKey.replace(/_/g,' ');
+  const arrow = a.type==='inc' ? '+1' : a.type==='dec' ? '−1' : '±';
+  return `${person} – ${drink} (${arrow})`;
+}
+function undoLast(){
+  const last=history.pop(); if(!last) return;
+  applyInverse(last); redoStack.push(last); saveAll(); buildTable(); updateUndoRedoButtons();
+  showToast('↩ Rückgängig: ' + _actionLabel(last));
+}
+function redoLast(){
+  const act=redoStack.pop(); if(!act) return;
+  applyAction(act); history.push(act); saveAll(); buildTable(); updateUndoRedoButtons();
+  showToast('↪ Wiederholt: ' + _actionLabel(act));
+}
+
+/* Delete mode inkl. Personen löschen */
+function toggleDeleteMode(){
+  deleteMode=!deleteMode;
+  const btn=document.getElementById("deleteBtn");
+  btn.textContent= deleteMode ? "❌ Abbrechen" : "🗑 Löschen";
+  btn.classList.toggle("ghost", deleteMode);
+  document.body.classList.toggle('delete-mode', deleteMode);
+  const hint=document.getElementById('delInfo');
+  if(hint) hint.style.display = deleteMode ? 'block' : 'none';
+  buildTable();
+}
+
+/* Admin mode */
+function toggleAdminMode(){
+  if (adminMode) {
+    adminMode = false;
+    document.body.classList.remove('admin-mode');
+    document.getElementById('adminIndicator').style.display = 'none';
+    document.getElementById('adminInfo').style.display = 'none';
+    document.getElementById('coreTeamCard').style.display = 'none';
+    document.getElementById('layoutCard').style.display = 'none';
+    document.getElementById('monthlyFeeCard').style.display = 'none';
+    document.getElementById('adminBtn').textContent = '🔧';
+    buildTable();
+    return;
+  }
+
+  const password = prompt("Admin-Passwort eingeben:");
+  if (password === ADMIN_PASSWORD) {
+    adminMode = true;
+    document.body.classList.add('admin-mode');
+    document.getElementById('adminIndicator').style.display = 'inline-block';
+    document.getElementById('adminInfo').style.display = 'block';
+    document.getElementById('coreTeamCard').style.display = 'block';
+    document.getElementById('layoutCard').style.display = 'block';
+    document.getElementById('monthlyFeeCard').style.display = 'block';
+    document.getElementById('adminBtn').textContent = '🔧✓';
+    renderCoreTeamList();
+    renderMonthlyFeeCard();
+    buildTable();
+  } else {
+    alert("Falsches Passwort");
+    sError.play();
+  }
+}
+
+/* Kernteam-Verwaltung */
+function renderCoreTeamList() {
+  const container = document.getElementById('coreTeamList');
+  container.innerHTML = CORE.map(name => `
+    <span class="core-tag">
+      ${name}
+      <span class="remove-btn" onclick="removeCoreMember('${name}')" title="Entfernen">×</span>
+    </span>
+  `).join('');
+}
+
+function addCoreMember() {
+  const input = document.getElementById('newCoreMember');
+  const name = input.value.trim();
+
+  if (!name) {
+    alert('Bitte einen Namen eingeben');
+    return;
+  }
+
+  if (CORE.includes(name)) {
+    alert('Diese Person ist bereits im Kernteam');
+    return;
+  }
+
+  CORE.push(name);
+  CORE.sort((a, b) => a.localeCompare(b));
+
+  // Auch zu people hinzufügen falls noch nicht vorhanden
+  if (!people.includes(name)) {
+    people.push(name);
+  }
+
+  saveCoreTeam();
+  renderCoreTeamList();
+  buildTable();
+  input.value = '';
+}
+
+function removeCoreMember(name) {
+  if (!confirm(`"${name}" wirklich aus dem Kernteam entfernen?`)) return;
+
+  CORE = CORE.filter(n => n !== name);
+  saveCoreTeam();
+  renderCoreTeamList();
+  buildTable();
+}
+
+function saveCoreTeam() {
+  localStorage.setItem(coreKey, JSON.stringify(CORE));
+  if (db) {
+    db.collection(STATE_COLLECTION).doc('global').set({ core: CORE }, { merge: true })
+      .catch(e => console.error('Fehler beim Speichern des Kernteams:', e));
+  }
+}
+
+/* Bezugsperson für Gäste */
+function setGuestReference(guest, coreMember) {
+  if (coreMember) {
+    guestReferences[guest] = coreMember;
+  } else {
+    delete guestReferences[guest];
+  }
+  saveGuestReferences();
+  buildTable();
+}
+
+function saveGuestReferences() {
+  localStorage.setItem('sick_sound_guest_refs', JSON.stringify(guestReferences));
+  if (db) {
+    db.collection(STATE_COLLECTION).doc('global').set({ guestReferences }, { merge: true })
+      .catch(e => console.error('Fehler beim Speichern der Bezugspersonen:', e));
+  }
+}
+
+/* Correction mode */
+function toggleCorrectionMode(){
+  if (correctionMode) {
+    correctionMode = false;
+    document.getElementById('correctionBtn').textContent = '✏️ Korrekturmodus';
+    buildTable();
+    return;
+  }
+  
+  const password = prompt("Admin-Passwort für Korrekturmodus eingeben:");
+  if (password === ADMIN_PASSWORD) {
+    correctionMode = true;
+    document.getElementById('correctionBtn').textContent = '✏️✓ Korrekturmodus';
+    buildTable();
+  } else {
+    alert("Falsches Passwort");
+    sError.play();
+  }
+}
+
+function personCellClick(p){
+  if(!deleteMode) return;
+  deletePerson(p);
+}
+
+/* Tabelle + Level-Ring */
+function buildTable(){
+  const core=CORE.filter(n=>people.includes(n));
+  const guests=people.filter(n=>!CORE.includes(n)).sort((a,b)=>a.localeCompare(b));
+
+  let html = `<table><thead><tr><th style="min-width:180px;text-align:left">Person</th>`;
+  columnOrder.forEach((drink, idx)=>{
+    if(prices[drink]!==undefined){
+      const delTitle = deleteMode ? ` title="Zum Löschen tippen"` : '';
+      const dragAttrs = !deleteMode ? `draggable="true" ondragstart="dragStart(event, ${idx})" ondragover="dragOver(event, ${idx})" ondragenter="dragEnter(event)" ondragleave="dragLeave(event)" ondrop="drop(event, ${idx})" ondragend="dragEnd(event)"` : '';
+      html += `<th class="drink-header" data-idx="${idx}" onclick="headerClick('${drink}')"${delTitle} ${dragAttrs}>
+        <span class="drink-chip"><span class="drink-name">${drink.replace('_',' ')}</span>
+        <span class="drink-price">${prices[drink]} €</span></span>
+      </th>`;
+    }
+  });
+  html += `<th>Gesamt (€)</th>`;
+  if (correctionMode) {
+    html += `<th>Korrektur</th>`;
+  }
+  html += `</tr></thead><tbody>`;
+
+  const ring=(xpVal, person)=>{
+    const x=+xpVal||0;
+    const lvl=Math.max(1, Math.floor(Math.sqrt(x/75))+1);
+    const min=75*(lvl-1)*(lvl-1), max=75*lvl*lvl;
+    const p=Math.max(0,Math.min(1,(x-min)/(max-min)));
+    const r=22, c=2*Math.PI*r, off=(1-p)*c, gid="grad_"+person.replace(/[^a-z0-9]/gi,'')+"_"+lvl;
+    return `<div class="lvl-ring" role="img" aria-label="Level ${lvl}, ${Math.round(p*100)}%">
+      <svg viewBox="0 0 52 52" width="100%" height="100%" style="transform:rotate(-90deg)">
+        <defs><linearGradient id="${gid}" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0%" stop-color="var(--accent,#6ee7ff)"/><stop offset="100%" stop-color="var(--accent-2,#a78bfa)"/></linearGradient></defs>
+        <circle cx="26" cy="26" r="${r}" stroke="#2a2f3b" stroke-width="6" fill="none"/>
+        <circle cx="26" cy="26" r="${r}" stroke="url(#${gid})" stroke-width="6" stroke-linecap="round" fill="none"
+                stroke-dasharray="${c}" stroke-dashoffset="${off}"/></svg>
+      <div class="val">Lv. ${lvl}</div></div>`;
+  };
+
+  const row=(p)=>{
+    const xpVal=getXpForDisplay(p);
+    const isHdToday = hdToday === p;
+    const hdClass = isHdToday ? (hdTodayCompleted ? "hd-today hd-complete" : "hd-today") : "";
+    const personTitle = deleteMode ? ` title="Person löschen"` : '';
+    const isGuest = !CORE.includes(p);
+
+    // Offene Hausdienste berechnen (nur für Kernteam mit Anforderung > 0)
+    const hdRequired = CORE.includes(p) ? getHdRequired(p) : 0;
+    const openHd = hdRequired > 0 ? getOpenHdCount(p) : null;
+    const hdBadge = openHd !== null
+      ? `<span class="hd-badge ${openHd > 0 ? 'open' : 'done'}" title="Offene Hausdienste diesen Monat (${hdRequired} erforderlich)">${openHd}</span>`
+      : '';
+
+    // Hausdienst-Status-Icon und Aufgaben-Fortschritt für heute
+    let hdStatusIcon = '';
+    if (isHdToday) {
+      if (hdTodayCompleted) {
+        hdStatusIcon = `<span class="hd-status-icon complete" title="Hausdienst abgeschlossen">✓</span>`;
+      } else if (hdTaskProgress && hdTaskProgress.total > 0) {
+        const progressPct = Math.round((hdTaskProgress.done / hdTaskProgress.total) * 100);
+        const progressColor = progressPct === 100 ? '#7CFC9A' : (progressPct >= 50 ? '#6ee7ff' : '#ff6b6b');
+        hdStatusIcon = `<span class="hd-progress" title="Aufgaben: ${hdTaskProgress.done} von ${hdTaskProgress.total} erledigt" style="color:${progressColor};font-weight:800;margin-left:6px;font-size:12px">${hdTaskProgress.done}/${hdTaskProgress.total}</span>`;
+      } else {
+        hdStatusIcon = `<span class="hd-status-icon pending" title="Hausdienst noch offen">○</span>`;
+      }
+    }
+
+    // Bezugsperson für Gäste (immer sichtbar, nicht nur im Admin-Modus)
+    let refHtml = '';
+    if (isGuest) {
+      const currentRef = guestReferences[p] || '';
+      const options = CORE.map(c => `<option value="${c}" ${currentRef === c ? 'selected' : ''}>${c}</option>`).join('');
+      refHtml = `<select class="ref-select" onchange="setGuestReference('${p}', this.value)" onclick="event.stopPropagation()">
+        <option value="">Bezug...</option>${options}
+      </select>`;
+    }
+
+    let rhtml = `<tr class="${hdClass}"><th style="text-align:left">
+      <div class="person-cell-wrapper">
+        <div class="person-cell"${personTitle} onclick="personCellClick('${p}')">
+          ${ring(xpVal,p)}<div class="p-info"><div class="p-name">${p}${hdStatusIcon}${hdBadge}</div></div>
+        </div>
+        ${refHtml}
+      </div></th>`;
+    columnOrder.forEach(dr=>{
+      if(prices[dr]!==undefined){
+        const id=`${p}_${dr}`, val=data[id]||0,
+              incHandler=`()=>changeCount('${id}','${dr}','${p}', 1)`,
+              decHandler=`()=>changeCount('${id}','${dr}','${p}', -1)`;
+
+        rhtml += `<td><div class="cell">
+          ${adminMode ? `<button class="btn small minus-btn"
+            onmousedown="startHold(${decHandler})" onmouseup="stopHold()" onmouseleave="stopHold()"
+            ontouchstart="handleTouchStartBtn(event, ${decHandler})"
+            ontouchmove="handleTouchMoveBtn(event)"
+            ontouchend="handleTouchEndBtn(event, ${decHandler})">-1</button>` : ''}
+          <div class="count" id="${id}">${val}</div>
+          <button class="btn small plus-btn"
+            onmousedown="startHold(${incHandler})" onmouseup="stopHold()" onmouseleave="stopHold()"
+            ontouchstart="handleTouchStartBtn(event, ${incHandler})"
+            ontouchmove="handleTouchMoveBtn(event)"
+            ontouchend="handleTouchEndBtn(event, ${incHandler})">+1</button></div></td>`;
+      }
+    });
+    const manualTotal = getManualTotal(p);
+    const total=columnOrder.reduce((s,d)=>s+(data[`${p}_${d}`]||0)*prices[d],0) + manualTotal;
+    const hasManual = manualTotal > 0;
+    rhtml += `<td id="${p}_Total" ${hasManual ? `onclick="showTotalBreakdown('${p}')" style="cursor:pointer;text-decoration:underline dotted;text-underline-offset:3px"` : ''}>${total.toFixed(2)}</td>`;
+    
+    if (correctionMode) {
+      rhtml += `<td>
+        <input type="number" value="${total.toFixed(2)}" style="width: 60px; padding: 4px;" 
+               onchange="correctTotal('${p}', this.value)">
+      </td>`;
+    }
+    
+    rhtml += `</tr>`;
+    return rhtml;
+  };
+
+  /* Kernteam */
+  if(core.length){
+    html += `<tr class="section-row"><td colspan="${columnOrder.length + (correctionMode ? 3 : 2)}">— Kernteam —</td></tr>`;
+    core.forEach(p=> html += row(p));
+  }
+
+  /* Gäste immer anzeigen */
+  if(guests.length){
+    html += `<tr class="section-row"><td colspan="${columnOrder.length + (correctionMode ? 3 : 2)}">— Gäste —</td></tr>`;
+    guests.forEach(p=> html += row(p));
+  }
+
+  html += `</tbody></table>`;
+  document.getElementById("tableContainer").innerHTML = html;
+  requestAnimationFrame(adjustToOnePage);
+  // Touch-Drag für Mobile/Tablet initialisieren (verbesserter Handler)
+  setTimeout(initColumnTouchDrag, 50);
+}
+
+/* Onepage fit (für Kernteam-Spaltenhöhen) */
+function adjustToOnePage(){
+  const appbar=document.querySelector('.appbar')?.offsetHeight||0;
+  document.documentElement.style.setProperty('--sticky-top', Math.max(40, appbar)+4+'px');
+  const bottom=document.querySelector('.bottomnav')?.offsetHeight||0;
+  const cards=Array.from(document.querySelectorAll('.content .card')).filter((el,i)=> i!==1 );
+  const other=appbar+bottom+cards.reduce((s,c)=>s+c.offsetHeight,0)+20;
+  const avail=window.innerHeight - other;
+  const headH=36, coreCount=10, rowsTotal=coreCount;
+
+  let rowH=Math.max(42, Math.min(72, Math.floor((avail - headH)/rowsTotal)));
+  let ring=Math.max(36, Math.min(56, rowH-10));
+  let name=Math.max(18, Math.min(22, Math.floor(rowH*0.45)));
+  let count=Math.max(16, Math.min(20, Math.floor(rowH*0.40)));
+  let pad=Math.max(4, Math.floor((rowH-34)/2));
+
+  document.documentElement.style.setProperty('--row-pad', pad+'px');
+  document.documentElement.style.setProperty('--ring', ring+'px');
+  document.documentElement.style.setProperty('--name-size', name+'px');
+  document.documentElement.style.setProperty('--count-size', count+'px');
+  document.documentElement.style.setProperty('--cell-gap', Math.max(8, Math.floor(rowH*0.22))+'px');
+  // Layout-Einstellungen des Users haben immer Vorrang
+  applyLayoutSettings();
+}
+
+/* Drag & Drop für Getränke-Spalten */
+let draggedColIdx = null;
+
+function dragStart(e, idx) {
+  if (deleteMode) return;
+  draggedColIdx = idx;
+  e.target.classList.add('dragging');
+  e.dataTransfer.effectAllowed = 'move';
+  e.dataTransfer.setData('text/plain', idx);
+}
+
+function dragOver(e, idx) {
+  e.preventDefault();
+  e.dataTransfer.dropEffect = 'move';
+}
+
+function dragEnter(e) {
+  e.preventDefault();
+  e.target.closest('.drink-header')?.classList.add('drag-over');
+}
+
+function dragLeave(e) {
+  e.target.closest('.drink-header')?.classList.remove('drag-over');
+}
+
+function drop(e, targetIdx) {
+  e.preventDefault();
+  const header = e.target.closest('.drink-header');
+  if (header) header.classList.remove('drag-over');
+
+  if (draggedColIdx === null || draggedColIdx === targetIdx) return;
+
+  // Spaltenreihenfolge ändern
+  const movedDrink = columnOrder[draggedColIdx];
+  columnOrder.splice(draggedColIdx, 1);
+  columnOrder.splice(targetIdx, 0, movedDrink);
+
+  saveAll();
+  buildTable();
+}
+
+function dragEnd(e) {
+  draggedColIdx = null;
+  document.querySelectorAll('.drink-header').forEach(h => {
+    h.classList.remove('dragging', 'drag-over');
+  });
+}
+
+
+/* Interactions */
+function headerClick(drink){ if(deleteMode) deleteColumn(drink); }
+function changeCount(id, drink, person, delta){
+  const el=document.getElementById(id); 
+  const cur=parseInt(el?.textContent||'0'), next=cur + delta;
+  if (next < 0) {
+    sError.play();
+    return; // keine negativen Zahlen
+  }
+
+  if(el){ 
+    el.textContent=next; 
+    el.classList.remove('bump'); 
+    void el.offsetWidth; 
+    el.classList.add('bump'); 
+  }
+  
+  const xpDelta = (prices[drink]||0) * delta;
+  history.push({
+    type: delta > 0 ? "inc" : "dec", 
+    id, 
+    prev: cur, 
+    person, 
+    xpDelta: Math.abs(xpDelta)
+  }); 
+  
+  redoStack=[];
+  data[id]=next;
+  
+  const before=levelOf((xp[person]||0)); 
+  xp[person] = Math.max(0, (xp[person]||0) + xpDelta); 
+  const after=levelOf(xp[person]);
+  
+  (after>before ? sLevel : sClick).play();
+  updateTotalsFor(person); 
+  saveAll(); 
+  updateUndoRedoButtons();
+}
+
+function correctTotal(person, newTotal) {
+  const currentTotal = columnOrder.reduce((s,d)=>s+(data[`${person}_${d}`]||0)*prices[d],0);
+  const difference = parseFloat(newTotal) - currentTotal;
+  
+  if (isNaN(difference)) return;
+  
+  // Finde das preiswerteste Getränk für die Korrektur
+  let cheapestDrink = null;
+  let cheapestPrice = Infinity;
+  
+  for (const drink of columnOrder) {
+    if (prices[drink] < cheapestPrice) {
+      cheapestDrink = drink;
+      cheapestPrice = prices[drink];
+    }
+  }
+  
+  if (!cheapestDrink) return;
+  
+  const id = `${person}_${cheapestDrink}`;
+  const currentCount = data[id] || 0;
+  const adjustment = Math.round(difference / cheapestPrice);
+  const newCount = Math.max(0, currentCount + adjustment);
+  
+  data[id] = newCount;
+  
+  // XP anpassen
+  const xpAdjustment = adjustment * cheapestPrice;
+  xp[person] = Math.max(0, (xp[person] || 0) + xpAdjustment);
+  
+  history.push({
+    type: "correction",
+    id,
+    person,
+    adjustment,
+    xpAdjustment,
+    previousCount: currentCount,
+    previousXp: xp[person] - xpAdjustment
+  });
+  
+  saveAll();
+  buildTable();
+}
+
+function updateTotalsFor(person){
+  const tot=columnOrder.reduce((s,d)=>s+(data[`${person}_${d}`]||0)*prices[d],0) + getManualTotal(person);
+  const el=document.getElementById(`${person}_Total`); if(el) el.textContent=tot.toFixed(2);
+  buildTable();
+}
+
+/* Delete helpers */
+function deletePerson(p){
+  if(!deleteMode) return;
+  if(CORE.includes(p)){ alert("Kernteam kann nicht gelöscht werden."); toggleDeleteMode(); return; }
+  if(!confirm(`${p} wirklich löschen?`)) return;
+  people=people.filter(x=>x!==p);
+  Object.keys(data).forEach(k=>{ if(k.startsWith(p+"_")) delete data[k]; });
+  delete xp[p];
+  saveAll(); buildTable(); toggleDeleteMode();
+}
+function deleteColumn(drink){
+  if(!deleteMode) return;
+  if(!confirm(`Getränk "${drink}" löschen?`)) return;
+  delete prices[drink]; columnOrder=columnOrder.filter(d=>d!==drink);
+  Object.keys(data).forEach(k=>{ if(k.endsWith("_"+drink)) delete data[k]; });
+  saveAll(); buildTable(); toggleDeleteMode();
+}
+
+/* Abrechnen */
+function resetAll(){
+  const pw=prompt("Passwort eingeben:"); if(pw!=="1379"){alert("Falsches Passwort");return;}
+  if(!confirm("Alle Striche abrechnen und zurücksetzen?")) return;
+  people.forEach(p=>{
+    const sum=columnOrder.reduce((s,d)=>s+(data[`${p}_${d}`]||0)*prices[d],0) + getManualTotal(p);
+    if(sum>0) bookings.push({date:new Date().toLocaleDateString("de-DE"), person:p, sum});
+    xp[p]=(xp[p]||0)+sum; columnOrder.forEach(d=>data[`${p}_${d}`]=0);
+    manualCharges[p]=[];
+  });
+  history=[]; redoStack=[]; saveAll(); buildTable(); updateUndoRedoButtons();
+}
+
+/* Backup functions */
+// createBackup, exportBackup, restoreBackup, showBackupList, restoreLocalBackup, openBackupModal → shared.js
+
+/* Modals & helpers */
+function openPersonModal(){
+  const sel = document.getElementById("personRef");
+  sel.innerHTML = '<option value="">– Bezugsperson wählen –</option>' +
+    CORE.map(n => `<option value="${n}">${n}</option>`).join('');
+  document.getElementById("personModal").classList.add("show");
+}
+function openDrinkModal(){ document.getElementById("drinkModal").classList.add("show"); }
+function togglePayPal(){ document.getElementById("paypalModal").classList.toggle("show"); }
+function confirmAddPerson(){
+  const name=document.getElementById("personName").value.trim();
+  const ref=document.getElementById("personRef").value;
+  if(!name) return alert("Bitte Namen eingeben");
+  if(!ref) return alert("Bitte eine Bezugsperson auswählen");
+  if(people.includes(name)) return alert("Person existiert bereits");
+  people.push(name);
+  guestReferences[name]=ref;
+  saveAll();
+  saveGuestReferences();
+  buildTable();
+  closeModal('personModal');
+  document.getElementById("personName").value="";
+  document.getElementById("personRef").value="";
+}
+function confirmAddDrink(){
+  const name=document.getElementById("drinkName").value.trim(), price=parseFloat(document.getElementById("drinkPrice").value);
+  if(!name||isNaN(price)||price<=0) return alert("Bitte gültige Eingaben");
+  const key=name.replace(/\s+/g,'_'); prices[key]=price; if(!columnOrder.includes(key)) columnOrder.push(key);
+  saveAll(); buildTable(); closeModal('drinkModal'); document.getElementById("drinkName").value=""; document.getElementById("drinkPrice").value="";
+}
+
+/* ===== Monatsbeitrag ===== */
+function renderMonthlyFeeCard() {
+  document.getElementById('monthlyFeeAmount').value = monthlyFee > 0 ? monthlyFee : '';
+  const list = document.getElementById('monthlyFeePersonList');
+  list.innerHTML = people.map(p => {
+    const sel = monthlyFeePersons.includes(p);
+    return `<button class="btn small ${sel ? '' : 'dark'} fee-pill" onclick="toggleFeePerson(this)" data-person="${p.replace(/"/g,'&quot;')}">${p}</button>`;
+  }).join('');
+  updateMonthlyFeeStatus();
+}
+
+function toggleFeePerson(btn) {
+  const name = btn.dataset.person;
+  if (monthlyFeePersons.includes(name)) {
+    monthlyFeePersons = monthlyFeePersons.filter(p => p !== name);
+    btn.className = 'btn small dark fee-pill';
+  } else {
+    monthlyFeePersons.push(name);
+    btn.className = 'btn small fee-pill';
+  }
+}
+
+function updateMonthlyFeeStatus() {
+  const el = document.getElementById('monthlyFeeStatus');
+  if (!el) return;
+  if (!monthlyFee || monthlyFee <= 0) { el.textContent = 'Kein Beitrag konfiguriert.'; return; }
+  // Compute next month label
+  const now = new Date();
+  const nextMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+  const nextLabel = `${String(nextMonth.getMonth()+1).padStart(2,'0')}/${nextMonth.getFullYear()}`;
+  el.textContent = `${(monthlyFee).toFixed(2)} € · ${monthlyFeePersons.length} Person(en) · wird angewendet: ${nextLabel}`;
+}
+
+function saveMonthlyFeeSettings() {
+  const amount = parseFloat(document.getElementById('monthlyFeeAmount').value);
+  if (isNaN(amount) || amount < 0) return alert('Bitte einen gültigen Betrag eingeben.');
+  monthlyFee = amount;
+  // Mark current month as already handled so fee only fires from next month onwards
+  monthlyFeeLastApplied = currentMonthStr();
+  saveAll();
+  sClick.play();
+  const el = document.getElementById('monthlyFeeStatus');
+  if (el) { el.textContent = '✓ Gespeichert'; setTimeout(updateMonthlyFeeStatus, 1500); }
+}
+
+function applyMonthlyFeeIfNeeded() {
+  const currentMonth = currentMonthStr();
+  if (monthlyFeeLastApplied === currentMonth) return;
+  if (!monthlyFee || monthlyFee <= 0 || monthlyFeePersons.length === 0) return;
+  const date = new Date().toLocaleDateString('de-DE');
+  monthlyFeePersons.forEach(person => {
+    if (!people.includes(person)) return;
+    if (!Array.isArray(manualCharges[person])) manualCharges[person] = [];
+    manualCharges[person].push({ date, amount: monthlyFee });
+  });
+  monthlyFeeLastApplied = currentMonth;
+  saveAll();
+  buildTable();
+  if (adminMode) updateMonthlyFeeStatus();
+}
+
+/* ===== Betrag verrechnen ===== */
+let splitSelected = new Set();
+
+function openSplitModal() {
+  splitSelected = new Set();
+  document.getElementById('splitAmount').value = '';
+  document.getElementById('splitInfo').textContent = '';
+  const list = document.getElementById('splitPersonList');
+  list.innerHTML = people.map(p =>
+    `<button class="btn small dark split-pill" onclick="toggleSplitPerson(this)" data-person="${p.replace(/"/g,'&quot;')}">${p}</button>`
+  ).join('');
+  document.getElementById('splitModal').classList.add('show');
+}
+
+function toggleSplitPerson(btn) {
+  const name = btn.dataset.person;
+  if (splitSelected.has(name)) {
+    splitSelected.delete(name);
+    btn.className = 'btn small dark split-pill';
+  } else {
+    splitSelected.add(name);
+    btn.className = 'btn small split-pill';
+  }
+  updateSplitCalc();
+}
+
+function updateSplitCalc() {
+  const amount = parseFloat(document.getElementById('splitAmount').value) || 0;
+  const count = splitSelected.size;
+  const info = document.getElementById('splitInfo');
+  if (amount > 0 && count > 0) {
+    const perPerson = (amount / count).toFixed(2);
+    info.textContent = `${count} Person${count !== 1 ? 'en' : ''} × ${perPerson} € = ${amount.toFixed(2)} €`;
+  } else {
+    info.textContent = '';
+  }
+}
+
+function getManualTotal(person) {
+  const entries = manualCharges[person];
+  if (!entries) return 0;
+  if (typeof entries === 'number') return entries; // migration fallback
+  if (!Array.isArray(entries)) return 0;
+  return entries.reduce((s, e) => s + (e.amount || 0), 0);
+}
+
+let _breakdownPerson = null;
+let _editManualIndex = -1;
+
+function showTotalBreakdown(person) {
+  _breakdownPerson = person;
+  _renderBreakdown();
+  document.getElementById('breakdownModal').classList.add('show');
+}
+
+function _renderBreakdown() {
+  const person = _breakdownPerson;
+  if (!person) return;
+
+  const drinkRows = columnOrder
+    .filter(d => (data[`${person}_${d}`] || 0) > 0)
+    .map(d => {
+      const cnt = data[`${person}_${d}`] || 0;
+      const subtotal = cnt * prices[d];
+      return `<tr><td style="padding:4px 8px 4px 0">${d}</td><td style="padding:4px 0;text-align:right">${cnt}×</td><td style="padding:4px 0 4px 8px;text-align:right">${prices[d].toFixed(2)} €</td><td style="padding:4px 0;text-align:right;font-weight:700">${subtotal.toFixed(2)} €</td></tr>`;
+    }).join('');
+
+  const entries = Array.isArray(manualCharges[person]) ? manualCharges[person] : [];
+  const manualRows = entries.map((e, i) => {
+    const adminBtns = adminMode
+      ? `<td style="padding:2px 0 2px 8px;white-space:nowrap">
+           <button class="btn small" style="padding:3px 7px;font-size:11px;margin-right:4px" onclick="openEditManualEntry(${i})">✏️</button>
+           <button class="btn small warning" style="padding:3px 7px;font-size:11px" onclick="deleteManualEntry(${i})">🗑</button>
+         </td>`
+      : '';
+    return `<tr><td style="padding:4px 8px 4px 0;opacity:.7">${e.date}</td><td style="padding:4px 8px;opacity:.7">manuell</td><td style="padding:4px 0;text-align:right;font-weight:700">${e.amount.toFixed(2)} €</td>${adminBtns}</tr>`;
+  }).join('');
+
+  const total = columnOrder.reduce((s,d)=>s+(data[`${person}_${d}`]||0)*prices[d],0) + getManualTotal(person);
+  const separator = (drinkRows && manualRows) ? `<tr><td colspan="${adminMode?5:4}" style="border-top:1px solid rgba(255,255,255,.15);padding:6px 0"></td></tr>` : '';
+  const cols = adminMode ? 4 : 3;
+
+  document.getElementById('breakdownContent').innerHTML = `
+    <div style="font-weight:800;font-size:16px;margin-bottom:10px">${person}</div>
+    <table style="width:100%;border-collapse:collapse;font-size:14px">
+      ${drinkRows}${separator}${manualRows}
+      <tr><td colspan="${adminMode?5:4}" style="border-top:1px solid rgba(255,255,255,.3);padding:8px 0 0"></td></tr>
+      <tr><td colspan="${cols}" style="padding:4px 0;font-weight:800">Gesamt</td><td style="text-align:right;font-weight:800;color:#6ee7ff;font-size:16px">${total.toFixed(2)} €</td></tr>
+    </table>`;
+}
+
+function openEditManualEntry(index) {
+  const entries = Array.isArray(manualCharges[_breakdownPerson]) ? manualCharges[_breakdownPerson] : [];
+  if (index < 0 || index >= entries.length) return;
+  _editManualIndex = index;
+  const e = entries[index];
+  // Convert DE date (DD.MM.YYYY) to input format (YYYY-MM-DD)
+  const parts = e.date.split('.');
+  const inputDate = parts.length === 3 ? `${parts[2]}-${parts[1].padStart(2,'0')}-${parts[0].padStart(2,'0')}` : '';
+  document.getElementById('editManualDate').value = inputDate;
+  document.getElementById('editManualAmount').value = e.amount;
+  document.getElementById('editManualModal').classList.add('show');
+}
+
+function saveEditManualEntry() {
+  const person = _breakdownPerson;
+  const entries = manualCharges[person];
+  if (!Array.isArray(entries) || _editManualIndex < 0 || _editManualIndex >= entries.length) return;
+  const dateVal = document.getElementById('editManualDate').value;
+  const amountVal = parseFloat(document.getElementById('editManualAmount').value);
+  if (!dateVal || isNaN(amountVal) || amountVal <= 0) return alert('Bitte Datum und Betrag korrekt eingeben.');
+  const parts = dateVal.split('-');
+  entries[_editManualIndex] = {
+    date: `${parts[2]}.${parts[1]}.${parts[0]}`,
+    amount: amountVal
+  };
+  saveAll(); buildTable();
+  closeModal('editManualModal');
+  _renderBreakdown();
+}
+
+function deleteManualEntry(index) {
+  const person = _breakdownPerson;
+  const entries = manualCharges[person];
+  if (!Array.isArray(entries) || index < 0 || index >= entries.length) return;
+  const e = entries[index];
+  if (!confirm(`Verrechnung löschen?\n${e.date} – ${e.amount.toFixed(2)} €`)) return;
+  entries.splice(index, 1);
+  saveAll(); buildTable();
+  _renderBreakdown();
+}
+
+function confirmSplit() {
+  const amount = parseFloat(document.getElementById('splitAmount').value);
+  if (!amount || amount <= 0) { sError.play(); return alert('Bitte einen gültigen Betrag eingeben.'); }
+  if (splitSelected.size === 0) { sError.play(); return alert('Bitte mindestens eine Person auswählen.'); }
+  const perPerson = amount / splitSelected.size;
+  const today = new Date().toLocaleDateString("de-DE");
+  const entries = [];
+  splitSelected.forEach(person => {
+    if (!Array.isArray(manualCharges[person])) manualCharges[person] = [];
+    manualCharges[person].push({date: today, amount: perPerson});
+    entries.push({person, date: today, amount: perPerson});
+  });
+  history.push({type:'split', entries, totalAmount: amount});
+  redoStack=[];
+  updateUndoRedoButtons();
+  saveAll();
+  buildTable();
+  closeModal('splitModal');
+  sClick.play();
+}
+
+/* ===== Layout-Einstellungen ===== */
+const LAYOUT_KEY = 'sick_sound_layout';
+const defaultLayout = {
+  'btn-min-width': 40,
+  'btn-padding-v': 8,
+  'btn-padding-h': 12,
+  'btn-font-size': 14,
+  'col-min-width': 90,
+  'person-col-width': 180,
+  'cell-gap': 10,
+  'ring': 48,
+  'name-size': 18,
+  'count-size': 17,
+  'drink-name-size': 12
+};
+let currentLayout = { ...defaultLayout };
+
+function loadLayoutSettings() {
+  try {
+    const saved = localStorage.getItem(LAYOUT_KEY);
+    if (saved) {
+      currentLayout = { ...defaultLayout, ...JSON.parse(saved) };
+    }
+    // Auch aus Firebase laden
+    if (db) {
+      db.collection(STATE_COLLECTION).doc('layout').get().then(doc => {
+        if (doc.exists) {
+          currentLayout = { ...defaultLayout, ...doc.data() };
+          localStorage.setItem(LAYOUT_KEY, JSON.stringify(currentLayout));
+          applyLayoutSettings();
+        }
+      }).catch(() => {});
+    }
+  } catch(e) {
+    currentLayout = { ...defaultLayout };
+  }
+  applyLayoutSettings();
+}
+
+function applyLayoutSettings() {
+  const root = document.documentElement;
+  Object.entries(currentLayout).forEach(([key, value]) => {
+    root.style.setProperty('--' + key, value + 'px');
+  });
+}
+
+function updateLayoutSetting(key, value) {
+  const numValue = parseInt(value);
+  currentLayout[key] = numValue;
+  document.documentElement.style.setProperty('--' + key, value);
+
+  // Update display value
+  const displayId = 'val' + key.split('-').map((s, i) => i === 0 ? s.charAt(0).toUpperCase() + s.slice(1) : s.charAt(0).toUpperCase() + s.slice(1)).join('');
+  const displayEl = document.getElementById(displayId);
+  if (displayEl) displayEl.textContent = value;
+}
+
+function openLayoutModal() {
+  // Slider auf aktuelle Werte setzen
+  document.getElementById('setBtnWidth').value = currentLayout['btn-min-width'];
+  document.getElementById('valBtnWidth').textContent = currentLayout['btn-min-width'] + 'px';
+
+  document.getElementById('setBtnPadV').value = currentLayout['btn-padding-v'];
+  document.getElementById('valBtnPadV').textContent = currentLayout['btn-padding-v'] + 'px';
+
+  document.getElementById('setBtnPadH').value = currentLayout['btn-padding-h'];
+  document.getElementById('valBtnPadH').textContent = currentLayout['btn-padding-h'] + 'px';
+
+  document.getElementById('setBtnFont').value = currentLayout['btn-font-size'];
+  document.getElementById('valBtnFont').textContent = currentLayout['btn-font-size'] + 'px';
+
+  document.getElementById('setColWidth').value = currentLayout['col-min-width'];
+  document.getElementById('valColWidth').textContent = currentLayout['col-min-width'] + 'px';
+
+  document.getElementById('setPersonCol').value = currentLayout['person-col-width'];
+  document.getElementById('valPersonCol').textContent = currentLayout['person-col-width'] + 'px';
+
+  document.getElementById('setCellGap').value = currentLayout['cell-gap'];
+  document.getElementById('valCellGap').textContent = currentLayout['cell-gap'] + 'px';
+
+  document.getElementById('setRing').value = currentLayout['ring'];
+  document.getElementById('valRing').textContent = currentLayout['ring'] + 'px';
+
+  document.getElementById('setNameSize').value = currentLayout['name-size'];
+  document.getElementById('valNameSize').textContent = currentLayout['name-size'] + 'px';
+
+  document.getElementById('setCountSize').value = currentLayout['count-size'];
+  document.getElementById('valCountSize').textContent = currentLayout['count-size'] + 'px';
+
+  document.getElementById('setDrinkName').value = currentLayout['drink-name-size'];
+  document.getElementById('valDrinkName').textContent = currentLayout['drink-name-size'] + 'px';
+
+  document.getElementById('layoutModal').classList.add('show');
+}
+
+function saveLayoutSettings() {
+  localStorage.setItem(LAYOUT_KEY, JSON.stringify(currentLayout));
+  // Auch in Firebase speichern
+  if (db) {
+    db.collection(STATE_COLLECTION).doc('layout').set(currentLayout)
+      .then(() => alert('Layout-Einstellungen gespeichert!'))
+      .catch(e => console.error('Fehler beim Speichern:', e));
+  } else {
+    alert('Layout-Einstellungen lokal gespeichert!');
+  }
+  closeModal('layoutModal');
+}
+
+function resetLayoutSettings() {
+  if (!confirm('Layout auf Standardwerte zurücksetzen?')) return;
+  currentLayout = { ...defaultLayout };
+  applyLayoutSettings();
+  openLayoutModal(); // Modal neu laden mit Standardwerten
+}
+
+/* ===== Touch Drag & Drop für Getränke-Spalten (verbessert) ===== */
+let touchColDragIdx = null;
+let touchColStartX = 0;
+let touchColStartY = 0;
+let touchColMoved = false;
+let touchColTimer = null;
+
+function initColumnTouchDrag() {
+  document.querySelectorAll('.drink-header').forEach((header, idx) => {
+    // Touch-Events für Drag
+    header.addEventListener('touchstart', handleColTouchStart, { passive: false });
+    header.addEventListener('touchmove', handleColTouchMove, { passive: false });
+    header.addEventListener('touchend', handleColTouchEnd);
+    header.addEventListener('touchcancel', handleColTouchCancel);
+
+    // Text-Auswahl verhindern
+    header.style.webkitUserSelect = 'none';
+    header.style.userSelect = 'none';
+    header.style.webkitTouchCallout = 'none';
+  });
+}
+
+function handleColTouchStart(e) {
+  if (deleteMode) return;
+
+  const header = e.target.closest('.drink-header');
+  if (!header) return;
+
+  const idx = parseInt(header.dataset.idx);
+  const touch = e.touches[0];
+
+  touchColStartX = touch.clientX;
+  touchColStartY = touch.clientY;
+  touchColMoved = false;
+
+  // Long-Press Timer starten
+  touchColTimer = setTimeout(() => {
+    if (!touchColMoved) {
+      touchColDragIdx = idx;
+      header.classList.add('dragging');
+      if (navigator.vibrate) navigator.vibrate(50);
+      e.preventDefault();
+    }
+  }, 400);
+}
+
+function handleColTouchMove(e) {
+  const touch = e.touches[0];
+  const dx = Math.abs(touch.clientX - touchColStartX);
+  const dy = Math.abs(touch.clientY - touchColStartY);
+
+  // Prüfen ob bewegt wurde
+  if (dx > 10 || dy > 10) {
+    touchColMoved = true;
+    if (touchColTimer) {
+      clearTimeout(touchColTimer);
+      touchColTimer = null;
+    }
+  }
+
+  // Wenn im Drag-Modus
+  if (touchColDragIdx !== null) {
+    e.preventDefault();
+
+    // Highlight entfernen und neues Ziel markieren
+    document.querySelectorAll('.drink-header').forEach(h => h.classList.remove('drag-over'));
+
+    const elementBelow = document.elementFromPoint(touch.clientX, touch.clientY);
+    const targetHeader = elementBelow?.closest('.drink-header');
+    if (targetHeader && parseInt(targetHeader.dataset.idx) !== touchColDragIdx) {
+      targetHeader.classList.add('drag-over');
+    }
+  }
+}
+
+function handleColTouchEnd(e) {
+  if (touchColTimer) {
+    clearTimeout(touchColTimer);
+    touchColTimer = null;
+  }
+
+  if (touchColDragIdx === null) return;
+
+  const touch = e.changedTouches[0];
+  const elementBelow = document.elementFromPoint(touch.clientX, touch.clientY);
+  const targetHeader = elementBelow?.closest('.drink-header');
+
+  if (targetHeader) {
+    const targetIdx = parseInt(targetHeader.dataset.idx);
+    if (!isNaN(targetIdx) && targetIdx !== touchColDragIdx) {
+      // Spaltenreihenfolge ändern
+      const movedDrink = columnOrder[touchColDragIdx];
+      columnOrder.splice(touchColDragIdx, 1);
+      columnOrder.splice(targetIdx, 0, movedDrink);
+      saveAll();
+    }
+  }
+
+  // Aufräumen
+  document.querySelectorAll('.drink-header').forEach(h => {
+    h.classList.remove('dragging', 'drag-over');
+  });
+
+  touchColDragIdx = null;
+  buildTable();
+}
+
+function handleColTouchCancel() {
+  if (touchColTimer) {
+    clearTimeout(touchColTimer);
+    touchColTimer = null;
+  }
+
+  document.querySelectorAll('.drink-header').forEach(h => {
+    h.classList.remove('dragging', 'drag-over');
+  });
+
+  touchColDragIdx = null;
+}
+
+window.onload = function() {
+  renderBottomNav('index');
+  loadLayoutSettings();
+  loadState();
+};
+window.onresize=()=>requestAnimationFrame(adjustToOnePage);
+</script>
+</body>
+</html>

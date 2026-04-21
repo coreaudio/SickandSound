@@ -1,0 +1,468 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <title>Sick & Sound – Bewertungen</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#0b0e14" />
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="stylesheet" href="style.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;800&display=swap" rel="stylesheet" />
+  <style>
+    .rating-card { padding: 15px; margin-bottom: 10px; background: #1c2130; border-radius: 12px; border: 1px solid #2a3042; }
+    .rating-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+    .rating-stars { color: #ffd700; letter-spacing: 2px; }
+    .rating-stars .empty { color: #2a3042; }
+    .rating-meta { font-size: 12px; opacity: 0.7; }
+    .rating-comment { margin-top: 8px; padding: 10px; background: #0e1422; border-radius: 8px; font-style: italic; }
+    .rating-person { font-weight: 800; }
+    .filter-row { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 15px; }
+    .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; margin-bottom: 15px; }
+    .stat-card { padding: 12px; background: #1c2130; border-radius: 10px; text-align: center; }
+    .stat-value { font-size: 24px; font-weight: 800; background: linear-gradient(135deg, #6ee7ff, #a78bfa); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+    .stat-label { font-size: 11px; opacity: 0.7; margin-top: 4px; }
+    .avg-rating { display: flex; align-items: center; gap: 6px; }
+    .no-ratings { text-align: center; padding: 40px; opacity: 0.6; }
+
+    /* Durchschnittsliste Styling */
+    .avg-list { display: flex; flex-direction: column; gap: 8px; }
+    .avg-item { display: flex; align-items: center; justify-content: space-between; padding: 12px; background: #1c2130; border-radius: 10px; }
+    .avg-item .rank { font-size: 18px; font-weight: 800; min-width: 30px; color: #6ee7ff; }
+    .avg-item .rank.gold { color: #ffd700; }
+    .avg-item .rank.silver { color: #c0c0c0; }
+    .avg-item .rank.bronze { color: #cd7f32; }
+    .avg-item .person-info { flex: 1; margin-left: 10px; }
+    .avg-item .person-name { font-weight: 800; }
+    .avg-item .person-count { font-size: 11px; opacity: 0.6; }
+    .avg-item .avg-score { display: flex; align-items: center; gap: 6px; }
+    .avg-item .avg-value { font-size: 18px; font-weight: 800; background: linear-gradient(135deg, #6ee7ff, #a78bfa); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+    .avg-item .stars { color: #ffd700; font-size: 14px; }
+
+    /* Admin-Modus */
+    .admin-indicator { background-color: #ff6b6b; padding: 4px 8px; border-radius: 4px; margin-left: 8px; font-size: 12px; }
+    .rating-actions { display: none; margin-top: 10px; gap: 8px; }
+    .admin-mode .rating-actions { display: flex; }
+
+    /* Bearbeitungs-Modal */
+    .modal { position: fixed; inset: 0; background: rgba(0,0,0,0.8); display: none; place-items: center; z-index: 100; padding: 20px; }
+    .modal.show { display: grid; }
+    .modal-box { background: #151a23; border-radius: 16px; padding: 24px; max-width: 400px; width: 100%; border: 1px solid #2a3042; }
+    .modal-title { font-size: 18px; font-weight: 800; margin-bottom: 8px; }
+    .modal-stars { display: flex; gap: 8px; justify-content: center; margin: 20px 0; }
+    .modal-stars .star { font-size: 36px; cursor: pointer; color: #2a3042; transition: all 0.2s; }
+    .modal-stars .star:hover, .modal-stars .star.active { color: #ffd700; transform: scale(1.15); }
+    .modal-stars .star.hovered { color: #ffd700; }
+    .modal-actions { display: flex; gap: 10px; margin-top: 15px; }
+    .modal-actions .btn { flex: 1; }
+    .edit-comment { width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #2a3042; background: #0e1422; color: #e6e8ef; resize: vertical; min-height: 60px; margin-top: 10px; }
+    .edit-info { font-size: 12px; opacity: 0.7; margin-bottom: 10px; }
+  </style>
+</head>
+<body>
+<div class="app">
+  <header class="appbar">
+    <div class="app-title">
+      <div class="brand-dot"></div>
+      <h1>Bewertungen</h1>
+      <span id="adminIndicator" class="admin-indicator" style="display:none;">Admin</span>
+    </div>
+    <div class="appbar-actions">
+      <button class="btn small warning" id="adminBtn" onclick="toggleAdminMode()" title="Admin-Modus">🔧</button>
+      <span class="sub"><span class="statusdot" id="dot"></span><span id="connTxt">Verbinde...</span></span>
+    </div>
+  </header>
+
+  <main class="content">
+    <div class="card">
+      <div class="section-title">Statistiken</div>
+      <div class="stats-grid" id="statsGrid">
+        <div class="stat-card">
+          <div class="stat-value" id="totalRatings">-</div>
+          <div class="stat-label">Bewertungen</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value" id="avgRating">-</div>
+          <div class="stat-label">Durchschnitt</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value" id="topPerson">-</div>
+          <div class="stat-label">Beste Bewertung</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="section-title">Filter</div>
+      <div class="filter-row">
+        <select id="filterPerson" onchange="applyFilters()">
+          <option value="">Alle Personen</option>
+        </select>
+        <select id="filterMonth" onchange="applyFilters()">
+          <option value="">Alle Monate</option>
+        </select>
+        <select id="filterRating" onchange="applyFilters()">
+          <option value="">Alle Sterne</option>
+          <option value="5">5 Sterne</option>
+          <option value="4">4 Sterne</option>
+          <option value="3">3 Sterne</option>
+          <option value="2">2 Sterne</option>
+          <option value="1">1 Stern</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Durchschnittsbewertungen pro Person - prominent oben -->
+    <div class="card">
+      <div class="section-title">Durchschnittliche Bewertung pro Person</div>
+      <div class="sub" style="margin-bottom:10px">Rangliste basierend auf durchschnittlicher Hausdienst-Bewertung</div>
+      <div id="personAverages" class="sub">Lade...</div>
+    </div>
+
+    <div class="card">
+      <div class="section-title">Alle Bewertungen</div>
+      <div id="ratingsList" class="sub">Lade Bewertungen...</div>
+    </div>
+  </main>
+
+  <nav class="bottomnav" id="bottomNav"></nav>
+</div>
+
+<!-- Bearbeitungs-Modal -->
+<div class="modal" id="editModal">
+  <div class="modal-box">
+    <div class="modal-title">Bewertung bearbeiten</div>
+    <div class="edit-info" id="editInfo"></div>
+    <div class="modal-stars" id="editStars">
+      <span class="star" data-value="1" onclick="setEditRating(1)" onmouseenter="hoverEditRating(1)" onmouseleave="hoverEditRating(0)">★</span>
+      <span class="star" data-value="2" onclick="setEditRating(2)" onmouseenter="hoverEditRating(2)" onmouseleave="hoverEditRating(0)">★</span>
+      <span class="star" data-value="3" onclick="setEditRating(3)" onmouseenter="hoverEditRating(3)" onmouseleave="hoverEditRating(0)">★</span>
+      <span class="star" data-value="4" onclick="setEditRating(4)" onmouseenter="hoverEditRating(4)" onmouseleave="hoverEditRating(0)">★</span>
+      <span class="star" data-value="5" onclick="setEditRating(5)" onmouseenter="hoverEditRating(5)" onmouseleave="hoverEditRating(0)">★</span>
+    </div>
+    <textarea id="editComment" class="edit-comment" placeholder="Kommentar..."></textarea>
+    <div class="modal-actions">
+      <button class="btn" onclick="saveEditRating()">Speichern</button>
+      <button class="btn danger" onclick="deleteRating()">Löschen</button>
+      <button class="btn ghost" onclick="closeEditModal()">Abbrechen</button>
+    </div>
+  </div>
+</div>
+
+<!-- Firebase -->
+<script src="https://www.gstatic.com/firebasejs/12.0.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/12.0.0/firebase-firestore-compat.js"></script>
+<script src="shared.js"></script>
+<script>
+  let adminMode = false;
+  let allRatings = [];
+
+  if (db) {
+    document.getElementById('dot').classList.add('statusok');
+    document.getElementById('connTxt').textContent = 'Online';
+  } else {
+    document.getElementById('connTxt').textContent = 'Offline';
+  }
+
+  renderBottomNav('bewertungen');
+
+  function renderStars(rating) {
+    let html = '';
+    for (let i = 1; i <= 5; i++) {
+      html += `<span class="${i <= rating ? '' : 'empty'}">★</span>`;
+    }
+    return html;
+  }
+
+  async function loadRatings() {
+    if (!db) {
+      document.getElementById('ratingsList').innerHTML = '<div class="no-ratings">Offline - keine Daten verfügbar</div>';
+      return;
+    }
+
+    // Kernteam aus Firebase laden
+    try {
+      const globalSnap = await db.collection(STATE_COLLECTION).doc('global').get();
+      if(globalSnap.exists && globalSnap.data().core && Array.isArray(globalSnap.data().core)) {
+        CORE = globalSnap.data().core;
+      }
+    } catch(e) { console.error('Fehler beim Laden des Kernteams:', e); }
+
+    const snap = await db.collection('bewertungen').orderBy('createdAt', 'desc').get();
+    allRatings = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+
+    // Filter-Optionen befüllen
+    populateFilters();
+    renderRatings(allRatings);
+    renderStats(allRatings);
+    renderPersonAverages(allRatings);
+  }
+
+  function populateFilters() {
+    const personSelect = document.getElementById('filterPerson');
+    const monthSelect = document.getElementById('filterMonth');
+
+    // Personen
+    const persons = [...new Set(allRatings.map(r => r.bewerteterHausdienst))].sort();
+    persons.forEach(p => {
+      const opt = document.createElement('option');
+      opt.value = p;
+      opt.textContent = p;
+      personSelect.appendChild(opt);
+    });
+
+    // Monate
+    const months = [...new Set(allRatings.map(r => r.date.slice(0, 7)))].sort().reverse();
+    months.forEach(m => {
+      const opt = document.createElement('option');
+      opt.value = m;
+      const [year, month] = m.split('-');
+      opt.textContent = `${month}/${year}`;
+      monthSelect.appendChild(opt);
+    });
+  }
+
+  function applyFilters() {
+    const person = document.getElementById('filterPerson').value;
+    const month = document.getElementById('filterMonth').value;
+    const rating = document.getElementById('filterRating').value;
+
+    let filtered = [...allRatings];
+
+    if (person) filtered = filtered.filter(r => r.bewerteterHausdienst === person);
+    if (month) filtered = filtered.filter(r => r.date.startsWith(month));
+    if (rating) filtered = filtered.filter(r => r.rating === parseInt(rating));
+
+    renderRatings(filtered);
+    renderStats(filtered);
+  }
+
+  function renderRatings(ratings) {
+    const list = document.getElementById('ratingsList');
+
+    if (!ratings.length) {
+      list.innerHTML = '<div class="no-ratings">Keine Bewertungen gefunden</div>';
+      return;
+    }
+
+    list.innerHTML = ratings.map(r => `
+      <div class="rating-card">
+        <div class="rating-header">
+          <div>
+            <span class="rating-person">${r.bewerteterHausdienst}</span>
+            <span class="rating-stars">${renderStars(r.rating)}</span>
+          </div>
+          <span class="badge">${r.rating}/5</span>
+        </div>
+        <div class="rating-meta">
+          ${formatDate(r.date)} · Bewertet von ${r.bewertetVon}
+        </div>
+        ${r.comment ? `<div class="rating-comment">"${r.comment}"</div>` : ''}
+        <div class="rating-actions">
+          <button class="btn small" onclick="openEditModal('${r.id}')">✏️ Bearbeiten</button>
+        </div>
+      </div>
+    `).join('');
+  }
+
+  function renderStats(ratings) {
+    document.getElementById('totalRatings').textContent = ratings.length;
+
+    if (ratings.length === 0) {
+      document.getElementById('avgRating').textContent = '-';
+      document.getElementById('topPerson').textContent = '-';
+      return;
+    }
+
+    const avg = ratings.reduce((sum, r) => sum + r.rating, 0) / ratings.length;
+    document.getElementById('avgRating').innerHTML = `${avg.toFixed(1)} <span style="font-size:14px">★</span>`;
+
+    // Beste Person finden (nach Durchschnitt)
+    const personStats = {};
+    ratings.forEach(r => {
+      if (!personStats[r.bewerteterHausdienst]) {
+        personStats[r.bewerteterHausdienst] = { total: 0, count: 0 };
+      }
+      personStats[r.bewerteterHausdienst].total += r.rating;
+      personStats[r.bewerteterHausdienst].count++;
+    });
+
+    let topPerson = '-';
+    let topAvg = 0;
+    Object.entries(personStats).forEach(([person, stats]) => {
+      const personAvg = stats.total / stats.count;
+      if (personAvg > topAvg && stats.count >= 2) {
+        topAvg = personAvg;
+        topPerson = person;
+      }
+    });
+    document.getElementById('topPerson').textContent = topPerson;
+  }
+
+  function renderPersonAverages(ratings) {
+    const container = document.getElementById('personAverages');
+
+    if (!ratings.length) {
+      container.innerHTML = '<div class="no-ratings">Noch keine Bewertungen vorhanden</div>';
+      return;
+    }
+
+    // Statistiken pro Person berechnen
+    const personStats = {};
+    ratings.forEach(r => {
+      if (!personStats[r.bewerteterHausdienst]) {
+        personStats[r.bewerteterHausdienst] = { total: 0, count: 0 };
+      }
+      personStats[r.bewerteterHausdienst].total += r.rating;
+      personStats[r.bewerteterHausdienst].count++;
+    });
+
+    // Sortieren nach Durchschnitt
+    const sorted = Object.entries(personStats)
+      .map(([person, stats]) => ({
+        person,
+        avg: stats.total / stats.count,
+        count: stats.count
+      }))
+      .sort((a, b) => b.avg - a.avg);
+
+    const getRankClass = (i) => {
+      if (i === 0) return 'gold';
+      if (i === 1) return 'silver';
+      if (i === 2) return 'bronze';
+      return '';
+    };
+
+    container.innerHTML = `
+      <div class="avg-list">
+        ${sorted.map((s, i) => `
+          <div class="avg-item">
+            <span class="rank ${getRankClass(i)}">#${i + 1}</span>
+            <div class="person-info">
+              <div class="person-name">${s.person}</div>
+              <div class="person-count">${s.count} Bewertung${s.count !== 1 ? 'en' : ''}</div>
+            </div>
+            <div class="avg-score">
+              <span class="stars">${renderStars(Math.round(s.avg))}</span>
+              <span class="avg-value">${s.avg.toFixed(2)}</span>
+            </div>
+          </div>
+        `).join('')}
+      </div>
+    `;
+  }
+
+  // Echtzeit-Updates
+  if (db) {
+    db.collection('bewertungen').onSnapshot(() => {
+      loadRatings();
+    });
+  }
+
+  // Admin-Modus
+  function toggleAdminMode() {
+    if (adminMode) {
+      adminMode = false;
+      document.body.classList.remove('admin-mode');
+      document.getElementById('adminIndicator').style.display = 'none';
+      document.getElementById('adminBtn').textContent = '🔧';
+      return;
+    }
+
+    const password = prompt("Admin-Passwort eingeben:");
+    if (password === ADMIN_PASSWORD) {
+      adminMode = true;
+      document.body.classList.add('admin-mode');
+      document.getElementById('adminIndicator').style.display = 'inline-block';
+      document.getElementById('adminBtn').textContent = '🔧✓';
+    } else {
+      alert("Falsches Passwort");
+    }
+  }
+
+  // Bearbeitungs-Modal
+  let editRatingId = null;
+  let editRatingValue = 0;
+
+  function openEditModal(ratingId) {
+    const rating = allRatings.find(r => r.id === ratingId);
+    if (!rating) return;
+
+    editRatingId = ratingId;
+    editRatingValue = rating.rating;
+
+    document.getElementById('editInfo').innerHTML =
+      `<b>${rating.bewerteterHausdienst}</b> am ${formatDate(rating.date)}<br>Bewertet von ${rating.bewertetVon}`;
+    document.getElementById('editComment').value = rating.comment || '';
+
+    // Sterne setzen
+    const stars = document.querySelectorAll('#editStars .star');
+    stars.forEach((star, i) => {
+      star.classList.toggle('active', i < rating.rating);
+    });
+
+    document.getElementById('editModal').classList.add('show');
+  }
+
+  function closeEditModal() {
+    document.getElementById('editModal').classList.remove('show');
+    editRatingId = null;
+    editRatingValue = 0;
+  }
+
+  function hoverEditRating(val) {
+    const stars = document.querySelectorAll('#editStars .star');
+    stars.forEach((star, i) => {
+      star.classList.toggle('hovered', i < val);
+    });
+  }
+
+  function setEditRating(val) {
+    editRatingValue = val;
+    const stars = document.querySelectorAll('#editStars .star');
+    stars.forEach((star, i) => {
+      star.classList.toggle('active', i < val);
+    });
+  }
+
+  async function saveEditRating() {
+    if (!db || !editRatingId || editRatingValue === 0) return;
+
+    const comment = document.getElementById('editComment').value.trim();
+
+    try {
+      await db.collection('bewertungen').doc(editRatingId).update({
+        rating: editRatingValue,
+        comment: comment,
+        updatedAt: Date.now(),
+        updatedByAdmin: true
+      });
+      alert('Bewertung aktualisiert!');
+      closeEditModal();
+    } catch(e) {
+      console.error('Fehler beim Speichern:', e);
+      alert('Fehler beim Speichern der Bewertung.');
+    }
+  }
+
+  async function deleteRating() {
+    if (!db || !editRatingId) return;
+
+    if (!confirm('Diese Bewertung wirklich löschen?')) return;
+
+    try {
+      await db.collection('bewertungen').doc(editRatingId).delete();
+      alert('Bewertung gelöscht!');
+      closeEditModal();
+    } catch(e) {
+      console.error('Fehler beim Löschen:', e);
+      alert('Fehler beim Löschen der Bewertung.');
+    }
+  }
+
+  loadRatings();
+</script>
+
+</body>
+</html>

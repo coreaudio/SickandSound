@@ -1,0 +1,736 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <title>Einkaufsliste – Sick & Sound</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#0b0e14" />
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="stylesheet" href="style.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;800&display=swap" rel="stylesheet" />
+  <style>
+    .shopping-list { display: flex; flex-direction: column; gap: 6px; }
+
+    .shopping-item {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 16px;
+      background: #1c2130;
+      border-radius: 14px;
+      border: 1px solid #2a3042;
+      transition: all 0.3s ease;
+      cursor: pointer;
+    }
+    .shopping-item:active {
+      transform: scale(0.98);
+    }
+    .shopping-item.checked {
+      opacity: 0.4;
+      background: #151a23;
+      transform: scale(0.98);
+    }
+    .shopping-item.checked .item-name {
+      text-decoration: line-through;
+    }
+    .shopping-item.removing {
+      animation: slideOut 0.4s ease forwards;
+    }
+    @keyframes slideOut {
+      0% { opacity: 1; transform: translateX(0); max-height: 80px; }
+      100% { opacity: 0; transform: translateX(100%); max-height: 0; padding: 0; margin: 0; border: none; }
+    }
+
+    /* Auto-Items (aus Vorräte) */
+    .shopping-item.auto {
+      background: linear-gradient(135deg, rgba(255, 107, 107, 0.15), rgba(255, 159, 67, 0.1));
+      border-color: rgba(255, 107, 107, 0.4);
+    }
+    .shopping-item.auto .item-source {
+      color: #ff6b6b;
+    }
+
+    /* Manuelle Items */
+    .shopping-item.manual {
+      background: linear-gradient(135deg, rgba(110, 231, 255, 0.1), rgba(167, 139, 250, 0.1));
+      border-color: rgba(110, 231, 255, 0.3);
+    }
+    .shopping-item.manual .item-source {
+      color: #6ee7ff;
+    }
+
+    .item-checkbox {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      border: 3px solid #4a5568;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      transition: all 0.2s;
+    }
+    .shopping-item.checked .item-checkbox {
+      background: linear-gradient(135deg, #7CFC9A, #6ee7ff);
+      border-color: transparent;
+    }
+    .item-checkbox svg {
+      width: 16px;
+      height: 16px;
+      opacity: 0;
+      color: #0b0e14;
+      transition: opacity 0.2s;
+    }
+    .shopping-item.checked .item-checkbox svg {
+      opacity: 1;
+    }
+
+    .item-info { flex: 1; min-width: 0; }
+    .item-name { font-weight: 800; font-size: 16px; margin-bottom: 2px; }
+    .item-meta { font-size: 12px; display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+    .item-source { font-weight: 600; }
+    .item-amount { opacity: 0.6; }
+
+    .item-quantity {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-shrink: 0;
+    }
+    .qty-badge {
+      min-width: 36px;
+      height: 36px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 10px;
+      font-size: 15px;
+      font-weight: 800;
+    }
+
+    /* Kategorie-Header */
+    .category-section {
+      margin-top: 16px;
+    }
+    .category-section:first-child {
+      margin-top: 0;
+    }
+    .category-header {
+      font-size: 11px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      color: #6ee7ff;
+      padding: 8px 4px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .category-header::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: linear-gradient(90deg, #2a3042, transparent);
+    }
+    .category-count {
+      background: rgba(110, 231, 255, 0.2);
+      padding: 2px 8px;
+      border-radius: 10px;
+      font-size: 10px;
+    }
+
+    /* Hinzufügen */
+    .add-section {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+    .add-input {
+      flex: 1;
+      padding: 14px 16px;
+      border-radius: 14px;
+      border: 2px solid #2a3042;
+      background: #0e1422;
+      color: #e6e8ef;
+      font-size: 15px;
+      font-weight: 600;
+    }
+    .add-input:focus {
+      border-color: #6ee7ff;
+      outline: none;
+    }
+    .add-input::placeholder {
+      color: #4a5568;
+      font-weight: 400;
+    }
+    .add-btn {
+      width: 52px;
+      height: 52px;
+      border-radius: 14px;
+      background: linear-gradient(135deg, #6ee7ff, #a78bfa);
+      color: #0b0e14;
+      font-size: 24px;
+      font-weight: 800;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: none;
+      cursor: pointer;
+      flex-shrink: 0;
+    }
+    .add-btn:active {
+      transform: scale(0.95);
+    }
+
+    /* Statistik */
+    .stats-bar {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+    .stat-pill {
+      flex: 1;
+      padding: 12px 16px;
+      background: #1c2130;
+      border-radius: 12px;
+      text-align: center;
+    }
+    .stat-pill.highlight {
+      background: linear-gradient(135deg, rgba(255, 107, 107, 0.2), rgba(255, 159, 67, 0.15));
+    }
+    .stat-number {
+      font-size: 24px;
+      font-weight: 800;
+    }
+    .stat-pill.highlight .stat-number {
+      color: #ff6b6b;
+    }
+    .stat-text {
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      opacity: 0.6;
+    }
+
+    /* Leerer Zustand */
+    .empty-state {
+      text-align: center;
+      padding: 60px 20px;
+    }
+    .empty-icon {
+      font-size: 64px;
+      margin-bottom: 16px;
+    }
+    .empty-title {
+      font-size: 18px;
+      font-weight: 800;
+      margin-bottom: 8px;
+    }
+    .empty-sub {
+      font-size: 14px;
+      opacity: 0.6;
+      max-width: 260px;
+      margin: 0 auto;
+    }
+
+    /* Quick-Actions */
+    .quick-actions {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-top: 12px;
+    }
+    .quick-btn {
+      padding: 10px 16px;
+      border-radius: 10px;
+      border: 1px solid #2a3042;
+      background: #1c2130;
+      color: #e6e8ef;
+      font-size: 13px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .quick-btn:active {
+      transform: scale(0.97);
+    }
+    .quick-btn.danger {
+      border-color: rgba(255, 107, 107, 0.4);
+      color: #ff6b6b;
+    }
+
+    /* Refresh-Hinweis */
+    .sync-info {
+      font-size: 11px;
+      opacity: 0.5;
+      text-align: center;
+      padding: 8px;
+    }
+    .sync-dot {
+      display: inline-block;
+      width: 6px;
+      height: 6px;
+      background: #7CFC9A;
+      border-radius: 50%;
+      margin-right: 6px;
+      animation: pulse 2s infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.3; }
+    }
+
+    /* Overlay für Vorräte */
+    .vorraete-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.9);
+      z-index: 100;
+      display: none;
+      flex-direction: column;
+    }
+    .vorraete-overlay.show {
+      display: flex;
+    }
+    .vorraete-header {
+      padding: 16px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: #151a23;
+      border-bottom: 1px solid #2a3042;
+    }
+    .vorraete-title {
+      font-size: 18px;
+      font-weight: 800;
+    }
+    .vorraete-close {
+      width: 40px;
+      height: 40px;
+      border-radius: 10px;
+      background: #2a3042;
+      border: none;
+      color: #fff;
+      font-size: 20px;
+      cursor: pointer;
+    }
+    .vorraete-content {
+      flex: 1;
+      overflow-y: auto;
+      padding: 16px;
+    }
+    .vorraete-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 14px 16px;
+      background: #1c2130;
+      border-radius: 12px;
+      margin-bottom: 8px;
+    }
+    .vorraete-item.low {
+      background: linear-gradient(135deg, rgba(255, 107, 107, 0.2), rgba(255, 159, 67, 0.15));
+      border: 1px solid rgba(255, 107, 107, 0.4);
+    }
+    .vorraete-info { flex: 1; }
+    .vorraete-name { font-weight: 700; font-size: 14px; }
+    .vorraete-stock { font-size: 12px; opacity: 0.6; }
+    .vorraete-stock-num {
+      font-size: 20px;
+      font-weight: 800;
+      min-width: 40px;
+      text-align: center;
+    }
+    .vorraete-item.low .vorraete-stock-num { color: #ff6b6b; }
+  </style>
+</head>
+<body>
+<div class="app">
+  <header class="appbar">
+    <div class="app-title">
+      <div class="brand-dot"></div>
+      <h1>Einkaufsliste</h1>
+    </div>
+    <div class="appbar-actions">
+      <button class="btn small" onclick="openVorraete()" title="Vorräte anzeigen">📦</button>
+      <button class="btn small dark" onclick="refreshList()" title="Aktualisieren">🔄</button>
+    </div>
+  </header>
+
+  <main class="content">
+    <!-- Statistik -->
+    <div class="stats-bar">
+      <div class="stat-pill highlight">
+        <div class="stat-number" id="openCount">0</div>
+        <div class="stat-text">Offen</div>
+      </div>
+      <div class="stat-pill">
+        <div class="stat-number" id="autoCount">0</div>
+        <div class="stat-text">Aus Vorräte</div>
+      </div>
+    </div>
+
+    <!-- Hinzufügen -->
+    <div class="add-section">
+      <input type="text" class="add-input" id="newItem" placeholder="Artikel hinzufügen..." onkeypress="if(event.key==='Enter')addManualItem()">
+      <button class="add-btn" onclick="addManualItem()">+</button>
+    </div>
+
+    <!-- Einkaufsliste -->
+    <div class="card" style="padding: 16px;">
+      <div class="shopping-list" id="shoppingList">
+        <div class="empty-state">
+          <div class="empty-icon">🛒</div>
+          <div class="empty-title">Alles erledigt!</div>
+          <div class="empty-sub">Keine Artikel auf der Einkaufsliste. Vorräte werden automatisch hinzugefügt.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="quick-actions">
+      <button class="quick-btn" onclick="openVorraete()">📦 Vorräte ansehen</button>
+      <button class="quick-btn danger" onclick="clearChecked()">✓ Erledigte entfernen</button>
+    </div>
+
+    <div class="sync-info">
+      <span class="sync-dot"></span>
+      Automatische Synchronisierung aktiv
+    </div>
+  </main>
+
+  <nav class="bottomnav" id="bottomNav"></nav>
+</div>
+
+<!-- Vorräte-Overlay -->
+<div class="vorraete-overlay" id="vorraeteOverlay">
+  <div class="vorraete-header">
+    <div class="vorraete-title">Vorräte-Übersicht</div>
+    <button class="vorraete-close" onclick="closeVorraete()">×</button>
+  </div>
+  <div class="vorraete-content" id="vorraeteContent">
+    <!-- Wird dynamisch gefüllt -->
+  </div>
+</div>
+
+<!-- Firebase -->
+<script src="https://www.gstatic.com/firebasejs/12.0.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/12.0.0/firebase-firestore-compat.js"></script>
+<script src="shared.js"></script>
+<script>
+  renderBottomNav('einkaufsliste');
+
+  // Daten
+  let inventory = [];
+  let manualItems = [];
+  let checkedItems = new Set(); // Temporär gecheckte Items
+
+  // Laden der Vorräte (automatische Items)
+  function loadInventory() {
+    if (!db) return;
+
+    db.collection('vorraete').onSnapshot(snap => {
+      inventory = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      inventory.sort((a, b) => {
+        const catA = (a.category || 'Sonstiges').toLowerCase();
+        const catB = (b.category || 'Sonstiges').toLowerCase();
+        if (catA !== catB) return catA.localeCompare(catB);
+        return (a.name || '').toLowerCase().localeCompare((b.name || '').toLowerCase());
+      });
+      renderList();
+      renderVorraete();
+    });
+  }
+
+  // Laden der manuellen Items
+  function loadManualItems() {
+    if (!db) return;
+
+    db.collection('einkaufsliste').onSnapshot(snap => {
+      manualItems = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      manualItems.sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0));
+      renderList();
+    });
+  }
+
+  // Liste rendern
+  function renderList() {
+    const list = document.getElementById('shoppingList');
+
+    // Niedrige Vorräte (automatisch hinzugefügt)
+    const lowStock = inventory.filter(item => item.stock <= item.minStock);
+
+    // Alle offenen Items (nicht gecheckt)
+    const openItems = [
+      ...lowStock.map(item => {
+        const orderQty = Math.max(1, (item.orderStock ?? item.minStock + 1) - item.stock);
+        return {
+          id: 'auto_' + item.id,
+          name: item.name,
+          type: 'auto',
+          category: item.category || 'Sonstiges',
+          amount: `${orderQty} ${item.unit || 'Stück'} kaufen`,
+          needAmount: orderQty,
+          itemRef: item
+        };
+      }),
+      ...manualItems.map(item => ({
+        id: 'manual_' + item.id,
+        name: item.name,
+        type: 'manual',
+        category: 'Manuell',
+        amount: item.amount || '',
+        itemRef: item
+      }))
+    ];
+
+    // Statistiken
+    const autoCount = lowStock.length;
+    const totalOpen = openItems.filter(item => !checkedItems.has(item.id)).length;
+    document.getElementById('openCount').textContent = totalOpen;
+    document.getElementById('autoCount').textContent = autoCount;
+
+    if (openItems.length === 0) {
+      list.innerHTML = `
+        <div class="empty-state">
+          <div class="empty-icon">🛒</div>
+          <div class="empty-title">Alles erledigt!</div>
+          <div class="empty-sub">Keine Artikel auf der Einkaufsliste. Vorräte werden automatisch hinzugefügt.</div>
+        </div>
+      `;
+      return;
+    }
+
+    // Nach Kategorie gruppieren
+    const grouped = {};
+    openItems.forEach(item => {
+      const cat = item.category;
+      if (!grouped[cat]) grouped[cat] = [];
+      grouped[cat].push(item);
+    });
+
+    // Kategorien sortieren: Manuell zuerst, dann alphabetisch
+    const sortedCategories = Object.keys(grouped).sort((a, b) => {
+      if (a === 'Manuell') return -1;
+      if (b === 'Manuell') return 1;
+      return a.localeCompare(b);
+    });
+
+    let html = '';
+    sortedCategories.forEach(category => {
+      const items = grouped[category];
+      const checkedCount = items.filter(i => checkedItems.has(i.id)).length;
+
+      html += `
+        <div class="category-section">
+          <div class="category-header">
+            ${category}
+            <span class="category-count">${items.length - checkedCount}/${items.length}</span>
+          </div>
+      `;
+
+      items.forEach(item => {
+        const isChecked = checkedItems.has(item.id);
+
+        html += `
+          <div class="shopping-item ${item.type} ${isChecked ? 'checked' : ''}"
+               data-id="${item.id}"
+               onclick="toggleItem('${item.id}')">
+            <div class="item-checkbox">
+              <svg viewBox="0 0 24 24" fill="currentColor">
+                <path d="M9 16.2l-3.5-3.5-1.4 1.4L9 19 20.3 7.7l-1.4-1.4z"/>
+              </svg>
+            </div>
+            <div class="item-info">
+              <div class="item-name">${item.name}</div>
+              <div class="item-meta">
+                <span class="item-source">${item.type === 'auto' ? 'Vorrat' : 'Manuell'}</span>
+                ${item.amount ? `<span class="item-amount">${item.amount}</span>` : ''}
+              </div>
+            </div>
+            ${item.needAmount ? `<div class="qty-badge">+${item.needAmount}</div>` : ''}
+          </div>
+        `;
+      });
+
+      html += '</div>';
+    });
+
+    list.innerHTML = html;
+  }
+
+  // Item abhaken/entfernen
+  function toggleItem(itemId) {
+    if (checkedItems.has(itemId)) {
+      // Bereits gecheckt - entfernen
+      removeItem(itemId);
+    } else {
+      // Noch nicht gecheckt - abhaken
+      checkedItems.add(itemId);
+
+      const el = document.querySelector(`[data-id="${itemId}"]`);
+      if (el) {
+        el.classList.add('checked');
+
+        // Nach kurzer Verzögerung entfernen
+        setTimeout(() => {
+          removeItem(itemId);
+        }, 600);
+      }
+    }
+    updateStats();
+  }
+
+  // Item entfernen
+  async function removeItem(itemId) {
+    const el = document.querySelector(`[data-id="${itemId}"]`);
+    if (el) {
+      el.classList.add('removing');
+    }
+
+    // Typ bestimmen
+    if (itemId.startsWith('auto_')) {
+      // Vorrats-Item: Bestand auffüllen
+      const vorratId = itemId.replace('auto_', '');
+      const item = inventory.find(i => i.id === vorratId);
+      if (item && db) {
+        // Bestand auf Bestellbestand setzen
+        const newStock = item.orderStock ?? Math.max(item.minStock + 1, item.stock + 1);
+        await db.collection('vorraete').doc(vorratId).update({
+          stock: newStock,
+          updatedAt: Date.now()
+        });
+        // Entsprechenden Hausdienst-Task löschen (bidirektionale Sync)
+        const taskSnap = await db.collection('hausdienst_tasks')
+          .where('autoCreated', '==', true)
+          .where('itemId', '==', vorratId)
+          .get();
+        taskSnap.forEach(doc => doc.ref.delete());
+      }
+    } else if (itemId.startsWith('manual_')) {
+      // Manuelles Item: Löschen
+      const manualId = itemId.replace('manual_', '');
+      if (db) {
+        await db.collection('einkaufsliste').doc(manualId).delete();
+      }
+    }
+
+    checkedItems.delete(itemId);
+
+    // UI nach Animation aktualisieren
+    setTimeout(() => {
+      renderList();
+    }, 400);
+  }
+
+  // Manuelles Item hinzufügen
+  async function addManualItem() {
+    const input = document.getElementById('newItem');
+    const name = input.value.trim();
+
+    if (!name) return;
+    if (!db) return alert('Offline - kann nicht speichern');
+
+    await db.collection('einkaufsliste').add({
+      name,
+      createdAt: Date.now()
+    });
+
+    input.value = '';
+    input.focus();
+  }
+
+  // Alle erledigten entfernen
+  function clearChecked() {
+    checkedItems.forEach(id => {
+      removeItem(id);
+    });
+    checkedItems.clear();
+  }
+
+  // Statistiken aktualisieren
+  function updateStats() {
+    const lowStock = inventory.filter(item => item.stock <= item.minStock);
+    const totalItems = lowStock.length + manualItems.length;
+    const openCount = totalItems - checkedItems.size;
+
+    document.getElementById('openCount').textContent = Math.max(0, openCount);
+    document.getElementById('autoCount').textContent = lowStock.length;
+  }
+
+  // Liste manuell aktualisieren
+  function refreshList() {
+    checkedItems.clear();
+    renderList();
+  }
+
+  // Vorräte-Overlay
+  function openVorraete() {
+    renderVorraete();
+    document.getElementById('vorraeteOverlay').classList.add('show');
+  }
+
+  function closeVorraete() {
+    document.getElementById('vorraeteOverlay').classList.remove('show');
+  }
+
+  function renderVorraete() {
+    const content = document.getElementById('vorraeteContent');
+
+    if (inventory.length === 0) {
+      content.innerHTML = `
+        <div class="empty-state" style="color:#fff">
+          <div class="empty-icon">📦</div>
+          <div class="empty-title">Keine Vorräte</div>
+          <div class="empty-sub">Füge Vorräte über die Vorräte-Seite hinzu.</div>
+        </div>
+      `;
+      return;
+    }
+
+    // Nach Kategorie gruppieren
+    const grouped = {};
+    inventory.forEach(item => {
+      const cat = item.category || 'Sonstiges';
+      if (!grouped[cat]) grouped[cat] = [];
+      grouped[cat].push(item);
+    });
+
+    let html = '';
+    Object.keys(grouped).sort().forEach(category => {
+      html += `<div class="category-header" style="color:#6ee7ff">${category}</div>`;
+
+      grouped[category].forEach(item => {
+        const isLow = item.stock <= item.minStock;
+        html += `
+          <div class="vorraete-item ${isLow ? 'low' : ''}">
+            <div class="vorraete-info">
+              <div class="vorraete-name">${item.name}</div>
+              <div class="vorraete-stock">Min: ${item.minStock} ${item.unit || ''}</div>
+            </div>
+            <div class="vorraete-stock-num">${item.stock}</div>
+          </div>
+        `;
+      });
+    });
+
+    content.innerHTML = html;
+  }
+
+  // Initialisierung
+  loadInventory();
+  loadManualItems();
+
+  // Sichtbarkeits-Handler für Aktualisierung
+  document.addEventListener('visibilitychange', () => {
+    if (!document.hidden) {
+      refreshList();
+    }
+  });
+</script>
+</body>
+</html>

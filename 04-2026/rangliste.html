@@ -1,0 +1,596 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <title>Sick & Sound – Rangliste</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#0b0e14" />
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="stylesheet" href="style.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;800&display=swap" rel="stylesheet" />
+  <style>
+    .rank-table td,.rank-table th{ padding:10px 8px; }
+    .lvl-ring{ width:46px; height:46px; position:relative; display:inline-grid; place-items:center; }
+    .lvl-ring .val{ position:absolute; font-size:11px; font-weight:800; line-height:1; }
+    .subtle{ opacity:.75 }
+    .pill{ padding:6px 10px; border-radius:999px; background:#1c2130; border:1px solid #2a3042; }
+    .ok{ color:#7CFC9A }
+    
+    /* Admin-Modus Stile */
+    .admin-indicator {
+      background-color: #ff6b6b;
+      padding: 4px 8px;
+      border-radius: 4px;
+      margin-left: 8px;
+      font-size: 12px;
+    }
+    
+    .admin-controls {
+      background: rgba(255, 107, 107, 0.1);
+      border: 1px solid rgba(255, 107, 107, 0.3);
+      border-radius: 12px;
+      padding: 12px;
+      margin: 15px 0;
+    }
+    
+    .edit-mode .editable {
+      cursor: pointer;
+      position: relative;
+    }
+    
+    .edit-mode .editable:hover::after {
+      content: '✎';
+      position: absolute;
+      right: 5px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: #6ee7ff;
+      font-size: 14px;
+    }
+    
+    .edit-form {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      margin-top: 10px;
+    }
+    
+    .edit-form input {
+      padding: 8px 12px;
+      border-radius: 8px;
+      border: 1px solid rgba(255,255,255,0.1);
+      background: #0e1422;
+      color: #fff;
+      width: 100px;
+    }
+
+    .hd-requirements-form {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+      gap: 8px;
+      margin-top: 10px;
+    }
+    .hd-req-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 10px;
+      background: #0e1422;
+      border-radius: 8px;
+      border: 1px solid #2a3042;
+    }
+    .hd-req-item label {
+      flex: 1;
+      font-size: 13px;
+    }
+    .hd-req-item input {
+      width: 50px;
+      padding: 4px 8px;
+      border-radius: 6px;
+      border: 1px solid #2a3042;
+      background: #1c2130;
+      color: #fff;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+<div class="app">
+  <header class="appbar">
+    <div class="app-title"><div class="brand-dot"></div><h1>Rangliste</h1></div>
+    <div class="appbar-actions">
+      <span class="sub"><span class="statusdot" id="dot"></span><span id="connTxt">Verbinde…</span></span>
+      <button class="btn small warning" id="adminBtn" onclick="toggleAdminMode()" title="Admin-Modus">🔧</button>
+    </div>
+  </header>
+
+  <main class="content">
+    <div class="card">
+      <div class="section-title">Übersicht</div>
+      <div class="sub subtle">Zwei Ranglisten: Hausdienste (Wochentag=1, Wochenende=0.5) und Gesamtsumme (Level basiert auf XP).</div>
+      
+      <div id="adminIndicator" class="admin-indicator" style="display:none;">Admin-Modus</div>
+      
+      <div id="adminControls" class="admin-controls" style="display:none;">
+        <div class="section-title">Admin-Bereich</div>
+
+        <div class="sub subtle" style="margin-top:10px">Gesamt-XP bearbeiten</div>
+        <div class="edit-form">
+          <select id="xpPersonSelect">
+            <option value="">Person auswählen</option>
+          </select>
+          <input type="number" id="xpEditValue" step="0.01" min="0" placeholder="Neue XP">
+          <button class="btn small" onclick="updateXp()">Aktualisieren</button>
+        </div>
+
+        <div class="sub subtle" style="margin-top:15px">Hausdienst-Anforderungen pro Monat</div>
+        <div id="hdRequirementsForm" class="hd-requirements-form"></div>
+        <button class="btn small" style="margin-top:10px" onclick="saveHdRequirements()">Anforderungen speichern</button>
+      </div>
+    </div>
+
+    <div class="card table-wrap" id="hausdienstRankWrap">
+      <div class="section-title">🏠 Hausdienst-Rangliste</div>
+      <div class="sub">Lade Rangliste…</div>
+    </div>
+
+    <div class="card table-wrap" id="xpRankWrap">
+      <div class="section-title">💰 Gesamtsumme-Rangliste</div>
+      <div class="sub">Lade Rangliste…</div>
+    </div>
+
+    <div class="card table-wrap" id="fehlstandWrap">
+      <div class="section-title">📊 Hausdienst-Fehlstand</div>
+      <div class="sub">Nicht erledigte Hausdienste pro Monat (ab Januar 2026). ✓ = alle erledigt, Zahl = fehlende Hausdienste.</div>
+      <div id="fehlstandContent" class="sub" style="margin-top:10px">Lade Daten…</div>
+    </div>
+  </main>
+
+  <nav class="bottomnav" id="bottomNav"></nav>
+</div>
+
+<!-- Firebase -->
+<script src="https://www.gstatic.com/firebasejs/12.0.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/12.0.0/firebase-firestore-compat.js"></script>
+<script src="shared.js"></script>
+<script>
+  let prices={}, data={}, xp={}, people=[];
+  let hausdienstCounts = {}; // Hausdienst-Zählung pro Person (gesamt)
+  let hausdienstByMonth = {}; // Hausdienst-Zählung pro Person pro Monat: {month: {person: count}}
+  let hdRequirements = {}; // Individuelle Hausdienst-Anforderungen pro Person: {person: anzahl}
+  let adminMode = false;
+  const HD_DEFAULT_REQUIRED = 3; // Standard-Anforderung pro Monat
+
+  // Gibt die Anforderung für eine Person zurück (0 = befreit)
+  function getHdRequired(person) {
+    if (hdRequirements.hasOwnProperty(person)) {
+      return hdRequirements[person];
+    }
+    return HD_DEFAULT_REQUIRED;
+  }
+
+  // Hausdienst-Zählung laden (Wochenende = 0.5, Wochentag = 1)
+  async function loadHausdienstCounts(){
+    if(!db) return;
+    try {
+      const snap = await db.collection("hausdienst").get();
+      hausdienstCounts = {};
+      hausdienstByMonth = {};
+
+      snap.forEach(doc => {
+        const person = doc.data().person;
+        if(!person) return;
+
+        // Prüfen ob das Datum ein Wochenende ist
+        const dateStr = doc.id; // Format: YYYY-MM-DD
+        const date = new Date(dateStr);
+        const dayOfWeek = date.getDay(); // 0 = Sonntag, 6 = Samstag
+        const isWeekend = (dayOfWeek === 0 || dayOfWeek === 6);
+        const month = dateStr.slice(0, 7); // YYYY-MM
+
+        // Wochenende = 0.5, Wochentag = 1
+        const points = isWeekend ? 0.5 : 1;
+
+        // Gesamt-Zählung
+        hausdienstCounts[person] = (hausdienstCounts[person] || 0) + points;
+
+        // Monatliche Zählung
+        if(!hausdienstByMonth[month]) hausdienstByMonth[month] = {};
+        hausdienstByMonth[month][person] = (hausdienstByMonth[month][person] || 0) + points;
+      });
+    } catch(e) {
+      console.error("Fehler beim Laden der Hausdienst-Zählung:", e);
+    }
+  }
+
+  function ring(xpVal, label){
+    const x=+xpVal||0, lvl=levelOf(x);
+    const min=75*(lvl-1)*(lvl-1), max=75*lvl*lvl, p=Math.max(0,Math.min(1,(x-min)/(max-min)));
+    const r=20, c=2*Math.PI*r, off=(1-p)*c, gid="g"+(label||"x")+lvl;
+    return `<div class="lvl-ring" title="Level ${lvl}">
+      <svg viewBox="0 0 48 48" style="transform:rotate(-90deg)" width="100%" height="100%">
+        <defs><linearGradient id="${gid}" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0%" stop-color="#6ee7ff"/><stop offset="100%" stop-color="#a78bfa"/></linearGradient></defs>
+        <circle cx="24" cy="24" r="${r}" stroke="#2a3042" stroke-width="6" fill="none"></circle>
+        <circle cx="24" cy="24" r="${r}" stroke="url(#${gid})" stroke-width="6" stroke-linecap="round" fill="none"
+                stroke-dasharray="${c}" stroke-dashoffset="${off}"></circle>
+      </svg>
+      <div class="val">Lv.${lvl}</div>
+    </div>`;
+  }
+
+  function currentValueOf(person){
+    const keys = Object.keys(prices||{});
+    return keys.reduce((sum,k)=> sum + ( (data[`${person}_${k}`]||0) * (Number(prices[k])||0) ), 0);
+  }
+
+  function render(){
+    const hdWrap = document.getElementById('hausdienstRankWrap');
+    const xpWrap = document.getElementById('xpRankWrap');
+    const names = [...new Set([...(people||[]), ...Object.keys(xp||{})])];
+
+    if(!names.length){
+      hdWrap.innerHTML = '<div class="section-title">🏠 Hausdienst-Rangliste</div><div class="sub">Keine Daten.</div>';
+      xpWrap.innerHTML = '<div class="section-title">💰 Gesamtsumme-Rangliste</div><div class="sub">Keine Daten.</div>';
+      return;
+    }
+
+    // Daten für alle Personen sammeln
+    const personData = names
+      .filter(n=>CORE.includes(n) || !n.startsWith('_'))
+      .map(n=>{
+        const base = Number(xp[n]||0);
+        const today = currentValueOf(n);
+        const total = base + today;
+        const hdCount = hausdienstCounts[n] || 0;
+        return { n, base, today, total, lvl: levelOf(total), hdCount };
+      });
+
+    // Hausdienst-Rangliste (sortiert nach Hausdienst-Anzahl, nur Kernteam)
+    const hdRows = [...personData]
+      .filter(r => CORE.includes(r.n))
+      .sort((a,b)=> b.hdCount - a.hdCount)
+      .map((r,i)=>`
+        <tr>
+          <td class="subtle">#${i+1}</td>
+          <td><b>${r.n}</b></td>
+          <td class="right"><b>${r.hdCount % 1 === 0 ? r.hdCount : r.hdCount.toFixed(1)}</b></td>
+        </tr>
+      `).join('');
+
+    hdWrap.innerHTML = `
+      <div class="section-title">🏠 Hausdienst-Rangliste</div>
+      <table class="rank-table">
+        <thead>
+          <tr><th></th><th>Person</th><th class="right">Hausdienste</th></tr>
+        </thead>
+        <tbody>${hdRows}</tbody>
+      </table>`;
+
+    // Gesamtsumme-Rangliste (sortiert nach Gesamtsumme)
+    const xpRows = [...personData]
+      .sort((a,b)=> b.total - a.total)
+      .map((r,i)=>{
+        const editClass = adminMode ? 'editable' : '';
+        const editHandler = adminMode ? `ondblclick="editXp('${r.n}')"` : '';
+
+        return `
+        <tr>
+          <td class="subtle">#${i+1}</td>
+          <td style="display:flex;align-items:center;gap:10px">
+            ${ring(r.total, r.n)} <b>${r.n}</b>
+          </td>
+          <td class="right">${r.base.toFixed(2)}€</td>
+          <td class="right">${r.today.toFixed(2)}€</td>
+          <td class="right ${editClass}" ${editHandler}><b>${r.total.toFixed(2)}€</b></td>
+        </tr>
+      `}).join('');
+
+    xpWrap.innerHTML = `
+      <div class="section-title">💰 Gesamtsumme-Rangliste</div>
+      <table class="rank-table">
+        <thead>
+          <tr><th></th><th>Person</th><th class="right">XP bisher</th><th class="right">Heute</th><th class="right">Gesamt</th></tr>
+        </thead>
+        <tbody>${xpRows}</tbody>
+      </table>`;
+
+    // Personen-Dropdown für Admin-Bereich füllen
+    if (adminMode) {
+      const select = document.getElementById('xpPersonSelect');
+      select.innerHTML = '<option value="">Person auswählen</option>';
+
+      names
+        .filter(n => CORE.includes(n) || !n.startsWith('_'))
+        .sort()
+        .forEach(n => {
+          const option = document.createElement('option');
+          option.value = n;
+          option.textContent = n;
+          select.appendChild(option);
+        });
+    }
+  }
+
+  // Fehlstand-Übersicht rendern (nicht erledigte Hausdienste pro Monat)
+  function renderFehlstand() {
+    const container = document.getElementById('fehlstandContent');
+    if (!container) return;
+
+    const currentMonth = new Date().toISOString().slice(0, 7);
+    const START_MONTH = '2026-01'; // Ab Januar 2026 starten
+
+    // Alle Monate ab Januar 2026 bis zum letzten abgeschlossenen Monat
+    const allMonths = Object.keys(hausdienstByMonth).sort();
+    const pastMonths = allMonths.filter(m => m >= START_MONTH && m < currentMonth);
+
+    // Kernteam-Mitglieder (nur mit Anforderung > 0)
+    const relevantCore = CORE.filter(p => getHdRequired(p) > 0).sort();
+
+    if (pastMonths.length === 0) {
+      container.innerHTML = '<div style="opacity:0.6;padding:10px">Noch keine abgeschlossenen Monate ab Januar 2026 vorhanden.</div>';
+      return;
+    }
+
+    // Fehlstand berechnen pro Person
+    const fehlstandTotal = {}; // {person: totalMissed}
+    const fehlstandByMonth = {}; // {month: {person: missed}}
+
+    // Initialisiere Totals
+    relevantCore.forEach(person => { fehlstandTotal[person] = 0; });
+
+    pastMonths.forEach(month => {
+      fehlstandByMonth[month] = {};
+      const monthData = hausdienstByMonth[month] || {};
+
+      relevantCore.forEach(person => {
+        const done = monthData[person] || 0;
+        const required = getHdRequired(person);
+        const missed = Math.max(0, required - done);
+        fehlstandByMonth[month][person] = missed;
+        fehlstandTotal[person] += missed;
+      });
+    });
+
+    // Monatsnamen formatieren
+    const formatMonth = (m) => {
+      const [year, month] = m.split('-');
+      const monthNames = ['Jan', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun', 'Jul', 'Aug', 'Sep', 'Okt', 'Nov', 'Dez'];
+      return `${monthNames[parseInt(month) - 1]} ${year}`;
+    };
+
+    // Tabelle erstellen: Personen als Spalten, Monate als Zeilen
+    let html = `<table class="rank-table" style="margin-top:10px">
+      <thead>
+        <tr>
+          <th>Monat</th>
+          ${relevantCore.map(p => `<th class="right" style="font-size:12px"><b>${p}</b></th>`).join('')}
+        </tr>
+      </thead>
+      <tbody>`;
+
+    // Zeilen für jeden Monat (chronologisch, älteste zuerst)
+    pastMonths.forEach(month => {
+      html += `<tr>
+        <td><b>${formatMonth(month)}</b></td>`;
+
+      relevantCore.forEach(person => {
+        const missed = fehlstandByMonth[month][person] || 0;
+        const cellStyle = missed > 0 ? 'color:#ff6b6b;font-weight:800' : 'opacity:0.5';
+        html += `<td class="right" style="${cellStyle}">${missed > 0 ? missed : '✓'}</td>`;
+      });
+
+      html += `</tr>`;
+    });
+
+    // Gesamt-Zeile
+    html += `<tr style="background:#2a3042;font-weight:800">
+      <td><b>Gesamt</b></td>`;
+
+    relevantCore.forEach(person => {
+      const total = fehlstandTotal[person] || 0;
+      const totalStyle = total > 0 ? 'color:#ff6b6b' : 'color:#7CFC9A';
+      html += `<td class="right" style="${totalStyle}"><b>${total}</b></td>`;
+    });
+
+    html += `</tr></tbody></table>`;
+
+    container.innerHTML = html;
+  }
+
+  function toggleAdminMode() {
+    if (adminMode) {
+      adminMode = false;
+      document.getElementById('adminIndicator').style.display = 'none';
+      document.getElementById('adminControls').style.display = 'none';
+      document.body.classList.remove('edit-mode');
+      document.getElementById('adminBtn').textContent = '🔧';
+      render();
+      renderFehlstand();
+      return;
+    }
+    
+    const password = prompt("Admin-Passwort eingeben:");
+    if (password === ADMIN_PASSWORD) {
+      adminMode = true;
+      document.getElementById('adminIndicator').style.display = 'inline-block';
+      document.getElementById('adminControls').style.display = 'block';
+      document.body.classList.add('edit-mode');
+      document.getElementById('adminBtn').textContent = '🔧✓';
+      render();
+      renderFehlstand();
+      renderHdRequirementsForm();
+    } else {
+      alert("Falsches Passwort");
+    }
+  }
+
+  // HD-Anforderungen Formular rendern
+  function renderHdRequirementsForm() {
+    const container = document.getElementById('hdRequirementsForm');
+    if (!container) return;
+
+    container.innerHTML = CORE.map(person => {
+      const req = getHdRequired(person);
+      return `
+        <div class="hd-req-item">
+          <label>${person}</label>
+          <input type="number" min="0" max="10" step="1" value="${req}"
+                 data-person="${person}" onchange="updateHdRequirementPreview(this)">
+        </div>
+      `;
+    }).join('');
+  }
+
+  function updateHdRequirementPreview(input) {
+    // Optional: Live-Vorschau (aktuell nur visuelles Feedback)
+    const value = parseInt(input.value) || 0;
+    input.style.borderColor = value === 0 ? '#7CFC9A' : '#2a3042';
+  }
+
+  function saveHdRequirements() {
+    const inputs = document.querySelectorAll('#hdRequirementsForm input[data-person]');
+    const newRequirements = {};
+
+    inputs.forEach(input => {
+      const person = input.dataset.person;
+      const value = parseInt(input.value) || 0;
+      newRequirements[person] = value;
+    });
+
+    hdRequirements = newRequirements;
+
+    // In Firebase speichern
+    if (db) {
+      db.collection(STATE_COLLECTION).doc('global').set({ hdRequirements }, { merge: true })
+        .then(() => {
+          alert("Hausdienst-Anforderungen gespeichert!");
+          renderFehlstand();
+        })
+        .catch(err => {
+          console.error("Fehler beim Speichern:", err);
+          alert("Fehler beim Speichern");
+        });
+    } else {
+      localStorage.setItem(hdRequirementsKey, JSON.stringify(hdRequirements));
+      alert("Anforderungen lokal gespeichert (Offline-Modus)");
+      renderFehlstand();
+    }
+  }
+
+  function editXp(person) {
+    if (!adminMode) return;
+    
+    // Person im Dropdown auswählen
+    document.getElementById('xpPersonSelect').value = person;
+    
+    // Aktuellen Gesamtwert in das Eingabefeld setzen
+    const base = Number(xp[person] || 0);
+    const today = currentValueOf(person);
+    const total = base + today;
+    
+    document.getElementById('xpEditValue').value = total.toFixed(2);
+    
+    // Scroll to admin controls
+    document.getElementById('adminControls').scrollIntoView({ behavior: 'smooth' });
+  }
+  
+  function updateXp() {
+    if (!adminMode) return;
+    
+    const person = document.getElementById('xpPersonSelect').value;
+    const newTotal = parseFloat(document.getElementById('xpEditValue').value);
+    
+    if (!person || isNaN(newTotal) || newTotal < 0) {
+      alert("Bitte gültige Werte eingeben");
+      return;
+    }
+    
+    // Berechne neuen Basis-XP-Wert (Gesamt minus heutiger Wert)
+    const todayValue = currentValueOf(person);
+    const newBaseXp = newTotal - todayValue;
+    
+    if (newBaseXp < 0) {
+      if (!confirm(`Achtung: Der neue Basis-XP-Wert (${newBaseXp.toFixed(2)}€) wäre negativ. Trotzdem fortfahren?`)) {
+        return;
+      }
+    }
+    
+    // Bestätigung einholen
+    if (!confirm(`${person}s XP von ${(xp[person] || 0).toFixed(2)}€ auf ${newBaseXp.toFixed(2)}€ ändern?`)) {
+      return;
+    }
+    
+    // XP-Wert aktualisieren
+    xp[person] = newBaseXp;
+    
+    // In Firebase speichern
+    if (db) {
+      db.collection(STATE_COLLECTION).doc('global').set({ xp }, { merge: true })
+        .then(() => {
+          alert("XP erfolgreich aktualisiert!");
+          render();
+        })
+        .catch(error => {
+          console.error("Fehler beim Speichern:", error);
+          alert("Fehler beim Speichern der Änderungen");
+        });
+    } else {
+      // Offline: Nur lokal speichern
+      localStorage.setItem('sick_sound_xp', JSON.stringify(xp));
+      alert("XP lokal aktualisiert (Offline-Modus)");
+      render();
+    }
+  }
+
+  (async function init(){
+    renderBottomNav('rangliste');
+    if(!db){
+      document.getElementById('connTxt').textContent='Offline – Firebase konnte nicht initialisiert werden.';
+      prices = JSON.parse(localStorage.getItem(pricesKey) || '{}');
+      data = JSON.parse(localStorage.getItem(dataKey) || '{}');
+      xp = JSON.parse(localStorage.getItem(xpKey) || '{}');
+      people = JSON.parse(localStorage.getItem(peopleKey) || '[]');
+      hdRequirements = JSON.parse(localStorage.getItem(hdRequirementsKey) || '{}');
+      render();
+      renderFehlstand();
+      return;
+    }
+    document.getElementById('dot').classList.add('statusok');
+    document.getElementById('connTxt').textContent='Online (Firestore verbunden)';
+
+    // Hausdienst-Zählung laden
+    await loadHausdienstCounts();
+
+    db.collection(STATE_COLLECTION).doc('global').onSnapshot(snap=>{
+      if(!snap.exists) return;
+      const s=snap.data()||{};
+      prices = s.prices || {};
+      data   = s.data   || {};
+      xp     = s.xp     || {};
+      people = s.people || [];
+      // Kernteam aus Firebase laden
+      if(s.core && Array.isArray(s.core) && s.core.length > 0) {
+        CORE = s.core;
+      }
+      // HD-Anforderungen laden
+      if(s.hdRequirements) {
+        hdRequirements = s.hdRequirements;
+      }
+      render();
+      renderFehlstand();
+    });
+
+    // Echtzeit-Updates für Hausdienst
+    db.collection("hausdienst").onSnapshot(async () => {
+      await loadHausdienstCounts();
+      render();
+      renderFehlstand();
+    });
+  })();
+</script>
+
+</body>
+</html>
