@@ -587,15 +587,35 @@
 <!-- Betrag-Verrechnen-Modal -->
 <div class="modal" id="splitModal"><div class="box modal-content">
   <h2>💰 Betrag verrechnen</h2>
-  <div class="sub" style="margin-bottom:12px">Betrag gleichmäßig auf ausgewählte Personen aufteilen und als Buchung eintragen.</div>
-  <label style="display:block;font-size:13px;opacity:.8;margin-bottom:4px">Gesamtbetrag (€)</label>
-  <input id="splitAmount" type="number" step="0.5" min="0.5" placeholder="z.B. 10.00" oninput="updateSplitCalc()">
-  <label style="display:block;font-size:13px;opacity:.8;margin:12px 0 6px">Personen auswählen</label>
+  <!-- Tab switcher -->
+  <div style="display:flex;gap:6px;margin-bottom:14px">
+    <button class="btn small" id="splitTabSplit" onclick="setSplitTab('split')" style="flex:1">Aufteilen</button>
+    <button class="btn small dark" id="splitTabManual" onclick="setSplitTab('manual')" style="flex:1">Pro Person</button>
+  </div>
+  <label style="display:block;font-size:13px;opacity:.8;margin-bottom:6px">Personen auswählen</label>
   <div id="splitPersonList" style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px"></div>
-  <div id="splitInfo" class="sub" style="margin:8px 0;min-height:1.4em;font-weight:700;color:#6ee7ff"></div>
-  <div style="display:flex;gap:10px;margin-top:10px">
-    <button class="btn" onclick="confirmSplit()">Verrechnen</button>
-    <button class="btn dark" onclick="closeModal('splitModal')">Abbrechen</button>
+
+  <!-- Section: Aufteilen -->
+  <div id="splitSectionSplit">
+    <div class="sub" style="margin-bottom:12px">Gesamtbetrag gleichmäßig auf ausgewählte Personen aufteilen.</div>
+    <label style="display:block;font-size:13px;opacity:.8;margin-bottom:4px">Gesamtbetrag (€)</label>
+    <input id="splitAmount" type="number" step="0.5" min="0.5" placeholder="z.B. 10.00" oninput="updateSplitCalc()">
+    <div id="splitInfo" class="sub" style="margin:8px 0;min-height:1.4em;font-weight:700;color:#6ee7ff"></div>
+    <div style="display:flex;gap:10px;margin-top:10px">
+      <button class="btn" onclick="confirmSplit()">Verrechnen</button>
+      <button class="btn dark" onclick="closeModal('splitModal')">Abbrechen</button>
+    </div>
+  </div>
+
+  <!-- Section: Pro Person -->
+  <div id="splitSectionManual" style="display:none">
+    <div class="sub" style="margin-bottom:12px">Fixen Betrag direkt zu jeder ausgewählten Person hinzufügen.</div>
+    <label style="display:block;font-size:13px;opacity:.8;margin-bottom:4px">Betrag pro Person (€)</label>
+    <input id="manualAmount" type="number" step="0.5" min="0.5" placeholder="z.B. 5.00">
+    <div style="display:flex;gap:10px;margin-top:10px">
+      <button class="btn" onclick="confirmManualCharge()">Hinzufügen</button>
+      <button class="btn dark" onclick="closeModal('splitModal')">Abbrechen</button>
+    </div>
   </div>
 </div></div>
 
@@ -1663,10 +1683,19 @@ function applyMonthlyFeeIfNeeded() {
 /* ===== Betrag verrechnen ===== */
 let splitSelected = new Set();
 
+function setSplitTab(tab) {
+  document.getElementById('splitSectionSplit').style.display   = tab === 'split'  ? '' : 'none';
+  document.getElementById('splitSectionManual').style.display  = tab === 'manual' ? '' : 'none';
+  document.getElementById('splitTabSplit').className  = tab === 'split'  ? 'btn small'      : 'btn small dark';
+  document.getElementById('splitTabManual').className = tab === 'manual' ? 'btn small'      : 'btn small dark';
+}
+
 function openSplitModal() {
   splitSelected = new Set();
   document.getElementById('splitAmount').value = '';
   document.getElementById('splitInfo').textContent = '';
+  document.getElementById('manualAmount').value = '';
+  setSplitTab('split');
   const list = document.getElementById('splitPersonList');
   list.innerHTML = people.map(p =>
     `<button class="btn small dark split-pill" onclick="toggleSplitPerson(this)" data-person="${p.replace(/"/g,'&quot;')}">${p}</button>`
@@ -1805,6 +1834,26 @@ function confirmSplit() {
     entries.push({person, date: today, amount: perPerson});
   });
   history.push({type:'split', entries, totalAmount: amount});
+  redoStack=[];
+  updateUndoRedoButtons();
+  saveAll();
+  buildTable();
+  closeModal('splitModal');
+  sClick.play();
+}
+
+function confirmManualCharge() {
+  const amount = parseFloat(document.getElementById('manualAmount').value);
+  if (!amount || amount <= 0) { sError.play(); return alert('Bitte einen gültigen Betrag eingeben.'); }
+  if (splitSelected.size === 0) { sError.play(); return alert('Bitte mindestens eine Person auswählen.'); }
+  const today = new Date().toLocaleDateString("de-DE");
+  const entries = [];
+  splitSelected.forEach(person => {
+    if (!Array.isArray(manualCharges[person])) manualCharges[person] = [];
+    manualCharges[person].push({date: today, amount});
+    entries.push({person, date: today, amount});
+  });
+  history.push({type:'split', entries, totalAmount: amount * splitSelected.size});
   redoStack=[];
   updateUndoRedoButtons();
   saveAll();

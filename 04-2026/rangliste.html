@@ -131,20 +131,15 @@
       </div>
     </div>
 
-    <div class="card table-wrap" id="hausdienstRankWrap">
-      <div class="section-title">🏠 Hausdienst-Rangliste</div>
-      <div class="sub">Lade Rangliste…</div>
+    <div class="card table-wrap" id="fehlstandWrap">
+      <div class="section-title">📊 Hausdienst-Fehlstand</div>
+      <div class="sub">Nicht erledigte Hausdienste pro Monat (ab Januar 2026). ✓ = alle erledigt, Zahl = fehlende Hausdienste.</div>
+      <div id="fehlstandContent" class="sub" style="margin-top:10px">Lade Daten…</div>
     </div>
 
     <div class="card table-wrap" id="xpRankWrap">
       <div class="section-title">💰 Gesamtsumme-Rangliste</div>
       <div class="sub">Lade Rangliste…</div>
-    </div>
-
-    <div class="card table-wrap" id="fehlstandWrap">
-      <div class="section-title">📊 Hausdienst-Fehlstand</div>
-      <div class="sub">Nicht erledigte Hausdienste pro Monat (ab Januar 2026). ✓ = alle erledigt, Zahl = fehlende Hausdienste.</div>
-      <div id="fehlstandContent" class="sub" style="margin-top:10px">Lade Daten…</div>
     </div>
   </main>
 
@@ -227,12 +222,10 @@
   }
 
   function render(){
-    const hdWrap = document.getElementById('hausdienstRankWrap');
     const xpWrap = document.getElementById('xpRankWrap');
     const names = [...new Set([...(people||[]), ...Object.keys(xp||{})])];
 
     if(!names.length){
-      hdWrap.innerHTML = '<div class="section-title">🏠 Hausdienst-Rangliste</div><div class="sub">Keine Daten.</div>';
       xpWrap.innerHTML = '<div class="section-title">💰 Gesamtsumme-Rangliste</div><div class="sub">Keine Daten.</div>';
       return;
     }
@@ -244,30 +237,8 @@
         const base = Number(xp[n]||0);
         const today = currentValueOf(n);
         const total = base + today;
-        const hdCount = hausdienstCounts[n] || 0;
-        return { n, base, today, total, lvl: levelOf(total), hdCount };
+        return { n, base, today, total };
       });
-
-    // Hausdienst-Rangliste (sortiert nach Hausdienst-Anzahl, nur Kernteam)
-    const hdRows = [...personData]
-      .filter(r => CORE.includes(r.n))
-      .sort((a,b)=> b.hdCount - a.hdCount)
-      .map((r,i)=>`
-        <tr>
-          <td class="subtle">#${i+1}</td>
-          <td><b>${r.n}</b></td>
-          <td class="right"><b>${r.hdCount % 1 === 0 ? r.hdCount : r.hdCount.toFixed(1)}</b></td>
-        </tr>
-      `).join('');
-
-    hdWrap.innerHTML = `
-      <div class="section-title">🏠 Hausdienst-Rangliste</div>
-      <table class="rank-table">
-        <thead>
-          <tr><th></th><th>Person</th><th class="right">Hausdienste</th></tr>
-        </thead>
-        <tbody>${hdRows}</tbody>
-      </table>`;
 
     // Gesamtsumme-Rangliste (sortiert nach Gesamtsumme)
     const xpRows = [...personData]
@@ -275,15 +246,10 @@
       .map((r,i)=>{
         const editClass = adminMode ? 'editable' : '';
         const editHandler = adminMode ? `ondblclick="editXp('${r.n}')"` : '';
-
         return `
         <tr>
           <td class="subtle">#${i+1}</td>
-          <td style="display:flex;align-items:center;gap:10px">
-            ${ring(r.total, r.n)} <b>${r.n}</b>
-          </td>
-          <td class="right">${r.base.toFixed(2)}€</td>
-          <td class="right">${r.today.toFixed(2)}€</td>
+          <td><b>${r.n}</b></td>
           <td class="right ${editClass}" ${editHandler}><b>${r.total.toFixed(2)}€</b></td>
         </tr>
       `}).join('');
@@ -292,7 +258,7 @@
       <div class="section-title">💰 Gesamtsumme-Rangliste</div>
       <table class="rank-table">
         <thead>
-          <tr><th></th><th>Person</th><th class="right">XP bisher</th><th class="right">Heute</th><th class="right">Gesamt</th></tr>
+          <tr><th></th><th>Person</th><th class="right">Gesamt</th></tr>
         </thead>
         <tbody>${xpRows}</tbody>
       </table>`;
@@ -322,43 +288,45 @@
     const currentMonth = new Date().toISOString().slice(0, 7);
     const START_MONTH = '2026-01'; // Ab Januar 2026 starten
 
-    // Alle Monate ab Januar 2026 bis zum letzten abgeschlossenen Monat
+    // Alle Monate ab START_MONTH bis currentMonth (inkl. laufender Monat)
     const allMonths = Object.keys(hausdienstByMonth).sort();
-    const pastMonths = allMonths.filter(m => m >= START_MONTH && m < currentMonth);
+    const relevantSet = new Set([...allMonths.filter(m => m >= START_MONTH && m <= currentMonth), currentMonth]);
+    const relevantMonths = [...relevantSet].filter(m => m >= START_MONTH && m <= currentMonth).sort();
 
     // Kernteam-Mitglieder (nur mit Anforderung > 0)
     const relevantCore = CORE.filter(p => getHdRequired(p) > 0).sort();
 
-    if (pastMonths.length === 0) {
-      container.innerHTML = '<div style="opacity:0.6;padding:10px">Noch keine abgeschlossenen Monate ab Januar 2026 vorhanden.</div>';
+    if (relevantMonths.length === 0) {
+      container.innerHTML = '<div style="opacity:0.6;padding:10px">Noch keine Daten ab Januar 2026 vorhanden.</div>';
       return;
     }
 
     // Fehlstand berechnen pro Person
-    const fehlstandTotal = {}; // {person: totalMissed}
+    const fehlstandTotal = {}; // {person: totalMissed} — nur abgeschlossene Monate
     const fehlstandByMonth = {}; // {month: {person: missed}}
 
     // Initialisiere Totals
     relevantCore.forEach(person => { fehlstandTotal[person] = 0; });
 
-    pastMonths.forEach(month => {
+    relevantMonths.forEach(month => {
       fehlstandByMonth[month] = {};
       const monthData = hausdienstByMonth[month] || {};
+      const isPast = month < currentMonth;
 
       relevantCore.forEach(person => {
         const done = monthData[person] || 0;
         const required = getHdRequired(person);
         const missed = Math.max(0, required - done);
         fehlstandByMonth[month][person] = missed;
-        fehlstandTotal[person] += missed;
+        if (isPast) fehlstandTotal[person] += missed; // Gesamt nur für abgeschlossene Monate
       });
     });
 
     // Monatsnamen formatieren
     const formatMonth = (m) => {
-      const [year, month] = m.split('-');
+      const [year, mon] = m.split('-');
       const monthNames = ['Jan', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun', 'Jul', 'Aug', 'Sep', 'Okt', 'Nov', 'Dez'];
-      return `${monthNames[parseInt(month) - 1]} ${year}`;
+      return `${monthNames[parseInt(mon) - 1]} ${year}`;
     };
 
     // Tabelle erstellen: Personen als Spalten, Monate als Zeilen
@@ -372,9 +340,10 @@
       <tbody>`;
 
     // Zeilen für jeden Monat (chronologisch, älteste zuerst)
-    pastMonths.forEach(month => {
-      html += `<tr>
-        <td><b>${formatMonth(month)}</b></td>`;
+    relevantMonths.forEach(month => {
+      const isCurrent = month === currentMonth;
+      html += `<tr${isCurrent ? ' style="background:rgba(0,224,184,.06)"' : ''}>
+        <td><b>${formatMonth(month)}</b>${isCurrent ? ' <span style="color:#00e0b8;font-size:11px">(laufend)</span>' : ''}</td>`;
 
       relevantCore.forEach(person => {
         const missed = fehlstandByMonth[month][person] || 0;
@@ -385,9 +354,9 @@
       html += `</tr>`;
     });
 
-    // Gesamt-Zeile
+    // Gesamt-Zeile (nur abgeschlossene Monate)
     html += `<tr style="background:#2a3042;font-weight:800">
-      <td><b>Gesamt</b></td>`;
+      <td><b>Gesamt</b> <span style="font-size:10px;opacity:.6">(ohne laufend)</span></td>`;
 
     relevantCore.forEach(person => {
       const total = fehlstandTotal[person] || 0;
