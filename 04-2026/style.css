@@ -140,3 +140,88 @@ input::placeholder{color:#91a0b5}
 .qr{max-width:60%; max-height:60%; border:8px solid #fff; border-radius:16px}
 button,.btn{min-height:44px}
 .hd-today{background:rgba(0,224,184,.10)}
+
+/* ===== Prio 5: Page-Transition (sanftes Einblenden) ===== */
+@keyframes pageIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.content { animation: pageIn 0.22s ease both; }
+
+/* ===== Prio 3: Bottom Sheets auf Touch-Geräten ===== */
+@keyframes sheetIn {
+  from { transform: translateY(100%); }
+  to   { transform: translateY(0); }
+}
+@media (pointer: coarse) {
+  .modal { align-items: flex-end; }
+  .modal .box {
+    width: 100%;
+    max-width: 100%;
+    max-height: 85dvh;
+    overflow-y: auto;
+    border-radius: 24px 24px 0 0;
+    border-bottom: none;
+    padding-bottom: calc(20px + env(safe-area-inset-bottom));
+  }
+  .modal.show .box { animation: sheetIn 0.3s cubic-bezier(0.32, 0.72, 0, 1); }
+  /* Drag-Handle Pill */
+  .modal .box::before {
+    content: '';
+    display: block;
+    width: 36px;
+    height: 4px;
+    background: rgba(255,255,255,.2);
+    border-radius: 2px;
+    margin: 0 auto 14px;
+  }
+}
+
+/* ===== Prio 6: Skeleton Loading ===== */
+@keyframes shimmer {
+  from { background-position: 200% 0; }
+  to   { background-position: -200% 0; }
+}
+.skeleton {
+  background: linear-gradient(90deg, #1c2130 25%, #252e42 50%, #1c2130 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.4s ease-in-out infinite;
+  border-radius: 8px;
+}
+
+/* ===== Prio 7: Typografie – große Screens (≥ 1100px) ===== */
+@media (min-width: 1100px) {
+  .app-title h1 { font-size: 24px; }
+  .section-title { font-size: 18px; }
+  .sub { font-size: 14px; }
+  .tab { font-size: 11px; }
+  .tab svg { width: 22px; height: 22px; }
+  .card { padding: 18px; }
+  .btn:not(.small) { font-size: 15px; }
+}
+
+/* ===== Prio 8: Pull-to-Refresh Indikator ===== */
+.pull-indicator {
+  height: 0;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #6ee7ff;
+  font-size: 13px;
+  font-weight: 700;
+  gap: 8px;
+  transition: height 0.2s ease, opacity 0.2s ease;
+  opacity: 0;
+}
+.pull-indicator.visible { height: 44px; opacity: 1; }
+.pull-indicator.ready   { color: #7CFC9A; }
+
+/* ===== Prio 10: prefers-reduced-motion ===== */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

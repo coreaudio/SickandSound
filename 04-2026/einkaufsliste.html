@@ -731,6 +731,59 @@
       refreshList();
     }
   });
+
+  // ===== Prio 4: Swipe-Gesten auf Einkaufsliste =====
+  // Swipe links → Item löschen (wie iOS Wischen zum Löschen)
+  (function setupSwipe() {
+    const list = document.getElementById('shoppingList');
+    let sw = { el: null, id: null, startX: 0, startY: 0, locked: false };
+
+    list.addEventListener('touchstart', e => {
+      const item = e.target.closest('.shopping-item');
+      if (!item) return;
+      sw = { el: item, id: item.dataset.id, startX: e.touches[0].clientX, startY: e.touches[0].clientY, locked: false };
+    }, { passive: true });
+
+    list.addEventListener('touchmove', e => {
+      if (!sw.el || sw.locked) return;
+      const dx = e.touches[0].clientX - sw.startX;
+      const dy = e.touches[0].clientY - sw.startY;
+
+      // Vertikales Scrollen bevorzugen – Swipe abbrechen
+      if (Math.abs(dy) > Math.abs(dx) + 5) { sw.el = null; return; }
+
+      // Horizontale Bewegung: Scroll verhindern, Item verschieben
+      if (Math.abs(dx) > 6) e.preventDefault();
+      const x = Math.max(-90, Math.min(0, dx));
+      sw.el.style.transition = 'none';
+      sw.el.style.transform  = `translateX(${x}px)`;
+      // Roten Hintergrund einblenden sobald ≥ 40px
+      sw.el.style.background = x < -40
+        ? `linear-gradient(90deg, #1c2130, rgba(255,75,75,${Math.min(1, Math.abs(x+40)/50) * 0.6}))`
+        : '';
+    }, { passive: false });
+
+    list.addEventListener('touchend', e => {
+      if (!sw.el) return;
+      const dx = e.changedTouches[0].clientX - sw.startX;
+      sw.el.style.transition = 'transform 0.22s ease, opacity 0.22s ease';
+
+      if (Math.abs(dx) > 10) e.preventDefault(); // Klick-Event unterdrücken nach Swipe
+
+      if (dx < -70) {
+        // Vollständig gewischt → Item entfernen
+        sw.el.style.transform = 'translateX(-110%)';
+        sw.el.style.opacity   = '0';
+        const id = sw.id;
+        setTimeout(() => removeItem(id), 220);
+      } else {
+        // Zurückschnappen
+        sw.el.style.transform = '';
+        sw.el.style.background = '';
+      }
+      sw = { el: null, id: null, startX: 0, startY: 0, locked: false };
+    }, { passive: false });
+  })();
 </script>
 </body>
 </html>

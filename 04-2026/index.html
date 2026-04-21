@@ -383,6 +383,9 @@
     <button class="btn small secondary" id="redoBtnQ" onclick="redoLast()" disabled>↪ Wiederholen</button>
   </div>
 
+  <!-- Pull-to-Refresh Indikator -->
+  <div id="pullIndicator" class="pull-indicator">↓ Zum Aktualisieren ziehen</div>
+
   <!-- Content -->
   <main class="content">
     <div class="card" style="margin-bottom:8px">
@@ -2041,9 +2044,50 @@ function handleColTouchCancel() {
   touchColDragIdx = null;
 }
 
+/* ===== Prio 6: Skeleton Loading ===== */
+function buildTableSkeleton() {
+  const skCell = (tag, w) =>
+    `<${tag}><div class="skeleton" style="height:42px;border-radius:10px;margin:2px 4px;${w?'width:'+w:''}"></div></${tag}>`;
+  const row = () => `<tr>${skCell('th','70%')}${[1,2,3].map(()=>skCell('td')).join('')}${skCell('td','50%')}</tr>`;
+  document.getElementById('tableContainer').innerHTML =
+    `<table><tbody>${Array(10).fill(0).map(row).join('')}</tbody></table>`;
+}
+
+/* ===== Prio 8: Pull-to-Refresh ===== */
+(function setupPTR() {
+  const content = document.querySelector('.content');
+  const ind     = document.getElementById('pullIndicator');
+  const THRESH  = 80;
+  let startY = 0, pulling = false;
+
+  content.addEventListener('touchstart', e => {
+    startY = content.scrollTop === 0 ? e.touches[0].clientY : 0;
+  }, { passive: true });
+
+  content.addEventListener('touchmove', e => {
+    if (!startY) return;
+    const dy = e.touches[0].clientY - startY;
+    if (dy > 10) {
+      pulling = true;
+      ind.classList.toggle('visible', dy > 20);
+      ind.classList.toggle('ready',   dy >= THRESH);
+      ind.textContent = dy >= THRESH ? '↑ Loslassen zum Laden' : '↓ Zum Aktualisieren ziehen';
+    }
+  }, { passive: true });
+
+  content.addEventListener('touchend', e => {
+    if (!pulling) { startY = 0; return; }
+    const dy = e.changedTouches[0].clientY - startY;
+    pulling = false; startY = 0;
+    ind.classList.remove('visible', 'ready');
+    if (dy >= THRESH && db) { showToast('Aktualisiert ✓', 1800); subscribeRealtime(); }
+  }, { passive: true });
+})();
+
 window.onload = function() {
   renderBottomNav('index');
   loadLayoutSettings();
+  buildTableSkeleton();
   loadState();
 };
 window.onresize=()=>requestAnimationFrame(adjustToOnePage);
