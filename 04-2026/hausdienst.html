@@ -341,6 +341,20 @@
       justify-content: center;
     }
 
+    /* Inline-Bewertung in Status-Karte */
+    .inline-rating-divider { height:1px; background:#2a3042; margin:14px 0; }
+    .inline-rating-row { display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+    .inline-rating-name { font-size:12px; font-weight:700; color:var(--muted); flex-shrink:0; white-space:nowrap; }
+    .inline-stars-row { display:flex; gap:2px; }
+    .istar { font-size:26px; color:#2a3042; cursor:pointer; transition:color .15s, transform .15s; line-height:1; padding:2px; }
+    .istar.active { color:#ffd700; }
+    .istar.ihov { color:#ffd700; transform:scale(1.15); }
+    .inline-stars-row.rated-mode .istar { cursor:default; pointer-events:none; }
+    .inline-stars-row.rated-mode .istar:hover { transform:none; }
+    .inline-comment { width:100%; padding:8px 10px; border-radius:8px; border:1px solid #ff9f43; background:#0e1422; color:#e6e8ef; font-size:13px; resize:none; margin-top:8px; font-family:inherit; }
+    .inline-comment:focus { outline:none; border-color:#ffd700; }
+    .inline-required-hint { font-size:11px; color:#ff9f43; margin-top:6px; font-weight:700; }
+
     /* Admin-Modus */
     .admin-indicator { background-color: #ff6b6b; padding: 4px 8px; border-radius: 4px; margin-left: 8px; font-size: 12px; }
     .admin-card { background: rgba(255, 107, 107, 0.1); border: 1px solid rgba(255, 107, 107, 0.3); }
@@ -533,7 +547,7 @@
 
     <!-- Panel: Checkliste -->
     <div id="panelCheck" class="panel active">
-      <!-- Status-Header -->
+      <!-- Status-Header mit integrierter Bewertung -->
       <div class="card status-header-card">
         <div class="status-header">
           <div class="status-left">
@@ -556,35 +570,32 @@
             </div>
           </div>
         </div>
+
+        <!-- Inline-Bewertung -->
+        <div id="inlineRatingWrap" style="display:none">
+          <div class="inline-rating-divider"></div>
+          <div class="inline-rating-row">
+            <span class="inline-rating-name" id="inlineRatingName">Gestern bewerten:</span>
+            <div class="inline-stars-row" id="inlineStarsRow">
+              <span class="istar" onmouseenter="hoverInline(1)" onmouseleave="hoverInline(0)" onclick="setInlineRating(1)">★</span>
+              <span class="istar" onmouseenter="hoverInline(2)" onmouseleave="hoverInline(0)" onclick="setInlineRating(2)">★</span>
+              <span class="istar" onmouseenter="hoverInline(3)" onmouseleave="hoverInline(0)" onclick="setInlineRating(3)">★</span>
+              <span class="istar" onmouseenter="hoverInline(4)" onmouseleave="hoverInline(0)" onclick="setInlineRating(4)">★</span>
+              <span class="istar" onmouseenter="hoverInline(5)" onmouseleave="hoverInline(0)" onclick="setInlineRating(5)">★</span>
+            </div>
+            <button id="inlineEditBtn" class="btn small ghost" onclick="editInlineRating()" style="display:none">✏️ ändern</button>
+          </div>
+          <textarea id="inlineComment" class="inline-comment" placeholder="Begründung erforderlich bei < 5 Sternen…" rows="2" style="display:none" oninput="checkInlineReady()"></textarea>
+          <div id="inlineActionRow" style="display:none;margin-top:8px">
+            <button class="btn small" id="inlineSubmitBtn" onclick="submitInlineRating()" disabled>Abschicken</button>
+          </div>
+          <div id="inlineRequiredHint" class="inline-required-hint" style="display:none">⚠️ Bewertung erforderlich zum Abschließen</div>
+        </div>
+
         <button class="btn complete-btn" id="completeHdBtn" onclick="completeHausdienst()" disabled style="margin-top:12px">
           ✓ Hausdienst abschließen
         </button>
       </div>
-
-      <!-- Bewertung - Prominent nach oben verschoben -->
-      <div class="card rating-prompt-card" id="ratingCard" style="display:none">
-        <div class="rating-prompt">
-          <div class="rating-prompt-icon" id="ratingIcon">⭐</div>
-          <div class="rating-prompt-text">
-            <strong id="ratingTitle">Wie war der Hausdienst gestern?</strong>
-            <span id="ratingPromptPerson"></span>
-          </div>
-        </div>
-        <div class="quick-rating" id="quickRating">
-          <div class="quick-rating-stars" id="quickStars">
-            <span class="star" data-value="1" onclick="setQuickRating(1)" onmouseenter="hoverQuickRating(1)" onmouseleave="hoverQuickRating(0)">★</span>
-            <span class="star" data-value="2" onclick="setQuickRating(2)" onmouseenter="hoverQuickRating(2)" onmouseleave="hoverQuickRating(0)">★</span>
-            <span class="star" data-value="3" onclick="setQuickRating(3)" onmouseenter="hoverQuickRating(3)" onmouseleave="hoverQuickRating(0)">★</span>
-            <span class="star" data-value="4" onclick="setQuickRating(4)" onmouseenter="hoverQuickRating(4)" onmouseleave="hoverQuickRating(0)">★</span>
-            <span class="star" data-value="5" onclick="setQuickRating(5)" onmouseenter="hoverQuickRating(5)" onmouseleave="hoverQuickRating(0)">★</span>
-          </div>
-          <textarea id="quickComment" class="quick-rating-comment" placeholder="Optionaler Kommentar..." rows="2" oninput="updateQuickSubmitButton()"></textarea>
-          <div class="quick-rating-actions">
-            <button class="btn rating-prompt-btn" id="quickSubmitBtn" onclick="submitQuickRating()" disabled>⭐ Bewertung abschicken</button>
-          </div>
-        </div>
-      </div>
-
 
       <!-- Notiz vom Vortag -->
       <div class="card note-card" id="yesterdayNoteCard" style="display:none">
@@ -1462,10 +1473,15 @@
     // Complete Button
     const completeBtn = document.getElementById('completeHdBtn');
     if (completeBtn) {
+      const ratingNeeded = !!(yesterdayPerson && todayPerson && !existingRatingData);
       if (hdTodayCompleted) {
         completeBtn.textContent = '✓ Abgeschlossen';
         completeBtn.disabled = true;
         completeBtn.classList.add('done');
+      } else if (allDone && todayPerson && ratingNeeded) {
+        completeBtn.textContent = '⭐ Erst bewerten, dann abschließen';
+        completeBtn.disabled = false;
+        completeBtn.classList.remove('done');
       } else if (allDone && todayPerson) {
         completeBtn.textContent = '✓ Hausdienst abschließen';
         completeBtn.disabled = false;
@@ -1475,35 +1491,24 @@
         completeBtn.disabled = true;
         completeBtn.classList.remove('done');
       }
-
-      // Verstecken wenn kein Hausdienst
       completeBtn.style.display = todayPerson ? 'block' : 'none';
     }
 
-    // Rating Card anzeigen wenn gestern jemand Hausdienst hatte
-    const ratingCard = document.getElementById('ratingCard');
-    if (ratingCard) {
-      const showRating = yesterdayPerson && todayPerson;
-      ratingCard.style.display = showRating ? 'block' : 'none';
-
-      if (showRating) {
-        // Prüfen ob bereits bewertet und UI entsprechend setzen
-        const hasRating = existingRatingData && existingRatingData.rating > 0;
-        updateRatingCardUI(hasRating);
-      }
-    }
+    // Inline-Bewertung aktualisieren
+    const hasRating = !!(existingRatingData && existingRatingData.rating > 0);
+    updateRatingCardUI(hasRating);
 
     // Notiz-Eingabe aktualisieren
     updateNoteCards();
   }
 
   /* Bewertungssystem */
-  let modalRating = 0;
+  let inlineRatingVal = 0;
   let yesterdayPerson = null;
   let todayPerson = null;
-  let hdTodayCompleted = false; // Ob der heutige Hausdienst abgeschlossen ist
-  let existingRatingId = null; // ID der bestehenden Bewertung
-  let existingRatingData = null; // Daten der bestehenden Bewertung
+  let hdTodayCompleted = false;
+  let existingRatingId = null;
+  let existingRatingData = null;
 
   function getYesterdayStr() {
     const d = new Date();
@@ -1511,120 +1516,133 @@
     return d.toISOString().slice(0, 10);
   }
 
-  // Modal Funktionen
-  function hoverModalRating(val) {
-    const stars = document.querySelectorAll('#modalStars .star');
-    stars.forEach((star, i) => {
-      star.classList.toggle('hovered', i < val);
+  function hoverInline(val) {
+    document.querySelectorAll('.istar').forEach((s, i) => {
+      s.classList.toggle('ihov', val > 0 && i < val);
     });
   }
 
-  function setModalRating(val) {
-    modalRating = val;
-    const stars = document.querySelectorAll('#modalStars .star');
-    stars.forEach((star, i) => {
-      star.classList.toggle('active', i < val);
+  function setInlineRating(val) {
+    inlineRatingVal = val;
+    document.querySelectorAll('.istar').forEach((s, i) => {
+      s.classList.toggle('active', i < val);
+      s.classList.remove('ihov');
     });
-
-    // Bei weniger als 5 Sternen: Kommentar erforderlich
-    const commentField = document.getElementById('modalComment');
-
+    const commentEl = document.getElementById('inlineComment');
+    const actionRow = document.getElementById('inlineActionRow');
+    const btn       = document.getElementById('inlineSubmitBtn');
     if (val > 0 && val < 5) {
-      commentField.placeholder = 'Begründung erforderlich bei weniger als 5 Sternen...';
-      commentField.style.borderColor = '#ff9f43';
-      updateModalSubmitButton();
-    } else {
-      commentField.placeholder = 'Optionaler Kommentar...';
-      commentField.style.borderColor = '';
-      document.getElementById('modalSubmitBtn').disabled = modalRating === 0;
+      commentEl.style.display = 'block';
+      actionRow.style.display = 'block';
+      checkInlineReady();
+    } else if (val === 5) {
+      commentEl.style.display = 'none';
+      actionRow.style.display = 'block';
+      btn.disabled = false;
+      btn.textContent = 'Abschicken';
     }
   }
 
-  function updateModalSubmitButton() {
-    const submitBtn = document.getElementById('modalSubmitBtn');
-    const comment = document.getElementById('modalComment').value.trim();
+  function checkInlineReady() {
+    const comment = (document.getElementById('inlineComment').value || '').trim();
+    const btn = document.getElementById('inlineSubmitBtn');
+    btn.disabled = inlineRatingVal === 0 || (inlineRatingVal < 5 && !comment);
+  }
 
-    if (modalRating === 0) {
-      submitBtn.disabled = true;
-    } else if (modalRating < 5 && !comment) {
-      submitBtn.disabled = true;
-    } else {
-      submitBtn.disabled = false;
+  async function submitInlineRating() {
+    if (!db || inlineRatingVal === 0 || !yesterdayPerson || !todayPerson) return;
+    const comment = (document.getElementById('inlineComment').value || '').trim();
+    if (inlineRatingVal < 5 && !comment) return;
+
+    const btn = document.getElementById('inlineSubmitBtn');
+    btn.disabled = true;
+    btn.textContent = 'Speichert…';
+
+    try {
+      if (existingRatingId && existingRatingId !== '_cache') {
+        await db.collection('bewertungen').doc(existingRatingId).update({
+          rating: inlineRatingVal, comment, updatedAt: Date.now()
+        });
+      } else {
+        const ref = await db.collection('bewertungen').add({
+          date: getYesterdayStr(),
+          bewerteterHausdienst: yesterdayPerson,
+          bewertetVon: todayPerson,
+          rating: inlineRatingVal, comment,
+          createdAt: Date.now()
+        });
+        existingRatingId = ref.id;
+      }
+      existingRatingData = { rating: inlineRatingVal, comment };
+      // Cache sofort speichern → nächster Seitenaufruf zeigt sofort richtigen Status
+      localStorage.setItem('hd_rating_' + getYesterdayStr(), JSON.stringify({
+        rating: inlineRatingVal, comment, bewertetVon: todayPerson
+      }));
+      updateRatingCardUI(true);
+      updateStatusHeader();
+      showToast('Bewertung gespeichert ✓');
+    } catch(e) {
+      console.error(e);
+      btn.disabled = false;
+      btn.textContent = 'Abschicken';
+      showToast('Fehler beim Speichern');
     }
   }
 
-  async function openRatingModal() {
-    if (!yesterdayPerson || !todayPerson) return;
-
-    // Bestehende Bewertung laden
-    const existingRating = await db.collection('bewertungen')
-      .where('date', '==', getYesterdayStr())
-      .where('bewertetVon', '==', todayPerson)
-      .get();
-
-    if (!existingRating.empty) {
-      existingRatingId = existingRating.docs[0].id;
-      existingRatingData = existingRating.docs[0].data();
-      setModalRating(existingRatingData.rating);
-      document.getElementById('modalComment').value = existingRatingData.comment || '';
-      document.getElementById('modalRatingInfo').innerHTML =
-        `Bewertung für <b>${yesterdayPerson}</b> (${getYesterdayStr()}) bearbeiten:`;
-      document.getElementById('modalSubmitBtn').textContent = 'Aktualisieren';
-    } else {
-      existingRatingId = null;
-      existingRatingData = null;
-      modalRating = 0;
-      document.querySelectorAll('#modalStars .star').forEach(s => s.classList.remove('active', 'hovered'));
-      document.getElementById('modalComment').value = '';
-      document.getElementById('modalSubmitBtn').disabled = true;
-      document.getElementById('modalRatingInfo').innerHTML =
-        `Bewerte den Hausdienst von <b>${yesterdayPerson}</b> (${getYesterdayStr()}):`;
-      document.getElementById('modalSubmitBtn').textContent = 'Bewerten';
+  function editInlineRating() {
+    const starsRow = document.getElementById('inlineStarsRow');
+    starsRow.classList.remove('rated-mode');
+    document.getElementById('inlineEditBtn').style.display = 'none';
+    if (existingRatingData) {
+      inlineRatingVal = existingRatingData.rating;
+      document.querySelectorAll('.istar').forEach((s, i) => s.classList.toggle('active', i < inlineRatingVal));
+      const commentEl = document.getElementById('inlineComment');
+      commentEl.value = existingRatingData.comment || '';
+      commentEl.style.display = inlineRatingVal < 5 ? 'block' : 'none';
+      const actionRow = document.getElementById('inlineActionRow');
+      actionRow.style.display = 'block';
+      const btn = document.getElementById('inlineSubmitBtn');
+      btn.disabled = false;
+      btn.textContent = 'Aktualisieren';
     }
-
-    document.getElementById('ratingModal').classList.add('show');
   }
 
-  function closeRatingModal() {
-    document.getElementById('ratingModal').classList.remove('show');
-  }
+  function updateRatingCardUI(hasRating) {
+    const wrap     = document.getElementById('inlineRatingWrap');
+    const nameEl   = document.getElementById('inlineRatingName');
+    const starsRow = document.getElementById('inlineStarsRow');
+    const editBtn  = document.getElementById('inlineEditBtn');
+    const commentEl= document.getElementById('inlineComment');
+    const actionRow= document.getElementById('inlineActionRow');
+    const hint     = document.getElementById('inlineRequiredHint');
+    if (!wrap) return;
 
-  async function submitModalRating() {
-    if (!db || modalRating === 0 || !yesterdayPerson || !todayPerson) return;
+    const show = !!(yesterdayPerson && todayPerson);
+    wrap.style.display = show ? 'block' : 'none';
+    if (!show) return;
 
-    const comment = document.getElementById('modalComment').value.trim();
-
-    // Validierung: Bei weniger als 5 Sternen muss eine Begründung angegeben werden
-    if (modalRating < 5 && !comment) {
-      alert('Bitte gib eine Begründung an, wenn du weniger als 5 Sterne vergibst.');
-      document.getElementById('modalComment').focus();
-      return;
-    }
-
-    if (existingRatingId) {
-      // Bestehende Bewertung aktualisieren
-      await db.collection('bewertungen').doc(existingRatingId).update({
-        rating: modalRating,
-        comment: comment,
-        updatedAt: Date.now()
+    if (hasRating && existingRatingData) {
+      nameEl.textContent = yesterdayPerson + ':';
+      starsRow.classList.add('rated-mode');
+      document.querySelectorAll('.istar').forEach((s, i) => {
+        s.classList.toggle('active', i < existingRatingData.rating);
+        s.classList.remove('ihov');
       });
-      alert('Bewertung aktualisiert!');
+      editBtn.style.display  = 'inline-flex';
+      commentEl.style.display = 'none';
+      actionRow.style.display = 'none';
+      hint.style.display      = 'none';
+      inlineRatingVal = existingRatingData.rating;
     } else {
-      // Neue Bewertung erstellen
-      await db.collection('bewertungen').add({
-        date: getYesterdayStr(),
-        bewerteterHausdienst: yesterdayPerson,
-        bewertetVon: todayPerson,
-        rating: modalRating,
-        comment: comment,
-        createdAt: Date.now()
-      });
-      alert('Bewertung gespeichert!');
+      nameEl.textContent = yesterdayPerson + ' bewerten:';
+      starsRow.classList.remove('rated-mode');
+      document.querySelectorAll('.istar').forEach(s => s.classList.remove('active', 'ihov'));
+      inlineRatingVal = 0;
+      editBtn.style.display   = 'none';
+      commentEl.style.display = 'none';
+      actionRow.style.display = 'none';
+      hint.style.display      = 'block';
     }
-
-    existingRatingData = { rating: modalRating, comment: comment };
-    closeRatingModal();
-    updateHdStatus();
   }
 
   let ratingUnsubscribe = null;
@@ -1633,255 +1651,86 @@
   async function checkAndShowRatingModal() {
     if (!db) return;
 
-    // Heute und Gestern laden
-    const todayDoc = await db.collection('hausdienst').doc(todayStr()).get();
+    const todayDoc     = await db.collection('hausdienst').doc(todayStr()).get();
     const yesterdayDoc = await db.collection('hausdienst').doc(getYesterdayStr()).get();
 
-    todayPerson = todayDoc.exists ? todayDoc.data().person : null;
-    hdTodayCompleted = todayDoc.exists ? (todayDoc.data().completed || false) : false;
-    yesterdayPerson = yesterdayDoc.exists ? yesterdayDoc.data().person : null;
+    todayPerson       = todayDoc.exists  ? todayDoc.data().person    : null;
+    hdTodayCompleted  = todayDoc.exists  ? (todayDoc.data().completed || false) : false;
+    yesterdayPerson   = yesterdayDoc.exists ? yesterdayDoc.data().person : null;
 
-    if (!todayPerson || !yesterdayPerson) {
-      updateHdStatus();
-      return;
+    if (!todayPerson || !yesterdayPerson) { updateHdStatus(); return; }
+
+    // Sofort aus localStorage-Cache anzeigen (kein Flackern)
+    const cached = JSON.parse(localStorage.getItem('hd_rating_' + getYesterdayStr()) || 'null');
+    if (cached && cached.bewertetVon === todayPerson) {
+      existingRatingData = cached;
+      existingRatingId   = '_cache';
+      updateRatingCardUI(true);
+    } else {
+      updateRatingCardUI(false);
     }
+    updateStatusHeader();
 
-    // Echtzeit-Listener für Bewertungen (ersetzt einmalige Abfrage)
-    // Vorherigen Listener entfernen falls vorhanden
-    if (ratingUnsubscribe) {
-      ratingUnsubscribe();
-    }
-
+    // Echtzeit-Listener für Sync
+    if (ratingUnsubscribe) ratingUnsubscribe();
     ratingUnsubscribe = db.collection('bewertungen')
       .where('date', '==', getYesterdayStr())
       .where('bewertetVon', '==', todayPerson)
-      .onSnapshot(snapshot => {
-        const hasRating = !snapshot.empty;
-        if (hasRating) {
-          existingRatingId = snapshot.docs[0].id;
-          existingRatingData = snapshot.docs[0].data();
+      .onSnapshot(snap => {
+        if (!snap.empty) {
+          existingRatingId   = snap.docs[0].id;
+          existingRatingData = snap.docs[0].data();
         } else {
-          existingRatingId = null;
+          existingRatingId   = null;
           existingRatingData = null;
         }
-
-        // UI sofort aktualisieren
         updateHdStatus();
-
-        // Erinnerung nur einmal pro Seitenbesuch zeigen, wenn noch nicht bewertet
-        if (!hasRating && !ratingReminderShownThisVisit) {
-          ratingReminderShownThisVisit = true;
-          setTimeout(() => {
-            showRatingReminder();
-          }, 500);
-        }
       });
   }
 
-  // Reset beim Tab-Wechsel
-  function resetRatingReminderFlag() {
-    ratingReminderShownThisVisit = false;
-  }
+  function resetRatingReminderFlag() { ratingReminderShownThisVisit = false; }
+  function updateHdStatus() { updateStatusHeader(); }
 
-  // Erinnerungs-Popup anzeigen
-  function showRatingReminder() {
-    // Zur Bewertungskarte scrollen und sie hervorheben
-    const ratingCard = document.getElementById('ratingCard');
-    if (ratingCard && ratingCard.style.display !== 'none') {
-      ratingCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
-
-      // Extra Animation für Aufmerksamkeit
-      ratingCard.style.transform = 'scale(1.05)';
-      ratingCard.style.transition = 'transform 0.3s ease';
-      setTimeout(() => {
-        ratingCard.style.transform = '';
-      }, 400);
-
-      // Vibration für mobile Geräte (falls unterstützt)
-      if (navigator.vibrate) {
-        navigator.vibrate([100, 50, 100]);
-      }
-    }
-  }
-
-  // Alias für Kompatibilität
-  function updateHdStatus() {
-    updateStatusHeader();
-  }
-
-  /* Schnellbewertung (Inline im Card) */
-  let quickRating = 0;
-
-  function hoverQuickRating(val) {
-    const stars = document.querySelectorAll('#quickStars .star');
-    stars.forEach((star, i) => {
-      star.classList.toggle('hovered', val > 0 && i < val);
-    });
-  }
-
-  function setQuickRating(val) {
-    quickRating = val;
-    const stars = document.querySelectorAll('#quickStars .star');
-    stars.forEach((star, i) => {
-      star.classList.toggle('active', i < val);
-    });
-
-    // Bei weniger als 5 Sternen: Kommentar erforderlich
-    const commentField = document.getElementById('quickComment');
-    const submitBtn = document.getElementById('quickSubmitBtn');
-
-    if (val > 0 && val < 5) {
-      commentField.placeholder = 'Begründung erforderlich bei weniger als 5 Sternen...';
-      commentField.required = true;
-      commentField.style.borderColor = '#ff9f43';
-      // Button nur aktivieren wenn Kommentar vorhanden
-      updateQuickSubmitButton();
-    } else {
-      commentField.placeholder = 'Optionaler Kommentar...';
-      commentField.required = false;
-      commentField.style.borderColor = '';
-      submitBtn.disabled = quickRating === 0;
-    }
-  }
-
-  function updateQuickSubmitButton() {
-    const submitBtn = document.getElementById('quickSubmitBtn');
-    const comment = document.getElementById('quickComment').value.trim();
-
-    if (quickRating === 0) {
-      submitBtn.disabled = true;
-    } else if (quickRating < 5 && !comment) {
-      submitBtn.disabled = true;
-    } else {
-      submitBtn.disabled = false;
-    }
-  }
-
-  async function submitQuickRating() {
-    if (!db || quickRating === 0 || !yesterdayPerson || !todayPerson) return;
-
-    const comment = document.getElementById('quickComment').value.trim();
-
-    // Validierung: Bei weniger als 5 Sternen muss eine Begründung angegeben werden
-    if (quickRating < 5 && !comment) {
-      alert('Bitte gib eine Begründung an, wenn du weniger als 5 Sterne vergibst.');
-      document.getElementById('quickComment').focus();
-      return;
-    }
-    const submitBtn = document.getElementById('quickSubmitBtn');
-    submitBtn.disabled = true;
-    submitBtn.textContent = 'Speichert...';
-
-    try {
-      if (existingRatingId) {
-        // Bestehende Bewertung aktualisieren
-        await db.collection('bewertungen').doc(existingRatingId).update({
-          rating: quickRating,
-          comment: comment,
-          updatedAt: Date.now()
-        });
-      } else {
-        // Neue Bewertung erstellen
-        const newDoc = await db.collection('bewertungen').add({
-          date: getYesterdayStr(),
-          bewerteterHausdienst: yesterdayPerson,
-          bewertetVon: todayPerson,
-          rating: quickRating,
-          comment: comment,
-          createdAt: Date.now()
-        });
-        existingRatingId = newDoc.id;
-      }
-
-      existingRatingData = { rating: quickRating, comment: comment };
-
-      // UI aktualisieren - Karte als "bewertet" markieren
-      updateRatingCardUI(true);
-
-    } catch (e) {
-      console.error('Fehler beim Speichern:', e);
-      alert('Fehler beim Speichern der Bewertung');
-      submitBtn.disabled = false;
-      submitBtn.textContent = '⭐ Bewertung abschicken';
-    }
-  }
-
-  function updateRatingCardUI(hasRating) {
-    const card = document.getElementById('ratingCard');
-    const icon = document.getElementById('ratingIcon');
-    const title = document.getElementById('ratingTitle');
-    const personSpan = document.getElementById('ratingPromptPerson');
-    const quickRatingDiv = document.getElementById('quickRating');
-    const submitBtn = document.getElementById('quickSubmitBtn');
-
-    if (hasRating && existingRatingData) {
-      card.classList.add('rated');
-      icon.textContent = '✅';
-      title.textContent = 'Bewertung abgegeben!';
-
-      const starsHtml = '★'.repeat(existingRatingData.rating) +
-                        '<span style="opacity:0.3">' + '★'.repeat(5 - existingRatingData.rating) + '</span>';
-      personSpan.innerHTML = `${yesterdayPerson}: <span style="color:#ffd700">${starsHtml}</span>`;
-
-      // Schnellbewertung ausblenden aber Card sichtbar lassen
-      quickRatingDiv.style.display = 'none';
-
-      // Einen "Bearbeiten" Button anzeigen
-      const actionsDiv = document.querySelector('.quick-rating-actions');
-      if (actionsDiv) {
-        actionsDiv.innerHTML = `<button class="btn small ghost" onclick="editQuickRating()">✏️ Bewertung ändern</button>`;
-        actionsDiv.style.display = 'flex';
-        actionsDiv.style.marginTop = '10px';
-      }
-    } else {
-      card.classList.remove('rated');
-      icon.textContent = '⭐';
-      title.textContent = 'Wie war der Hausdienst gestern?';
-      if (yesterdayPerson) {
-        personSpan.textContent = `Bewerte ${yesterdayPerson}s Arbeit`;
-      }
-      quickRatingDiv.style.display = 'flex';
-      submitBtn.disabled = quickRating === 0;
-      submitBtn.textContent = '⭐ Bewertung abschicken';
-    }
-  }
-
-  function editQuickRating() {
-    // Schnellbewertung wieder anzeigen mit vorhandenen Werten
-    const quickRatingDiv = document.getElementById('quickRating');
-    quickRatingDiv.style.display = 'flex';
-
-    if (existingRatingData) {
-      setQuickRating(existingRatingData.rating);
-      document.getElementById('quickComment').value = existingRatingData.comment || '';
-    }
-
-    const submitBtn = document.getElementById('quickSubmitBtn');
-    submitBtn.textContent = '✏️ Bewertung aktualisieren';
-    submitBtn.disabled = false;
-
-    // Bearbeiten-Button verstecken
-    const actionsDiv = document.querySelector('.quick-rating-actions');
-    if (actionsDiv) {
-      actionsDiv.innerHTML = `<button class="btn rating-prompt-btn" id="quickSubmitBtn" onclick="submitQuickRating()">✏️ Bewertung aktualisieren</button>`;
-    }
-  }
+  // Modal-Stubs (bleiben für Kompatibilität, werden nicht mehr aktiv genutzt)
+  let modalRating = 0;
+  function hoverModalRating(){}
+  function setModalRating(){}
+  function updateModalSubmitButton(){}
+  function openRatingModal(){ submitInlineRating && document.getElementById('inlineRatingWrap')?.scrollIntoView({behavior:'smooth',block:'center'}); }
+  function closeRatingModal(){}
+  function submitModalRating(){}
+  function hoverQuickRating(){}
+  function setQuickRating(){}
+  function updateQuickSubmitButton(){}
+  function submitQuickRating(){}
+  function showRatingReminder(){ document.getElementById('inlineRatingWrap')?.scrollIntoView({behavior:'smooth',block:'center'}); }
 
   // Hausdienst als abgeschlossen markieren
   async function completeHausdienst() {
     if (!db || !todayPerson) return;
 
     const totalTasks = _tasks.length;
-    const doneTasks = _tasks.filter(t => checked[t.id]).length;
+    const doneTasks  = _tasks.filter(t => checked[t.id]).length;
 
     if (doneTasks < totalTasks) {
-      alert('Es sind noch nicht alle Aufgaben erledigt!');
+      showToast('Noch nicht alle Aufgaben erledigt!');
       return;
     }
 
-    if (!confirm(`Hausdienst als abgeschlossen markieren?\n\nAlle ${totalTasks} Aufgaben wurden erledigt.`)) {
+    // Bewertung ist Pflicht wenn gestern jemand Hausdienst hatte
+    if (yesterdayPerson && !existingRatingData) {
+      showToast('Bitte zuerst den gestrigen Hausdienst bewerten!');
+      const wrap = document.getElementById('inlineRatingWrap');
+      if (wrap) {
+        wrap.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        wrap.style.transition = 'box-shadow .2s';
+        wrap.style.boxShadow = '0 0 0 2px #ff9f43';
+        setTimeout(() => { wrap.style.boxShadow = ''; }, 1500);
+      }
       return;
     }
+
+    if (!confirm(`Hausdienst als abgeschlossen markieren?\n\nAlle ${totalTasks} Aufgaben wurden erledigt.`)) return;
 
     await markHausdienstComplete();
   }
