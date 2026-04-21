@@ -24,51 +24,32 @@
       transition: all 0.3s ease;
       cursor: pointer;
     }
-    .shopping-item:active {
-      transform: scale(0.98);
-    }
+    .shopping-item:active { transform: scale(0.98); }
     .shopping-item.checked {
       opacity: 0.4;
       background: #151a23;
       transform: scale(0.98);
     }
-    .shopping-item.checked .item-name {
-      text-decoration: line-through;
-    }
+    .shopping-item.checked .item-name { text-decoration: line-through; }
     .shopping-item.removing {
       animation: slideOut 0.4s ease forwards;
     }
     @keyframes slideOut {
-      0% { opacity: 1; transform: translateX(0); max-height: 80px; }
+      0%   { opacity: 1; transform: translateX(0);    max-height: 80px; }
       100% { opacity: 0; transform: translateX(100%); max-height: 0; padding: 0; margin: 0; border: none; }
     }
 
-    /* Auto-Items (aus Vorräte) */
-    .shopping-item.auto {
-      background: linear-gradient(135deg, rgba(255, 107, 107, 0.15), rgba(255, 159, 67, 0.1));
-      border-color: rgba(255, 107, 107, 0.4);
-    }
-    .shopping-item.auto .item-source {
-      color: #ff6b6b;
-    }
-
-    /* Manuelle Items */
     .shopping-item.manual {
       background: linear-gradient(135deg, rgba(110, 231, 255, 0.1), rgba(167, 139, 250, 0.1));
       border-color: rgba(110, 231, 255, 0.3);
     }
-    .shopping-item.manual .item-source {
-      color: #6ee7ff;
-    }
+    .shopping-item.manual .item-source { color: #6ee7ff; }
 
     .item-checkbox {
-      width: 28px;
-      height: 28px;
+      width: 28px; height: 28px;
       border-radius: 50%;
       border: 3px solid #4a5568;
-      display: flex;
-      align-items: center;
-      justify-content: center;
+      display: flex; align-items: center; justify-content: center;
       flex-shrink: 0;
       transition: all 0.2s;
     }
@@ -76,276 +57,153 @@
       background: linear-gradient(135deg, #7CFC9A, #6ee7ff);
       border-color: transparent;
     }
-    .item-checkbox svg {
-      width: 16px;
-      height: 16px;
-      opacity: 0;
-      color: #0b0e14;
-      transition: opacity 0.2s;
-    }
-    .shopping-item.checked .item-checkbox svg {
-      opacity: 1;
-    }
+    .item-checkbox svg { width: 16px; height: 16px; opacity: 0; color: #0b0e14; transition: opacity 0.2s; }
+    .shopping-item.checked .item-checkbox svg { opacity: 1; }
 
     .item-info { flex: 1; min-width: 0; }
     .item-name { font-weight: 800; font-size: 16px; margin-bottom: 2px; }
     .item-meta { font-size: 12px; display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
-    .item-source { font-weight: 600; }
     .item-amount { opacity: 0.6; }
 
-    .item-quantity {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      flex-shrink: 0;
-    }
-    .qty-badge {
-      min-width: 36px;
-      height: 36px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      background: rgba(255, 255, 255, 0.1);
-      border-radius: 10px;
-      font-size: 15px;
-      font-weight: 800;
-    }
-
-    /* Kategorie-Header */
-    .category-section {
-      margin-top: 16px;
-    }
-    .category-section:first-child {
-      margin-top: 0;
-    }
-    .category-header {
-      font-size: 11px;
-      font-weight: 800;
-      text-transform: uppercase;
-      letter-spacing: 1.5px;
-      color: #6ee7ff;
-      padding: 8px 4px;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-    .category-header::after {
-      content: '';
-      flex: 1;
-      height: 1px;
-      background: linear-gradient(90deg, #2a3042, transparent);
-    }
-    .category-count {
-      background: rgba(110, 231, 255, 0.2);
-      padding: 2px 8px;
-      border-radius: 10px;
-      font-size: 10px;
-    }
-
     /* Hinzufügen */
-    .add-section {
-      display: flex;
-      gap: 10px;
-      margin-bottom: 12px;
-    }
+    .add-section { display: flex; gap: 10px; margin-bottom: 12px; }
     .add-input {
-      flex: 1;
-      padding: 14px 16px;
-      border-radius: 14px;
-      border: 2px solid #2a3042;
-      background: #0e1422;
-      color: #e6e8ef;
-      font-size: 15px;
-      font-weight: 600;
+      flex: 1; padding: 14px 16px;
+      border-radius: 14px; border: 2px solid #2a3042;
+      background: #0e1422; color: #e6e8ef; font-size: 15px; font-weight: 600;
     }
-    .add-input:focus {
-      border-color: #6ee7ff;
-      outline: none;
-    }
-    .add-input::placeholder {
-      color: #4a5568;
-      font-weight: 400;
-    }
+    .add-input:focus { border-color: #6ee7ff; outline: none; }
+    .add-input::placeholder { color: #4a5568; font-weight: 400; }
     .add-btn {
-      width: 52px;
-      height: 52px;
-      border-radius: 14px;
+      width: 52px; height: 52px; border-radius: 14px;
       background: linear-gradient(135deg, #6ee7ff, #a78bfa);
-      color: #0b0e14;
-      font-size: 24px;
-      font-weight: 800;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      border: none;
-      cursor: pointer;
-      flex-shrink: 0;
+      color: #0b0e14; font-size: 24px; font-weight: 800;
+      display: flex; align-items: center; justify-content: center;
+      border: none; cursor: pointer; flex-shrink: 0;
     }
-    .add-btn:active {
-      transform: scale(0.95);
-    }
+    .add-btn:active { transform: scale(0.95); }
 
     /* Statistik */
-    .stats-bar {
-      display: flex;
-      gap: 12px;
-      margin-bottom: 12px;
-    }
+    .stats-bar { display: flex; gap: 12px; margin-bottom: 12px; }
     .stat-pill {
-      flex: 1;
-      padding: 12px 16px;
-      background: #1c2130;
-      border-radius: 12px;
-      text-align: center;
+      flex: 1; padding: 12px 16px;
+      background: #1c2130; border-radius: 12px; text-align: center;
     }
     .stat-pill.highlight {
-      background: linear-gradient(135deg, rgba(255, 107, 107, 0.2), rgba(255, 159, 67, 0.15));
+      background: linear-gradient(135deg, rgba(255,107,107,0.2), rgba(255,159,67,0.15));
     }
-    .stat-number {
-      font-size: 24px;
-      font-weight: 800;
-    }
-    .stat-pill.highlight .stat-number {
-      color: #ff6b6b;
-    }
-    .stat-text {
-      font-size: 10px;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-      opacity: 0.6;
-    }
+    .stat-number { font-size: 24px; font-weight: 800; }
+    .stat-pill.highlight .stat-number { color: #ff6b6b; }
+    .stat-text { font-size: 10px; text-transform: uppercase; letter-spacing: 0.5px; opacity: 0.6; }
 
     /* Leerer Zustand */
-    .empty-state {
-      text-align: center;
-      padding: 60px 20px;
-    }
-    .empty-icon {
-      font-size: 64px;
-      margin-bottom: 16px;
-    }
-    .empty-title {
-      font-size: 18px;
-      font-weight: 800;
-      margin-bottom: 8px;
-    }
-    .empty-sub {
-      font-size: 14px;
-      opacity: 0.6;
-      max-width: 260px;
-      margin: 0 auto;
-    }
+    .empty-state { text-align: center; padding: 40px 20px; }
+    .empty-icon { font-size: 56px; margin-bottom: 12px; }
+    .empty-title { font-size: 18px; font-weight: 800; margin-bottom: 8px; }
+    .empty-sub { font-size: 14px; opacity: 0.6; max-width: 260px; margin: 0 auto; }
 
     /* Quick-Actions */
-    .quick-actions {
-      display: flex;
-      gap: 10px;
-      flex-wrap: wrap;
-      margin-top: 12px;
-    }
+    .quick-actions { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 12px; }
     .quick-btn {
-      padding: 10px 16px;
-      border-radius: 10px;
-      border: 1px solid #2a3042;
-      background: #1c2130;
-      color: #e6e8ef;
-      font-size: 13px;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      gap: 6px;
+      padding: 10px 16px; border-radius: 10px;
+      border: 1px solid #2a3042; background: #1c2130; color: #e6e8ef;
+      font-size: 13px; cursor: pointer; display: flex; align-items: center; gap: 6px;
     }
-    .quick-btn:active {
-      transform: scale(0.97);
-    }
-    .quick-btn.danger {
-      border-color: rgba(255, 107, 107, 0.4);
-      color: #ff6b6b;
-    }
+    .quick-btn:active { transform: scale(0.97); }
+    .quick-btn.danger { border-color: rgba(255,107,107,0.4); color: #ff6b6b; }
 
-    /* Refresh-Hinweis */
-    .sync-info {
-      font-size: 11px;
-      opacity: 0.5;
-      text-align: center;
-      padding: 8px;
-    }
+    /* Sync-Info */
+    .sync-info { font-size: 11px; opacity: 0.5; text-align: center; padding: 8px; }
     .sync-dot {
-      display: inline-block;
-      width: 6px;
-      height: 6px;
-      background: #7CFC9A;
-      border-radius: 50%;
-      margin-right: 6px;
+      display: inline-block; width: 6px; height: 6px;
+      background: #7CFC9A; border-radius: 50%; margin-right: 6px;
       animation: pulse 2s infinite;
     }
-    @keyframes pulse {
-      0%, 100% { opacity: 1; }
-      50% { opacity: 0.3; }
+    @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
+
+    /* ── Page Split Layout ─────────────────────────────────────────── */
+    .page-split {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .list-column { min-width: 0; }
+
+    @media (min-width: 768px) {
+      .page-split {
+        flex-direction: row;
+        align-items: flex-start;
+      }
+      .list-column { flex: 1; }
+      .standard-panel {
+        width: 260px;
+        flex-shrink: 0;
+        position: sticky;
+        top: 0;
+      }
     }
 
-    /* Overlay für Vorräte */
-    .vorraete-overlay {
-      position: fixed;
-      inset: 0;
-      background: rgba(0, 0, 0, 0.9);
-      z-index: 100;
-      display: none;
-      flex-direction: column;
-    }
-    .vorraete-overlay.show {
+    /* ── Standard-Artikel Panel ────────────────────────────────────── */
+    .panel-header {
       display: flex;
-    }
-    .vorraete-header {
-      padding: 16px 20px;
-      display: flex;
+      align-items: center;
       justify-content: space-between;
-      align-items: center;
-      background: #151a23;
-      border-bottom: 1px solid #2a3042;
+      margin-bottom: 6px;
     }
-    .vorraete-title {
-      font-size: 18px;
-      font-weight: 800;
+    .panel-hint {
+      font-size: 11px;
+      color: var(--muted);
+      margin: 0 0 12px;
     }
-    .vorraete-close {
-      width: 40px;
-      height: 40px;
-      border-radius: 10px;
-      background: #2a3042;
-      border: none;
-      color: #fff;
-      font-size: 20px;
-      cursor: pointer;
-    }
-    .vorraete-content {
-      flex: 1;
-      overflow-y: auto;
-      padding: 16px;
-    }
-    .vorraete-item {
+    .std-chip {
       display: flex;
       align-items: center;
-      gap: 12px;
-      padding: 14px 16px;
-      background: #1c2130;
-      border-radius: 12px;
-      margin-bottom: 8px;
+      justify-content: space-between;
+      gap: 8px;
+      padding: 10px 14px;
+      background: rgba(110, 231, 255, 0.08);
+      border: 1px solid rgba(110, 231, 255, 0.2);
+      border-radius: 10px;
+      margin-bottom: 6px;
+      cursor: grab;
+      user-select: none;
+      font-size: 14px;
+      font-weight: 700;
+      transition: background 0.15s, border-color 0.15s;
     }
-    .vorraete-item.low {
-      background: linear-gradient(135deg, rgba(255, 107, 107, 0.2), rgba(255, 159, 67, 0.15));
-      border: 1px solid rgba(255, 107, 107, 0.4);
+    .std-chip:active { background: rgba(110, 231, 255, 0.18); cursor: grabbing; }
+    .std-chip.dragging { opacity: 0.45; }
+    .std-remove {
+      background: none; border: none;
+      color: #64748b; font-size: 18px; line-height: 1;
+      cursor: pointer; padding: 0 2px; min-height: unset;
+      flex-shrink: 0;
     }
-    .vorraete-info { flex: 1; }
-    .vorraete-name { font-weight: 700; font-size: 14px; }
-    .vorraete-stock { font-size: 12px; opacity: 0.6; }
-    .vorraete-stock-num {
-      font-size: 20px;
-      font-weight: 800;
-      min-width: 40px;
-      text-align: center;
+    .std-remove:hover { color: #ff6b6b; }
+    .std-empty-hint {
+      font-size: 12px; color: var(--muted);
+      text-align: center; padding: 20px 0;
     }
-    .vorraete-item.low .vorraete-stock-num { color: #ff6b6b; }
+
+    /* ── Drop-Zone ──────────────────────────────────────────────────── */
+    .list-card {
+      padding: 16px;
+      transition: border-color 0.15s, background 0.15s;
+    }
+    .list-card.drag-over {
+      border-color: rgba(110, 231, 255, 0.55) !important;
+      background: linear-gradient(180deg, rgba(110,231,255,0.05), rgba(20,25,38,1)) !important;
+    }
+
+    /* ── Touch-Drag Ghost ───────────────────────────────────────────── */
+    .drag-ghost {
+      position: fixed;
+      pointer-events: none;
+      z-index: 500;
+      opacity: 0.85;
+      border-color: rgba(110, 231, 255, 0.8) !important;
+      background: rgba(110, 231, 255, 0.25) !important;
+    }
   </style>
 </head>
 <body>
@@ -356,66 +214,112 @@
       <h1>Einkaufsliste</h1>
     </div>
     <div class="appbar-actions">
-      <button class="btn small" onclick="openVorraete()" title="Vorräte anzeigen">📦</button>
+      <button class="btn small dark" id="panelToggleBtn" onclick="toggleStandardPanel()" title="Standard-Artikel ein-/ausblenden">⭐</button>
       <button class="btn small dark" onclick="refreshList()" title="Aktualisieren">🔄</button>
     </div>
   </header>
 
   <main class="content">
-    <!-- Statistik -->
-    <div class="stats-bar">
-      <div class="stat-pill highlight">
-        <div class="stat-number" id="openCount">0</div>
-        <div class="stat-text">Offen</div>
-      </div>
-      <div class="stat-pill">
-        <div class="stat-number" id="autoCount">0</div>
-        <div class="stat-text">Aus Vorräte</div>
-      </div>
-    </div>
+    <div class="page-split">
 
-    <!-- Hinzufügen -->
-    <div class="add-section">
-      <input type="text" class="add-input" id="newItem" placeholder="Artikel hinzufügen..." onkeypress="if(event.key==='Enter')addManualItem()">
-      <button class="add-btn" onclick="addManualItem()">+</button>
-    </div>
+      <!-- Linke Spalte: Einkaufsliste -->
+      <div class="list-column">
+        <!-- Statistik -->
+        <div class="stats-bar">
+          <div class="stat-pill highlight">
+            <div class="stat-number" id="openCount">0</div>
+            <div class="stat-text">Offen</div>
+          </div>
+          <div class="stat-pill">
+            <div class="stat-number" id="totalCount">0</div>
+            <div class="stat-text">Gesamt</div>
+          </div>
+        </div>
 
-    <!-- Einkaufsliste -->
-    <div class="card" style="padding: 16px;">
-      <div class="shopping-list" id="shoppingList">
-        <div class="empty-state">
-          <div class="empty-icon">🛒</div>
-          <div class="empty-title">Alles erledigt!</div>
-          <div class="empty-sub">Keine Artikel auf der Einkaufsliste. Vorräte werden automatisch hinzugefügt.</div>
+        <!-- Hinzufügen -->
+        <div class="add-section">
+          <input type="text" class="add-input" id="newItem"
+                 placeholder="Artikel hinzufügen..."
+                 onkeypress="if(event.key==='Enter')addManualItem()">
+          <button class="add-btn" onclick="addManualItem()">+</button>
+        </div>
+
+        <!-- Drop-Zone: Einkaufsliste -->
+        <div class="card list-card" id="listCard"
+             ondragover="onDragOver(event)"
+             ondragleave="onDragLeave(event)"
+             ondrop="handleDrop(event)">
+          <div class="shopping-list" id="shoppingList">
+            <div class="empty-state">
+              <div class="empty-icon">🛒</div>
+              <div class="empty-title">Alles erledigt!</div>
+              <div class="empty-sub">Keine Artikel. Füge welche hinzu oder ziehe einen Standard-Artikel rüber.</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Quick Actions -->
+        <div class="quick-actions">
+          <button class="quick-btn danger" onclick="clearChecked()">✓ Erledigte entfernen</button>
+        </div>
+
+        <div class="sync-info">
+          <span class="sync-dot"></span>
+          Automatische Synchronisierung aktiv
         </div>
       </div>
-    </div>
 
-    <!-- Quick Actions -->
-    <div class="quick-actions">
-      <button class="quick-btn" onclick="openVorraete()">📦 Vorräte ansehen</button>
-      <button class="quick-btn danger" onclick="clearChecked()">✓ Erledigte entfernen</button>
-    </div>
+      <!-- Rechte Spalte: Standard-Artikel Panel -->
+      <div class="standard-panel card" id="standardPanel">
+        <div class="panel-header">
+          <span class="section-title" style="margin:0;font-size:15px">Standard-Artikel</span>
+          <button class="btn small dark" onclick="openAddStdModal()" title="Artikel hinzufügen">+</button>
+        </div>
+        <p class="panel-hint">Tippen oder auf Liste ziehen</p>
+        <div id="stdList"></div>
+      </div>
 
-    <div class="sync-info">
-      <span class="sync-dot"></span>
-      Automatische Synchronisierung aktiv
     </div>
   </main>
 
   <nav class="bottomnav" id="bottomNav"></nav>
 </div>
 
-<!-- Vorräte-Overlay -->
-<div class="vorraete-overlay" id="vorraeteOverlay">
-  <div class="vorraete-header">
-    <div class="vorraete-title">Vorräte-Übersicht</div>
-    <button class="vorraete-close" onclick="closeVorraete()">×</button>
-  </div>
-  <div class="vorraete-content" id="vorraeteContent">
-    <!-- Wird dynamisch gefüllt -->
+<!-- Qty Modal -->
+<div class="modal" id="qtyModal">
+  <div class="box">
+    <p id="qtyModalTitle" style="font-weight:800;font-size:17px;margin:0 0 12px">Artikel hinzufügen</p>
+    <label class="sub" style="display:block;margin-bottom:6px;font-size:12px">Stückzahl / Menge</label>
+    <input type="text" id="qtyInput" placeholder="z. B. 2 oder 1 kg" value="1"
+           onkeypress="if(event.key==='Enter')confirmDrop()">
+    <div style="display:flex;gap:10px;margin-top:14px">
+      <button class="btn" style="flex:1" onclick="confirmDrop()">Hinzufügen</button>
+      <button class="btn dark" style="flex:1" onclick="closeModal('qtyModal')">Abbrechen</button>
+    </div>
   </div>
 </div>
+
+<!-- Add Standard-Artikel Modal -->
+<div class="modal" id="addStdModal">
+  <div class="box">
+    <p style="font-weight:800;font-size:17px;margin:0 0 12px">Standard-Artikel hinzufügen</p>
+    <input type="text" id="stdNameInput" placeholder="z. B. Milch, Bier, Toilettenpapier"
+           onkeypress="if(event.key==='Enter')confirmAddStd()">
+    <div style="display:flex;gap:10px;margin-top:14px">
+      <button class="btn" style="flex:1" onclick="confirmAddStd()">Hinzufügen</button>
+      <button class="btn dark" style="flex:1" onclick="closeModal('addStdModal')">Abbrechen</button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div id="toast" style="
+  position:fixed;bottom:calc(var(--nav-h) + 12px);left:50%;transform:translateX(-50%);
+  background:#1c2130;border:1px solid #2a3042;padding:10px 18px;
+  border-radius:12px;font-size:13px;font-weight:700;
+  opacity:0;transition:opacity .25s;pointer-events:none;z-index:200;white-space:nowrap
+"></div>
+<style>#toast.show { opacity: 1; }</style>
 
 <!-- Firebase -->
 <script src="https://www.gstatic.com/firebasejs/12.0.0/firebase-app-compat.js"></script>
@@ -424,32 +328,211 @@
 <script>
   renderBottomNav('einkaufsliste');
 
-  // Daten
-  let inventory = [];
+  // ── Daten ──────────────────────────────────────────────────────────────────
   let manualItems = [];
-  let checkedItems = new Set(); // Temporär gecheckte Items
+  let checkedItems = new Set();
 
-  // Laden der Vorräte (automatische Items)
-  function loadInventory() {
-    if (!db) return;
+  const STD_KEY = 'sick_sound_standard_artikel';
+  let standardArtikel = JSON.parse(localStorage.getItem(STD_KEY) || '[]');
 
-    db.collection('vorraete').onSnapshot(snap => {
-      inventory = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-      inventory.sort((a, b) => {
-        const catA = (a.category || 'Sonstiges').toLowerCase();
-        const catB = (b.category || 'Sonstiges').toLowerCase();
-        if (catA !== catB) return catA.localeCompare(catB);
-        return (a.name || '').toLowerCase().localeCompare((b.name || '').toLowerCase());
+  // ── Standard-Artikel Panel ──────────────────────────────────────────────────
+  let panelVisible = window.innerWidth >= 768;
+
+  function applyPanelVisibility() {
+    const panel = document.getElementById('standardPanel');
+    const btn   = document.getElementById('panelToggleBtn');
+    panel.style.display = panelVisible ? '' : 'none';
+    btn.style.opacity   = panelVisible ? '1' : '0.5';
+  }
+
+  function toggleStandardPanel() {
+    panelVisible = !panelVisible;
+    applyPanelVisibility();
+  }
+
+  function renderStandardArtikel() {
+    const list = document.getElementById('stdList');
+    if (!standardArtikel.length) {
+      list.innerHTML = '<p class="std-empty-hint">Noch keine Artikel.<br>Tippe auf + um welche anzulegen.</p>';
+      return;
+    }
+    list.innerHTML = standardArtikel.map((a, i) =>
+      `<div class="std-chip" draggable="true" data-name="${a.name.replace(/"/g,'&quot;')}" data-index="${i}">
+        <span>${a.name}</span>
+        <button class="std-remove" data-index="${i}" title="Entfernen">×</button>
+      </div>`
+    ).join('');
+
+    // Drag (mouse) + Click
+    list.querySelectorAll('.std-chip').forEach(chip => {
+      chip.addEventListener('dragstart', e => {
+        pendingDropName = chip.dataset.name;
+        e.dataTransfer.setData('text/plain', chip.dataset.name);
+        e.dataTransfer.effectAllowed = 'copy';
+        chip.classList.add('dragging');
+        setTimeout(() => chip.classList.remove('dragging'), 0);
       });
-      renderList();
-      renderVorraete();
+      chip.addEventListener('click', e => {
+        if (e.target.classList.contains('std-remove')) return;
+        openQtyModal(chip.dataset.name);
+      });
+    });
+
+    // Remove buttons
+    list.querySelectorAll('.std-remove').forEach(btn => {
+      btn.addEventListener('click', e => {
+        e.stopPropagation();
+        removeStdArtikel(parseInt(btn.dataset.index));
+      });
+    });
+
+    setupTouchDrag();
+  }
+
+  function openAddStdModal() {
+    document.getElementById('stdNameInput').value = '';
+    openModal('addStdModal');
+    setTimeout(() => document.getElementById('stdNameInput').focus(), 350);
+  }
+
+  function confirmAddStd() {
+    const name = document.getElementById('stdNameInput').value.trim();
+    if (!name) return;
+    standardArtikel.push({ name, id: Date.now() });
+    localStorage.setItem(STD_KEY, JSON.stringify(standardArtikel));
+    renderStandardArtikel();
+    closeModal('addStdModal');
+    showToast(`„${name}" zu Standard-Artikeln hinzugefügt`);
+  }
+
+  function removeStdArtikel(index) {
+    const name = standardArtikel[index]?.name;
+    standardArtikel.splice(index, 1);
+    localStorage.setItem(STD_KEY, JSON.stringify(standardArtikel));
+    renderStandardArtikel();
+    if (name) showToast(`„${name}" entfernt`);
+  }
+
+  // ── Drag & Drop (mouse / HTML5) ─────────────────────────────────────────────
+  let pendingDropName = '';
+
+  function onDragOver(e) {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'copy';
+    document.getElementById('listCard').classList.add('drag-over');
+  }
+  function onDragLeave(e) {
+    if (!document.getElementById('listCard').contains(e.relatedTarget)) {
+      document.getElementById('listCard').classList.remove('drag-over');
+    }
+  }
+  function handleDrop(e) {
+    e.preventDefault();
+    document.getElementById('listCard').classList.remove('drag-over');
+    const name = e.dataTransfer.getData('text/plain') || pendingDropName;
+    if (!name) return;
+    pendingDropName = name;
+    openQtyModal(name);
+  }
+
+  // ── Touch-Drag (iPad) ───────────────────────────────────────────────────────
+  let touchDrag = null;
+
+  function setupTouchDrag() {
+    document.getElementById('stdList').querySelectorAll('.std-chip').forEach(chip => {
+      chip.addEventListener('touchstart', onChipTouchStart, { passive: true });
     });
   }
 
-  // Laden der manuellen Items
+  function onChipTouchStart(e) {
+    const chip = e.currentTarget;
+    const t    = e.touches[0];
+    touchDrag  = { name: chip.dataset.name, chip, startX: t.clientX, startY: t.clientY, ghost: null, moved: false };
+    document.addEventListener('touchmove', onChipTouchMove, { passive: false });
+    document.addEventListener('touchend',  onChipTouchEnd,  { passive: true  });
+  }
+
+  function onChipTouchMove(e) {
+    if (!touchDrag) return;
+    const t  = e.touches[0];
+    const dx = t.clientX - touchDrag.startX;
+    const dy = t.clientY - touchDrag.startY;
+
+    if (!touchDrag.moved && (Math.abs(dx) > 8 || Math.abs(dy) > 8)) {
+      touchDrag.moved = true;
+      const r     = touchDrag.chip.getBoundingClientRect();
+      const ghost = touchDrag.chip.cloneNode(true);
+      ghost.className = 'std-chip drag-ghost';
+      ghost.style.width  = r.width + 'px';
+      ghost.style.left   = (t.clientX - r.width / 2) + 'px';
+      ghost.style.top    = (t.clientY - 28) + 'px';
+      document.body.appendChild(ghost);
+      touchDrag.ghost = ghost;
+    }
+
+    if (!touchDrag.ghost) return;
+    e.preventDefault();
+    touchDrag.ghost.style.left = (t.clientX - touchDrag.ghost.offsetWidth / 2) + 'px';
+    touchDrag.ghost.style.top  = (t.clientY - 28) + 'px';
+
+    const rect = document.getElementById('listCard').getBoundingClientRect();
+    const over = t.clientX >= rect.left && t.clientX <= rect.right &&
+                 t.clientY >= rect.top  && t.clientY <= rect.bottom;
+    document.getElementById('listCard').classList.toggle('drag-over', over);
+  }
+
+  function onChipTouchEnd(e) {
+    if (!touchDrag) return;
+    const t = e.changedTouches[0];
+    if (touchDrag.ghost) touchDrag.ghost.remove();
+    document.getElementById('listCard').classList.remove('drag-over');
+
+    if (!touchDrag.moved) {
+      // Tap → sofort Modal öffnen
+      openQtyModal(touchDrag.name);
+    } else {
+      const rect = document.getElementById('listCard').getBoundingClientRect();
+      const over = t.clientX >= rect.left && t.clientX <= rect.right &&
+                   t.clientY >= rect.top  && t.clientY <= rect.bottom;
+      if (over) openQtyModal(touchDrag.name);
+    }
+
+    touchDrag = null;
+    document.removeEventListener('touchmove', onChipTouchMove);
+    document.removeEventListener('touchend',  onChipTouchEnd);
+  }
+
+  // ── Qty Modal ───────────────────────────────────────────────────────────────
+  function openQtyModal(name) {
+    pendingDropName = name;
+    document.getElementById('qtyModalTitle').textContent = `„${name}" hinzufügen`;
+    document.getElementById('qtyInput').value = '1';
+    openModal('qtyModal');
+    setTimeout(() => {
+      const inp = document.getElementById('qtyInput');
+      inp.focus(); inp.select();
+    }, 350);
+  }
+
+  async function confirmDrop() {
+    const qty  = document.getElementById('qtyInput').value.trim() || '1';
+    const name = pendingDropName;
+    closeModal('qtyModal');
+    if (!name) return;
+    if (!db) return alert('Offline – kann nicht speichern');
+
+    await db.collection('einkaufsliste').add({
+      name,
+      amount: qty !== '1' ? qty : '',
+      createdAt: Date.now()
+    });
+    showToast(`${name} hinzugefügt`);
+    pendingDropName = '';
+  }
+
+  // ── Laden der manuellen Items ───────────────────────────────────────────────
   function loadManualItems() {
     if (!db) return;
-
     db.collection('einkaufsliste').onSnapshot(snap => {
       manualItems = snap.docs.map(d => ({ id: d.id, ...d.data() }));
       manualItems.sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0));
@@ -457,309 +540,126 @@
     });
   }
 
-  // Liste rendern
+  // ── Liste rendern ───────────────────────────────────────────────────────────
   function renderList() {
     const list = document.getElementById('shoppingList');
+    const open = manualItems.filter(i => !checkedItems.has('manual_' + i.id)).length;
+    document.getElementById('openCount').textContent  = open;
+    document.getElementById('totalCount').textContent = manualItems.length;
 
-    // Niedrige Vorräte (automatisch hinzugefügt)
-    const lowStock = inventory.filter(item => item.stock <= item.minStock);
-
-    // Alle offenen Items (nicht gecheckt)
-    const openItems = [
-      ...lowStock.map(item => {
-        const orderQty = Math.max(1, (item.orderStock ?? item.minStock + 1) - item.stock);
-        return {
-          id: 'auto_' + item.id,
-          name: item.name,
-          type: 'auto',
-          category: item.category || 'Sonstiges',
-          amount: `${orderQty} ${item.unit || 'Stück'} kaufen`,
-          needAmount: orderQty,
-          itemRef: item
-        };
-      }),
-      ...manualItems.map(item => ({
-        id: 'manual_' + item.id,
-        name: item.name,
-        type: 'manual',
-        category: 'Manuell',
-        amount: item.amount || '',
-        itemRef: item
-      }))
-    ];
-
-    // Statistiken
-    const autoCount = lowStock.length;
-    const totalOpen = openItems.filter(item => !checkedItems.has(item.id)).length;
-    document.getElementById('openCount').textContent = totalOpen;
-    document.getElementById('autoCount').textContent = autoCount;
-
-    if (openItems.length === 0) {
+    if (!manualItems.length) {
       list.innerHTML = `
         <div class="empty-state">
           <div class="empty-icon">🛒</div>
           <div class="empty-title">Alles erledigt!</div>
-          <div class="empty-sub">Keine Artikel auf der Einkaufsliste. Vorräte werden automatisch hinzugefügt.</div>
-        </div>
-      `;
+          <div class="empty-sub">Tippe auf einen Standard-Artikel oder gib etwas oben ein.</div>
+        </div>`;
       return;
     }
 
-    // Nach Kategorie gruppieren
-    const grouped = {};
-    openItems.forEach(item => {
-      const cat = item.category;
-      if (!grouped[cat]) grouped[cat] = [];
-      grouped[cat].push(item);
-    });
-
-    // Kategorien sortieren: Manuell zuerst, dann alphabetisch
-    const sortedCategories = Object.keys(grouped).sort((a, b) => {
-      if (a === 'Manuell') return -1;
-      if (b === 'Manuell') return 1;
-      return a.localeCompare(b);
-    });
-
-    let html = '';
-    sortedCategories.forEach(category => {
-      const items = grouped[category];
-      const checkedCount = items.filter(i => checkedItems.has(i.id)).length;
-
-      html += `
-        <div class="category-section">
-          <div class="category-header">
-            ${category}
-            <span class="category-count">${items.length - checkedCount}/${items.length}</span>
+    list.innerHTML = manualItems.map(item => {
+      const itemId    = 'manual_' + item.id;
+      const isChecked = checkedItems.has(itemId);
+      return `
+        <div class="shopping-item manual ${isChecked ? 'checked' : ''}"
+             data-id="${itemId}"
+             onclick="toggleItem('${itemId}')">
+          <div class="item-checkbox">
+            <svg viewBox="0 0 24 24" fill="currentColor">
+              <path d="M9 16.2l-3.5-3.5-1.4 1.4L9 19 20.3 7.7l-1.4-1.4z"/>
+            </svg>
           </div>
-      `;
-
-      items.forEach(item => {
-        const isChecked = checkedItems.has(item.id);
-
-        html += `
-          <div class="shopping-item ${item.type} ${isChecked ? 'checked' : ''}"
-               data-id="${item.id}"
-               onclick="toggleItem('${item.id}')">
-            <div class="item-checkbox">
-              <svg viewBox="0 0 24 24" fill="currentColor">
-                <path d="M9 16.2l-3.5-3.5-1.4 1.4L9 19 20.3 7.7l-1.4-1.4z"/>
-              </svg>
-            </div>
-            <div class="item-info">
-              <div class="item-name">${item.name}</div>
-              <div class="item-meta">
-                <span class="item-source">${item.type === 'auto' ? 'Vorrat' : 'Manuell'}</span>
-                ${item.amount ? `<span class="item-amount">${item.amount}</span>` : ''}
-              </div>
-            </div>
-            ${item.needAmount ? `<div class="qty-badge">+${item.needAmount}</div>` : ''}
+          <div class="item-info">
+            <div class="item-name">${item.name}</div>
+            ${item.amount ? `<div class="item-meta"><span class="item-amount">${item.amount}</span></div>` : ''}
           </div>
-        `;
-      });
-
-      html += '</div>';
-    });
-
-    list.innerHTML = html;
+        </div>`;
+    }).join('');
   }
 
-  // Item abhaken/entfernen
+  // ── Item abhaken / entfernen ────────────────────────────────────────────────
   function toggleItem(itemId) {
     if (checkedItems.has(itemId)) {
-      // Bereits gecheckt - entfernen
       removeItem(itemId);
     } else {
-      // Noch nicht gecheckt - abhaken
       checkedItems.add(itemId);
-
       const el = document.querySelector(`[data-id="${itemId}"]`);
       if (el) {
         el.classList.add('checked');
-
-        // Nach kurzer Verzögerung entfernen
-        setTimeout(() => {
-          removeItem(itemId);
-        }, 600);
+        setTimeout(() => removeItem(itemId), 600);
       }
     }
-    updateStats();
+    const open = manualItems.filter(i => !checkedItems.has('manual_' + i.id)).length;
+    document.getElementById('openCount').textContent = open;
   }
 
-  // Item entfernen
   async function removeItem(itemId) {
     const el = document.querySelector(`[data-id="${itemId}"]`);
-    if (el) {
-      el.classList.add('removing');
-    }
+    if (el) el.classList.add('removing');
 
-    // Typ bestimmen
-    if (itemId.startsWith('auto_')) {
-      // Vorrats-Item: Bestand auffüllen
-      const vorratId = itemId.replace('auto_', '');
-      const item = inventory.find(i => i.id === vorratId);
-      if (item && db) {
-        // Bestand auf Bestellbestand setzen
-        const newStock = item.orderStock ?? Math.max(item.minStock + 1, item.stock + 1);
-        await db.collection('vorraete').doc(vorratId).update({
-          stock: newStock,
-          updatedAt: Date.now()
-        });
-        // Entsprechenden Hausdienst-Task löschen (bidirektionale Sync)
-        const taskSnap = await db.collection('hausdienst_tasks')
-          .where('autoCreated', '==', true)
-          .where('itemId', '==', vorratId)
-          .get();
-        taskSnap.forEach(doc => doc.ref.delete());
-      }
-    } else if (itemId.startsWith('manual_')) {
-      // Manuelles Item: Löschen
+    if (itemId.startsWith('manual_')) {
       const manualId = itemId.replace('manual_', '');
-      if (db) {
-        await db.collection('einkaufsliste').doc(manualId).delete();
-      }
+      if (db) await db.collection('einkaufsliste').doc(manualId).delete();
     }
 
     checkedItems.delete(itemId);
-
-    // UI nach Animation aktualisieren
-    setTimeout(() => {
-      renderList();
-    }, 400);
+    setTimeout(() => renderList(), 400);
   }
 
-  // Manuelles Item hinzufügen
+  // ── Manuelles Item hinzufügen ───────────────────────────────────────────────
   async function addManualItem() {
     const input = document.getElementById('newItem');
-    const name = input.value.trim();
-
+    const name  = input.value.trim();
     if (!name) return;
-    if (!db) return alert('Offline - kann nicht speichern');
-
-    await db.collection('einkaufsliste').add({
-      name,
-      createdAt: Date.now()
-    });
-
+    if (!db) return alert('Offline – kann nicht speichern');
+    await db.collection('einkaufsliste').add({ name, createdAt: Date.now() });
     input.value = '';
     input.focus();
   }
 
-  // Alle erledigten entfernen
+  // ── Alle erledigten entfernen ───────────────────────────────────────────────
   function clearChecked() {
-    checkedItems.forEach(id => {
-      removeItem(id);
-    });
+    checkedItems.forEach(id => removeItem(id));
     checkedItems.clear();
   }
 
-  // Statistiken aktualisieren
-  function updateStats() {
-    const lowStock = inventory.filter(item => item.stock <= item.minStock);
-    const totalItems = lowStock.length + manualItems.length;
-    const openCount = totalItems - checkedItems.size;
-
-    document.getElementById('openCount').textContent = Math.max(0, openCount);
-    document.getElementById('autoCount').textContent = lowStock.length;
-  }
-
-  // Liste manuell aktualisieren
+  // ── Liste manuell aktualisieren ─────────────────────────────────────────────
   function refreshList() {
     checkedItems.clear();
     renderList();
   }
 
-  // Vorräte-Overlay
-  function openVorraete() {
-    renderVorraete();
-    document.getElementById('vorraeteOverlay').classList.add('show');
-  }
-
-  function closeVorraete() {
-    document.getElementById('vorraeteOverlay').classList.remove('show');
-  }
-
-  function renderVorraete() {
-    const content = document.getElementById('vorraeteContent');
-
-    if (inventory.length === 0) {
-      content.innerHTML = `
-        <div class="empty-state" style="color:#fff">
-          <div class="empty-icon">📦</div>
-          <div class="empty-title">Keine Vorräte</div>
-          <div class="empty-sub">Füge Vorräte über die Vorräte-Seite hinzu.</div>
-        </div>
-      `;
-      return;
-    }
-
-    // Nach Kategorie gruppieren
-    const grouped = {};
-    inventory.forEach(item => {
-      const cat = item.category || 'Sonstiges';
-      if (!grouped[cat]) grouped[cat] = [];
-      grouped[cat].push(item);
-    });
-
-    let html = '';
-    Object.keys(grouped).sort().forEach(category => {
-      html += `<div class="category-header" style="color:#6ee7ff">${category}</div>`;
-
-      grouped[category].forEach(item => {
-        const isLow = item.stock <= item.minStock;
-        html += `
-          <div class="vorraete-item ${isLow ? 'low' : ''}">
-            <div class="vorraete-info">
-              <div class="vorraete-name">${item.name}</div>
-              <div class="vorraete-stock">Min: ${item.minStock} ${item.unit || ''}</div>
-            </div>
-            <div class="vorraete-stock-num">${item.stock}</div>
-          </div>
-        `;
-      });
-    });
-
-    content.innerHTML = html;
-  }
-
-  // Initialisierung
-  loadInventory();
+  // ── Init ────────────────────────────────────────────────────────────────────
+  renderStandardArtikel();
+  applyPanelVisibility();
   loadManualItems();
 
-  // Sichtbarkeits-Handler für Aktualisierung
   document.addEventListener('visibilitychange', () => {
-    if (!document.hidden) {
-      refreshList();
-    }
+    if (!document.hidden) refreshList();
   });
 
-  // ===== Prio 4: Swipe-Gesten auf Einkaufsliste =====
-  // Swipe links → Item löschen (wie iOS Wischen zum Löschen)
+  // ── Swipe links → löschen (iOS-Stil) ───────────────────────────────────────
   (function setupSwipe() {
     const list = document.getElementById('shoppingList');
-    let sw = { el: null, id: null, startX: 0, startY: 0, locked: false };
+    let sw = { el: null, id: null, startX: 0, startY: 0 };
 
     list.addEventListener('touchstart', e => {
       const item = e.target.closest('.shopping-item');
       if (!item) return;
-      sw = { el: item, id: item.dataset.id, startX: e.touches[0].clientX, startY: e.touches[0].clientY, locked: false };
+      sw = { el: item, id: item.dataset.id, startX: e.touches[0].clientX, startY: e.touches[0].clientY };
     }, { passive: true });
 
     list.addEventListener('touchmove', e => {
-      if (!sw.el || sw.locked) return;
+      if (!sw.el) return;
       const dx = e.touches[0].clientX - sw.startX;
       const dy = e.touches[0].clientY - sw.startY;
-
-      // Vertikales Scrollen bevorzugen – Swipe abbrechen
       if (Math.abs(dy) > Math.abs(dx) + 5) { sw.el = null; return; }
-
-      // Horizontale Bewegung: Scroll verhindern, Item verschieben
       if (Math.abs(dx) > 6) e.preventDefault();
       const x = Math.max(-90, Math.min(0, dx));
       sw.el.style.transition = 'none';
       sw.el.style.transform  = `translateX(${x}px)`;
-      // Roten Hintergrund einblenden sobald ≥ 40px
       sw.el.style.background = x < -40
-        ? `linear-gradient(90deg, #1c2130, rgba(255,75,75,${Math.min(1, Math.abs(x+40)/50) * 0.6}))`
+        ? `linear-gradient(90deg,#1c2130,rgba(255,75,75,${Math.min(1,Math.abs(x+40)/50)*0.6}))`
         : '';
     }, { passive: false });
 
@@ -767,21 +667,17 @@
       if (!sw.el) return;
       const dx = e.changedTouches[0].clientX - sw.startX;
       sw.el.style.transition = 'transform 0.22s ease, opacity 0.22s ease';
-
-      if (Math.abs(dx) > 10) e.preventDefault(); // Klick-Event unterdrücken nach Swipe
-
+      if (Math.abs(dx) > 10) e.preventDefault();
       if (dx < -70) {
-        // Vollständig gewischt → Item entfernen
         sw.el.style.transform = 'translateX(-110%)';
         sw.el.style.opacity   = '0';
         const id = sw.id;
         setTimeout(() => removeItem(id), 220);
       } else {
-        // Zurückschnappen
-        sw.el.style.transform = '';
+        sw.el.style.transform  = '';
         sw.el.style.background = '';
       }
-      sw = { el: null, id: null, startX: 0, startY: 0, locked: false };
+      sw = { el: null, id: null, startX: 0, startY: 0 };
     }, { passive: false });
   })();
 </script>
