@@ -212,11 +212,28 @@
   const GC_CALENDAR_ID = 'c_c2fab374a80cfc318314f0ff3692a3928a1e0a7f5892ab346e156d90bad30dec@group.calendar.google.com';
   const GC_SCOPES      = 'https://www.googleapis.com/auth/calendar';
 
+  /* ── Token-Persistenz ───────────────────────────────────────────── */
+  function saveToken(token, expiresIn) {
+    const expiry = Date.now() + ((expiresIn || 3600) - 120) * 1000; // 2 min Puffer
+    localStorage.setItem('gc_token', token);
+    localStorage.setItem('gc_token_expiry', String(expiry));
+  }
+  function clearToken() {
+    localStorage.removeItem('gc_token');
+    localStorage.removeItem('gc_token_expiry');
+  }
+  function loadValidToken() {
+    const t = localStorage.getItem('gc_token');
+    const e = parseInt(localStorage.getItem('gc_token_expiry') || '0');
+    return (t && Date.now() < e) ? t : null;
+  }
+
   /* ── State ──────────────────────────────────────────────────────── */
   let tokenClient    = null;
   let gapiInited     = false;
   let gisInited      = false;
-  let accessToken    = sessionStorage.getItem('gc_token') || null;
+  let accessToken    = loadValidToken();
+  let manualSignin   = false;
   let calInstance    = null;
   let pendingSelect  = null;   // Info-Objekt von FullCalendar-Selektion
   let currentEvtObj  = null;   // Angeklicktes Event (für Löschen)
@@ -269,29 +286,44 @@
     if (accessToken) {
       gapi.client.setToken({ access_token: accessToken });
       onSignedIn(false);
+    } else if (localStorage.getItem('gc_token')) {
+      // Token abgelaufen – stille Erneuerung ohne Popup
+      setStatus('erneuert…', 'loading');
+      tokenClient.requestAccessToken({ prompt: '' });
     }
   }
 
   /* ── Auth ───────────────────────────────────────────────────────── */
   function handleSignin() {
     if (!tokenClient) return;
+    manualSignin = true;
     tokenClient.requestAccessToken({ prompt: accessToken ? '' : 'consent' });
   }
 
   function handleSignout() {
     if (accessToken) google.accounts.oauth2.revoke(accessToken, () => {});
     accessToken = null;
-    sessionStorage.removeItem('gc_token');
+    clearToken();
     gapi.client.setToken(null);
     onSignedOut();
   }
 
   function onTokenReceived(resp) {
-    if (resp.error) { console.error(resp); setStatus('Fehler'); return; }
+    if (resp.error) { console.error(resp); setStatus('Fehler'); onSignedOut(); return; }
     accessToken = resp.access_token;
-    sessionStorage.setItem('gc_token', accessToken);
+    saveToken(accessToken, resp.expires_in);
     gapi.client.setToken({ access_token: accessToken });
-    onSignedIn(true);
+    const fresh = manualSignin;
+    manualSignin = false;
+    onSignedIn(fresh);
+  }
+
+  function handleTokenExpiry() {
+    accessToken = null;
+    clearToken();
+    gapi.client.setToken(null);
+    if (tokenClient) tokenClient.requestAccessToken({ prompt: '' });
+    else onSignedOut();
   }
 
   function onSignedIn(freshLogin) {
@@ -339,7 +371,7 @@
       syncTonnenTasks();
     } catch(e) {
       console.error(e); setStatus('Ladefehler');
-      if (e.status === 401) { accessToken = null; sessionStorage.removeItem('gc_token'); onSignedOut(); }
+      if (e.status === 401) handleTokenExpiry();
     }
   }
 
@@ -513,7 +545,7 @@
       syncTonnenTasks();
     } catch(e) {
       console.error(e); showToast('Fehler beim Erstellen');
-      if (e.status === 401) { accessToken = null; sessionStorage.removeItem('gc_token'); onSignedOut(); }
+      if (e.status === 401) handleTokenExpiry();
     }
   }
 
@@ -560,7 +592,7 @@
     } catch(e) {
       console.error(e); showToast('Fehler beim Löschen');
       refreshEvents();
-      if (e.status === 401) { accessToken = null; sessionStorage.removeItem('gc_token'); onSignedOut(); }
+      if (e.status === 401) handleTokenExpiry();
     }
   }
 

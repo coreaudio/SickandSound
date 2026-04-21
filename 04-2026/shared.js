@@ -180,7 +180,7 @@ function renderBottomNav(activePage) {
   ).join('');
 }
 
-/* 12. Swipe-Navigation (Edge-Swipe links/rechts zwischen Seiten) */
+/* 12. Swipe-Navigation mit Drag-Effekt (ganzer Screen) */
 function _setupSwipeNav(activePage) {
   const ORDER = ['index','hausdienst','einkaufsliste','rangliste','bewertungen','buchungen','kalender'];
   const HREFS = {
@@ -196,59 +196,92 @@ function _setupSwipeNav(activePage) {
   const idx = ORDER.indexOf(activePage);
   if (idx === -1) return;
 
-  const EDGE_ZONE  = 32;  // px vom Bildschirmrand für Edge-Swipe
-  const MIN_DX     = 72;  // Mindest-horizontale Distanz
-  const MAX_DY_RATIO = 0.6; // dy/dx-Verhältnis: zu schräg = kein Swipe
+  const MIN_DX       = 55;
+  const MAX_DY_RATIO = 0.5;
 
-  // Visueller Indikator links/rechts
-  const makeArrow = (side) => {
+  function isHScrollable(el) {
+    while (el && el !== document.body) {
+      const ov = getComputedStyle(el).overflowX;
+      if ((ov === 'auto' || ov === 'scroll') && el.scrollWidth > el.clientWidth) return true;
+      el = el.parentElement;
+    }
+    return false;
+  }
+
+  const app = document.querySelector('.app');
+  if (!app) return;
+
+  // Gradient-Schimmer am Rand zeigt Swipe-Richtung
+  const makeGlow = (side) => {
     const el = document.createElement('div');
     el.style.cssText = [
-      'position:fixed', side + ':0', 'top:50%', 'transform:translateY(-50%)',
-      'width:28px', 'height:56px', 'background:rgba(0,224,184,.18)',
-      'border-radius:' + (side === 'left' ? '0 12px 12px 0' : '12px 0 0 12px'),
-      'display:flex', 'align-items:center', 'justify-content:center',
-      'color:#00e0b8', 'font-size:16px', 'font-weight:800',
-      'opacity:0', 'transition:opacity .15s', 'pointer-events:none', 'z-index:999',
+      'position:fixed', side + ':0', 'top:0', 'bottom:0', 'width:70px',
+      'background:linear-gradient(' + (side === 'left' ? 'to right' : 'to left') + ',rgba(0,224,184,.18),transparent)',
+      'opacity:0', 'transition:opacity .1s', 'pointer-events:none', 'z-index:998',
     ].join(';');
-    el.textContent = side === 'left' ? '‹' : '›';
     document.body.appendChild(el);
     return el;
   };
 
-  const leftArrow  = idx > 0                  ? makeArrow('left')  : null;
-  const rightArrow = idx < ORDER.length - 1   ? makeArrow('right') : null;
+  const leftGlow  = idx > 0                ? makeGlow('left')  : null;
+  const rightGlow = idx < ORDER.length - 1 ? makeGlow('right') : null;
 
-  let startX = 0, startY = 0, edgeSide = null;
+  let startX = 0, startY = 0, tracking = false;
 
   document.addEventListener('touchstart', e => {
     startX   = e.touches[0].clientX;
     startY   = e.touches[0].clientY;
-    const w  = window.innerWidth;
-    edgeSide = startX < EDGE_ZONE ? 'left' : startX > w - EDGE_ZONE ? 'right' : null;
+    tracking = !isHScrollable(e.target);
+    if (tracking) app.style.transition = 'none';
   }, { passive: true });
 
   document.addEventListener('touchmove', e => {
-    if (!edgeSide) return;
+    if (!tracking) return;
     const dx = e.touches[0].clientX - startX;
-    const progress = Math.min(1, Math.abs(dx) / (window.innerWidth * 0.4));
-    if (edgeSide === 'right' && dx < 0 && rightArrow) rightArrow.style.opacity = progress;
-    if (edgeSide === 'left'  && dx > 0 && leftArrow)  leftArrow.style.opacity  = progress;
+    const dy = Math.abs(e.touches[0].clientY - startY);
+
+    // Geste zu vertikal → abbrechen und zurückschnappen
+    if (dy > Math.abs(dx) * MAX_DY_RATIO && Math.abs(dx) < 18) {
+      tracking = false;
+      app.style.transition = 'transform .25s ease-out';
+      app.style.transform  = 'translateX(0)';
+      return;
+    }
+
+    const canDrag = (dx > 0 && idx > 0) || (dx < 0 && idx < ORDER.length - 1);
+    if (!canDrag) return;
+
+    app.style.transform = `translateX(${dx * 0.88}px)`;
+
+    const progress = Math.min(1, Math.abs(dx) / (window.innerWidth * 0.38));
+    if (dx > 0 && leftGlow)  leftGlow.style.opacity  = String(progress);
+    if (dx < 0 && rightGlow) rightGlow.style.opacity = String(progress);
   }, { passive: true });
 
   document.addEventListener('touchend', e => {
-    if (leftArrow)  leftArrow.style.opacity  = '0';
-    if (rightArrow) rightArrow.style.opacity = '0';
-    if (!edgeSide) return;
+    if (leftGlow)  leftGlow.style.opacity  = '0';
+    if (rightGlow) rightGlow.style.opacity = '0';
+    if (!tracking) return;
+    tracking = false;
 
     const dx = e.changedTouches[0].clientX - startX;
     const dy = Math.abs(e.changedTouches[0].clientY - startY);
-    if (Math.abs(dx) < MIN_DX || dy > Math.abs(dx) * MAX_DY_RATIO) { edgeSide = null; return; }
 
     let target = null;
-    if (dx < 0 && edgeSide === 'right' && idx < ORDER.length - 1) target = HREFS[ORDER[idx + 1]];
-    if (dx > 0 && edgeSide === 'left'  && idx > 0)                target = HREFS[ORDER[idx - 1]];
-    edgeSide = null;
-    if (target) location.href = target;
+    if (Math.abs(dx) >= MIN_DX && dy <= Math.abs(dx) * MAX_DY_RATIO) {
+      if (dx < 0 && idx < ORDER.length - 1) target = HREFS[ORDER[idx + 1]];
+      if (dx > 0 && idx > 0)                target = HREFS[ORDER[idx - 1]];
+    }
+
+    if (target) {
+      // Seite rutscht raus, dann Navigation
+      app.style.transition = 'transform .2s ease-in';
+      app.style.transform  = `translateX(${dx > 0 ? window.innerWidth : -window.innerWidth}px)`;
+      setTimeout(() => { location.href = target; }, 185);
+    } else {
+      // Zurückschnappen
+      app.style.transition = 'transform .28s ease-out';
+      app.style.transform  = 'translateX(0)';
+    }
   }, { passive: true });
 }
