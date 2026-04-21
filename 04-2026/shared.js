@@ -159,6 +159,8 @@ function openBackupModal() { openModal('backupModal'); }
 
 /* 11. Bottom-Nav */
 function renderBottomNav(activePage) {
+  // Swipe-Navigation zwischen Seiten (wird nach Render eingerichtet)
+  setTimeout(() => _setupSwipeNav(activePage), 0);
   const nav = document.getElementById('bottomNav');
   if (!nav) return;
   const tabs = [
@@ -176,4 +178,77 @@ function renderBottomNav(activePage) {
       <span>${t.label}</span>
     </a>`
   ).join('');
+}
+
+/* 12. Swipe-Navigation (Edge-Swipe links/rechts zwischen Seiten) */
+function _setupSwipeNav(activePage) {
+  const ORDER = ['index','hausdienst','einkaufsliste','rangliste','bewertungen','buchungen','kalender'];
+  const HREFS = {
+    index:         'index.html',
+    hausdienst:    'hausdienst.html',
+    einkaufsliste: 'einkaufsliste.html',
+    rangliste:     'rangliste.html',
+    bewertungen:   'bewertungen.html',
+    buchungen:     'buchungen.html',
+    kalender:      'kalender.html',
+  };
+
+  const idx = ORDER.indexOf(activePage);
+  if (idx === -1) return;
+
+  const EDGE_ZONE  = 32;  // px vom Bildschirmrand für Edge-Swipe
+  const MIN_DX     = 72;  // Mindest-horizontale Distanz
+  const MAX_DY_RATIO = 0.6; // dy/dx-Verhältnis: zu schräg = kein Swipe
+
+  // Visueller Indikator links/rechts
+  const makeArrow = (side) => {
+    const el = document.createElement('div');
+    el.style.cssText = [
+      'position:fixed', side + ':0', 'top:50%', 'transform:translateY(-50%)',
+      'width:28px', 'height:56px', 'background:rgba(0,224,184,.18)',
+      'border-radius:' + (side === 'left' ? '0 12px 12px 0' : '12px 0 0 12px'),
+      'display:flex', 'align-items:center', 'justify-content:center',
+      'color:#00e0b8', 'font-size:16px', 'font-weight:800',
+      'opacity:0', 'transition:opacity .15s', 'pointer-events:none', 'z-index:999',
+    ].join(';');
+    el.textContent = side === 'left' ? '‹' : '›';
+    document.body.appendChild(el);
+    return el;
+  };
+
+  const leftArrow  = idx > 0                  ? makeArrow('left')  : null;
+  const rightArrow = idx < ORDER.length - 1   ? makeArrow('right') : null;
+
+  let startX = 0, startY = 0, edgeSide = null;
+
+  document.addEventListener('touchstart', e => {
+    startX   = e.touches[0].clientX;
+    startY   = e.touches[0].clientY;
+    const w  = window.innerWidth;
+    edgeSide = startX < EDGE_ZONE ? 'left' : startX > w - EDGE_ZONE ? 'right' : null;
+  }, { passive: true });
+
+  document.addEventListener('touchmove', e => {
+    if (!edgeSide) return;
+    const dx = e.touches[0].clientX - startX;
+    const progress = Math.min(1, Math.abs(dx) / (window.innerWidth * 0.4));
+    if (edgeSide === 'right' && dx < 0 && rightArrow) rightArrow.style.opacity = progress;
+    if (edgeSide === 'left'  && dx > 0 && leftArrow)  leftArrow.style.opacity  = progress;
+  }, { passive: true });
+
+  document.addEventListener('touchend', e => {
+    if (leftArrow)  leftArrow.style.opacity  = '0';
+    if (rightArrow) rightArrow.style.opacity = '0';
+    if (!edgeSide) return;
+
+    const dx = e.changedTouches[0].clientX - startX;
+    const dy = Math.abs(e.changedTouches[0].clientY - startY);
+    if (Math.abs(dx) < MIN_DX || dy > Math.abs(dx) * MAX_DY_RATIO) { edgeSide = null; return; }
+
+    let target = null;
+    if (dx < 0 && edgeSide === 'right' && idx < ORDER.length - 1) target = HREFS[ORDER[idx + 1]];
+    if (dx > 0 && edgeSide === 'left'  && idx > 0)                target = HREFS[ORDER[idx - 1]];
+    edgeSide = null;
+    if (target) location.href = target;
+  }, { passive: true });
 }
