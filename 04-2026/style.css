@@ -6,7 +6,7 @@
 
 /* Reset & base */
 *{box-sizing:border-box}
-html,body{height:100%;margin:0}
+html,body{height:100%;margin:0;background:#0b0e14}
 body{
   color:var(--txt);
   font-family: ui-sans-serif, -apple-system, BlinkMacSystemFont, "SF Pro Display",

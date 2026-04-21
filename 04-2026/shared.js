@@ -159,6 +159,21 @@ function openBackupModal() { openModal('backupModal'); }
 
 /* 11. Bottom-Nav */
 function renderBottomNav(activePage) {
+  // Neue Seite sofort off-screen positionieren und hereingleiten lassen
+  const _enterFrom = sessionStorage.getItem('swipe_enter_from');
+  if (_enterFrom) {
+    sessionStorage.removeItem('swipe_enter_from');
+    const _app = document.querySelector('.app');
+    if (_app) {
+      const _w = window.innerWidth;
+      _app.style.transition = 'none';
+      _app.style.transform  = `translateX(${_enterFrom === 'left' ? -_w : _w}px)`;
+      requestAnimationFrame(() => requestAnimationFrame(() => {
+        _app.style.transition = 'transform .22s cubic-bezier(.25,.46,.45,.94)';
+        _app.style.transform  = 'translateX(0)';
+      }));
+    }
+  }
   // Swipe-Navigation zwischen Seiten (wird nach Render eingerichtet)
   setTimeout(() => _setupSwipeNav(activePage), 0);
   const nav = document.getElementById('bottomNav');
@@ -223,8 +238,9 @@ function _setupSwipeNav(activePage) {
     return el;
   };
 
-  const leftGlow  = idx > 0                ? makeGlow('left')  : null;
-  const rightGlow = idx < ORDER.length - 1 ? makeGlow('right') : null;
+  // Beide Richtungen immer aktiv (zirkulär)
+  const leftGlow  = makeGlow('left');
+  const rightGlow = makeGlow('right');
 
   let startX = 0, startY = 0, tracking = false;
 
@@ -248,19 +264,16 @@ function _setupSwipeNav(activePage) {
       return;
     }
 
-    const canDrag = (dx > 0 && idx > 0) || (dx < 0 && idx < ORDER.length - 1);
-    if (!canDrag) return;
-
     app.style.transform = `translateX(${dx * 0.88}px)`;
 
     const progress = Math.min(1, Math.abs(dx) / (window.innerWidth * 0.38));
-    if (dx > 0 && leftGlow)  leftGlow.style.opacity  = String(progress);
-    if (dx < 0 && rightGlow) rightGlow.style.opacity = String(progress);
+    if (dx > 0) leftGlow.style.opacity  = String(progress);
+    if (dx < 0) rightGlow.style.opacity = String(progress);
   }, { passive: true });
 
   document.addEventListener('touchend', e => {
-    if (leftGlow)  leftGlow.style.opacity  = '0';
-    if (rightGlow) rightGlow.style.opacity = '0';
+    leftGlow.style.opacity  = '0';
+    rightGlow.style.opacity = '0';
     if (!tracking) return;
     tracking = false;
 
@@ -269,12 +282,14 @@ function _setupSwipeNav(activePage) {
 
     let target = null;
     if (Math.abs(dx) >= MIN_DX && dy <= Math.abs(dx) * MAX_DY_RATIO) {
-      if (dx < 0 && idx < ORDER.length - 1) target = HREFS[ORDER[idx + 1]];
-      if (dx > 0 && idx > 0)                target = HREFS[ORDER[idx - 1]];
+      // Zirkulär: letzter → erster und umgekehrt
+      if (dx < 0) target = HREFS[ORDER[(idx + 1) % ORDER.length]];
+      if (dx > 0) target = HREFS[ORDER[(idx - 1 + ORDER.length) % ORDER.length]];
     }
 
     if (target) {
-      // Seite rutscht raus, dann Navigation
+      // Richtung für Slide-in auf der neuen Seite speichern
+      sessionStorage.setItem('swipe_enter_from', dx > 0 ? 'left' : 'right');
       app.style.transition = 'transform .2s ease-in';
       app.style.transform  = `translateX(${dx > 0 ? window.innerWidth : -window.innerWidth}px)`;
       setTimeout(() => { location.href = target; }, 185);
