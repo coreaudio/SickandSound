@@ -235,21 +235,20 @@ function _setupSwipeNav(activePage) {
   const app = document.querySelector('.app');
   if (!app) return;
 
-  // Gradient-Schimmer am Rand zeigt Swipe-Richtung
-  const makeGlow = (side) => {
-    const el = document.createElement('div');
-    el.style.cssText = [
-      'position:fixed', side + ':0', 'top:0', 'bottom:0', 'width:70px',
-      'background:linear-gradient(' + (side === 'left' ? 'to right' : 'to left') + ',rgba(0,224,184,.18),transparent)',
-      'opacity:0', 'transition:opacity .1s', 'pointer-events:none', 'z-index:998',
-    ].join(';');
-    document.body.appendChild(el);
-    return el;
+  // Peek-Panel: zeigt Zielseiten hinter .app (sichtbar wenn .app weggeschoben wird)
+  const LABELS = {
+    index:'Liste', hausdienst:'Hausdienst', einkaufsliste:'Einkauf',
+    rangliste:'Rang', bewertungen:'Bewertungen', buchungen:'Buchungen', kalender:'Kalender',
   };
-
-  // Beide Richtungen immer aktiv (zirkulär)
-  const leftGlow  = makeGlow('left');
-  const rightGlow = makeGlow('right');
+  const prevKey = ORDER[(idx - 1 + ORDER.length) % ORDER.length];
+  const nextKey = ORDER[(idx + 1) % ORDER.length];
+  const chevL = `<svg width="28" height="28" viewBox="0 0 24 24" fill="currentColor"><path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/></svg>`;
+  const chevR = `<svg width="28" height="28" viewBox="0 0 24 24" fill="currentColor"><path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"/></svg>`;
+  const peekItem = (label, chev) => `<div style="display:flex;flex-direction:column;align-items:center;gap:6px;color:rgba(148,163,184,.45);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px">${chev}<span>${label}</span></div>`;
+  const peek = document.createElement('div');
+  peek.style.cssText = 'position:fixed;inset:0;z-index:1;display:flex;align-items:center;justify-content:space-between;padding:0 24px;pointer-events:none;';
+  peek.innerHTML = peekItem(LABELS[prevKey], chevL) + peekItem(LABELS[nextKey], chevR);
+  document.body.appendChild(peek);
 
   let startX = 0, startY = 0, tracking = false;
 
@@ -274,15 +273,9 @@ function _setupSwipeNav(activePage) {
     }
 
     app.style.transform = `translateX(${dx * 0.88}px)`;
-
-    const progress = Math.min(1, Math.abs(dx) / (window.innerWidth * 0.38));
-    if (dx > 0) leftGlow.style.opacity  = String(progress);
-    if (dx < 0) rightGlow.style.opacity = String(progress);
   }, { passive: true });
 
   document.addEventListener('touchend', e => {
-    leftGlow.style.opacity  = '0';
-    rightGlow.style.opacity = '0';
     if (!tracking) return;
     tracking = false;
 
