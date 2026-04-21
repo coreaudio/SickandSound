@@ -96,8 +96,9 @@
       font-weight: 800;
       margin-left: 6px;
     }
-    .hd-badge.open { background: #ff6b6b; color: #fff; }
-    .hd-badge.done { background: #2a3042; color: #7CFC9A; }
+    .hd-badge.open   { background: #ff6b6b; color: #fff; }
+    .hd-badge.done   { background: #2a3042; color: #7CFC9A; }
+    .hd-badge.credit { background: rgba(0,224,184,.15); color: #00e0b8; border: 1px solid rgba(0,224,184,.35); }
 
     /* Hinweis im Löschmodus */
     .delete-hint{ opacity:.75; font-size:12px; margin-top:4px }
@@ -688,12 +689,12 @@ async function loadMonthlyHdCounts(){
   }
 }
 
-// Berechnet die noch offenen Hausdienste für eine Person
+// Berechnet die noch offenen Hausdienste für eine Person (negativ = Gutschrift)
 function getOpenHdCount(person){
   const required = getHdRequired(person);
   if(required === 0) return 0; // Befreit
   const done = monthlyHdCounts[person] || 0;
-  return Math.max(0, required - done);
+  return required - done; // kann negativ sein (Gutschrift)
 }
 function valueOfCurrentStriche(person){
   return (columnOrder||[]).reduce((sum,d)=> sum + ((data[`${person}_${d}`]||0)*(prices[d]||0)), 0);
@@ -1279,7 +1280,9 @@ function buildTable(){
     const hdRequired = CORE.includes(p) ? getHdRequired(p) : 0;
     const openHd = hdRequired > 0 ? getOpenHdCount(p) : null;
     const hdBadge = openHd !== null
-      ? `<span class="hd-badge ${openHd > 0 ? 'open' : 'done'}" title="Offene Hausdienste diesen Monat (${hdRequired} erforderlich)">${openHd}</span>`
+      ? `<span class="hd-badge ${openHd > 0 ? 'open' : openHd < 0 ? 'credit' : 'done'}"
+           title="${openHd < 0 ? `${Math.abs(openHd)} Gutschrift(en) für nächsten Monat` : `Offene Hausdienste diesen Monat (${hdRequired} erforderlich)`}"
+         >${openHd < 0 ? '+' + Math.abs(openHd) : openHd}</span>`
       : '';
 
     // Hausdienst-Status-Icon und Aufgaben-Fortschritt für heute
