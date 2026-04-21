@@ -168,6 +168,7 @@ function renderBottomNav(activePage) {
     { page: 'rangliste',     href: 'rangliste.html',         label: 'Rang',        icon: 'M7 17H3V7h4v10zm7 0h-4V3h4v14zm7 0h-4v-8h4v8z' },
     { page: 'bewertungen',   href: 'bewertungen.html',       label: 'Bewertungen', icon: 'M12 1l3.09 6.26L22 8.27l-5 4.87L18.18 22 12 18.56 5.82 22 7 13.14 2 8.27l6.91-1.01L12 1z' },
     { page: 'buchungen',     href: 'buchungen.html',         label: 'Buchungen',   icon: 'M6 2h9l5 5v13a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2zm8 1.5V8h4.5L14 3.5z' },
+    { page: 'kalender',      href: 'kalender.html',          label: 'Kalender',    icon: 'M19 4h-1V2h-2v2H8V2H6v2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V10h14v10zm0-12H5V6h14v2zM7 12h5v5H7z' },
   ];
   nav.innerHTML = tabs.map(t =>
     `<a class="tab${t.page === activePage ? ' active' : ''}" href="${t.href}">
