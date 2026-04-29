@@ -652,6 +652,7 @@ let monthlyFeeLastApplied=''; // YYYY-MM des letzten Anwendens
 let deleteMode=false, adminMode=false, correctionMode=false, hdToday=null;
 let hdTodayCompleted = false; // Ob der heutige Hausdienst abgeschlossen ist
 let hdTaskProgress = null; // Aufgaben-Fortschritt: { done: X, total: Y }
+let hdTaskTotalToday = null; // Korrekte Gesamtzahl (nur heutige Tasks)
 let monthlyHdCounts = {}; // Hausdienste pro Person im aktuellen Monat
 const HD_DEFAULT_REQUIRED = 3; // Standard-Anforderung pro Monat
 
@@ -976,14 +977,12 @@ function subscribeRealtime(){
   });
 
   // Korrekte Task-Gesamtzahl: nur Tasks die heute fällig sind
-  const today = todayStr();
+  const todayKey = todayStr();
   db.collection("hausdienst_tasks").onSnapshot(snap => {
-    const todayTotal = snap.docs.filter(d => {
+    hdTaskTotalToday = snap.docs.filter(d => {
       const dd = d.data().dueDate;
-      return !dd || dd === today;
+      return !dd || dd === todayKey;
     }).length;
-    if (hdTaskProgress) hdTaskProgress = { ...hdTaskProgress, total: todayTotal };
-    else hdTaskProgress = { done: 0, total: todayTotal };
     buildTable();
   });
 
@@ -1304,10 +1303,12 @@ function buildTable(){
     if (isHdToday) {
       if (hdTodayCompleted) {
         hdStatusIcon = `<span class="hd-status-icon complete" title="Hausdienst abgeschlossen">✓</span>`;
-      } else if (hdTaskProgress && hdTaskProgress.total > 0) {
-        const progressPct = Math.round((hdTaskProgress.done / hdTaskProgress.total) * 100);
+      } else if (hdTaskTotalToday > 0) {
+        const done  = hdTaskProgress?.done ?? 0;
+        const total = hdTaskTotalToday;
+        const progressPct = Math.round((done / total) * 100);
         const progressColor = progressPct === 100 ? '#7CFC9A' : (progressPct >= 50 ? '#6ee7ff' : '#ff6b6b');
-        hdStatusIcon = `<span class="hd-progress" title="Aufgaben: ${hdTaskProgress.done} von ${hdTaskProgress.total} erledigt" style="color:${progressColor};font-weight:800;margin-left:6px;font-size:12px">${hdTaskProgress.done}/${hdTaskProgress.total}</span>`;
+        hdStatusIcon = `<span class="hd-progress" title="Aufgaben: ${done} von ${total} erledigt" style="color:${progressColor};font-weight:800;margin-left:6px;font-size:12px">${done}/${total}</span>`;
       } else {
         hdStatusIcon = `<span class="hd-status-icon pending" title="Hausdienst noch offen">○</span>`;
       }
