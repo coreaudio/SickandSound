@@ -1051,8 +1051,9 @@
   // Fortschritt in Firebase speichern für Anzeige in Strichliste
   async function saveProgressToFirebase() {
     if (!db || !todayPerson) return;
-    const totalTasks = _tasks.length;
-    const doneTasks = _tasks.filter(t => checked[t.id]).length;
+    const todayTasks = filteredTasks();
+    const totalTasks = todayTasks.length;
+    const doneTasks  = todayTasks.filter(t => checked[t.id]).length;
 
     try {
       await db.collection("hausdienst").doc(todayStr()).set({
@@ -1068,8 +1069,9 @@
   function checkAllTasksCompleted() {
     if (completionPopupShown || hdTodayCompleted || !todayPerson) return;
 
-    const totalTasks = _tasks.length;
-    const doneTasks = _tasks.filter(t => checked[t.id]).length;
+    const todayTasks = filteredTasks();
+    const totalTasks = todayTasks.length;
+    const doneTasks  = todayTasks.filter(t => checked[t.id]).length;
 
     if (doneTasks === totalTasks && totalTasks > 0) {
       completionPopupShown = true;
@@ -1441,8 +1443,9 @@
   }
 
   function updateStatusHeader() {
-    const totalTasks = _tasks.length;
-    const doneTasks = _tasks.filter(t => checked[t.id]).length;
+    const todayTasks = filteredTasks();
+    const totalTasks = todayTasks.length;
+    const doneTasks  = todayTasks.filter(t => checked[t.id]).length;
     const progress = totalTasks > 0 ? Math.round((doneTasks / totalTasks) * 100) : 0;
     const allDone = doneTasks === totalTasks && totalTasks > 0;
 
@@ -1710,8 +1713,9 @@
   async function completeHausdienst() {
     if (!db || !todayPerson) return;
 
-    const totalTasks = _tasks.length;
-    const doneTasks  = _tasks.filter(t => checked[t.id]).length;
+    const todayTasks = filteredTasks();
+    const totalTasks = todayTasks.length;
+    const doneTasks  = todayTasks.filter(t => checked[t.id]).length;
 
     if (doneTasks < totalTasks) {
       showToast('Noch nicht alle Aufgaben erledigt!');
