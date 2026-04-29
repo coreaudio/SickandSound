@@ -287,9 +287,13 @@
       gapi.client.setToken({ access_token: accessToken });
       onSignedIn(false);
     } else if (localStorage.getItem('gc_token')) {
-      // Token abgelaufen – stille Erneuerung ohne Popup
+      // Token abgelaufen – stille Erneuerung ohne Popup, Cache sofort zeigen
       setStatus('erneuert…', 'loading');
+      loadCachedEvents();
       tokenClient.requestAccessToken({ prompt: '' });
+    } else {
+      // Nicht eingeloggt – Cache anzeigen
+      loadCachedEvents();
     }
   }
 
@@ -367,7 +371,7 @@
         extendedProps: { description: ev.description || '' },
       }));
       setStatus(`${items.length} Termine`, 'online');
-      saveUpcomingCache();
+      saveMonthCache();
       syncTonnenTasks();
     } catch(e) {
       console.error(e); setStatus('Ladefehler');
@@ -375,19 +379,39 @@
     }
   }
 
-  /* ── Firestore-Cache: heute + morgen ───────────────────────────── */
-  function saveUpcomingCache() {
+  /* ── Firestore-Cache: ganzer Monat ─────────────────────────────── */
+  function saveMonthCache() {
     if (!db || !calInstance) return;
-    const today    = todayStr();
-    const tomorrow = new Date(Date.now() + 86400000).toISOString().slice(0, 10);
-    const eventsForDay = day => calInstance.getEvents()
-      .filter(e => e.startStr.startsWith(day))
-      .map(e => ({ title: e.title, start: e.startStr, allDay: e.allDay }));
-    db.collection('calendar_cache').doc('upcoming').set({
-      today:    { date: today,    events: eventsForDay(today)    },
-      tomorrow: { date: tomorrow, events: eventsForDay(tomorrow) },
-      updatedAt: Date.now(),
-    }).catch(() => {});
+    const monthKey = calInstance.getDate().toISOString().slice(0, 7);
+    const events   = calInstance.getEvents().map(e => ({
+      id:          e.id,
+      title:       e.title,
+      start:       e.startStr,
+      end:         e.endStr,
+      allDay:      e.allDay,
+      description: e.extendedProps?.description || '',
+    }));
+    db.collection('calendar_cache').doc(monthKey).set({ events, updatedAt: Date.now() }).catch(() => {});
+  }
+
+  async function loadCachedEvents() {
+    if (!db || !calInstance) return;
+    const monthKey = calInstance.getDate().toISOString().slice(0, 7);
+    try {
+      const doc = await db.collection('calendar_cache').doc(monthKey).get();
+      if (!doc.exists) { setStatus('kein Cache'); return; }
+      const { events = [] } = doc.data();
+      calInstance.getEvents().forEach(e => e.remove());
+      events.forEach(ev => calInstance.addEvent({
+        id:     ev.id,
+        title:  ev.title,
+        start:  ev.start,
+        end:    ev.end,
+        allDay: ev.allDay,
+        extendedProps: { description: ev.description || '' },
+      }));
+      setStatus(`${events.length} (Cache)`);
+    } catch(e) { console.error(e); setStatus('Cache-Fehler'); }
   }
 
   /* ── Tonnen-Auto-Tasks ──────────────────────────────────────────── */
@@ -402,30 +426,40 @@
   async function syncTonnenTasks() {
     if (!db || !calInstance) return;
 
-    // Bestehende Auto-Tasks laden (Duplikate vermeiden)
+    const today    = todayStr();
+    const tomorrow = new Date(Date.now() + 86400000).toISOString().slice(0, 10);
+
+    // Alle bestehenden Auto-Tasks laden
     const snap = await db.collection('hausdienst_tasks')
       .where('autoCreated', '==', true).get().catch(() => null);
     if (!snap) return;
-    const existingIds = new Set(snap.docs.map(d => d.data().calendarEventId).filter(Boolean));
 
-    const now   = new Date();
-    const in90d = new Date(now.getTime() + 90 * 86400000);
+    const existingEventIds = new Set();
+    for (const doc of snap.docs) {
+      const d = doc.data();
+      // Abgelaufene Tasks löschen
+      if (d.dueDate && d.dueDate < today && d.calendarEventId) {
+        doc.ref.delete().catch(() => {});
+      } else if (d.calendarEventId) {
+        existingEventIds.add(d.calendarEventId);
+      }
+    }
 
-    const tonnenEvents = calInstance.getEvents().filter(ev =>
-      isTonnenEvent(ev.title) && ev.start >= now && ev.start <= in90d
+    // Nur Events die MORGEN stattfinden
+    const tonnenMorgen = calInstance.getEvents().filter(ev =>
+      isTonnenEvent(ev.title) && ev.startStr.startsWith(tomorrow)
     );
 
-    for (const ev of tonnenEvents) {
-      if (existingIds.has(ev.id)) continue;
-      const dueDate = new Date(ev.start.getTime() - 86400000).toISOString().slice(0, 10);
+    for (const ev of tonnenMorgen) {
+      if (existingEventIds.has(ev.id)) continue;
       await db.collection('hausdienst_tasks').add({
         text:            `🗑️ Rausstellen: ${ev.title}`,
         cat:             'tag',
         autoCreated:     true,
         calendarEventId: ev.id,
-        dueDate,
+        dueDate:         today,
         createdAt:       Date.now(),
-        sortOrder:       8000 + new Date(dueDate).getTime() / 86400000,
+        sortOrder:       8000 + new Date(today).getTime() / 86400000,
       }).catch(() => {});
     }
   }
@@ -446,7 +480,7 @@
         right:  'dayGridMonth,timeGridWeek,listWeek',
       },
       buttonText: { today: 'Heute', month: 'Monat', week: 'Woche', list: 'Liste' },
-      datesSet:    () => { if (accessToken) refreshEvents(); },
+      datesSet:    () => { if (accessToken) refreshEvents(); else loadCachedEvents(); },
       select:      onDateSelect,
       eventClick:  onEventClick,
     });
@@ -541,7 +575,7 @@
         allDay: !!created.start.date,
       });
       showToast(`„${title}" erstellt`);
-      saveUpcomingCache();
+      saveMonthCache();
       syncTonnenTasks();
     } catch(e) {
       console.error(e); showToast('Fehler beim Erstellen');
@@ -584,7 +618,7 @@
     try {
       await gapi.client.calendar.events.delete({ calendarId: GC_CALENDAR_ID, eventId: id });
       showToast(`„${title}" gelöscht`);
-      saveUpcomingCache();
+      saveMonthCache();
       // Auto-Task für dieses Event löschen
       if (db) db.collection('hausdienst_tasks')
         .where('calendarEventId', '==', id).get()

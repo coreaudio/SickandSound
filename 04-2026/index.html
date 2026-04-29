@@ -2121,29 +2121,49 @@ function buildTableSkeleton() {
 
 function loadTodayCalendarEvents() {
   if (!db) return;
-  db.collection('calendar_cache').doc('upcoming').onSnapshot(doc => {
+  const today          = todayStr();
+  const tomorrow       = new Date(Date.now() + 86400000).toISOString().slice(0, 10);
+  const monthKey       = today.slice(0, 7);
+  const tomorrowMonth  = tomorrow.slice(0, 7);
+  const TONNEN_KW      = ['tonne','tonnen','müll','biomüll','restmüll','papiertonne','gelber sack','wertstoff','altpapier'];
+  const isTonnen       = t => TONNEN_KW.some(kw => (t || '').toLowerCase().includes(kw));
+
+  const chip = ev => {
+    const t = ev.allDay ? 'Ganztägig' : new Date(ev.start).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
+    return '<div style="display:flex;align-items:center;gap:10px;padding:8px 12px;background:rgba(124,58,237,.12);border:1px solid rgba(124,58,237,.25);border-radius:10px">' +
+           '<div style="width:3px;height:32px;border-radius:2px;background:#a78bfa;flex-shrink:0"></div>' +
+           '<div><div style="font-size:13px;font-weight:700">' + ev.title + '</div>' +
+           '<div style="font-size:11px;color:var(--muted)">' + t + '</div></div></div>';
+  };
+  const lbl = txt => '<div style="font-size:11px;font-weight:800;letter-spacing:.8px;text-transform:uppercase;color:#a78bfa;margin:6px 0 4px">' + txt + '</div>';
+
+  function renderEvents(events) {
     const wrap = document.getElementById('calEventsWrap');
     if (!wrap) return;
-    if (!doc.exists) { wrap.style.display = 'none'; return; }
-    const data     = doc.data();
-    const today    = todayStr();
-    const tomorrow = new Date(Date.now() + 86400000).toISOString().slice(0, 10);
-    const todayEvs    = (data.today?.date    === today    && data.today?.events?.length)    ? data.today.events    : [];
-    const tomorrowEvs = (data.tomorrow?.date === tomorrow && data.tomorrow?.events?.length) ? data.tomorrow.events : [];
+    const todayEvs    = events.filter(e => (e.start || '').startsWith(today));
+    const tomorrowEvs = events.filter(e => (e.start || '').startsWith(tomorrow));
     if (!todayEvs.length && !tomorrowEvs.length) { wrap.style.display = 'none'; return; }
-    const chip = ev => {
-      const t = ev.allDay ? 'Ganztägig' : new Date(ev.start).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
-      return '<div style="display:flex;align-items:center;gap:10px;padding:8px 12px;background:rgba(124,58,237,.12);border:1px solid rgba(124,58,237,.25);border-radius:10px">' +
-             '<div style="width:3px;height:32px;border-radius:2px;background:#a78bfa;flex-shrink:0"></div>' +
-             '<div><div style="font-size:13px;font-weight:700">' + ev.title + '</div>' +
-             '<div style="font-size:11px;color:var(--muted)">' + t + '</div></div></div>';
-    };
-    const lbl = txt => '<div style="font-size:11px;font-weight:800;letter-spacing:.8px;text-transform:uppercase;color:#a78bfa;margin:6px 0 4px">' + txt + '</div>';
+    const tonnenMorgen = tomorrowEvs.filter(e => isTonnen(e.title));
+    const normalMorgen = tomorrowEvs.filter(e => !isTonnen(e.title));
     let html = '';
-    if (todayEvs.length)    html += lbl('📅 Heute')  + todayEvs.map(chip).join('');
-    if (tomorrowEvs.length) html += lbl('📅 Morgen') + tomorrowEvs.map(chip).join('');
+    if (todayEvs.length)    html += lbl('📅 Heute')              + todayEvs.map(chip).join('');
+    if (tonnenMorgen.length) html += lbl('🗑️ Heute rausstellen') + tonnenMorgen.map(chip).join('');
+    if (normalMorgen.length) html += lbl('📅 Morgen')             + normalMorgen.map(chip).join('');
     wrap.style.display = 'flex';
     wrap.innerHTML = html;
+  }
+
+  // Monatswechsel-Edge-Case: falls morgen im nächsten Monat liegt, beide Docs mergen
+  let extraEvents = [];
+  if (tomorrowMonth !== monthKey) {
+    db.collection('calendar_cache').doc(tomorrowMonth).get()
+      .then(d => { extraEvents = d.exists ? (d.data().events || []) : []; })
+      .catch(() => {});
+  }
+
+  db.collection('calendar_cache').doc(monthKey).onSnapshot(doc => {
+    const events = doc.exists ? (doc.data().events || []) : [];
+    renderEvents([...events, ...extraEvents]);
   });
 }
 
