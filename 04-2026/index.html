@@ -975,6 +975,18 @@ function subscribeRealtime(){
     updateTodayBanner(hdToday); buildTable();
   });
 
+  // Korrekte Task-Gesamtzahl: nur Tasks die heute fällig sind
+  const today = todayStr();
+  db.collection("hausdienst_tasks").onSnapshot(snap => {
+    const todayTotal = snap.docs.filter(d => {
+      const dd = d.data().dueDate;
+      return !dd || dd === today;
+    }).length;
+    if (hdTaskProgress) hdTaskProgress = { ...hdTaskProgress, total: todayTotal };
+    else hdTaskProgress = { done: 0, total: todayTotal };
+    buildTable();
+  });
+
   // Echtzeit-Updates für monatliche Hausdienste
   const month = currentMonthStr();
   db.collection("hausdienst")
