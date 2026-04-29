@@ -105,6 +105,7 @@
         <span id="statusText">lädt…</span>
       </div>
       <button class="btn small" id="addEventBtn" style="display:none" onclick="openNewEventModal()">+ Termin</button>
+      <button class="btn small" id="syncTonnenBtn" style="display:none" onclick="syncTonnenFullYear()" title="Alle Tonnen-Termine für dieses Jahr in Hausdienst-Checkliste eintragen">🗑️ Sync</button>
       <button class="btn small danger" id="signoutBtn" style="display:none" onclick="handleSignout()">Abmelden</button>
     </div>
   </header>
@@ -332,8 +333,9 @@
 
   function onSignedIn(freshLogin) {
     document.getElementById('authBanner').classList.add('hidden');
-    document.getElementById('addEventBtn').style.display = 'inline-flex';
-    document.getElementById('signoutBtn').style.display  = 'inline-flex';
+    document.getElementById('addEventBtn').style.display   = 'inline-flex';
+    document.getElementById('syncTonnenBtn').style.display = 'inline-flex';
+    document.getElementById('signoutBtn').style.display    = 'inline-flex';
     setStatus('angemeldet', 'online');
     if (freshLogin) showToast('Angemeldet ✓');
     refreshEvents();
@@ -341,8 +343,9 @@
 
   function onSignedOut() {
     document.getElementById('authBanner').classList.remove('hidden');
-    document.getElementById('addEventBtn').style.display = 'none';
-    document.getElementById('signoutBtn').style.display  = 'none';
+    document.getElementById('addEventBtn').style.display   = 'none';
+    document.getElementById('syncTonnenBtn').style.display = 'none';
+    document.getElementById('signoutBtn').style.display    = 'none';
     setStatus('abgemeldet');
     if (calInstance) calInstance.getEvents().forEach(e => e.remove());
     showToast('Abgemeldet');
@@ -426,8 +429,7 @@
   async function syncTonnenTasks() {
     if (!db || !calInstance) return;
 
-    const today    = todayStr();
-    const tomorrow = new Date(Date.now() + 86400000).toISOString().slice(0, 10);
+    const today = todayStr();
 
     // Alle bestehenden Auto-Tasks laden
     const snap = await db.collection('hausdienst_tasks')
@@ -437,7 +439,7 @@
     const existingEventIds = new Set();
     for (const doc of snap.docs) {
       const d = doc.data();
-      // Abgelaufene Tasks löschen
+      // Abgelaufene Tasks löschen (dueDate liegt in der Vergangenheit)
       if (d.dueDate && d.dueDate < today && d.calendarEventId) {
         doc.ref.delete().catch(() => {});
       } else if (d.calendarEventId) {
@@ -445,22 +447,86 @@
       }
     }
 
-    // Nur Events die MORGEN stattfinden
-    const tonnenMorgen = calInstance.getEvents().filter(ev =>
-      isTonnenEvent(ev.title) && ev.startStr.startsWith(tomorrow)
+    // Alle Tonnen-Events der nächsten 30 Tage vorausplanen
+    const in30d = new Date(Date.now() + 30 * 86400000);
+    const tonnenEvents = calInstance.getEvents().filter(ev =>
+      isTonnenEvent(ev.title) && ev.start > new Date() && ev.start <= in30d
     );
 
-    for (const ev of tonnenMorgen) {
+    for (const ev of tonnenEvents) {
       if (existingEventIds.has(ev.id)) continue;
+      // dueDate = Tag VOR dem Abholtermin
+      const dueDate = new Date(ev.start.getTime() - 86400000).toISOString().slice(0, 10);
+      if (dueDate < today) continue; // nicht in der Vergangenheit anlegen
       await db.collection('hausdienst_tasks').add({
         text:            `🗑️ Rausstellen: ${ev.title}`,
         cat:             'tag',
         autoCreated:     true,
         calendarEventId: ev.id,
-        dueDate:         today,
+        dueDate,
         createdAt:       Date.now(),
-        sortOrder:       8000 + new Date(today).getTime() / 86400000,
+        sortOrder:       8000 + new Date(dueDate).getTime() / 86400000,
       }).catch(() => {});
+    }
+  }
+
+  /* ── Tonnen-Jahres-Sync ─────────────────────────────────────────── */
+  async function syncTonnenFullYear() {
+    if (!accessToken || !db) return;
+    const btn = document.getElementById('syncTonnenBtn');
+    btn.disabled = true;
+    btn.textContent = '⏳';
+    setStatus('Jahres-Sync…', 'loading');
+
+    try {
+      const today   = todayStr();
+      const yearEnd = new Date(new Date().getFullYear(), 11, 31, 23, 59, 59).toISOString();
+
+      // Alle Tonnen-Events des restlichen Jahres direkt von der API holen
+      const res = await gapi.client.calendar.events.list({
+        calendarId:   GC_CALENDAR_ID,
+        timeMin:      new Date(today).toISOString(),
+        timeMax:      yearEnd,
+        singleEvents: true,
+        orderBy:      'startTime',
+        maxResults:   2500,
+      });
+      const allEvents = (res.result.items || []).filter(ev => isTonnenEvent(ev.summary));
+
+      // Bestehende Auto-Tasks laden
+      const snap = await db.collection('hausdienst_tasks')
+        .where('autoCreated', '==', true).get();
+      const existingEventIds = new Set(snap.docs.map(d => d.data().calendarEventId).filter(Boolean));
+
+      let created = 0;
+      for (const ev of allEvents) {
+        if (existingEventIds.has(ev.id)) continue;
+        const pickupDate = ev.start.date || ev.start.dateTime?.slice(0, 10);
+        if (!pickupDate) continue;
+        const dueDate = new Date(new Date(pickupDate).getTime() - 86400000).toISOString().slice(0, 10);
+        if (dueDate < today) continue;
+        await db.collection('hausdienst_tasks').add({
+          text:            `🗑️ Rausstellen: ${ev.summary}`,
+          cat:             'tag',
+          autoCreated:     true,
+          calendarEventId: ev.id,
+          dueDate,
+          createdAt:       Date.now(),
+          sortOrder:       8000 + new Date(dueDate).getTime() / 86400000,
+        });
+        created++;
+      }
+
+      showToast(`${created} Tonnen-Task${created !== 1 ? 's' : ''} angelegt ✓`);
+      setStatus(`${allEvents.length} Termine`, 'online');
+    } catch(e) {
+      console.error(e);
+      showToast('Fehler beim Sync');
+      setStatus('Fehler');
+      if (e.status === 401) handleTokenExpiry();
+    } finally {
+      btn.disabled = false;
+      btn.textContent = '🗑️ Sync';
     }
   }
 

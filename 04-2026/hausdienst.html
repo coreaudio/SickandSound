@@ -1366,7 +1366,8 @@
   }
 
   function filteredTasks(){
-    let arr = [..._tasks];
+    const today = todayStr();
+    let arr = _tasks.filter(t => !t.dueDate || t.dueDate === today);
     if (hideDone) arr = arr.filter(t => !checked[t.id]);
     return arr;
   }
