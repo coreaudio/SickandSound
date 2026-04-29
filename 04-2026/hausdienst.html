@@ -1051,9 +1051,9 @@
   // Fortschritt in Firebase speichern für Anzeige in Strichliste
   async function saveProgressToFirebase() {
     if (!db || !todayPerson) return;
-    const todayTasks = filteredTasks();
-    const totalTasks = todayTasks.length;
-    const doneTasks  = todayTasks.filter(t => checked[t.id]).length;
+    const tasks      = todayTasks();
+    const totalTasks = tasks.length;
+    const doneTasks  = tasks.filter(t => checked[t.id]).length;
 
     try {
       await db.collection("hausdienst").doc(todayStr()).set({
@@ -1069,9 +1069,9 @@
   function checkAllTasksCompleted() {
     if (completionPopupShown || hdTodayCompleted || !todayPerson) return;
 
-    const todayTasks = filteredTasks();
-    const totalTasks = todayTasks.length;
-    const doneTasks  = todayTasks.filter(t => checked[t.id]).length;
+    const tasks      = todayTasks();
+    const totalTasks = tasks.length;
+    const doneTasks  = tasks.filter(t => checked[t.id]).length;
 
     if (doneTasks === totalTasks && totalTasks > 0) {
       completionPopupShown = true;
@@ -1367,9 +1367,14 @@
     renderTasks();
   }
 
-  function filteredTasks(){
+  function todayTasks(){
     const today = todayStr();
-    let arr = _tasks.filter(t => !t.dueDate || t.dueDate === today);
+    // autoCreated-Tasks nur anzeigen wenn dueDate === heute (nie ohne dueDate)
+    return _tasks.filter(t => t.autoCreated ? t.dueDate === today : (!t.dueDate || t.dueDate === today));
+  }
+
+  function filteredTasks(){
+    let arr = todayTasks();
     if (hideDone) arr = arr.filter(t => !checked[t.id]);
     return arr;
   }
@@ -1443,9 +1448,9 @@
   }
 
   function updateStatusHeader() {
-    const todayTasks = filteredTasks();
-    const totalTasks = todayTasks.length;
-    const doneTasks  = todayTasks.filter(t => checked[t.id]).length;
+    const tasks      = todayTasks();
+    const totalTasks = tasks.length;
+    const doneTasks  = tasks.filter(t => checked[t.id]).length;
     const progress = totalTasks > 0 ? Math.round((doneTasks / totalTasks) * 100) : 0;
     const allDone = doneTasks === totalTasks && totalTasks > 0;
 
@@ -1713,9 +1718,9 @@
   async function completeHausdienst() {
     if (!db || !todayPerson) return;
 
-    const todayTasks = filteredTasks();
-    const totalTasks = todayTasks.length;
-    const doneTasks  = todayTasks.filter(t => checked[t.id]).length;
+    const tasks      = todayTasks();
+    const totalTasks = tasks.length;
+    const doneTasks  = tasks.filter(t => checked[t.id]).length;
 
     if (doneTasks < totalTasks) {
       showToast('Noch nicht alle Aufgaben erledigt!');

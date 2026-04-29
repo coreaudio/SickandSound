@@ -980,8 +980,8 @@ function subscribeRealtime(){
   const todayKey = todayStr();
   db.collection("hausdienst_tasks").onSnapshot(snap => {
     hdTaskTotalToday = snap.docs.filter(d => {
-      const dd = d.data().dueDate;
-      return !dd || dd === todayKey;
+      const { dueDate, autoCreated } = d.data();
+      return autoCreated ? dueDate === todayKey : (!dueDate || dueDate === todayKey);
     }).length;
     buildTable();
   });
