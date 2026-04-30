@@ -1369,8 +1369,12 @@
 
   function todayTasks(){
     const today = todayStr();
-    // autoCreated-Tasks nur anzeigen wenn dueDate === heute (nie ohne dueDate)
-    return _tasks.filter(t => t.autoCreated ? t.dueDate === today : (!t.dueDate || t.dueDate === today));
+    return _tasks.filter(t => {
+      // Tonnen-Tasks (haben calendarEventId): nur heute fällige
+      if (t.calendarEventId) return t.dueDate === today;
+      // Normale Tasks: immer anzeigen (es sei denn explizit auf anderen Tag gesetzt)
+      return !t.dueDate || t.dueDate === today;
+    });
   }
 
   function filteredTasks(){

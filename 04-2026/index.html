@@ -980,8 +980,11 @@ function subscribeRealtime(){
   const todayKey = todayStr();
   db.collection("hausdienst_tasks").onSnapshot(snap => {
     hdTaskTotalToday = snap.docs.filter(d => {
-      const { dueDate, autoCreated } = d.data();
-      return autoCreated ? dueDate === todayKey : (!dueDate || dueDate === todayKey);
+      const { dueDate, calendarEventId } = d.data();
+      // Tonnen-Tasks (haben calendarEventId): nur heute fällige zählen
+      if (calendarEventId) return dueDate === todayKey;
+      // Normale Tasks: immer zählen (es sei denn explizit auf einen anderen Tag gesetzt)
+      return !dueDate || dueDate === todayKey;
     }).length;
     buildTable();
   });
