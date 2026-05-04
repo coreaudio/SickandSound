@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Migration – Sick & Sound</title>
+  <style>
+    body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Inter,Arial,sans-serif;background:#0b0e14;color:#e6e8ef;margin:0;padding:20px}
+    .card{background:#111624;border:1px solid #2a3042;border-radius:14px;padding:16px;max-width:820px}
+    h1{margin:0 0 10px;font-size:20px}
+    .row{display:flex;gap:12px;flex-wrap:wrap;align-items:center}
+    label{display:flex;align-items:center;gap:8px;background:#1c2130;border:1px solid #2a3042;padding:8px 12px;border-radius:999px}
+    button{padding:10px 14px;border-radius:10px;border:0;background:linear-gradient(135deg,#6ee7ff,#a78bfa);color:#0b0e14;font-weight:900;cursor:pointer}
+    pre{white-space:pre-wrap;background:#0f1422;border:1px solid #2a3042;border-radius:10px;padding:10px;max-height:320px;overflow:auto}
+    .ok{color:#7CFC9A}.warn{color:#ffd166}.err{color:#ff7b7b}
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>Migration – Sick &amp; Sound</h1>
+    <p>Überträgt Daten vom <b>alten Firebase-Projekt</b> ins <b>neue</b>.</p>
+
+    <h3>Quell-Projekt (ALT)</h3>
+    <pre id="srcInfo">(wird initialisiert…)</pre>
+
+    <h3>Ziel-Projekt (NEU)</h3>
+    <pre id="dstInfo">(wird initialisiert…)</pre>
+
+    <div class="row" style="margin:10px 0">
+      <label><input type="checkbox" id="m_state" checked> state/global (Strichliste)</label>
+      <label><input type="checkbox" id="m_hausdienst"> hausdienst (alle Tage)</label>
+      <label><input type="checkbox" id="m_tasks"> hausdienst_tasks</label>
+      <label><input type="checkbox" id="m_buchungen"> buchungen</label>
+      <label><input type="checkbox" id="m_punkte"> punkte</label>
+    </div>
+
+    <div class="row" style="margin:12px 0">
+      <button id="goBtn">Start Migration</button>
+    </div>
+
+    <h3>Log</h3>
+    <pre id="log"></pre>
+  </div>
+
+  <!-- Firebase compat -->
+  <script src="https://www.gstatic.com/firebasejs/12.0.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/12.0.0/firebase-firestore-compat.js"></script>
+  <script>
+    // 🔵 ALT: dein vorheriges Projekt (falls abweichend, hier anpassen)
+    const OLD = {
+      apiKey: "AIzaSyBFHjGXI5yHyK0DyupS0bnTVAqlu6lvpNw",
+      authDomain: "sickandsound-e9704.firebaseapp.com",
+      projectId: "sickandsound-e9704",
+      storageBucket: "sickandsound-e9704.appspot.com",
+      appId: "1:248197359659:web:a8777cbed3f83d6b1ca26e"
+    };
+
+    // 🟣 NEU: sickandsound-8a15f
+    const NEW = {
+      apiKey: "AIzaSyBtZsr4QPHQbvO2qae6MoBoxJF5dNP2vh0",
+      authDomain: "sickandsound-8a15f.firebaseapp.com",
+      projectId: "sickandsound-8a15f",
+      storageBucket: "sickandsound-8a15f.appspot.com",
+      appId: "1:32138160959:web:a65c7f4ad7d44e757fc18a"
+    };
+
+    const logEl = document.getElementById('log');
+    function log(msg, cls){ const p=document.createElement('div'); p.textContent=msg; if(cls) p.className=cls; logEl.appendChild(p); }
+
+    let oldDb, newDb;
+
+    (function init(){
+      const oldApp = firebase.initializeApp(OLD,  "oldApp");
+      const newApp = firebase.initializeApp(NEW,  "newApp");
+      oldDb = oldApp.firestore(); newDb = newApp.firestore();
+      try{ oldDb.settings({ experimentalAutoDetectLongPolling:true, merge:true }); }catch(_){}
+      try{ newDb.settings({ experimentalAutoDetectLongPolling:true, merge:true }); }catch(_){}
+      document.getElementById('srcInfo').textContent = JSON.stringify({projectId: OLD.projectId}, null, 2);
+      document.getElementById('dstInfo').textContent = JSON.stringify({projectId: NEW.projectId}, null, 2);
+    })();
+
+    async function copyDoc(srcDb, dstDb, col, id){
+      const doc = await srcDb.collection(col).doc(id).get();
+      if(!doc.exists) { log(`⛔ ${col}/${id} nicht gefunden`, 'warn'); return false; }
+      await dstDb.collection(col).doc(id).set(doc.data(), {merge:true});
+      log(`✅ ${col}/${id} kopiert`, 'ok'); return true;
+    }
+
+    async function copyCollection(srcDb, dstDb, col){
+      const snap = await srcDb.collection(col).get();
+      if(snap.empty){ log(`ℹ ${col}: keine Dokumente`, 'warn'); return; }
+      log(`→ ${col}: ${snap.size} Dokumente…`);
+      let c=0;
+      for(const d of snap.docs){
+        await dstDb.collection(col).doc(d.id).set(d.data(), {merge:true});
+        c++;
+        if(c%50===0) log(`   …${c}/${snap.size}`);
+      }
+      log(`✅ ${col}: fertig (${c})`, 'ok');
+    }
+
+    async function migrate(){
+      const doState = document.getElementById('m_state').checked;
+      const doHaus  = document.getElementById('m_hausdienst').checked;
+      const doTasks = document.getElementById('m_tasks').checked;
+      const doBook  = document.getElementById('m_buchungen').checked;
+      const doRank  = document.getElementById('m_punkte').checked;
+
+      logEl.textContent = "";
+      log("Starte Migration…");
+
+      try{
+        if(doState){
+          log("state/global …");
+          await copyDoc(oldDb, newDb, "state", "global");
+        }
+        if(doHaus){
+          await copyCollection(oldDb, newDb, "hausdienst");
+        }
+        if(doTasks){
+          await copyCollection(oldDb, newDb, "hausdienst_tasks");
+        }
+        if(doBook){
+          await copyCollection(oldDb, newDb, "buchungen");
+        }
+        if(doRank){
+          await copyCollection(oldDb, newDb, "punkte");
+        }
+        log("FERTIG.", 'ok');
+      }catch(e){
+        console.error(e);
+        log("Fehler: "+(e.message||e), 'err');
+      }
+    }
+
+    document.getElementById('goBtn').addEventListener('click', migrate);
+  </script>
+</body>
+</html>
