@@ -306,11 +306,12 @@
     }
 
     // Fehlstand berechnen pro Person
-    const fehlstandTotal = {}; // {person: totalMissed} — nur abgeschlossene Monate
+    const fehlstandTotal = {}; // {person: totalMissed} — nur abgeschlossene Monate (für Tabellenanzeige)
+    const hdCarryover = {};    // {person: creditOnly} — nur Gutschriften, keine Fehlstände (für index.html)
     const fehlstandByMonth = {}; // {month: {person: missed}}
 
     // Initialisiere Totals
-    relevantCore.forEach(person => { fehlstandTotal[person] = 0; });
+    relevantCore.forEach(person => { fehlstandTotal[person] = 0; hdCarryover[person] = 0; });
 
     relevantMonths.forEach(month => {
       fehlstandByMonth[month] = {};
@@ -322,13 +323,16 @@
         const required = getHdRequired(person);
         const missed = required - done; // negativ = Gutschrift
         fehlstandByMonth[month][person] = missed;
-        if (isPast) fehlstandTotal[person] += missed; // Gesamt nur für abgeschlossene Monate
+        if (isPast) {
+          fehlstandTotal[person] += missed; // Gesamt (inkl. Fehlstände) für Tabellenanzeige
+          if (missed < 0) hdCarryover[person] += missed; // nur Gutschriften für index.html
+        }
       });
     });
 
-    // Kumulativen Saldo in Firestore speichern (wird von index.html als hdCarryover gelesen)
+    // Nur Gutschriften als Carryover in Firestore speichern (wird von index.html gelesen)
     if (db) {
-      db.collection(STATE_COLLECTION).doc('global').set({ hdCarryover: fehlstandTotal }, { merge: true }).catch(() => {});
+      db.collection(STATE_COLLECTION).doc('global').set({ hdCarryover }, { merge: true }).catch(() => {});
     }
 
     // Monatsnamen formatieren
