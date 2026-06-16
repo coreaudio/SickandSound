@@ -673,41 +673,23 @@ const sError = makeSound("https://cdn.jsdelivr.net/gh/jshawl/howler-examples@mas
 
 /* ===== Helpers / XP ===== */
 
-// Lädt alle Hausdienste ab Jan 2026, berechnet Carryover und aktuellen Monatsstand
+// Lädt die Hausdienste für den aktuellen Monat
 async function loadMonthlyHdCounts(){
   if(!db) return;
   try {
     const month = currentMonthStr();
     const snap = await db.collection("hausdienst")
-      .where(firebase.firestore.FieldPath.documentId(), ">=", "2026-01-01")
+      .where(firebase.firestore.FieldPath.documentId(), ">=", month + "-01")
       .where(firebase.firestore.FieldPath.documentId(), "<=", month + "-31")
       .get();
 
     monthlyHdCounts = {};
-    const byMonth = {};
     snap.forEach(doc => {
       const person = doc.data().person;
       if(!person) return;
-      const dateStr = doc.id;
-      const date = new Date(dateStr);
+      const date = new Date(doc.id);
       const isWeekend = (date.getDay() === 0 || date.getDay() === 6);
-      const points = isWeekend ? 0.5 : 1;
-      const docMonth = dateStr.slice(0, 7);
-      if(docMonth === month) {
-        monthlyHdCounts[person] = (monthlyHdCounts[person] || 0) + points;
-      }
-      if(!byMonth[docMonth]) byMonth[docMonth] = {};
-      byMonth[docMonth][person] = (byMonth[docMonth][person] || 0) + points;
-    });
-
-    // Rolling balance: Credits akkumulieren, Fehlstände verbrauchen Credits, kein Schuldenübertrag
-    hdCarryover = {};
-    Object.keys(byMonth).filter(m => m < month).sort().forEach(m => {
-      CORE.forEach(person => {
-        if(getHdRequired(person) === 0) return;
-        const missed = getHdRequired(person) - (byMonth[m][person] || 0);
-        hdCarryover[person] = Math.min(0, (hdCarryover[person] || 0) + missed);
-      });
+      monthlyHdCounts[person] = (monthlyHdCounts[person] || 0) + (isWeekend ? 0.5 : 1);
     });
   } catch(e) {
     console.error("Fehler beim Laden der monatlichen Hausdienste:", e);
@@ -811,6 +793,9 @@ async function loadState(){
         // HD-Anforderungen laden
         if(s.hdRequirements) {
           hdRequirements = s.hdRequirements;
+        }
+        if(s.hdCarryover) {
+          hdCarryover = s.hdCarryover;
         }
         // Manuelle Buchungen laden (mit Migration von altem number-Format)
         if(s.manualCharges) {
@@ -967,6 +952,9 @@ function subscribeRealtime(){
     // HD-Anforderungen laden
     if(s.hdRequirements) {
       hdRequirements = s.hdRequirements;
+    }
+    if(s.hdCarryover) {
+      hdCarryover = s.hdCarryover;
     }
     CORE.forEach(n=>{ if(!people.includes(n)) people.push(n); });
     buildTable(); updateTodayBanner(); updateUndoRedoButtons();

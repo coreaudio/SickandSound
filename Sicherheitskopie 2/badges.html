@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <title>Sick & Sound – Badges</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#0b0e14" />
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="stylesheet" href="style.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;800&display=swap" rel="stylesheet" />
+  <style>
+    .grid{ display:grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap:12px; }
+    .badge-card{ background:#111624; border:1px solid #2a3042; border-radius:14px; padding:14px; display:flex; gap:12px; align-items:center; }
+    .medal{ width:56px; height:56px; border-radius:50%; display:grid; place-items:center; font-size:24px; }
+    .medal.ok{ background:linear-gradient(135deg,#6ee7ff,#a78bfa); color:#0b0e14; }
+    .medal.off{ background:#1c2130; color:#e6e8ef; opacity:.6; }
+    .btitle{ font-weight:900; }
+    .muted{ opacity:.75 }
+    .row{ display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
+    .pill{ padding:6px 10px; border-radius:999px; background:#1c2130; border:1px solid #2a3042; }
+  </style>
+</head>
+<body>
+<div class="app">
+  <header class="appbar">
+    <div class="app-title"><div class="brand-dot"></div><h1>Badges</h1></div>
+    <div class="appbar-actions">
+      <span class="sub"><span class="statusdot" id="dot"></span><span id="connTxt">Verbinde…</span></span>
+    </div>
+  </header>
+
+  <main class="content">
+    <div class="card">
+      <div class="section-title">Deine Abzeichen</div>
+      <div class="sub muted">Badges werden aus der Gesamt-XP (XP bisher + heutiger Wert) berechnet.</div>
+      <div class="row" style="margin-top:8px">
+        <label class="pill">Anzeigen für:
+          <select id="who" onchange="render()"></select>
+        </label>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="section-title">Übersicht</div>
+      <div id="badgesWrap"><div class="sub">Lade…</div></div>
+    </div>
+  </main>
+
+  <nav class="bottomnav" id="bottomNav"></nav>
+</div>
+
+<!-- Firebase -->
+<script src="https://www.gstatic.com/firebasejs/12.0.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/12.0.0/firebase-firestore-compat.js"></script>
+<script src="shared.js"></script>
+<script>
+  // Badge-Definitionen (gern anpassen)
+  const BADGES = [
+    { key:'rookie',   name:'Rookie',       need:  25,  emoji:'🥉', desc:'25€ Gesamt-XP' },
+    { key:'regular',  name:'Regular',      need:  75,  emoji:'🥈', desc:'75€ Gesamt-XP' },
+    { key:'pro',      name:'Pro',          need: 150,  emoji:'🥇', desc:'150€ Gesamt-XP' },
+    { key:'elite',    name:'Elite',        need: 300,  emoji:'🏅', desc:'300€ Gesamt-XP' },
+    { key:'legend',   name:'Legend',       need: 600,  emoji:'🎖️', desc:'600€ Gesamt-XP' },
+    { key:'myth',     name:'Mythic',       need:1000,  emoji:'🏆', desc:'1000€ Gesamt-XP' }
+  ];
+
+  let prices={}, data={}, xp={}, people=[];
+  function currentValueOf(person){
+    const keys = Object.keys(prices||{});
+    return keys.reduce((sum,k)=> sum + ( (data[`${person}_${k}`]||0) * (Number(prices[k])||0) ), 0);
+  }
+
+  function render(){
+    const sel=document.getElementById('who');
+    const wrap=document.getElementById('badgesWrap');
+
+    // Dropdown füllen
+    if(!sel.options.length){
+      const list = [...new Set([...(people||[]), ...Object.keys(xp||{})])]
+        .filter(n=>CORE.includes(n) || !n.startsWith('_'))
+        .sort((a,b)=>a.localeCompare(b,'de',{sensitivity:'base'}));
+      list.forEach(n=>{
+        const opt=document.createElement('option');
+        opt.value=n; opt.textContent=n; sel.appendChild(opt);
+      });
+      if(list.length) sel.value=list[0];
+    }
+    const person = sel.value;
+    if(!person){ wrap.innerHTML='<div class="sub">Keine Personen.</div>'; return; }
+
+    const base = Number(xp[person]||0);
+    const today = currentValueOf(person);
+    const total = base + today;
+
+    const rows = BADGES.map(b=>{
+      const has = total >= b.need;
+      return `<div class="badge-card">
+        <div class="medal ${has?'ok':'off'}">${b.emoji}</div>
+        <div>
+          <div class="btitle">${b.name}</div>
+          <div class="muted">${b.desc} · <span class="${has?'ok':''}">${has?'Freigeschaltet':'Locked'}</span></div>
+          <div class="muted">Fortschritt: ${Math.min(100, Math.floor((total/b.need)*100))}%</div>
+        </div>
+      </div>`;
+    }).join('');
+
+    wrap.innerHTML = `<div class="grid">${rows}</div>`;
+  }
+
+  renderBottomNav('bewertungen'); // Badges tab doesn't exist; highlight Bewertungen as nearest
+
+  (function init(){
+    if(!db){
+      document.getElementById('connTxt').textContent='Offline – Firebase konnte nicht initialisiert werden.';
+      return;
+    }
+    document.getElementById('dot').classList.add('statusok');
+    document.getElementById('connTxt').textContent='Online (Firestore verbunden)';
+
+    // Einmal laden + Realtime
+    db.collection(STATE_COLLECTION).doc('global').onSnapshot(snap=>{
+      if(!snap.exists) return;
+      const s=snap.data()||{};
+      prices = s.prices || {};
+      data   = s.data   || {};
+      xp     = s.xp     || {};
+      people = s.people || [];
+      render();
+    });
+  })();
+</script>
+
+</body>
+</html>

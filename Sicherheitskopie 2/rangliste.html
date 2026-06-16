@@ -307,7 +307,7 @@
 
     // Fehlstand berechnen pro Person
     const fehlstandTotal = {}; // {person: totalMissed} — nur abgeschlossene Monate (für Tabellenanzeige)
-    const hdCarryover = {};    // {person: saldo} — negativ = Gutschrift, nie positiv (kein Schuldenübertrag)
+    const hdCarryover = {};    // {person: creditOnly} — nur Gutschriften, keine Fehlstände (für index.html)
     const fehlstandByMonth = {}; // {month: {person: missed}}
 
     // Initialisiere Totals
@@ -325,8 +325,7 @@
         fehlstandByMonth[month][person] = missed;
         if (isPast) {
           fehlstandTotal[person] += missed; // Gesamt (inkl. Fehlstände) für Tabellenanzeige
-          // Rolling balance: Credits akkumulieren, Fehlstände verbrauchen Credits, kein Schuldenübertrag
-          hdCarryover[person] = Math.min(0, hdCarryover[person] + missed);
+          if (missed < 0) hdCarryover[person] += missed; // nur Gutschriften für index.html
         }
       });
     });
