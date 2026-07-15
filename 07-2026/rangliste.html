@@ -636,6 +636,15 @@
       return;
     }
 
+    // State zuerst laden, damit hdRequirements vor renderFehlstand bekannt sind
+    const globalSnap = await db.collection(STATE_COLLECTION).doc('global').get();
+    if (globalSnap.exists) {
+      const s = globalSnap.data() || {};
+      prices = s.prices || {}; data = s.data || {}; xp = s.xp || {}; people = s.people || [];
+      if (s.core?.length) CORE = s.core;
+      if (s.hdRequirements) hdRequirements = s.hdRequirements;
+    }
+
     await loadHausdienstData();
     const [streaks] = await Promise.all([loadStreaks(), loadRatings()]);
     renderStreakGrid(streaks);
@@ -649,6 +658,7 @@
       if (s.core?.length) CORE = s.core;
       if (s.hdRequirements) hdRequirements = s.hdRequirements;
       renderSumme();
+      renderFehlstand();
     });
 
     db.collection('hausdienst').onSnapshot(async () => {
