@@ -373,6 +373,10 @@
     .yesterday-incomplete-icon { font-size: 24px; line-height: 1; flex-shrink: 0; }
     .yesterday-incomplete-text strong { display: block; color: #ff6b6b; font-size: 14px; margin-bottom: 3px; }
     .yesterday-incomplete-text span { font-size: 12px; opacity: 0.8; }
+    .streak-bar { display: flex; align-items: center; gap: 8px; margin-top: 10px; padding: 8px 12px; border-radius: 10px; font-size: 13px; font-weight: 800; }
+    .streak-bar.fire { background: rgba(255,159,67,.12); border: 1px solid rgba(255,159,67,.3); color: #ff9f43; }
+    .streak-bar.skull { background: rgba(255,107,107,.10); border: 1px solid rgba(255,107,107,.25); color: #ff6b6b; }
+    .streak-bar.neutral { background: rgba(255,255,255,.04); border: 1px solid rgba(255,255,255,.08); color: rgba(255,255,255,.45); }
 
     /* Admin-Modus */
     .admin-indicator { background-color: #ff6b6b; padding: 4px 8px; border-radius: 4px; margin-left: 8px; font-size: 12px; }
@@ -500,6 +504,7 @@
       <span id="adminIndicator" class="admin-indicator" style="display:none;">Admin</span>
     </div>
     <div class="appbar-actions">
+      <a class="btn small dark" href="kalender.html" title="Google Kalender Sync">📅</a>
       <button class="btn small warning" id="adminBtn" onclick="toggleAdminMode()" title="Admin-Modus">🔧</button>
       <a class="btn small dark" href="index.html" title="Zur Liste">🧾</a>
     </div>
@@ -611,6 +616,8 @@
           <div id="inlineRequiredHint" class="inline-required-hint" style="display:none">⚠️ Bewertung erforderlich zum Abschließen</div>
         </div>
 
+        <div id="streakBar" style="display:none"></div>
+
         <button class="btn complete-btn" id="completeHdBtn" onclick="completeHausdienst()" disabled style="margin-top:12px">
           ✓ Hausdienst abschließen
         </button>
@@ -674,19 +681,7 @@
       <div class="card">
         <div class="row" style="justify-content:space-between;align-items:center">
           <div class="section-title" style="margin:0">Hausdienst – Historie</div>
-          <a href="bewertungen.html" class="btn small">Alle Bewertungen</a>
-        </div>
-      </div>
-
-      <!-- 6-Monats-Übersicht -->
-      <div class="card">
-        <div class="section-title">Übersicht letzte 6 Monate</div>
-        <div class="sub" style="margin-bottom:10px">Hausdienste pro Person und Monat (Wochenende = 0.5)</div>
-        <div class="table-scroll">
-          <table class="overview-table" id="monthlyOverview">
-            <thead><tr><th>Monat</th></tr></thead>
-            <tbody></tbody>
-          </table>
+          <a href="rangliste.html" class="btn small">Stats →</a>
         </div>
       </div>
 
@@ -1869,78 +1864,6 @@
     }
   }
 
-  /* 6-Monats-Übersicht */
-  async function renderMonthlyOverview() {
-    if (!db) return;
-
-    const table = document.getElementById('monthlyOverview');
-    if (!table) return;
-
-    const months = [];
-    for (let i = 0; i < 6; i++) {
-      const d = new Date();
-      d.setMonth(d.getMonth() - i);
-      months.push(d.toISOString().slice(0, 7));
-    }
-
-    const firstMonth = months[months.length - 1];
-    const lastMonth  = months[0];
-    const snap = await db.collection("hausdienst")
-      .where(firebase.firestore.FieldPath.documentId(), ">=", firstMonth + "-01")
-      .where(firebase.firestore.FieldPath.documentId(), "<=", lastMonth + "-31")
-      .get();
-
-    // Versäumte Punkte pro Person und Monat
-    const missed = {};
-    months.forEach(m => { missed[m] = {}; CORE.forEach(p => missed[m][p] = 0); });
-
-    const today = todayStr();
-    snap.forEach(doc => {
-      if (doc.id >= today) return; // heute/Zukunft noch nicht fällig
-      const { person, completed: done } = doc.data();
-      if (!person || !CORE.includes(person) || done) return;
-      const month = doc.id.slice(0, 7);
-      if (!missed[month]) return;
-      const date = new Date(doc.id);
-      const points = (date.getDay() === 0 || date.getDay() === 6) ? 0.5 : 1;
-      missed[month][person] = (missed[month][person] || 0) + points;
-    });
-
-    const totals = {};
-    CORE.forEach(p => { totals[p] = months.reduce((s, m) => s + (missed[m][p] || 0), 0); });
-
-    const monthNames = ['Jan', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun', 'Jul', 'Aug', 'Sep', 'Okt', 'Nov', 'Dez'];
-    const fmt = n => n % 1 === 0 ? n : n.toFixed(1);
-
-    let headerHtml = '<tr><th>Monat</th>';
-    CORE.forEach(p => headerHtml += `<th>${p}</th>`);
-    headerHtml += '</tr>';
-
-    let bodyHtml = '';
-    months.forEach(m => {
-      const [year, month] = m.split('-');
-      bodyHtml += `<tr><td>${monthNames[parseInt(month) - 1]} ${year}</td>`;
-      CORE.forEach(p => {
-        const n = missed[m][p] || 0;
-        bodyHtml += n > 0
-          ? `<td class="count-cell bad">${fmt(n)}</td>`
-          : `<td class="count-cell good"></td>`;
-      });
-      bodyHtml += '</tr>';
-    });
-
-    let footerHtml = '<tr><td>Gesamt</td>';
-    CORE.forEach(p => {
-      const total = totals[p];
-      footerHtml += total > 0
-        ? `<td class="count-cell bad">${fmt(total)}</td>`
-        : `<td class="count-cell good">✓</td>`;
-    });
-    footerHtml += '</tr>';
-
-    table.innerHTML = `<thead>${headerHtml}</thead><tbody>${bodyHtml}</tbody><tfoot>${footerHtml}</tfoot>`;
-  }
-
   /* Historie (letzte 30 Tage) */
   async function renderHistory(){
     const el = document.getElementById('histList');
@@ -1980,6 +1903,41 @@
       rows.push(`<tr><td>${id}</td><td>${person} ${statusBadge}</td><td>${ratingHtml}</td></tr>`);
     }
     el.innerHTML = `<table><thead><tr><th>Datum</th><th>Person</th><th>Bewertung</th></tr></thead><tbody>${rows.join('')}</tbody></table>`;
+  }
+
+  /* Streak-Anzeige */
+  async function updateStreakBar() {
+    const bar = document.getElementById('streakBar');
+    if (!bar || !db || !todayPerson) { if (bar) bar.style.display = 'none'; return; }
+    try {
+      const since = new Date(); since.setDate(since.getDate() - 60);
+      const sinceStr = since.toISOString().slice(0, 10);
+      const today   = todayStr();
+      const snap = await db.collection('hausdienst')
+        .where(firebase.firestore.FieldPath.documentId(), '>=', sinceStr)
+        .where(firebase.firestore.FieldPath.documentId(), '<', today)
+        .get();
+      const entries = snap.docs
+        .filter(d => d.data().person === todayPerson)
+        .map(d => ({ date: d.id, done: !!d.data().completed }))
+        .sort((a, b) => b.date.localeCompare(a.date));
+      let fire = 0, skull = 0;
+      for (const e of entries) { if (e.done) fire++; else break; }
+      if (fire === 0) for (const e of entries) { if (!e.done) skull++; else break; }
+      if (fire > 0) {
+        bar.className = 'streak-bar fire';
+        bar.innerHTML = `🔥 ${fire}× in Folge abgeschlossen`;
+        bar.style.display = 'flex';
+      } else if (skull > 0) {
+        bar.className = 'streak-bar skull';
+        bar.innerHTML = `💀 ${skull}× nicht abgeschlossen`;
+        bar.style.display = 'flex';
+      } else {
+        bar.className = 'streak-bar neutral';
+        bar.innerHTML = `○ Noch kein Streak`;
+        bar.style.display = 'flex';
+      }
+    } catch(e) { console.error(e); bar.style.display = 'none'; }
   }
 
   /* Notiz-System */
@@ -2182,7 +2140,8 @@
         renderTasks();
       });
     }
-    await Promise.all([updateTodayInfo(), renderNextDays(), renderTasks(), renderHistory(), renderMonthlyOverview()]);
+    await Promise.all([updateTodayInfo(), renderNextDays(), renderTasks(), renderHistory()]);
+    updateStreakBar();
 
     // Notiz-System initialisieren
     updateNoteCards();

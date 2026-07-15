@@ -100,6 +100,7 @@
       <h1>Kalender</h1>
     </div>
     <div class="appbar-actions">
+      <a class="btn small dark" href="hausdienst.html" title="Zurück">← Zurück</a>
       <div class="status-pill">
         <div class="status-dot" id="statusDot"></div>
         <span id="statusText">lädt…</span>
@@ -124,7 +125,7 @@
     </div>
   </main>
 
-  <nav class="bottomnav" id="bottomNav"></nav>
+  <!-- kein Bottom-Nav: kalender.html ist Utility-Seite, nicht im Hauptmenü -->
 </div>
 
 <!-- ── Termin erstellen / bearbeiten ─────────────────────────────── -->
@@ -205,8 +206,6 @@
 <script src="https://apis.google.com/js/api.js" async defer></script>
 
 <script>
-  renderBottomNav('kalender');
-
   /* ── Konfig ─────────────────────────────────────────────────────── */
   const GC_CLIENT_ID   = '561126572891-le6tijqq4hqrabdmsr1d767qf9l14jvk.apps.googleusercontent.com';
   const GC_API_KEY     = 'AIzaSyCwYdz2dqaxCjQ60nTfVVRqy74XspsX224';
