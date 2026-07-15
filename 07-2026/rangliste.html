@@ -135,9 +135,17 @@
           <input type="number" id="xpEditValue" step="0.01" min="0" placeholder="Neue XP">
           <button class="btn small" onclick="updateXp()">Setzen</button>
         </div>
-        <div class="sub" style="margin-top:14px">Hausdienst-Anforderungen / Monat</div>
+        <div class="sub" style="margin-top:14px">Hausdienst-Anforderungen / Monat (Standard)</div>
         <div id="hdRequirementsForm" class="hd-requirements-form"></div>
         <button class="btn small" style="margin-top:10px" onclick="saveHdRequirements()">Speichern</button>
+        <div class="sub" style="margin-top:16px">Monatliche Ausnahmen <span style="opacity:.6;font-weight:400">(überschreibt Standard für einzelne Monate)</span></div>
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:8px">
+          <select id="overridePerson" style="padding:8px 10px;border-radius:8px;border:1px solid #2a3042;background:#0e1422;color:#e6e8ef;font-size:13px"></select>
+          <input type="month" id="overrideMonth" style="padding:8px 10px;border-radius:8px;border:1px solid #2a3042;background:#0e1422;color:#e6e8ef;font-size:13px">
+          <input type="number" id="overrideCount" min="0" max="10" placeholder="Anzahl" style="width:80px;padding:8px 10px;border-radius:8px;border:1px solid #2a3042;background:#0e1422;color:#fff">
+          <button class="btn small" onclick="addOverride()">Eintragen</button>
+        </div>
+        <div id="overrideList" style="margin-top:8px;display:flex;flex-direction:column;gap:4px"></div>
       </div>
 
       <!-- Serien -->
@@ -389,7 +397,7 @@
       fehlstandByMonth[m] = {};
       const md = hausdienstByMonth[m] || {};
       core.forEach(p => {
-        const missed = getHdRequired(p) - (md[p] || 0);
+        const missed = getHdRequired(p, m) - (md[p] || 0); // monatliche Ausnahme berücksichtigen
         fehlstandByMonth[m][p] = missed;
         if (m < currentMonth) fehlstandTotal[p] += missed;
       });
@@ -574,6 +582,62 @@
         <label>${p}</label>
         <input type="number" min="0" max="10" value="${getHdRequired(p)}" data-person="${p}">
       </div>`).join('');
+    // Override-Person-Select befüllen
+    const sel = document.getElementById('overridePerson');
+    if (sel) { sel.innerHTML = CORE.map(p=>`<option value="${p}">${p}</option>`).join(''); }
+    renderOverrideList();
+  }
+
+  function renderOverrideList() {
+    const el = document.getElementById('overrideList');
+    if (!el) return;
+    const entries = [];
+    Object.entries(hdRequirementsHistory).forEach(([person, months]) => {
+      Object.entries(months).sort((a,b)=>a[0].localeCompare(b[0])).forEach(([month, count]) => {
+        entries.push({ person, month, count });
+      });
+    });
+    if (!entries.length) { el.innerHTML = '<div style="opacity:.5;font-size:12px">Keine Ausnahmen eingetragen.</div>'; return; }
+    const mnNames = ['Jan','Feb','Mär','Apr','Mai','Jun','Jul','Aug','Sep','Okt','Nov','Dez'];
+    const fmt = m => { const [y,mo] = m.split('-'); return `${mnNames[+mo-1]} ${y}`; };
+    el.innerHTML = entries.map(e => `
+      <div style="display:flex;align-items:center;gap:8px;padding:5px 8px;background:#0e1422;border-radius:8px;border:1px solid #2a3042;font-size:13px">
+        <span style="font-weight:800;min-width:70px">${e.person}</span>
+        <span style="opacity:.7;min-width:60px">${fmt(e.month)}</span>
+        <span>→ <b>${e.count}</b> HD</span>
+        <button class="btn small warning" style="padding:3px 8px;font-size:11px;margin-left:auto" onclick="removeOverride('${e.person}','${e.month}')">✕</button>
+      </div>`).join('');
+  }
+
+  function addOverride() {
+    const person = document.getElementById('overridePerson').value;
+    const month  = document.getElementById('overrideMonth').value;
+    const count  = parseInt(document.getElementById('overrideCount').value);
+    if (!person || !month || isNaN(count)) { showToast('Bitte alle Felder ausfüllen'); return; }
+    if (!hdRequirementsHistory[person]) hdRequirementsHistory[person] = {};
+    hdRequirementsHistory[person][month] = count;
+    saveOverrides();
+    renderOverrideList();
+    renderFehlstand();
+    document.getElementById('overrideMonth').value = '';
+    document.getElementById('overrideCount').value = '';
+  }
+
+  function removeOverride(person, month) {
+    if (hdRequirementsHistory[person]) {
+      delete hdRequirementsHistory[person][month];
+      if (!Object.keys(hdRequirementsHistory[person]).length) delete hdRequirementsHistory[person];
+    }
+    saveOverrides();
+    renderOverrideList();
+    renderFehlstand();
+  }
+
+  function saveOverrides() {
+    if (db) db.collection(STATE_COLLECTION).doc('global')
+      .set({ hdRequirementsHistory }, { merge: true })
+      .then(() => showToast('Ausnahmen gespeichert ✓'))
+      .catch(() => showToast('Fehler beim Speichern'));
   }
 
   function saveHdRequirements() {
@@ -648,6 +712,7 @@
       prices = s.prices || {}; data = s.data || {}; xp = s.xp || {}; people = s.people || [];
       if (s.core?.length) CORE = s.core;
       if (s.hdRequirements) hdRequirements = s.hdRequirements;
+      if (s.hdRequirementsHistory) hdRequirementsHistory = s.hdRequirementsHistory;
     }
 
     await loadHausdienstData();
@@ -662,6 +727,7 @@
       prices = s.prices || {}; data = s.data || {}; xp = s.xp || {}; people = s.people || [];
       if (s.core?.length) CORE = s.core;
       if (s.hdRequirements) hdRequirements = s.hdRequirements;
+      if (s.hdRequirementsHistory) hdRequirementsHistory = s.hdRequirementsHistory;
       renderSumme();
       renderFehlstand();
     });
