@@ -3,8 +3,8 @@
   "short_name": "S&S",
   "start_url": "index.html",
   "display": "standalone",
-  "background_color": "#0b0e14",
-  "theme_color": "#0b0e14",
+  "background_color": "#08090f",
+  "theme_color": "#08090f",
   "icons": [
     { "src": "Logo.png", "sizes": "any", "type": "image/png" },
     { "src": "Apple logo.png", "sizes": "any", "type": "image/png", "purpose": "maskable any" }

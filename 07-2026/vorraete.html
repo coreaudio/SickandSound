@@ -4,35 +4,36 @@
   <meta charset="UTF-8" />
   <title>Vorräte – Sick & Sound</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <meta name="theme-color" content="#0b0e14" />
+  <meta name="theme-color" content="#08090f" />
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="stylesheet" href="style.css" />
   <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;800&display=swap" rel="stylesheet" />
   <style>
-    .vorraete-list { display: flex; flex-direction: column; gap: 6px; }
+    .vorraete-list { display: flex; flex-direction: column; gap: 8px; }
 
     .vorrat-item {
       display: flex;
       align-items: center;
       gap: 14px;
       padding: 16px;
-      background: #1c2130;
-      border-radius: 14px;
-      border: 2px solid #2a3042;
+      background: var(--panel-3);
+      border-radius: 18px;
+      border: 1px solid var(--border);
+      box-shadow: 0 4px 16px rgba(0,0,0,.3);
       transition: transform 0.2s ease, opacity 0.2s ease, border-color 0.2s, background 0.2s;
       cursor: pointer;
       user-select: none;
     }
     .vorrat-item:active { transform: scale(0.98); }
     .vorrat-item.available {
-      border-color: rgba(124, 252, 154, 0.4);
-      background: rgba(124, 252, 154, 0.05);
+      border-color: rgba(16,217,160,.28);
+      background: rgba(16,217,160,.04);
     }
     .vorrat-item.unavailable {
-      border-color: rgba(255, 107, 107, 0.3);
-      background: rgba(255, 107, 107, 0.05);
+      border-color: rgba(244,63,94,.22);
+      background: rgba(244,63,94,.04);
     }
 
     .vorrat-status {
@@ -45,14 +46,14 @@
       transition: all 0.2s;
     }
     .vorrat-item.available .vorrat-status {
-      background: rgba(124, 252, 154, 0.2);
-      border: 2px solid #7CFC9A;
-      color: #7CFC9A;
+      background: rgba(16,217,160,.15);
+      border: 2px solid rgba(16,217,160,.5);
+      color: var(--green);
     }
     .vorrat-item.unavailable .vorrat-status {
-      background: rgba(255, 107, 107, 0.15);
-      border: 2px solid #ff6b6b;
-      color: #ff6b6b;
+      background: rgba(244,63,94,.12);
+      border: 2px solid rgba(244,63,94,.4);
+      color: var(--danger);
     }
 
     .vorrat-name {
@@ -60,43 +61,46 @@
       font-weight: 700;
       font-size: 16px;
     }
-    .vorrat-item.unavailable .vorrat-name { color: #9ca3af; }
+    .vorrat-item.unavailable .vorrat-name { color: var(--muted); }
 
-    .stats-bar { display: flex; gap: 12px; margin-bottom: 12px; }
+    .stats-bar { display: flex; gap: 10px; margin-bottom: 12px; }
     .stat-pill {
       flex: 1; padding: 12px 16px;
-      background: #1c2130; border-radius: 12px; text-align: center;
+      background: var(--panel-3); border-radius: 16px; text-align: center;
+      border: 1px solid var(--border);
     }
-    .stat-pill.ok  { background: rgba(124,252,154,0.08); }
-    .stat-pill.bad { background: rgba(255,107,107,0.10); }
+    .stat-pill.ok  { background: rgba(16,217,160,.06); border-color: rgba(16,217,160,.2); }
+    .stat-pill.bad { background: rgba(244,63,94,.06); border-color: rgba(244,63,94,.2); }
     .stat-number { font-size: 24px; font-weight: 800; }
-    .stat-pill.ok  .stat-number { color: #7CFC9A; }
-    .stat-pill.bad .stat-number { color: #ff6b6b; }
-    .stat-text { font-size: 10px; text-transform: uppercase; letter-spacing: 0.5px; opacity: 0.6; }
+    .stat-pill.ok  .stat-number { color: var(--green); }
+    .stat-pill.bad .stat-number { color: var(--danger); }
+    .stat-text { font-size: 10px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--muted); }
 
     .add-section { display: flex; gap: 10px; margin-bottom: 12px; }
     .add-input {
       flex: 1; padding: 14px 16px;
-      border-radius: 14px; border: 2px solid #2a3042;
-      background: #0e1422; color: #e6e8ef; font-size: 15px; font-weight: 600;
+      border-radius: var(--r-sm); border: 1px solid var(--border2);
+      background: var(--panel-2); color: var(--txt); font-size: 15px; font-weight: 600;
+      font-family: inherit;
     }
-    .add-input:focus { border-color: #6ee7ff; outline: none; }
-    .add-input::placeholder { color: #4a5568; font-weight: 400; }
+    .add-input:focus { border-color: var(--accent); outline: none; box-shadow: 0 0 0 3px var(--accent-dim); }
+    .add-input::placeholder { color: var(--muted); font-weight: 400; }
     .add-btn {
-      width: 52px; height: 52px; border-radius: 14px;
-      background: linear-gradient(135deg, #6ee7ff, #a78bfa);
-      color: #0b0e14; font-size: 24px; font-weight: 800;
+      width: 52px; height: 52px; border-radius: var(--r-sm);
+      background: var(--accent);
+      color: #04120f; font-size: 24px; font-weight: 800;
       display: flex; align-items: center; justify-content: center;
       border: none; cursor: pointer; flex-shrink: 0;
+      box-shadow: 0 4px 16px var(--accent-glow);
     }
     .add-btn:active { transform: scale(0.95); }
 
     .empty-state { text-align: center; padding: 40px 20px; }
     .empty-icon  { font-size: 56px; margin-bottom: 12px; }
     .empty-title { font-size: 18px; font-weight: 800; margin-bottom: 8px; }
-    .empty-sub   { font-size: 14px; opacity: 0.6; max-width: 260px; margin: 0 auto; }
+    .empty-sub   { font-size: 14px; color: var(--muted); max-width: 260px; margin: 0 auto; }
 
-    .swipe-hint { font-size: 11px; opacity: 0.35; text-align: center; padding: 8px; }
+    .swipe-hint { font-size: 11px; color: var(--muted); opacity: 0.5; text-align: center; padding: 8px; }
 
     .drag-handle {
       width: 32px; height: 32px;
@@ -104,13 +108,13 @@
       flex-shrink: 0; touch-action: none;
     }
     .vorrat-item.dragging {
-      box-shadow: 0 8px 32px rgba(0,0,0,0.55);
+      box-shadow: 0 12px 40px rgba(0,0,0,.6);
       z-index: 100; opacity: 0.92;
     }
     .appbar-all-btn {
-      padding: 8px 14px; border-radius: 10px;
-      background: rgba(110,231,255,0.1); border: 1px solid rgba(110,231,255,0.2);
-      color: #6ee7ff; font-size: 13px; font-weight: 700; cursor: pointer;
+      padding: 8px 16px; border-radius: 999px;
+      background: var(--accent-dim); border: 1px solid rgba(45,212,191,.28);
+      color: var(--accent); font-size: 13px; font-weight: 700; cursor: pointer;
       white-space: nowrap;
     }
     .appbar-all-btn:active { opacity: 0.7; transform: scale(0.95); }
@@ -161,9 +165,10 @@
 
 <div id="toast" style="
   position:fixed;bottom:calc(var(--nav-h,64px) + 12px);left:50%;transform:translateX(-50%);
-  background:#1c2130;border:1px solid #2a3042;padding:10px 18px;
-  border-radius:12px;font-size:13px;font-weight:700;
-  opacity:0;transition:opacity .25s;pointer-events:none;z-index:200;white-space:nowrap
+  background:rgba(17,22,36,.96);border:1px solid rgba(45,212,191,.2);padding:10px 20px;
+  border-radius:999px;font-size:13px;font-weight:700;color:var(--txt);
+  opacity:0;transition:opacity .25s;pointer-events:none;z-index:200;white-space:nowrap;
+  box-shadow:0 8px 32px rgba(0,0,0,.6)
 "></div>
 <style>#toast.show { opacity: 1; }</style>
 

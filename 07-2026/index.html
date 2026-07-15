@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <title>Sick & Sound – Strichliste</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <meta name="theme-color" content="#0b0e14" />
+  <meta name="theme-color" content="#08090f" />
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <link rel="manifest" href="manifest.webmanifest">
@@ -27,7 +27,7 @@
       --col-min-width: 90px;
       --person-col-width: 180px;
       --sticky-top: 56px;
-      --admin-color: #ff6b6b;
+      --admin-color: var(--danger);
     }
     .content{ padding-bottom: 88px; }
     .appbar{ min-height: 52px; }
@@ -47,14 +47,14 @@
     .section-title{ font-size: 14px; }
     .admin-mode .minus-btn{ display: inline-block !important; }
     .admin-mode .person-cell{ cursor: pointer; }
-    .admin-indicator{ background-color: var(--admin-color); padding: 4px 8px; border-radius: 4px; margin-left: 8px; font-size: 12px; }
+    .admin-indicator{ background: rgba(244,63,94,.15); border: 1px solid rgba(244,63,94,.3); color: var(--danger); padding: 3px 10px; border-radius: 999px; font-size: 11px; font-weight: 800; }
 
     /* Sticky Action Bar */
     .action-bar{
       position:sticky; top:52px; z-index:48;
       display:flex; gap:6px; padding:6px 12px;
-      background:rgba(11,14,20,.9); border-bottom:1px solid rgba(255,255,255,.07);
-      backdrop-filter:blur(12px);
+      background:rgba(8,9,15,.92); border-bottom:1px solid rgba(255,255,255,.055);
+      backdrop-filter:blur(20px); -webkit-backdrop-filter:blur(20px);
     }
     .action-bar .btn{ flex:1; min-width:0; font-size:13px; padding:7px 8px; white-space:nowrap; }
     .action-bar .btn:disabled{ opacity:.3; cursor:default; }
@@ -65,8 +65,8 @@
       position: sticky;
       top: 0;
       z-index: 2;
-      background: #111827; /* dunkler Hintergrund für Lesbarkeit */
-      box-shadow: 0 2px 0 rgba(0,0,0,.25);
+      background: var(--panel);
+      box-shadow: 0 1px 0 rgba(255,255,255,.055);
     }
 
     /* Tabelle Container mit eigenem Scroll */
@@ -83,14 +83,14 @@
       min-width: 20px;
       height: 20px;
       padding: 0 6px;
-      border-radius: 10px;
+      border-radius: 999px;
       font-size: 11px;
       font-weight: 800;
       margin-left: 6px;
     }
-    .hd-badge.open   { background: #ff6b6b; color: #fff; }
-    .hd-badge.done   { background: #2a3042; color: #7CFC9A; }
-    .hd-badge.credit { background: rgba(0,224,184,.15); color: #00e0b8; border: 1px solid rgba(0,224,184,.35); }
+    .hd-badge.open   { background: rgba(244,63,94,.18); color: var(--danger); border: 1px solid rgba(244,63,94,.3); }
+    .hd-badge.done   { background: rgba(16,217,160,.1); color: var(--green); border: 1px solid rgba(16,217,160,.28); }
+    .hd-badge.credit { background: rgba(45,212,191,.12); color: var(--accent); border: 1px solid rgba(45,212,191,.3); }
 
     /* Hinweis im Löschmodus */
     .delete-hint{ opacity:.75; font-size:12px; margin-top:4px }
@@ -99,9 +99,10 @@
     /* Toast */
     .toast{
       position:fixed; bottom:76px; left:50%; transform:translateX(-50%) translateY(8px);
-      background:rgba(17,24,39,.96); color:#e6e8ef; padding:10px 18px; border-radius:12px;
+      background:rgba(17,22,36,.96); color:var(--txt); padding:10px 20px; border-radius:999px;
       font-size:14px; font-weight:600; z-index:9999; pointer-events:none;
-      box-shadow:0 4px 20px rgba(0,0,0,.5); border:1px solid rgba(110,231,255,.25);
+      box-shadow:0 8px 32px rgba(0,0,0,.6), inset 0 1px 0 rgba(255,255,255,.07);
+      border:1px solid rgba(45,212,191,.2);
       white-space:nowrap; max-width:92vw; overflow:hidden; text-overflow:ellipsis;
       opacity:0; transition:opacity .18s, transform .18s;
     }
@@ -114,21 +115,21 @@
     .backup-item{ padding: 8px; border-bottom: 1px solid rgba(255,255,255,0.1); display: flex; justify-content: space-between; }
 
     /* Hausdienst-Status in Strichliste */
-    .hd-today { background: rgba(255, 107, 107, 0.1); }
-    .hd-today.hd-complete { background: rgba(124, 252, 154, 0.1); }
+    .hd-today { background: rgba(244,63,94,.06); }
+    .hd-today.hd-complete { background: rgba(16,217,160,.05); }
     .hd-status-icon { margin-left: 6px; font-size: 14px; }
-    .hd-status-icon.pending { color: #ff6b6b; }
-    .hd-status-icon.complete { color: #7CFC9A; }
+    .hd-status-icon.pending { color: var(--danger); }
+    .hd-status-icon.complete { color: var(--green); }
 
     /* Kernteam-Tags */
-    .core-tag { display: inline-flex; align-items: center; gap: 6px; padding: 6px 10px; border-radius: 8px; background: #1c2130; border: 1px solid #2a3042; }
-    .core-tag .remove-btn { cursor: pointer; color: #ff6b6b; font-weight: bold; padding: 0 4px; }
+    .core-tag { display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 999px; background: var(--panel-3); border: 1px solid var(--border2); }
+    .core-tag .remove-btn { cursor: pointer; color: var(--danger); font-weight: bold; padding: 0 4px; }
     .core-tag .remove-btn:hover { color: #ff4444; }
 
     /* Bezugsperson für Gäste */
     .person-cell-wrapper { display: flex; align-items: center; justify-content: space-between; width: 100%; gap: 8px; }
-    .ref-select { padding: 4px 8px; border-radius: 6px; border: 1px solid #2a3042; background: #1c2130; color: #e6e8ef; font-size: 11px; max-width: 90px; cursor: pointer; flex-shrink: 0; }
-    .ref-badge { display: inline-block; padding: 2px 8px; border-radius: 4px; background: rgba(110, 231, 255, 0.15); color: #6ee7ff; font-size: 11px; margin-left: 6px; }
+    .ref-select { padding: 4px 10px; border-radius: 999px; border: 1px solid var(--border2); background: var(--panel-3); color: var(--txt); font-size: 11px; max-width: 90px; cursor: pointer; flex-shrink: 0; }
+    .ref-badge { display: inline-block; padding: 2px 8px; border-radius: 999px; background: var(--accent-dim); color: var(--accent); font-size: 11px; margin-left: 6px; }
 
     /* Tablet Hochformat Optimierung */
     @media screen and (max-width: 900px) {
@@ -336,34 +337,34 @@
     /* ── Wochen-HD-Strip ─────────────────────────────── */
     .week-strip { display:flex; gap:5px; margin-top:10px; overflow-x:auto; padding-bottom:2px; -webkit-overflow-scrolling:touch; scrollbar-width:none; }
     .week-strip::-webkit-scrollbar { display:none; }
-    .wk-item { flex:1; min-width:42px; max-width:58px; padding:7px 4px 5px; border-radius:10px; text-align:center; background:#1c2130; border:1px solid #2a3042; display:flex; flex-direction:column; align-items:center; gap:1px; }
-    .wk-item.today { background:rgba(110,231,255,.08); border-color:rgba(110,231,255,.3); }
-    .wk-item.hd-done { background:rgba(124,252,154,.07); border-color:rgba(124,252,154,.28); }
-    .wk-item.hd-open { background:rgba(255,107,107,.07); border-color:rgba(255,107,107,.25); }
-    .wk-label { font-size:9px; font-weight:800; text-transform:uppercase; opacity:.55; letter-spacing:.5px; }
+    .wk-item { flex:1; min-width:42px; max-width:58px; padding:7px 4px 5px; border-radius:12px; text-align:center; background:var(--panel-3); border:1px solid var(--border); display:flex; flex-direction:column; align-items:center; gap:1px; }
+    .wk-item.today { background:rgba(45,212,191,.08); border-color:rgba(45,212,191,.28); }
+    .wk-item.hd-done { background:rgba(16,217,160,.07); border-color:rgba(16,217,160,.28); }
+    .wk-item.hd-open { background:rgba(244,63,94,.07); border-color:rgba(244,63,94,.22); }
+    .wk-label { font-size:9px; font-weight:800; text-transform:uppercase; opacity:.5; letter-spacing:.5px; }
     .wk-date  { font-size:12px; font-weight:800; margin:1px 0; }
     .wk-name  { font-size:10px; font-weight:700; opacity:.85; }
-    .wk-check { font-size:9px; color:#7CFC9A; margin-top:1px; }
+    .wk-check { font-size:9px; color:var(--green); margin-top:1px; }
 
     /* ── Password / Confirm Modal ─────────────────── */
     .dialog-box { max-width:320px; }
     .dialog-box h2 { margin-bottom:14px; }
-    #passwordError { color:#ff6b6b; font-size:12px; min-height:1.3em; margin:4px 0 10px; }
+    #passwordError { color:var(--danger); font-size:12px; min-height:1.3em; margin:4px 0 10px; }
 
     /* Layout-Einstellungen Modal */
     .layout-settings { max-width: 500px; }
     .setting-group { margin-bottom: 20px; }
-    .setting-group-title { font-size: 13px; font-weight: 800; color: #6ee7ff; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 0.5px; }
+    .setting-group-title { font-size: 11px; font-weight: 800; color: var(--accent); margin-bottom: 10px; text-transform: uppercase; letter-spacing: 1px; }
     .setting-row { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
-    .setting-label { flex: 1; font-size: 13px; min-width: 120px; }
+    .setting-label { flex: 1; font-size: 13px; min-width: 120px; color: var(--muted); }
     .setting-value { font-size: 12px; min-width: 45px; text-align: right; opacity: 0.7; font-family: monospace; }
-    .setting-slider { flex: 2; -webkit-appearance: none; appearance: none; height: 6px; border-radius: 3px; background: #2a3042; outline: none; }
-    .setting-slider::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 28px; height: 28px; margin-top: -11px; border-radius: 50%; background: linear-gradient(135deg, #6ee7ff, #a78bfa); cursor: pointer; box-shadow: 0 2px 6px rgba(0,0,0,.4); }
-    .setting-slider::-moz-range-thumb { width: 28px; height: 28px; border-radius: 50%; background: linear-gradient(135deg, #6ee7ff, #a78bfa); cursor: pointer; border: none; box-shadow: 0 2px 6px rgba(0,0,0,.4); }
+    .setting-slider { flex: 2; -webkit-appearance: none; appearance: none; height: 4px; border-radius: 999px; background: var(--panel-3); outline: none; }
+    .setting-slider::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 26px; height: 26px; margin-top: -11px; border-radius: 50%; background: var(--accent); cursor: pointer; box-shadow: 0 2px 8px var(--accent-glow); }
+    .setting-slider::-moz-range-thumb { width: 26px; height: 26px; border-radius: 50%; background: var(--accent); cursor: pointer; border: none; box-shadow: 0 2px 8px var(--accent-glow); }
     .setting-actions { display: flex; gap: 10px; margin-top: 20px; flex-wrap: wrap; }
     .setting-actions .btn { flex: 1; min-width: 100px; }
-    .preview-box { padding: 12px; background: #0e1422; border-radius: 8px; margin-top: 15px; }
-    .preview-title { font-size: 11px; opacity: 0.6; margin-bottom: 8px; text-transform: uppercase; }
+    .preview-box { padding: 12px; background: var(--panel-2); border-radius: 14px; margin-top: 15px; }
+    .preview-title { font-size: 11px; opacity: 0.5; margin-bottom: 8px; text-transform: uppercase; letter-spacing: .5px; }
     .preview-btn { padding: var(--btn-padding-v) var(--btn-padding-h); font-size: var(--btn-font-size); min-width: var(--btn-min-width); }
   </style>
 </head>
@@ -420,7 +421,7 @@
       <div class="sub" style="margin-bottom:10px">Personen zum Kernteam hinzufügen oder entfernen</div>
       <div id="coreTeamList" style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px"></div>
       <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
-        <input type="text" id="newCoreMember" placeholder="Neues Mitglied..." style="flex:1;min-width:150px;padding:8px 12px;border-radius:8px;border:1px solid #2a3042;background:#0e1422;color:#fff">
+        <input type="text" id="newCoreMember" placeholder="Neues Mitglied..." style="flex:1;min-width:150px;padding:8px 12px;border-radius:8px;border:1px solid var(--border2);background:var(--panel-2);color:var(--txt)">
         <button class="btn small" onclick="addCoreMember()">Hinzufügen</button>
       </div>
     </div>
@@ -440,7 +441,7 @@
       <input id="monthlyFeeAmount" type="number" step="0.5" min="0" placeholder="z.B. 20.00" style="margin-bottom:12px">
       <label style="display:block;font-size:13px;opacity:.8;margin-bottom:6px">Personen auswählen</label>
       <div id="monthlyFeePersonList" style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px"></div>
-      <div id="monthlyFeeStatus" class="sub" style="margin-bottom:10px;color:#6ee7ff"></div>
+      <div id="monthlyFeeStatus" class="sub" style="margin-bottom:10px;color:var(--accent)"></div>
       <div style="display:flex;gap:8px;flex-wrap:wrap">
         <button class="btn small" onclick="saveMonthlyFeeSettings()">💾 Speichern</button>
       </div>
@@ -470,8 +471,8 @@
 <div class="modal" id="personModal"><div class="box">
   <h2>➕ Person hinzufügen</h2>
   <input id="personName" placeholder="Name eintippen" />
-  <label style="display:block;font-size:13px;opacity:.8;margin:10px 0 4px">Bezugsperson <span style="color:#ff6b6b">*</span></label>
-  <select id="personRef" style="width:100%;padding:10px 12px;border-radius:8px;border:1px solid #2a3042;background:#0e1422;color:#e6e8ef;font-size:15px">
+  <label style="display:block;font-size:13px;opacity:.8;margin:10px 0 4px">Bezugsperson <span style="color:var(--danger)">*</span></label>
+  <select id="personRef">
     <option value="">– Bezugsperson wählen –</option>
   </select>
   <div style="display:flex;gap:10px;margin-top:12px">
@@ -616,7 +617,7 @@
     <div class="sub" style="margin-bottom:12px">Gesamtbetrag gleichmäßig auf ausgewählte Personen aufteilen.</div>
     <label style="display:block;font-size:13px;opacity:.8;margin-bottom:4px">Gesamtbetrag (€)</label>
     <input id="splitAmount" type="number" step="0.5" min="0.5" placeholder="z.B. 10.00" oninput="updateSplitCalc()">
-    <div id="splitInfo" class="sub" style="margin:8px 0;min-height:1.4em;font-weight:700;color:#6ee7ff"></div>
+    <div id="splitInfo" class="sub" style="margin:8px 0;min-height:1.4em;font-weight:700;color:var(--accent)"></div>
     <div style="display:flex;gap:10px;margin-top:10px">
       <button class="btn" onclick="confirmSplit()">Verrechnen</button>
       <button class="btn dark" onclick="closeModal('splitModal')">Abbrechen</button>
@@ -1165,7 +1166,7 @@ async function updateTodayBanner(existing){
     if (person) {
       const statusBadge = hdTodayCompleted
         ? `<span class="badge ok">${person} ✓</span>`
-        : `<span class="badge" style="background:#ff6b6b;color:#fff">${person}</span>`;
+        : `<span class="badge" style="background:rgba(244,63,94,.18);color:var(--danger);border-color:rgba(244,63,94,.3)">${person}</span>`;
       infoEl.innerHTML = `Heute Hausdienst: ${statusBadge}`;
     } else {
       infoEl.innerHTML = `Heute: <span class="badge none">Noch niemand eingetragen</span>`;
@@ -1402,8 +1403,8 @@ function buildTable(){
     return `<div class="lvl-ring" role="img" aria-label="Level ${lvl}, ${Math.round(p*100)}%">
       <svg viewBox="0 0 52 52" width="100%" height="100%" style="transform:rotate(-90deg)">
         <defs><linearGradient id="${gid}" x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0%" stop-color="var(--accent,#6ee7ff)"/><stop offset="100%" stop-color="var(--accent-2,#a78bfa)"/></linearGradient></defs>
-        <circle cx="26" cy="26" r="${r}" stroke="#2a2f3b" stroke-width="6" fill="none"/>
+          <stop offset="0%" stop-color="var(--ring-a,#2dd4bf)"/><stop offset="100%" stop-color="var(--ring-b,#818cf8)"/></linearGradient></defs>
+        <circle cx="26" cy="26" r="${r}" stroke="rgba(255,255,255,.08)" stroke-width="6" fill="none"/>
         <circle cx="26" cy="26" r="${r}" stroke="url(#${gid})" stroke-width="6" stroke-linecap="round" fill="none"
                 stroke-dasharray="${c}" stroke-dashoffset="${off}"/></svg>
       <div class="val">Lv. ${lvl}</div></div>`;
@@ -1434,7 +1435,7 @@ function buildTable(){
         const done  = hdTaskProgress?.done ?? 0;
         const total = hdTaskTotalToday;
         const progressPct = Math.round((done / total) * 100);
-        const progressColor = progressPct === 100 ? '#7CFC9A' : (progressPct >= 50 ? '#6ee7ff' : '#ff6b6b');
+        const progressColor = progressPct === 100 ? '#10d9a0' : (progressPct >= 50 ? '#2dd4bf' : '#f43f5e');
         hdStatusIcon = `<span class="hd-progress" title="Aufgaben: ${done} von ${total} erledigt" style="color:${progressColor};font-weight:800;margin-left:6px;font-size:12px">${done}/${total}</span>`;
       } else {
         hdStatusIcon = `<span class="hd-status-icon pending" title="Hausdienst noch offen">○</span>`;
@@ -1909,7 +1910,7 @@ function _renderBreakdown() {
     <table style="width:100%;border-collapse:collapse;font-size:14px">
       ${drinkRows}${separator}${manualRows}
       <tr><td colspan="${adminMode?5:4}" style="border-top:1px solid rgba(255,255,255,.3);padding:8px 0 0"></td></tr>
-      <tr><td colspan="${cols}" style="padding:4px 0;font-weight:800">Gesamt</td><td style="text-align:right;font-weight:800;color:#6ee7ff;font-size:16px">${total.toFixed(2)} €</td></tr>
+      <tr><td colspan="${cols}" style="padding:4px 0;font-weight:800">Gesamt</td><td style="text-align:right;font-weight:800;color:var(--accent);font-size:16px">${total.toFixed(2)} €</td></tr>
     </table>`;
 }
 
@@ -2283,11 +2284,11 @@ function loadTodayCalendarEvents() {
   const chip = ev => {
     const t = ev.allDay ? 'Ganztägig' : new Date(ev.start).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
     return '<div style="display:flex;align-items:center;gap:10px;padding:8px 12px;background:rgba(124,58,237,.12);border:1px solid rgba(124,58,237,.25);border-radius:10px">' +
-           '<div style="width:3px;height:32px;border-radius:2px;background:#a78bfa;flex-shrink:0"></div>' +
+           '<div style="width:3px;height:32px;border-radius:2px;background:var(--accent-2);flex-shrink:0"></div>' +
            '<div><div style="font-size:13px;font-weight:700">' + ev.title + '</div>' +
            '<div style="font-size:11px;color:var(--muted)">' + t + '</div></div></div>';
   };
-  const lbl = txt => '<div style="font-size:11px;font-weight:800;letter-spacing:.8px;text-transform:uppercase;color:#a78bfa;margin:6px 0 4px">' + txt + '</div>';
+  const lbl = txt => '<div style="font-size:11px;font-weight:800;letter-spacing:.8px;text-transform:uppercase;color:var(--accent-2);margin:6px 0 4px">' + txt + '</div>';
 
   function renderEvents(events) {
     const wrap = document.getElementById('calEventsWrap');

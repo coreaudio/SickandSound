@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <title>Sick & Sound – Stats</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <meta name="theme-color" content="#0b0e14" />
+  <meta name="theme-color" content="#08090f" />
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <link rel="manifest" href="manifest.webmanifest">
@@ -16,14 +16,15 @@
       display: flex; gap: 6px; padding: 12px 12px 0;
     }
     .stat-tab {
-      flex: 1; padding: 10px 6px; border-radius: 10px;
-      background: #1c2130; border: 1px solid #2a3042;
-      color: rgba(255,255,255,.5); font-size: 13px; font-weight: 700;
-      cursor: pointer; transition: all .15s; white-space: nowrap;
+      flex: 1; padding: 10px 6px; border-radius: 999px;
+      background: var(--panel-3); border: 1px solid var(--border);
+      color: var(--muted); font-size: 13px; font-weight: 700;
+      cursor: pointer; transition: all .18s; white-space: nowrap;
+      -webkit-tap-highlight-color: transparent;
     }
     .stat-tab.active {
-      background: linear-gradient(135deg,rgba(110,231,255,.15),rgba(167,139,250,.12));
-      border-color: rgba(110,231,255,.35); color: #6ee7ff;
+      background: var(--accent-dim);
+      border-color: rgba(45,212,191,.35); color: var(--accent);
     }
     .stat-panel { display: none; }
     .stat-panel.active { display: block; }
@@ -31,73 +32,74 @@
     /* ── Streak-Serien ────────────────────────────────────────── */
     .streak-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px,1fr)); gap: 8px; }
     .streak-card {
-      padding: 12px; border-radius: 12px; text-align: center;
-      border: 1px solid #2a3042; background: #1c2130;
+      padding: 14px; border-radius: 16px; text-align: center;
+      border: 1px solid var(--border); background: var(--panel-3);
+      box-shadow: 0 4px 16px rgba(0,0,0,.3);
     }
-    .streak-card.fire  { border-color: rgba(255,159,67,.4); background: rgba(255,159,67,.07); }
-    .streak-card.skull { border-color: rgba(255,107,107,.35); background: rgba(255,107,107,.07); }
-    .streak-card.ok    { border-color: rgba(124,252,154,.3); background: rgba(124,252,154,.06); }
-    .streak-icon { font-size: 26px; line-height: 1; margin-bottom: 4px; }
+    .streak-card.fire  { border-color: rgba(251,146,60,.35); background: rgba(251,146,60,.06); }
+    .streak-card.skull { border-color: rgba(244,63,94,.3);   background: rgba(244,63,94,.06); }
+    .streak-card.ok    { border-color: rgba(16,217,160,.28); background: rgba(16,217,160,.05); }
+    .streak-icon { font-size: 26px; line-height: 1; margin-bottom: 6px; }
     .streak-name { font-size: 13px; font-weight: 800; margin-bottom: 2px; }
-    .streak-val  { font-size: 11px; opacity: .65; }
-    .streak-card.fire  .streak-name { color: #ff9f43; }
-    .streak-card.skull .streak-name { color: #ff6b6b; }
-    .streak-card.ok    .streak-name { color: #7CFC9A; }
+    .streak-val  { font-size: 11px; opacity: .55; }
+    .streak-card.fire  .streak-name { color: var(--orange); }
+    .streak-card.skull .streak-name { color: var(--danger); }
+    .streak-card.ok    .streak-name { color: var(--green); }
 
     /* ── Fehlstand-Tabelle ───────────────────────────────────── */
     .rank-table td,.rank-table th { padding: 10px 8px; }
 
     /* ── Bewertungen ──────────────────────────────────────────── */
-    .rating-card { padding: 14px; margin-bottom: 8px; background: #1c2130; border-radius: 12px; border: 1px solid #2a3042; }
+    .rating-card { padding: 14px; margin-bottom: 8px; background: var(--panel-3); border-radius: 16px; border: 1px solid var(--border); box-shadow: 0 4px 16px rgba(0,0,0,.3); }
     .rating-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
-    .rating-stars { color: #ffd700; letter-spacing: 1px; }
-    .rating-stars .empty { color: #2a3042; }
-    .rating-meta { font-size: 12px; opacity: .65; }
-    .rating-comment { margin-top: 8px; padding: 8px 10px; background: #0e1422; border-radius: 8px; font-style: italic; font-size: 13px; }
+    .rating-stars { color: var(--gold); letter-spacing: 1px; }
+    .rating-stars .empty { color: rgba(255,255,255,.1); }
+    .rating-meta { font-size: 12px; opacity: .55; }
+    .rating-comment { margin-top: 8px; padding: 10px 12px; background: var(--panel-2); border-radius: 10px; font-style: italic; font-size: 13px; line-height: 1.5; color: var(--subtle); }
     .rating-person { font-weight: 800; }
     .filter-row { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; }
-    .filter-row select { padding: 8px 10px; border-radius: 8px; border: 1px solid #2a3042; background: #0e1422; color: #e6e8ef; font-size: 13px; flex: 1; min-width: 120px; }
+    .filter-row select { padding: 10px 12px; border-radius: 999px; border: 1px solid var(--border2); background: var(--panel-2); color: var(--txt); font-size: 13px; flex: 1; min-width: 120px; font-family: inherit; }
     .stats-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 8px; margin-bottom: 12px; }
-    .stat-mini { padding: 10px; background: #1c2130; border-radius: 10px; text-align: center; }
-    .stat-mini .val { font-size: 22px; font-weight: 800; background: linear-gradient(135deg,#6ee7ff,#a78bfa); -webkit-background-clip:text; -webkit-text-fill-color:transparent; }
-    .stat-mini .lbl { font-size: 10px; opacity: .6; margin-top: 2px; }
-    .avg-list { display: flex; flex-direction: column; gap: 6px; }
-    .avg-item { display: flex; align-items: center; padding: 10px 12px; background: #1c2130; border-radius: 10px; gap: 10px; }
-    .avg-rank { font-size: 16px; font-weight: 800; min-width: 26px; color: #6ee7ff; }
-    .avg-rank.gold{color:#ffd700}.avg-rank.silver{color:#c0c0c0}.avg-rank.bronze{color:#cd7f32}
+    .stat-mini { padding: 12px 8px; background: var(--panel-3); border-radius: 14px; text-align: center; border: 1px solid var(--border); }
+    .stat-mini .val { font-size: 22px; font-weight: 800; color: var(--accent); }
+    .stat-mini .lbl { font-size: 10px; color: var(--muted); margin-top: 2px; letter-spacing: .3px; }
+    .avg-list { display: flex; flex-direction: column; gap: 8px; }
+    .avg-item { display: flex; align-items: center; padding: 12px 14px; background: var(--panel-3); border-radius: 14px; gap: 10px; border: 1px solid var(--border); }
+    .avg-rank { font-size: 16px; font-weight: 800; min-width: 26px; color: var(--accent); }
+    .avg-rank.gold{color:var(--gold)}.avg-rank.silver{color:#c0c0c0}.avg-rank.bronze{color:#cd7f32}
     .avg-pname { flex: 1; font-weight: 800; font-size: 14px; }
-    .avg-count { font-size: 11px; opacity: .55; }
+    .avg-count { font-size: 11px; color: var(--muted); }
     .avg-score { display:flex; align-items:center; gap:6px; }
-    .avg-stars { color:#ffd700; font-size:13px; }
-    .avg-value { font-size: 16px; font-weight: 800; background: linear-gradient(135deg,#6ee7ff,#a78bfa); -webkit-background-clip:text; -webkit-text-fill-color:transparent; }
-    .no-ratings { text-align:center; padding:30px; opacity:.55; }
+    .avg-stars { color:var(--gold); font-size:13px; }
+    .avg-value { font-size: 16px; font-weight: 800; color: var(--accent); }
+    .no-ratings { text-align:center; padding:30px; color: var(--muted); }
 
     /* ── Summen-Rangliste ────────────────────────────────────── */
     .lvl-ring{ width:44px;height:44px;position:relative;display:inline-grid;place-items:center; }
     .lvl-ring .val{ position:absolute;font-size:11px;font-weight:800;line-height:1; }
 
     /* ── Admin ───────────────────────────────────────────────── */
-    .admin-controls { background:rgba(255,107,107,.08); border:1px solid rgba(255,107,107,.25); border-radius:12px; padding:14px; margin-bottom:8px; }
+    .admin-controls { background:rgba(244,63,94,.06); border:1px solid rgba(244,63,94,.22); border-radius:18px; padding:16px; margin-bottom:8px; }
     .edit-form { display:flex; gap:8px; align-items:center; margin-top:8px; flex-wrap:wrap; }
-    .edit-form input { padding:8px 10px; border-radius:8px; border:1px solid rgba(255,255,255,.1); background:#0e1422; color:#fff; width:100px; }
+    .edit-form input { padding:8px 12px; border-radius:999px; border:1px solid var(--border2); background:var(--panel-2); color:var(--txt); width:100px; font-family:inherit; }
     .hd-requirements-form { display:grid; grid-template-columns:repeat(auto-fill,minmax(140px,1fr)); gap:8px; margin-top:10px; }
-    .hd-req-item { display:flex; align-items:center; gap:8px; padding:6px 10px; background:#0e1422; border-radius:8px; border:1px solid #2a3042; }
+    .hd-req-item { display:flex; align-items:center; gap:8px; padding:8px 12px; background:var(--panel-2); border-radius:12px; border:1px solid var(--border); }
     .hd-req-item label { flex:1; font-size:13px; }
-    .hd-req-item input { width:50px; padding:4px 8px; border-radius:6px; border:1px solid #2a3042; background:#1c2130; color:#fff; text-align:center; }
+    .hd-req-item input { width:50px; padding:4px 8px; border-radius:8px; border:1px solid var(--border2); background:var(--panel-3); color:var(--txt); text-align:center; font-family:inherit; }
 
     /* ── Bewertungs-Bearbeitungs-Modal ───────────────────────── */
-    .modal { position:fixed;inset:0;background:rgba(0,0,0,.82);display:none;place-items:center;z-index:100;padding:20px; }
+    .modal { position:fixed;inset:0;background:rgba(0,0,0,.75);display:none;place-items:center;z-index:100;padding:20px; backdrop-filter:blur(6px); }
     .modal.show { display:grid; }
-    .modal-box { background:#151a23;border-radius:16px;padding:24px;max-width:380px;width:100%;border:1px solid #2a3042; }
+    .modal-box { background:var(--panel);border-radius:24px;padding:24px;max-width:380px;width:100%;border:1px solid var(--border2); box-shadow:0 40px 80px rgba(0,0,0,.85); }
     .modal-title { font-size:17px;font-weight:800;margin-bottom:8px; }
     .modal-stars { display:flex;gap:8px;justify-content:center;margin:18px 0; }
-    .modal-stars .star { font-size:34px;cursor:pointer;color:#2a3042;transition:all .2s; }
-    .modal-stars .star:hover,.modal-stars .star.active { color:#ffd700;transform:scale(1.12); }
-    .modal-stars .star.hovered { color:#ffd700; }
+    .modal-stars .star { font-size:34px;cursor:pointer;color:rgba(255,255,255,.1);transition:all .18s; }
+    .modal-stars .star:hover,.modal-stars .star.active { color:var(--gold);transform:scale(1.12); }
+    .modal-stars .star.hovered { color:var(--gold); }
     .modal-actions { display:flex;gap:8px;margin-top:14px; }
     .modal-actions .btn { flex:1; }
-    .edit-comment { width:100%;padding:10px;border-radius:8px;border:1px solid #2a3042;background:#0e1422;color:#e6e8ef;resize:vertical;min-height:60px;margin-top:10px; }
-    .edit-info { font-size:12px;opacity:.65;margin-bottom:10px; }
+    .edit-comment { width:100%;padding:12px 14px;border-radius:14px;border:1px solid var(--border2);background:var(--panel-2);color:var(--txt);resize:vertical;min-height:60px;margin-top:10px;font-family:inherit;font-size:14px;line-height:1.5; }
+    .edit-info { font-size:12px;color:var(--muted);margin-bottom:10px; }
     .rating-actions { display:none; margin-top:8px; gap:6px; }
     .admin-mode .rating-actions { display:flex; }
   </style>
@@ -140,9 +142,9 @@
         <button class="btn small" style="margin-top:10px" onclick="saveHdRequirements()">Speichern</button>
         <div class="sub" style="margin-top:16px">Monatliche Ausnahmen <span style="opacity:.6;font-weight:400">(überschreibt Standard für einzelne Monate)</span></div>
         <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:8px">
-          <select id="overridePerson" style="padding:8px 10px;border-radius:8px;border:1px solid #2a3042;background:#0e1422;color:#e6e8ef;font-size:13px"></select>
-          <input type="month" id="overrideMonth" style="padding:8px 10px;border-radius:8px;border:1px solid #2a3042;background:#0e1422;color:#e6e8ef;font-size:13px">
-          <input type="number" id="overrideCount" min="0" max="10" placeholder="Anzahl" style="width:80px;padding:8px 10px;border-radius:8px;border:1px solid #2a3042;background:#0e1422;color:#fff">
+          <select id="overridePerson"></select>
+          <input type="month" id="overrideMonth">
+          <input type="number" id="overrideCount" min="0" max="10" placeholder="Anzahl" style="width:80px">
           <button class="btn small" onclick="addOverride()">Eintragen</button>
         </div>
         <div id="overrideList" style="margin-top:8px;display:flex;flex-direction:column;gap:4px"></div>
@@ -226,7 +228,7 @@
   </div>
 </div>
 
-<div id="toast" style="position:fixed;bottom:calc(var(--nav-h,64px)+12px);left:50%;transform:translateX(-50%);background:#1c2130;border:1px solid #2a3042;padding:10px 18px;border-radius:12px;font-size:13px;font-weight:700;opacity:0;transition:opacity .25s;pointer-events:none;z-index:200;white-space:nowrap"></div>
+<div id="toast" style="position:fixed;bottom:calc(var(--nav-h,64px)+12px);left:50%;transform:translateX(-50%);background:rgba(17,22,36,.96);border:1px solid rgba(45,212,191,.2);padding:10px 20px;border-radius:999px;font-size:13px;font-weight:700;opacity:0;transition:opacity .25s;pointer-events:none;z-index:200;white-space:nowrap"></div>
 <style>#toast.show{opacity:1}</style>
 
 <script src="https://www.gstatic.com/firebasejs/12.0.0/firebase-app-compat.js"></script>
@@ -412,15 +414,15 @@
         <td><b>${fmt(m)}</b>${cur?' <span style="color:#00e0b8;font-size:10px">(läuft)</span>':''}</td>`;
       core.forEach(p => {
         const v = fehlstandByMonth[m][p] || 0;
-        const style = v > 0 ? 'color:#ff6b6b;font-weight:800' : v < 0 ? 'color:#00e0b8;font-weight:800' : 'opacity:.4';
+        const style = v > 0 ? 'color:var(--danger);font-weight:800' : v < 0 ? 'color:var(--accent);font-weight:800' : 'opacity:.4';
         html += `<td style="text-align:right;${style}">${v > 0 ? v : v < 0 ? v : '✓'}</td>`;
       });
       html += '</tr>';
     });
-    html += `</tbody><tfoot><tr style="background:#2a3042"><td><b>Gesamt</b></td>`;
+    html += `</tbody><tfoot><tr style="background:var(--panel-3)"><td><b>Gesamt</b></td>`;
     core.forEach(p => {
       const t = fehlstandTotal[p] || 0;
-      const style = t > 0 ? 'color:#ff6b6b' : t < 0 ? 'color:#00e0b8' : 'color:#7CFC9A';
+      const style = t > 0 ? 'color:var(--danger)' : t < 0 ? 'color:var(--accent)' : 'color:var(--green)';
       html += `<td style="text-align:right;${style}"><b>${t}</b></td>`;
     });
     html += '</tr></tfoot></table></div>';
@@ -525,8 +527,8 @@
     return `<div class="lvl-ring" title="Level ${lvl}">
       <svg viewBox="0 0 44 44" style="transform:rotate(-90deg)" width="100%" height="100%">
         <defs><linearGradient id="${gid}" x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0%" stop-color="#6ee7ff"/><stop offset="100%" stop-color="#a78bfa"/></linearGradient></defs>
-        <circle cx="22" cy="22" r="${r}" stroke="#2a3042" stroke-width="6" fill="none"/>
+          <stop offset="0%" stop-color="var(--ring-a,#2dd4bf)"/><stop offset="100%" stop-color="var(--ring-b,#818cf8)"/></linearGradient></defs>
+        <circle cx="22" cy="22" r="${r}" stroke="rgba(255,255,255,.08)" stroke-width="6" fill="none"/>
         <circle cx="22" cy="22" r="${r}" stroke="url(#${gid})" stroke-width="6" stroke-linecap="round" fill="none"
                 stroke-dasharray="${c}" stroke-dashoffset="${off}"/>
       </svg>
@@ -601,7 +603,7 @@
     const mnNames = ['Jan','Feb','Mär','Apr','Mai','Jun','Jul','Aug','Sep','Okt','Nov','Dez'];
     const fmt = m => { const [y,mo] = m.split('-'); return `${mnNames[+mo-1]} ${y}`; };
     el.innerHTML = entries.map(e => `
-      <div style="display:flex;align-items:center;gap:8px;padding:5px 8px;background:#0e1422;border-radius:8px;border:1px solid #2a3042;font-size:13px">
+      <div style="display:flex;align-items:center;gap:8px;padding:5px 8px;background:var(--panel-2);border-radius:12px;border:1px solid var(--border);font-size:13px">
         <span style="font-weight:800;min-width:70px">${e.person}</span>
         <span style="opacity:.7;min-width:60px">${fmt(e.month)}</span>
         <span>→ <b>${e.count}</b> HD</span>

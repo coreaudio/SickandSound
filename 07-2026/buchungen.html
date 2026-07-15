@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <title>Sick & Sound – Buchungen</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <meta name="theme-color" content="#0b0e14" />
+  <meta name="theme-color" content="#08090f" />
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <link rel="manifest" href="manifest.webmanifest">
@@ -12,8 +12,8 @@
   <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;800&display=swap" rel="stylesheet" />
   <style>
     :root {
-      --admin-color: #ff6b6b;
-      --edit-color: #6ee7ff;
+      --admin-color: var(--danger);
+      --edit-color: var(--accent);
       --touch-target: 44px;
     }
     
@@ -22,7 +22,7 @@
     .right{ text-align:right; }
     .controls{ display:flex; gap:10px; flex-wrap:wrap; align-items:center; margin-bottom: 15px; }
     .totals{ display:flex; gap:12px; flex-wrap:wrap; margin-top:10px; }
-    .pill{ padding:8px 14px; border-radius:999px; background:#1c2130; border:1px solid #2a3042; }
+    .pill{ padding:8px 14px; border-radius:999px; background:var(--panel-3); border:1px solid var(--border); }
     .danger-link{ color:#ffb4b4; cursor:pointer; }
     .subtle{ opacity:.8; }
     .delete-hint{ font-size:14px; opacity:.75; margin-top:8px; }
@@ -79,7 +79,7 @@
       padding: 12px;
       border-radius: 10px;
       border: 1px solid rgba(255,255,255,0.1);
-      background: #0e1422;
+      background: var(--panel-2);
       color: #fff;
       font-size: 16px;
     }
@@ -117,7 +117,7 @@
     }
     
     .stat-card {
-      background: #1c2130;
+      background: var(--panel-3);
       border-radius: 12px;
       padding: 15px;
       text-align: center;
@@ -127,7 +127,7 @@
       font-size: 24px;
       font-weight: 800;
       margin: 8px 0;
-      background: linear-gradient(135deg, #6ee7ff, #a78bfa);
+      background: linear-gradient(135deg, var(--accent), var(--accent-2));
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
     }
@@ -510,12 +510,12 @@
       html += `<tr><td colspan="4" style="border-top:1px solid rgba(255,255,255,.3);padding:8px 0 0"></td></tr>`;
       html += `<tr>
         <td colspan="3" style="padding:4px 0;font-weight:800">Gesamt</td>
-        <td style="text-align:right;font-weight:800;color:#6ee7ff;font-size:16px">${Number(b.sum).toFixed(2)} €</td>
+        <td style="text-align:right;font-weight:800;color:var(--accent);font-size:16px">${Number(b.sum).toFixed(2)} €</td>
       </tr>`;
       html += `</table>`;
     } else {
       html += `<div style="opacity:.6;font-size:13px;padding:8px 0">Keine Detaildaten verfügbar (ältere Buchung)</div>`;
-      html += `<div style="font-weight:800;color:#6ee7ff;font-size:16px;margin-top:8px">${Number(b.sum).toFixed(2)} €</div>`;
+      html += `<div style="font-weight:800;color:var(--accent);font-size:16px;margin-top:8px">${Number(b.sum).toFixed(2)} €</div>`;
     }
 
     document.getElementById('detailContent').innerHTML = html;
