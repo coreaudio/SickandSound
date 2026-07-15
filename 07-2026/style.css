@@ -141,7 +141,208 @@ input::placeholder{color:#91a0b5}
 button,.btn{min-height:44px}
 .hd-today{background:rgba(0,224,184,.10)}
 
-/* ===== Prio 5: Page-Transition (sanftes Einblenden) ===== */
+/* ═══════════════════════════════════════════════════════════
+   MOBILE CARD LAYOUT  (< 700 px)
+   Jeder Person-Eintrag wird eine eigene Card
+   ═══════════════════════════════════════════════════════════ */
+@media (max-width: 699px) {
+
+  /* Container: kein internes Scrollen mehr, Cards fließen frei */
+  #tableContainer {
+    max-height: none !important;
+    overflow: visible !important;
+    background: transparent;
+    border: none;
+    padding: 0;
+    box-shadow: none;
+  }
+
+  /* Tabelle → vertikaler Flex-Stack */
+  #tableContainer table {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    width: 100%;
+  }
+  #tableContainer thead { display: none; }
+  #tableContainer tbody { display: contents; }
+
+  /* Trennzeile Kernteam / Gäste */
+  #tableContainer .section-row {
+    display: block;
+    background: none;
+    padding: 6px 4px 0;
+    border-radius: 0;
+    box-shadow: none;
+    border: none;
+  }
+  #tableContainer .section-row td {
+    display: block;
+    padding: 0;
+    border: none;
+    font-size: 10px;
+    letter-spacing: 1.2px;
+    text-transform: uppercase;
+    opacity: .45;
+    font-weight: 800;
+  }
+
+  /* ── Person-Card ── */
+  #tableContainer table tr:not(.section-row) {
+    display: flex;
+    flex-direction: column;
+    background: linear-gradient(145deg, #16202e 0%, #0e1321 100%);
+    border: 1px solid rgba(255,255,255,.07);
+    border-radius: 20px;
+    padding: 16px;
+    box-shadow:
+      0 8px 32px rgba(0,0,0,.45),
+      inset 0 1px 0 rgba(255,255,255,.04);
+    gap: 0;
+    position: relative;
+  }
+
+  /* Hausdienst-Heute-Glow */
+  #tableContainer table tr.hd-today:not(.section-row) {
+    border-color: rgba(0,224,184,.3);
+    box-shadow:
+      0 8px 32px rgba(0,0,0,.45),
+      0 0 0 1px rgba(0,224,184,.12),
+      inset 0 1px 0 rgba(0,224,184,.06);
+    background: linear-gradient(145deg, rgba(0,224,184,.09) 0%, #0e1321 60%);
+  }
+  #tableContainer table tr.hd-today.hd-complete:not(.section-row) {
+    border-color: rgba(124,252,154,.28);
+    box-shadow:
+      0 8px 32px rgba(0,0,0,.45),
+      0 0 0 1px rgba(124,252,154,.1),
+      inset 0 1px 0 rgba(124,252,154,.05);
+    background: linear-gradient(145deg, rgba(124,252,154,.07) 0%, #0e1321 60%);
+  }
+
+  /* Person-Header (der <th>) */
+  #tableContainer table tr:not(.section-row) > th {
+    display: block;
+    text-align: left;
+    padding: 0 0 13px;
+    border-bottom: 1px solid rgba(255,255,255,.08);
+    border-right: none;
+    margin-bottom: 10px;
+  }
+
+  /* Getränke-Zeilen (<td> mit data-drink) */
+  #tableContainer table tr:not(.section-row) > td[data-drink] {
+    display: flex;
+    align-items: center;
+    padding: 9px 0;
+    border-bottom: 1px solid rgba(255,255,255,.05);
+    border-right: none;
+    gap: 8px;
+  }
+
+  /* Getränk-Name via data-Attribut */
+  #tableContainer table tr:not(.section-row) > td[data-drink]::before {
+    content: attr(data-drink);
+    font-size: 14px;
+    font-weight: 700;
+    opacity: .8;
+    flex: 1;
+  }
+
+  /* Gesamt-Zeile */
+  #tableContainer table tr:not(.section-row) > td.total-cell {
+    display: flex;
+    border: none;
+    border-top: 1px solid rgba(255,255,255,.1);
+    margin-top: 6px;
+    padding: 11px 0 0;
+    justify-content: flex-end;
+    font-size: 22px;
+    font-weight: 900;
+    color: var(--gold);
+    letter-spacing: .3px;
+  }
+  /* Klickbarer Total-Underline */
+  #tableContainer table tr:not(.section-row) > td.total-cell[onclick] {
+    text-decoration: underline dotted;
+    text-underline-offset: 4px;
+    cursor: pointer;
+  }
+
+  /* Zähl-Controls */
+  #tableContainer .cell {
+    flex-direction: row;
+    align-items: center;
+    gap: 10px;
+    flex-shrink: 0;
+  }
+  #tableContainer .count {
+    min-width: 30px;
+    text-align: center;
+    font-size: 22px;
+    font-weight: 900;
+  }
+
+  /* +1 Button: Kreis mit Gradient */
+  #tableContainer .plus-btn {
+    width: 46px; height: 46px;
+    min-width: 46px; max-width: 46px;
+    border-radius: 50%;
+    padding: 0;
+    font-size: 22px;
+    font-weight: 900;
+    display: flex; align-items: center; justify-content: center;
+    background: linear-gradient(140deg, #00e0b8 0%, #7c3aed 100%);
+    box-shadow: 0 4px 16px rgba(0,224,184,.35);
+    color: #fff;
+  }
+  #tableContainer .plus-btn:active { transform: scale(.93); }
+
+  /* -1 Button (Admin) */
+  #tableContainer .minus-btn {
+    width: 36px; height: 36px;
+    min-width: 36px; max-width: 36px;
+    border-radius: 50%;
+    padding: 0;
+    font-size: 15px;
+    display: flex; align-items: center; justify-content: center;
+  }
+
+  /* Person-Name etwas kleiner damit es auf schmalen Screens passt */
+  .p-name { font-size: 17px !important; }
+}
+
+/* ═══════════════════════════════════════════════════════════
+   ALLGEMEINE VISUELLE VERBESSERUNGEN
+   ═══════════════════════════════════════════════════════════ */
+
+/* Kräftigerer Gradient auf Cards */
+.card {
+  background: linear-gradient(160deg, #16202e 0%, #0e1321 100%);
+  border-color: rgba(255,255,255,.07);
+  box-shadow:
+    0 12px 40px rgba(0,0,0,.45),
+    inset 0 1px 0 rgba(255,255,255,.04);
+}
+
+/* Action-Bar moderner */
+.action-bar {
+  background: rgba(10,14,22,.92) !important;
+  border-bottom: 1px solid rgba(0,224,184,.12) !important;
+}
+
+/* Badge allgemein */
+.badge {
+  display: inline-flex; align-items: center;
+  padding: 3px 10px; border-radius: 20px;
+  font-size: 12px; font-weight: 800;
+  background: rgba(255,255,255,.08);
+  border: 1px solid rgba(255,255,255,.1);
+}
+.badge.ok { background: rgba(124,252,154,.12); border-color: rgba(124,252,154,.3); color: #7CFC9A; }
+.badge.none { background: rgba(148,163,184,.1); border-color: rgba(148,163,184,.2); color: var(--muted); }
+
+/* Prio 5: Page-Transition (sanftes Einblenden) */
 @keyframes pageIn {
   from { opacity: 0; transform: translateY(6px); }
   to   { opacity: 1; transform: translateY(0); }

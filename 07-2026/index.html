@@ -400,8 +400,12 @@
 
   <!-- Content -->
   <main class="content">
-    <div class="card" style="margin-bottom:8px">
-      <div class="section-title">Heute</div>
+    <div class="card" style="margin-bottom:8px;position:relative;overflow:hidden">
+      <div style="position:absolute;inset:0;background:linear-gradient(135deg,rgba(0,224,184,.04) 0%,transparent 60%);pointer-events:none"></div>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+        <div class="section-title" style="margin:0">Heute</div>
+        <span style="font-size:11px;opacity:.45;font-weight:700" id="todayDate"></span>
+      </div>
       <div id="todayInfo" class="sub">Lade Tagesstatus…</div>
       <div id="calEventsWrap" style="display:none;margin-top:10px;display:flex;flex-direction:column;gap:6px"></div>
 
@@ -1460,7 +1464,7 @@ function buildTable(){
               incHandler=`()=>changeCount('${id}','${dr}','${p}', 1)`,
               decHandler=`()=>changeCount('${id}','${dr}','${p}', -1)`;
 
-        rhtml += `<td><div class="cell">
+        rhtml += `<td data-drink="${dr.replace(/_/g,' ')}"><div class="cell">
           ${adminMode ? `<button class="btn small minus-btn"
             onmousedown="startHold(${decHandler})" onmouseup="stopHold()" onmouseleave="stopHold()"
             ontouchstart="handleTouchStartBtn(event, ${decHandler})"
@@ -1477,7 +1481,7 @@ function buildTable(){
     const manualTotal = getManualTotal(p);
     const total=columnOrder.reduce((s,d)=>s+(data[`${p}_${d}`]||0)*prices[d],0) + manualTotal;
     const hasManual = manualTotal > 0;
-    rhtml += `<td id="${p}_Total" ${hasManual ? `onclick="showTotalBreakdown('${p}')" style="cursor:pointer;text-decoration:underline dotted;text-underline-offset:3px"` : ''}>${total.toFixed(2)}</td>`;
+    rhtml += `<td id="${p}_Total" class="total-cell" ${hasManual ? `onclick="showTotalBreakdown('${p}')"` : ''}>${total.toFixed(2)} €</td>`;
     
     if (correctionMode) {
       rhtml += `<td>
@@ -1669,7 +1673,7 @@ function correctTotal(person, newTotal) {
 
 function updateTotalsFor(person){
   const tot=columnOrder.reduce((s,d)=>s+(data[`${person}_${d}`]||0)*prices[d],0) + getManualTotal(person);
-  const el=document.getElementById(`${person}_Total`); if(el) el.textContent=tot.toFixed(2);
+  const el=document.getElementById(`${person}_Total`); if(el) el.textContent=tot.toFixed(2) + ' €';
 }
 
 /* Delete helpers */
@@ -2325,6 +2329,9 @@ window.onload = function() {
   loadState();
   loadTodayCalendarEvents();
   loadWeekHdPreview();
+  // Datum in Heute-Card
+  const el = document.getElementById('todayDate');
+  if (el) el.textContent = new Date().toLocaleDateString('de-DE', { weekday:'long', day:'numeric', month:'long' });
 };
 window.onresize=()=>requestAnimationFrame(adjustToOnePage);
 </script>
