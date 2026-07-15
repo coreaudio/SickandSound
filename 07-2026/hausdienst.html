@@ -354,6 +354,25 @@
     .inline-comment { width:100%; padding:8px 10px; border-radius:8px; border:1px solid #ff9f43; background:#0e1422; color:#e6e8ef; font-size:13px; resize:none; margin-top:8px; font-family:inherit; }
     .inline-comment:focus { outline:none; border-color:#ffd700; }
     .inline-required-hint { font-size:11px; color:#ff9f43; margin-top:6px; font-weight:700; }
+    .rating-required {
+      border: 2px solid #ff9f43;
+      border-radius: 10px;
+      padding: 10px 12px;
+      margin-top: 8px;
+      animation: ratingRequiredPulse 1.8s ease-in-out infinite;
+    }
+    @keyframes ratingRequiredPulse {
+      0%, 100% { border-color: #ff9f43; box-shadow: 0 0 0 0 rgba(255,159,67,0); }
+      50% { border-color: #ff6b6b; box-shadow: 0 0 12px 3px rgba(255,159,67,0.35); }
+    }
+    .yesterday-incomplete {
+      display: flex; align-items: flex-start; gap: 12px;
+      padding: 14px 16px; border: 2px solid rgba(255,107,107,0.5);
+      border-radius: 14px; background: rgba(255,107,107,0.08);
+    }
+    .yesterday-incomplete-icon { font-size: 24px; line-height: 1; flex-shrink: 0; }
+    .yesterday-incomplete-text strong { display: block; color: #ff6b6b; font-size: 14px; margin-bottom: 3px; }
+    .yesterday-incomplete-text span { font-size: 12px; opacity: 0.8; }
 
     /* Admin-Modus */
     .admin-indicator { background-color: #ff6b6b; padding: 4px 8px; border-radius: 4px; margin-left: 8px; font-size: 12px; }
@@ -595,6 +614,17 @@
         <button class="btn complete-btn" id="completeHdBtn" onclick="completeHausdienst()" disabled style="margin-top:12px">
           ✓ Hausdienst abschließen
         </button>
+      </div>
+
+      <!-- Warnung: Gestriger Hausdienst nicht abgeschlossen -->
+      <div class="card" id="yesterdayIncompleteCard" style="display:none">
+        <div class="yesterday-incomplete">
+          <div class="yesterday-incomplete-icon">⚠️</div>
+          <div class="yesterday-incomplete-text">
+            <strong id="yesterdayIncompleteTitle"></strong>
+            <span id="yesterdayIncompleteDetail"></span>
+          </div>
+        </div>
       </div>
 
       <!-- Notiz vom Vortag -->
@@ -1487,8 +1517,8 @@
         completeBtn.disabled = true;
         completeBtn.classList.add('done');
       } else if (allDone && todayPerson && ratingNeeded) {
-        completeBtn.textContent = '⭐ Erst bewerten, dann abschließen';
-        completeBtn.disabled = false;
+        completeBtn.textContent = '⭐ Bewertung ausstehend';
+        completeBtn.disabled = true;
         completeBtn.classList.remove('done');
       } else if (allDone && todayPerson) {
         completeBtn.textContent = '✓ Hausdienst abschließen';
@@ -1636,11 +1666,12 @@
         s.classList.toggle('active', i < existingRatingData.rating);
         s.classList.remove('ihov');
       });
-      editBtn.style.display  = 'inline-flex';
+      editBtn.style.display   = 'inline-flex';
       commentEl.style.display = 'none';
       actionRow.style.display = 'none';
       hint.style.display      = 'none';
       inlineRatingVal = existingRatingData.rating;
+      wrap.classList.remove('rating-required');
     } else {
       nameEl.textContent = yesterdayPerson + ' bewerten:';
       starsRow.classList.remove('rated-mode');
@@ -1650,6 +1681,7 @@
       commentEl.style.display = 'none';
       actionRow.style.display = 'none';
       hint.style.display      = 'block';
+      wrap.classList.add('rating-required');
     }
   }
 
@@ -1665,6 +1697,23 @@
     todayPerson       = todayDoc.exists  ? todayDoc.data().person    : null;
     hdTodayCompleted  = todayDoc.exists  ? (todayDoc.data().completed || false) : false;
     yesterdayPerson   = yesterdayDoc.exists ? yesterdayDoc.data().person : null;
+
+    // Warnung wenn gestriger Hausdienst nicht abgeschlossen
+    const incompleteCard = document.getElementById('yesterdayIncompleteCard');
+    if (incompleteCard) {
+      const yd = yesterdayDoc.exists ? yesterdayDoc.data() : null;
+      const wasCompleted = yd?.completed || false;
+      if (yesterdayPerson && !wasCompleted) {
+        const prog = yd?.taskProgress;
+        document.getElementById('yesterdayIncompleteTitle').textContent =
+          `${yesterdayPerson} hat den Hausdienst nicht abgeschlossen!`;
+        document.getElementById('yesterdayIncompleteDetail').textContent =
+          prog ? `${prog.done} von ${prog.total} Aufgaben erledigt` : 'Kein Fortschritt gespeichert';
+        incompleteCard.style.display = 'block';
+      } else {
+        incompleteCard.style.display = 'none';
+      }
+    }
 
     if (!todayPerson || !yesterdayPerson) { updateHdStatus(); return; }
 
@@ -1827,51 +1876,41 @@
     const table = document.getElementById('monthlyOverview');
     if (!table) return;
 
-    // Letzte 6 Monate berechnen
     const months = [];
     for (let i = 0; i < 6; i++) {
       const d = new Date();
       d.setMonth(d.getMonth() - i);
-      months.push(d.toISOString().slice(0, 7)); // YYYY-MM
+      months.push(d.toISOString().slice(0, 7));
     }
 
-    // Alle Hausdienste der letzten 6 Monate laden
     const firstMonth = months[months.length - 1];
-    const lastMonth = months[0];
+    const lastMonth  = months[0];
     const snap = await db.collection("hausdienst")
       .where(firebase.firestore.FieldPath.documentId(), ">=", firstMonth + "-01")
       .where(firebase.firestore.FieldPath.documentId(), "<=", lastMonth + "-31")
       .get();
 
-    // Daten pro Person und Monat aggregieren
-    const data = {}; // { "YYYY-MM": { "Person": count } }
-    months.forEach(m => data[m] = {});
-    CORE.forEach(p => months.forEach(m => data[m][p] = 0));
+    // Versäumte Punkte pro Person und Monat
+    const missed = {};
+    months.forEach(m => { missed[m] = {}; CORE.forEach(p => missed[m][p] = 0); });
 
+    const today = todayStr();
     snap.forEach(doc => {
-      const person = doc.data().person;
-      if (!person || !CORE.includes(person)) return;
-
+      if (doc.id >= today) return; // heute/Zukunft noch nicht fällig
+      const { person, completed: done } = doc.data();
+      if (!person || !CORE.includes(person) || done) return;
       const month = doc.id.slice(0, 7);
-      if (!data[month]) return;
-
-      // Wochenende = 0.5, Wochentag = 1
+      if (!missed[month]) return;
       const date = new Date(doc.id);
-      const dayOfWeek = date.getDay();
-      const isWeekend = (dayOfWeek === 0 || dayOfWeek === 6);
-      const points = isWeekend ? 0.5 : 1;
-
-      data[month][person] = (data[month][person] || 0) + points;
+      const points = (date.getDay() === 0 || date.getDay() === 6) ? 0.5 : 1;
+      missed[month][person] = (missed[month][person] || 0) + points;
     });
 
-    // Summen pro Person berechnen
     const totals = {};
-    CORE.forEach(p => {
-      totals[p] = months.reduce((sum, m) => sum + (data[m][p] || 0), 0);
-    });
+    CORE.forEach(p => { totals[p] = months.reduce((s, m) => s + (missed[m][p] || 0), 0); });
 
-    // Tabelle rendern
     const monthNames = ['Jan', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun', 'Jul', 'Aug', 'Sep', 'Okt', 'Nov', 'Dez'];
+    const fmt = n => n % 1 === 0 ? n : n.toFixed(1);
 
     let headerHtml = '<tr><th>Monat</th>';
     CORE.forEach(p => headerHtml += `<th>${p}</th>`);
@@ -1880,25 +1919,22 @@
     let bodyHtml = '';
     months.forEach(m => {
       const [year, month] = m.split('-');
-      const monthName = monthNames[parseInt(month) - 1];
-      bodyHtml += `<tr><td>${monthName} ${year}</td>`;
+      bodyHtml += `<tr><td>${monthNames[parseInt(month) - 1]} ${year}</td>`;
       CORE.forEach(p => {
-        const count = data[m][p] || 0;
-        let cellClass = 'count-cell';
-        if (count === 0) cellClass += ' zero';
-        else if (count >= 3) cellClass += ' good';
-        else if (count >= 2) cellClass += ' warn';
-        else cellClass += ' bad';
-        bodyHtml += `<td class="${cellClass}">${count % 1 === 0 ? count : count.toFixed(1)}</td>`;
+        const n = missed[m][p] || 0;
+        bodyHtml += n > 0
+          ? `<td class="count-cell bad">${fmt(n)}</td>`
+          : `<td class="count-cell good"></td>`;
       });
       bodyHtml += '</tr>';
     });
 
-    // Summen-Zeile
     let footerHtml = '<tr><td>Gesamt</td>';
     CORE.forEach(p => {
       const total = totals[p];
-      footerHtml += `<td class="count-cell">${total % 1 === 0 ? total : total.toFixed(1)}</td>`;
+      footerHtml += total > 0
+        ? `<td class="count-cell bad">${fmt(total)}</td>`
+        : `<td class="count-cell good">✓</td>`;
     });
     footerHtml += '</tr>';
 
