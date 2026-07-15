@@ -1,0 +1,227 @@
+:root{
+  --bg:#0b0e14; --panel:#141926; --panel-2:#101521; --txt:#e9eefb; --muted:#94a3b8;
+  --accent:#00e0b8; --accent-2:#7c3aed; --danger:#ff4d4f; --gold:#ffd700;
+  --appbar-h:64px; --nav-h:72px;
+}
+
+/* Reset & base */
+*{box-sizing:border-box}
+html,body{height:100%;margin:0;background:#0b0e14}
+body{
+  color:var(--txt);
+  font-family: ui-sans-serif, -apple-system, BlinkMacSystemFont, "SF Pro Display",
+               "Segoe UI", Roboto, "Helvetica Neue", Arial, "Orbitron", sans-serif;
+  background:
+    radial-gradient(1000px 700px at 100% -20%, #0f1b2d 0%, rgba(11,14,20,0) 60%) no-repeat fixed,
+    var(--bg);
+}
+
+/* ===== App Shell ======================================================= */
+.app{height:100dvh; width:100%; display:flex; flex-direction:column; background:var(--bg); position:relative; z-index:2;}
+
+/* AppBar */
+.appbar{
+  position:sticky; top:0; z-index:50; height:var(--appbar-h);
+  display:flex; align-items:center; justify-content:space-between; gap:8px;
+  padding:0 calc(14px + env(safe-area-inset-right)) 0 calc(14px + env(safe-area-inset-left));
+  background:rgba(16,21,33,.68); border-bottom:1px solid rgba(255,255,255,.08);
+  backdrop-filter: saturate(160%) blur(16px);
+}
+.app-title{display:flex; align-items:center; gap:10px}
+.brand-dot{
+  width:28px; height:28px; border-radius:9px;
+  background:linear-gradient(140deg,var(--accent),var(--accent-2));
+  box-shadow:0 6px 20px rgba(0,224,184,.25);
+}
+.app-title h1{font-size:20px; letter-spacing:.3px; margin:0}
+.appbar-actions{display:flex; gap:8px}
+
+/* Content area (only this scrolls) */
+.content{
+  flex:1; min-height:0; /* enables child scrolling */
+  padding:14px;
+  padding-left: calc(14px + env(safe-area-inset-left));
+  padding-right: calc(14px + env(safe-area-inset-right));
+  overflow:auto;
+}
+
+/* Bottom navigation */
+.bottomnav{
+  position:sticky; bottom:0; z-index:50; height:calc(var(--nav-h) + env(safe-area-inset-bottom));
+  padding-bottom: env(safe-area-inset-bottom);
+  display:flex; justify-content:space-around; align-items:center;
+  background:rgba(16,21,33,.68); border-top:1px solid rgba(255,255,255,.08);
+  backdrop-filter: saturate(160%) blur(16px);
+}
+.tab{display:flex; flex-direction:column; align-items:center; gap:2px; color:#cbd5e1; text-decoration:none; font-size:9.5px}
+.tab svg{width:20px; height:20px; opacity:.9}
+.tab.active{color:#fff}
+.tab.active svg{opacity:1; filter: drop-shadow(0 2px 8px rgba(0,224,184,.35))}
+
+/* ===== Cards / Surfaces =============================================== */
+.card{
+  background: linear-gradient(180deg, #141926, #101521);
+  border:1px solid rgba(255,255,255,.06);
+  border-radius:16px;
+  box-shadow: 0 10px 30px rgba(0,0,0,.35), inset 0 1px 0 rgba(255,255,255,.03);
+  padding:14px;
+}
+.section-title{margin:0 0 8px 0; font-size:17px; font-weight:800}
+.sub{color:var(--muted); font-size:13px}
+
+/* ===== Table (Strichliste) ============================================ */
+.table-wrap{overflow:auto}
+table{width:100%; border-collapse:collapse; table-layout:fixed}
+th,td{padding:10px; border-bottom:1px solid rgba(255,255,255,.06); text-align:center}
+th{font-weight:900; font-size:15px; color:#fff}
+td{font-size:15px}
+td:last-child{font-weight:900; color:var(--gold)}
+.section-row td{padding:10px; background:rgba(255,255,255,.05); font-weight:900; letter-spacing:.3px; color:#cbd5e1}
+@media (min-width: 900px){
+  thead th{position:sticky; top:0; background:linear-gradient(180deg,#141926,#101521); z-index:2}
+}
+
+/* Drink header chip */
+.drink-chip{display:inline-block; min-width:120px; padding:8px 12px; border-radius:14px;
+  background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.09)}
+.drink-name{font-size:15px; font-weight:900; display:block}
+.drink-price{font-size:12px; color:#cdd5e1}
+
+/* Person cell + Level */
+.person-cell{display:flex; gap:12px; align-items:center; text-align:left}
+.p-info{flex:1; min-width:140px}
+.p-name{font-size:19px; font-weight:900; letter-spacing:.2px}
+.lvl-wrap{margin-top:4px}
+.lvl-line{font-size:12px; color:#cbd5e1; display:flex; justify-content:space-between}
+.progress{height:8px; background:#0e1422; border-radius:6px; overflow:hidden}
+.progress > span{display:block; height:100%; background:linear-gradient(90deg,var(--accent),var(--accent-2))}
+
+/* Circular Level Ring */
+.lvl-ring{position:relative; width:52px; height:52px}
+.lvl-ring svg{transform:rotate(-90deg)}
+.lvl-ring .val{position:absolute; inset:0; display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:900}
+.ring-bg{stroke:rgba(255,255,255,.12); stroke-width:6; fill:none}
+.ring-fg{stroke:url(#grad); stroke-width:6; fill:none; stroke-linecap:round; transition:stroke-dashoffset .25s ease}
+
+/* Cell content & counter */
+.cell{display:flex; flex-direction:column; gap:6px; align-items:center}
+.count{font-size:18px; font-weight:900}
+.count.bump{animation:bump .16s ease}
+@keyframes bump{0%{transform:scale(1)}50%{transform:scale(1.2)}100%{transform:scale(1)}}
+
+/* Buttons */
+.btn{-webkit-tap-highlight-color:transparent; padding:10px 14px; border:none; border-radius:12px;
+  font-weight:900; font-size:14px; color:#000; background:var(--accent);
+  box-shadow:0 10px 20px rgba(0,224,184,.15), inset 0 1px 0 rgba(255,255,255,.25);
+  cursor:pointer; user-select:none}
+.btn:active{transform:translateY(1px)}
+.btn.small{padding:8px 10px; font-size:13px}
+.btn.secondary{background:#3b82f6; color:#fff}
+.btn.dark{background:#242b3a; color:#fff}
+.btn.danger{background:var(--danger); color:#fff}
+.btn.warning{background:#f59e0b; color:#141414}
+.btn.ghost{background:transparent; color:#fff; border:1px solid rgba(255,255,255,.18)}
+.plus-btn{width:100%; max-width:120px}
+
+/* Footer buttons (legacy row) */
+.footer{display:flex; flex-wrap:wrap; gap:10px; justify-content:center}
+
+/* Modals */
+.modal{position:fixed; inset:0; display:none; align-items:center; justify-content:center; background:rgba(0,0,0,.6); z-index:60}
+.modal.show{display:flex}
+.modal .box{width:min(92vw,520px); background:#141926; border:1px solid rgba(255,255,255,.07); border-radius:16px; padding:16px}
+
+/* Inputs */
+input,select{width:100%; padding:12px; border-radius:10px; border:1px solid rgba(255,255,255,.08);
+  background:#0e1422; color:#fff; font-size:15px; outline:none}
+input::placeholder{color:#91a0b5}
+
+/* Misc */
+.qr{max-width:60%; max-height:60%; border:8px solid #fff; border-radius:16px}
+button,.btn{min-height:44px}
+.hd-today{background:rgba(0,224,184,.10)}
+
+/* ===== Prio 5: Page-Transition (sanftes Einblenden) ===== */
+@keyframes pageIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.content { animation: pageIn 0.22s ease both; }
+
+/* ===== Prio 3: Bottom Sheets auf Touch-Geräten ===== */
+@keyframes sheetIn {
+  from { transform: translateY(100%); }
+  to   { transform: translateY(0); }
+}
+@media (pointer: coarse) {
+  .modal { align-items: flex-end; }
+  .modal .box {
+    width: 100%;
+    max-width: 100%;
+    max-height: 85dvh;
+    overflow-y: auto;
+    border-radius: 24px 24px 0 0;
+    border-bottom: none;
+    padding-bottom: calc(20px + env(safe-area-inset-bottom));
+  }
+  .modal.show .box { animation: sheetIn 0.3s cubic-bezier(0.32, 0.72, 0, 1); }
+  /* Drag-Handle Pill */
+  .modal .box::before {
+    content: '';
+    display: block;
+    width: 36px;
+    height: 4px;
+    background: rgba(255,255,255,.2);
+    border-radius: 2px;
+    margin: 0 auto 14px;
+  }
+}
+
+/* ===== Prio 6: Skeleton Loading ===== */
+@keyframes shimmer {
+  from { background-position: 200% 0; }
+  to   { background-position: -200% 0; }
+}
+.skeleton {
+  background: linear-gradient(90deg, #1c2130 25%, #252e42 50%, #1c2130 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.4s ease-in-out infinite;
+  border-radius: 8px;
+}
+
+/* ===== Prio 7: Typografie – große Screens (≥ 1100px) ===== */
+@media (min-width: 1100px) {
+  .app-title h1 { font-size: 24px; }
+  .section-title { font-size: 18px; }
+  .sub { font-size: 14px; }
+  .tab { font-size: 11px; }
+  .tab svg { width: 22px; height: 22px; }
+  .card { padding: 18px; }
+  .btn:not(.small) { font-size: 15px; }
+}
+
+/* ===== Prio 8: Pull-to-Refresh Indikator ===== */
+.pull-indicator {
+  height: 0;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #6ee7ff;
+  font-size: 13px;
+  font-weight: 700;
+  gap: 8px;
+  transition: height 0.2s ease, opacity 0.2s ease;
+  opacity: 0;
+}
+.pull-indicator.visible { height: 44px; opacity: 1; }
+.pull-indicator.ready   { color: #7CFC9A; }
+
+/* ===== Prio 10: prefers-reduced-motion ===== */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
