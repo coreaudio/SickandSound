@@ -229,6 +229,7 @@
   let prices = {}, data = {}, xp = {}, people = [];
   let hausdienstByMonth = {};
   let hdRequirements = {};
+  let hdRequirementsHistory = {}; // { 'Chris': { '2026-01': 2, '2026-02': 2, ... } }
   let adminMode = false;
   let allRatings = [];
   const HD_DEFAULT_REQUIRED = 3;
@@ -265,7 +266,11 @@
   }
 
   /* ══ Hilfsfunktionen ═════════════════════════════════════════ */
-  function getHdRequired(person) {
+  function getHdRequired(person, month) {
+    // Monatliche Ausnahme hat Vorrang
+    if (month && hdRequirementsHistory[person]?.[month] !== undefined) {
+      return hdRequirementsHistory[person][month];
+    }
     return hdRequirements.hasOwnProperty(person) ? hdRequirements[person] : HD_DEFAULT_REQUIRED;
   }
 
