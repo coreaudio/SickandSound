@@ -445,19 +445,7 @@ input::placeholder { color: var(--muted); }
    iPad Landscape  (≥ 1100 px)
    ══════════════════════════════════════════════════════════ */
 @media screen and (min-width: 1100px) {
-  .content {
-    display: grid;
-    grid-template-columns: 1fr 380px;
-    column-gap: 14px;
-    padding: 16px 16px 88px;
-    align-items: start;
-  }
-  #tableContainer {
-    grid-column: 1; grid-row: 1 / span 20;
-    max-height: calc(100dvh - 128px);
-    position: sticky; top: 0; align-self: start;
-  }
-  .content > .card:not(#tableContainer) { grid-column: 2; }
+  /* Größere Schrift auf großen Screens — kein Grid hier (nur index.html hat das Split-Layout) */
   .section-title { font-size: 17px; }
   .sub { font-size: 14px; }
   .app-title h1 { font-size: 19px; }
