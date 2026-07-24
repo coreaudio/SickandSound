@@ -178,7 +178,7 @@
     </div>
     <div class="appbar-actions">
       <button class="appbar-groups-btn" onclick="openGroupsModal()">🗂 Gruppen</button>
-      <button class="appbar-all-btn" onclick="markAllAvailable()">✓ Alle</button>
+      <button class="appbar-all-btn" onclick="markAllMissing()">✗ Alle</button>
     </div>
   </header>
 
@@ -462,14 +462,14 @@
     if (item) showToast(`„${item.name}" entfernt`);
   }
 
-  async function markAllAvailable() {
+  async function markAllMissing() {
     if (!db || !items.length) return;
-    const missing = items.filter(i => !i.available);
-    if (!missing.length) { showToast('Alle bereits vorhanden ✓'); return; }
+    const available = items.filter(i => i.available);
+    if (!available.length) { showToast('Bereits alle auf fehlend ✗'); return; }
     const batch = db.batch();
-    missing.forEach(i => batch.update(db.collection('vorraete').doc(i.id), { available: true }));
+    available.forEach(i => batch.update(db.collection('vorraete').doc(i.id), { available: false }));
     await batch.commit();
-    showToast(`${missing.length} Artikel auf vorhanden gesetzt ✓`);
+    showToast(`${available.length} Artikel auf fehlend gesetzt ✗`);
   }
 
   function initInteractions() {

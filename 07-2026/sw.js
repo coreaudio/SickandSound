@@ -1,6 +1,6 @@
 // sw.js
 // ↑ Erhöhe diese Konstante bei inhaltlichen Änderungen deiner HTML/JS/CSS:
-const CACHE = 'sas-v19';
+const CACHE = 'sas-v20';
 
 const PRECACHE = [
   './style.css',

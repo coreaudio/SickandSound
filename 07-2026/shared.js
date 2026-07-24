@@ -45,6 +45,7 @@ const backupsKey         = "sick_sound_backups";
 const manualChargesKey   = "sick_sound_manual_charges";
 const coreKey            = "sick_sound_core";
 const hdRequirementsKey  = "sick_sound_hd_requirements";
+const dailyLogKey        = "sick_sound_daily_log";
 const lastBackupKey      = "lastBackup";
 const buchungenBackupsKey= "buchungen_backups";
 
@@ -77,7 +78,7 @@ function showToast(msg, duration) {
 
 /* 9. Service Worker */
 if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('./sw.js?v=22', { scope: './' }).catch(() => {});
+  navigator.serviceWorker.register('./sw.js?v=23', { scope: './' }).catch(() => {});
 }
 
 /* 10. Backup-Utilities (Hauptseite / Admin – referenzieren globale page-Variablen) */
