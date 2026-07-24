@@ -182,6 +182,7 @@ function renderBottomNav(activePage) {
     { page: 'index',         href: 'index.html',            label: 'Liste',       icon: 'M4 6h16v2H4zM4 11h16v2H4zM4 16h10v2H4z' },
     { page: 'hausdienst',    href: 'hausdienst.html#check',  label: 'Hausdienst',  icon: 'M12 3l9 7-1.2 1.6L18 10.1V20h-5v-6H11v6H6v-9.9L4.2 11.6 3 10z' },
     { page: 'vorraete',      href: 'vorraete.html',          label: 'Vorräte',     icon: 'M19 3h-4.18C14.4 1.84 13.3 1 12 1c-1.3 0-2.4.84-2.82 2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-7 0c.55 0 1 .45 1 1s-.45 1-1 1-1-.45-1-1 .45-1 1-1zm2 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z' },
+    { page: 'updates',       href: 'updates.html',           label: 'Updates',     icon: 'M12 22c1.1 0 2-.9 2-2h-4c0 1.1.89 2 2 2zm6-6v-5c0-3.07-1.64-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.63 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z' },
     { page: 'rangliste',     href: 'rangliste.html',         label: 'Stats',       icon: 'M7 17H3V7h4v10zm7 0h-4V3h4v14zm7 0h-4v-8h4v8z' },
   ];
   nav.innerHTML = tabs.map(t =>
@@ -194,11 +195,12 @@ function renderBottomNav(activePage) {
 
 /* 12. Swipe-Navigation mit Drag-Effekt (ganzer Screen) */
 function _setupSwipeNav(activePage) {
-  const ORDER = ['index','hausdienst','vorraete','rangliste'];
+  const ORDER = ['index','hausdienst','vorraete','updates','rangliste'];
   const HREFS = {
     index:      'index.html',
     hausdienst: 'hausdienst.html',
     vorraete:   'vorraete.html',
+    updates:    'updates.html',
     rangliste:  'rangliste.html',
   };
 
@@ -232,7 +234,7 @@ function _setupSwipeNav(activePage) {
   // Peek-Panel: zeigt Zielseiten hinter .app (sichtbar wenn .app weggeschoben wird)
   const LABELS = {
     index:'Liste', hausdienst:'Hausdienst', vorraete:'Vorräte',
-    rangliste:'Stats',
+    updates:'Updates', rangliste:'Stats',
   };
   const prevKey = ORDER[(idx - 1 + ORDER.length) % ORDER.length];
   const nextKey = ORDER[(idx + 1) % ORDER.length];

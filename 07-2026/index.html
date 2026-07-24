@@ -121,6 +121,20 @@
     .hd-status-icon.pending { color: var(--danger); }
     .hd-status-icon.complete { color: var(--green); }
 
+    /* Update-Markierung (ungelesene Updates/Regelungen) */
+    .update-flag {
+      display: inline-flex; align-items: center; justify-content: center;
+      width: 16px; height: 16px; margin-left: 6px;
+      border-radius: 50%; background: #facc15; color: #1a1400;
+      font-size: 11px; font-weight: 900; line-height: 1; cursor: pointer;
+      box-shadow: 0 0 6px rgba(250,204,21,.7);
+      animation: update-flag-pulse 1.6s ease-in-out infinite;
+    }
+    @keyframes update-flag-pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: .55; }
+    }
+
     /* Kernteam-Tags */
     .core-tag { display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 999px; background: var(--panel-3); border: 1px solid var(--border2); }
     .core-tag .remove-btn { cursor: pointer; color: var(--danger); font-weight: bold; padding: 0 4px; }
@@ -701,6 +715,7 @@ let hdTaskProgress = null; // Aufgaben-Fortschritt: { done: X, total: Y }
 let hdTaskTotalToday = null; // Korrekte Gesamtzahl (nur heutige Tasks)
 let monthlyHdCounts = {}; // Hausdienste pro Person im aktuellen Monat
 let hdCarryover = {}; // Kumulativer Saldo aus Vormonaten {person: saldo} (geschrieben von rangliste.html)
+let updates = []; // Updates/Regelungen fürs Kernteam (mit readBy: {person: timestamp})
 const HD_DEFAULT_REQUIRED = 3; // Standard-Anforderung pro Monat
 
 // Gibt die Anforderung für eine Person zurück (0 = befreit)
@@ -1140,6 +1155,16 @@ function subscribeRealtime(){
       await loadMonthlyHdCounts();
       buildTable();
     });
+
+  // Updates/Regelungen fürs Kernteam (gelbes Ausrufezeichen bei ungelesenen)
+  db.collection("updates").onSnapshot(snap => {
+    updates = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    buildTable();
+  });
+}
+
+function hasUnreadUpdates(person) {
+  return updates.some(u => !(u.readBy && u.readBy[person]));
 }
 
 /* Heute-Banner + CTA */
@@ -1425,6 +1450,11 @@ function buildTable(){
          >${openHd < 0 ? '+' + Math.abs(openHd) : openHd}</span>`
       : '';
 
+    // Update-Markierung fürs Kernteam (ungelesene Updates/Regelungen)
+    const updateFlag = (!isGuest && hasUnreadUpdates(p))
+      ? `<span class="update-flag" title="Neue Updates vorhanden" onclick="event.stopPropagation();location.href='updates.html?person=${encodeURIComponent(p)}'">!</span>`
+      : '';
+
     // Hausdienst-Status-Icon und Aufgaben-Fortschritt für heute
     let hdStatusIcon = '';
     if (isHdToday) {
@@ -1454,7 +1484,7 @@ function buildTable(){
     let rhtml = `<tr class="${hdClass}"><th style="text-align:left">
       <div class="person-cell-wrapper">
         <div class="person-cell"${personTitle} onclick="personCellClick('${p}')">
-          ${ring(xpVal,p)}<div class="p-info"><div class="p-name">${p}${hdStatusIcon}${hdBadge}</div></div>
+          ${ring(xpVal,p)}<div class="p-info"><div class="p-name">${p}${updateFlag}${hdStatusIcon}${hdBadge}</div></div>
         </div>
         ${refHtml}
       </div></th>`;
