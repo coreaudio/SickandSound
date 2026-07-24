@@ -1480,8 +1480,7 @@ function buildTable(){
     });
     const manualTotal = getManualTotal(p);
     const total=columnOrder.reduce((s,d)=>s+(data[`${p}_${d}`]||0)*prices[d],0) + manualTotal;
-    const hasManual = manualTotal > 0;
-    rhtml += `<td id="${p}_Total" class="total-cell" ${hasManual ? `onclick="showTotalBreakdown('${p}')"` : ''}>${total.toFixed(2)} €</td>`;
+    rhtml += `<td id="${p}_Total" class="total-cell" onclick="showTotalBreakdown('${p}')">${total.toFixed(2)} €</td>`;
     
     if (correctionMode) {
       rhtml += `<td>

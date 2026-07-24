@@ -118,6 +118,55 @@
       white-space: nowrap;
     }
     .appbar-all-btn:active { opacity: 0.7; transform: scale(0.95); }
+    .appbar-groups-btn {
+      padding: 8px 16px; border-radius: 999px;
+      background: var(--panel-3); border: 1px solid var(--border2);
+      color: var(--txt); font-size: 13px; font-weight: 700; cursor: pointer;
+      white-space: nowrap;
+    }
+    .appbar-groups-btn:active { opacity: 0.7; transform: scale(0.95); }
+
+    .group-select {
+      padding: 0 12px;
+      border-radius: var(--r-sm); border: 1px solid var(--border2);
+      background: var(--panel-2); color: var(--txt); font-size: 13px; font-weight: 600;
+      font-family: inherit; max-width: 130px; flex-shrink: 0;
+    }
+
+    .group-header {
+      font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.6px;
+      color: var(--muted); padding: 14px 4px 6px;
+    }
+    .group-header:first-child { padding-top: 2px; }
+    .group-empty-hint { font-size: 12px; color: var(--muted); opacity: .6; padding: 0 4px 8px; }
+
+    .vorrat-name-wrap { flex: 1; min-width: 0; }
+    .vorrat-target { font-size: 11px; color: var(--muted); margin-top: 2px; }
+
+    .item-actions { display: flex; align-items: center; gap: 4px; flex-shrink: 0; }
+    .edit-handle {
+      width: 32px; height: 32px;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0; font-size: 14px; opacity: .55;
+    }
+
+    .group-row {
+      display: flex; align-items: center; gap: 8px; padding: 8px 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .group-row:last-child { border-bottom: none; }
+    .group-row input {
+      flex: 1; padding: 10px 12px;
+      border-radius: var(--r-sm); border: 1px solid var(--border2);
+      background: var(--panel-2); color: var(--txt); font-size: 14px; font-weight: 600;
+      font-family: inherit;
+    }
+    .field-label { font-size: 12px; font-weight: 700; color: var(--muted); margin: 12px 0 6px; }
+    .field-label:first-child { margin-top: 0; }
+    .qty-row { display: flex; gap: 10px; }
+    .qty-row input { flex: 1; }
+    .modal-actions { display: flex; gap: 10px; }
+    .modal-actions .btn { flex: 1; }
   </style>
 </head>
 <body>
@@ -128,6 +177,7 @@
       <h1>Vorräte</h1>
     </div>
     <div class="appbar-actions">
+      <button class="appbar-groups-btn" onclick="openGroupsModal()">🗂 Gruppen</button>
       <button class="appbar-all-btn" onclick="markAllAvailable()">✓ Alle</button>
     </div>
   </header>
@@ -148,6 +198,7 @@
       <input type="text" class="add-input" id="newItem"
              placeholder="Artikel hinzufügen..."
              onkeypress="if(event.key==='Enter')addItem()">
+      <select class="group-select" id="newItemGroup"><option value="">Ohne Gruppe</option></select>
       <button class="add-btn" onclick="addItem()">+</button>
     </div>
 
@@ -162,6 +213,37 @@
 
   <nav class="bottomnav" id="bottomNav"></nav>
 </div>
+
+<!-- Gruppen-Modal -->
+<div class="modal" id="groupsModal"><div class="box">
+  <h2>🗂 Gruppen verwalten</h2>
+  <div id="groupsList"></div>
+  <div class="group-row" style="border-bottom:none;padding-top:14px">
+    <input type="text" id="newGroupName" placeholder="Neue Gruppe..." onkeypress="if(event.key==='Enter')addGroup()">
+    <button class="btn small" onclick="addGroup()">+</button>
+  </div>
+  <div style="margin-top:14px">
+    <button class="btn dark" onclick="closeModal('groupsModal')">Schließen</button>
+  </div>
+</div></div>
+
+<!-- Artikel-Bearbeiten-Modal -->
+<div class="modal" id="itemEditModal"><div class="box">
+  <h2>✏️ Artikel bearbeiten</h2>
+  <div class="field-label">Name</div>
+  <input type="text" class="add-input" id="editItemName" style="width:100%">
+  <div class="field-label">Gruppe</div>
+  <select class="add-input" id="editItemGroup" style="width:100%"><option value="">Ohne Gruppe</option></select>
+  <div class="field-label">Soll-Menge (Orientierung, wieviel da sein sollte)</div>
+  <div class="qty-row">
+    <input type="number" id="editItemQty" placeholder="Menge" min="0" step="any">
+    <input type="text" id="editItemUnit" placeholder="Einheit (z.B. Kisten, g)">
+  </div>
+  <div class="modal-actions" style="margin-top:16px">
+    <button class="btn" onclick="saveItemEdit()">Speichern</button>
+    <button class="btn dark" onclick="closeModal('itemEditModal')">Abbrechen</button>
+  </div>
+</div></div>
 
 <div id="toast" style="
   position:fixed;bottom:calc(var(--nav-h,64px) + 12px);left:50%;transform:translateX(-50%);
@@ -179,16 +261,52 @@
   renderBottomNav('vorraete');
 
   let items = [];
+  let groups = [];
   let swipe = null;
   let drag  = null;
 
+  function getSortedGroups() {
+    return [...groups].sort((a, b) => (a.sortOrder ?? Infinity) - (b.sortOrder ?? Infinity));
+  }
+
+  function groupOrderOf(groupId) {
+    if (!groupId) return Infinity;
+    const g = groups.find(x => x.id === groupId);
+    return g ? (g.sortOrder ?? Infinity) : Infinity;
+  }
+
   function getSorted() {
     return [...items].sort((a, b) => {
+      const ga = groupOrderOf(a.groupId), gb = groupOrderOf(b.groupId);
+      if (ga !== gb) return ga - gb;
       const oa = a.sortOrder ?? Infinity;
       const ob = b.sortOrder ?? Infinity;
       if (oa !== ob) return oa - ob;
       return (a.createdAt || 0) - (b.createdAt || 0);
     });
+  }
+
+  function itemHtml(item) {
+    return `
+      <div class="vorrat-item ${item.available ? 'available' : 'unavailable'}"
+           data-id="${item.id}"
+           onclick="toggleItem('${item.id}')">
+        <div class="vorrat-status">${item.available ? '✓' : '✗'}</div>
+        <div class="vorrat-name-wrap">
+          <div class="vorrat-name">${item.name}</div>
+          ${item.targetQty != null && item.targetQty !== '' ? `<div class="vorrat-target">Soll: ${item.targetQty}${item.targetUnit ? ' ' + item.targetUnit : ''}</div>` : ''}
+        </div>
+        <div class="item-actions">
+          <div class="edit-handle" onclick="event.stopPropagation();openItemEdit('${item.id}')">✏️</div>
+          <div class="drag-handle" onclick="event.stopPropagation()">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" opacity=".3">
+              <circle cx="9" cy="7" r="1.8"/><circle cx="15" cy="7" r="1.8"/>
+              <circle cx="9" cy="12" r="1.8"/><circle cx="15" cy="12" r="1.8"/>
+              <circle cx="9" cy="17" r="1.8"/><circle cx="15" cy="17" r="1.8"/>
+            </svg>
+          </div>
+        </div>
+      </div>`;
   }
 
   function renderList() {
@@ -198,7 +316,7 @@
     document.getElementById('availCount').textContent   = avail;
     document.getElementById('missingCount').textContent = missing;
 
-    if (!items.length) {
+    if (!items.length && !groups.length) {
       list.innerHTML = `
         <div class="empty-state">
           <div class="empty-icon">📦</div>
@@ -209,21 +327,25 @@
     }
 
     const sorted = getSorted();
-    list.innerHTML = sorted.map(item => `
-      <div class="vorrat-item ${item.available ? 'available' : 'unavailable'}"
-           data-id="${item.id}"
-           onclick="toggleItem('${item.id}')">
-        <div class="vorrat-status">${item.available ? '✓' : '✗'}</div>
-        <div class="vorrat-name">${item.name}</div>
-        <div class="drag-handle" onclick="event.stopPropagation()">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" opacity=".3">
-            <circle cx="9" cy="7" r="1.8"/><circle cx="15" cy="7" r="1.8"/>
-            <circle cx="9" cy="12" r="1.8"/><circle cx="15" cy="12" r="1.8"/>
-            <circle cx="9" cy="17" r="1.8"/><circle cx="15" cy="17" r="1.8"/>
-          </svg>
-        </div>
-      </div>
-    `).join('');
+
+    if (!groups.length) {
+      list.innerHTML = sorted.map(itemHtml).join('');
+      return;
+    }
+
+    let html = '';
+    getSortedGroups().forEach(g => {
+      const gItems = sorted.filter(i => i.groupId === g.id);
+      html += `<div class="group-header">${g.name}</div>`;
+      html += gItems.length ? gItems.map(itemHtml).join('') : `<div class="group-empty-hint">Noch keine Artikel</div>`;
+    });
+    const groupIds = new Set(groups.map(g => g.id));
+    const rest = sorted.filter(i => !i.groupId || !groupIds.has(i.groupId));
+    if (rest.length) {
+      html += `<div class="group-header">Ohne Gruppe</div>`;
+      html += rest.map(itemHtml).join('');
+    }
+    list.innerHTML = html;
   }
 
   async function toggleItem(id) {
@@ -239,10 +361,98 @@
     const name  = input.value.trim();
     if (!name) return;
     if (!db) { alert('Offline – keine Verbindung'); return; }
+    const groupId = document.getElementById('newItemGroup').value || null;
     const maxOrder = items.length ? Math.max(...items.map(i => i.sortOrder ?? -1)) : -1;
-    await db.collection('vorraete').add({ name, available: true, createdAt: Date.now(), sortOrder: maxOrder + 1 });
+    await db.collection('vorraete').add({
+      name, available: true, createdAt: Date.now(), sortOrder: maxOrder + 1,
+      groupId, targetQty: null, targetUnit: ''
+    });
     input.value = '';
     input.focus();
+  }
+
+  function populateGroupSelects() {
+    const opts = getSortedGroups().map(g => `<option value="${g.id}">${g.name}</option>`).join('');
+    [['newItemGroup', ''], ['editItemGroup', '']].forEach(([id]) => {
+      const sel = document.getElementById(id);
+      const cur = sel.value;
+      sel.innerHTML = `<option value="">Ohne Gruppe</option>${opts}`;
+      if ([...sel.options].some(o => o.value === cur)) sel.value = cur;
+    });
+  }
+
+  function openGroupsModal() {
+    renderGroupsList();
+    openModal('groupsModal');
+  }
+
+  function renderGroupsList() {
+    const wrap = document.getElementById('groupsList');
+    const sorted = getSortedGroups();
+    if (!sorted.length) {
+      wrap.innerHTML = `<div class="sub" style="padding:8px 0;opacity:.6">Noch keine Gruppen angelegt.</div>`;
+      return;
+    }
+    wrap.innerHTML = sorted.map(g => `
+      <div class="group-row">
+        <input type="text" value="${g.name.replace(/"/g,'&quot;')}" onchange="renameGroup('${g.id}', this.value)">
+        <button class="btn small warning" onclick="deleteGroup('${g.id}')">🗑</button>
+      </div>
+    `).join('');
+  }
+
+  async function addGroup() {
+    const input = document.getElementById('newGroupName');
+    const name = input.value.trim();
+    if (!name || !db) return;
+    const maxOrder = groups.length ? Math.max(...groups.map(g => g.sortOrder ?? -1)) : -1;
+    await db.collection('vorratsgruppen').add({ name, sortOrder: maxOrder + 1 });
+    input.value = '';
+  }
+
+  async function renameGroup(id, name) {
+    name = name.trim();
+    if (!name || !db) return;
+    await db.collection('vorratsgruppen').doc(id).update({ name });
+    showToast('Gruppe umbenannt');
+  }
+
+  async function deleteGroup(id) {
+    if (!db) return;
+    const g = groups.find(x => x.id === id);
+    const batch = db.batch();
+    items.filter(i => i.groupId === id).forEach(i =>
+      batch.update(db.collection('vorraete').doc(i.id), { groupId: null }));
+    batch.delete(db.collection('vorratsgruppen').doc(id));
+    await batch.commit();
+    if (g) showToast(`Gruppe „${g.name}" gelöscht`);
+  }
+
+  let _editItemId = null;
+
+  function openItemEdit(id) {
+    const item = items.find(i => i.id === id);
+    if (!item) return;
+    _editItemId = id;
+    populateGroupSelects();
+    document.getElementById('editItemName').value  = item.name;
+    document.getElementById('editItemGroup').value = item.groupId || '';
+    document.getElementById('editItemQty').value   = item.targetQty ?? '';
+    document.getElementById('editItemUnit').value  = item.targetUnit || '';
+    openModal('itemEditModal');
+  }
+
+  async function saveItemEdit() {
+    if (!_editItemId || !db) return;
+    const name = document.getElementById('editItemName').value.trim();
+    if (!name) { showToast('Name darf nicht leer sein'); return; }
+    const groupId   = document.getElementById('editItemGroup').value || null;
+    const qtyVal    = document.getElementById('editItemQty').value;
+    const targetQty = qtyVal === '' ? null : parseFloat(qtyVal);
+    const targetUnit = document.getElementById('editItemUnit').value.trim();
+    await db.collection('vorraete').doc(_editItemId).update({ name, groupId, targetQty, targetUnit });
+    closeModal('itemEditModal');
+    showToast('Artikel aktualisiert');
   }
 
   async function deleteItem(id) {
@@ -363,6 +573,12 @@
   if (db) {
     db.collection('vorraete').onSnapshot(snap => {
       items = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      renderList();
+    });
+    db.collection('vorratsgruppen').onSnapshot(snap => {
+      groups = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      populateGroupSelects();
+      renderGroupsList();
       renderList();
     });
     initInteractions();
