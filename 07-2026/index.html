@@ -49,6 +49,13 @@
     .admin-mode .person-cell{ cursor: pointer; }
     .admin-indicator{ background: rgba(244,63,94,.15); border: 1px solid rgba(244,63,94,.3); color: var(--danger); padding: 3px 10px; border-radius: 999px; font-size: 11px; font-weight: 800; }
 
+    /* Gesperrte Personen */
+    .blocked-badge{ display:inline-block; margin-left:8px; background: rgba(244,63,94,.15); border: 1px solid rgba(244,63,94,.35); color: var(--danger); padding: 2px 8px; border-radius: 999px; font-size: 10px; font-weight: 800; vertical-align: middle; white-space: nowrap; }
+    .lock-btn{ padding: 4px 8px; font-size: 13px; min-width: 34px; background: rgba(255,255,255,.06); }
+    .lock-btn.locked{ background: rgba(244,63,94,.25); }
+    .row-blocked .count{ opacity:.5; }
+    .plus-btn:disabled{ opacity:.25; cursor:not-allowed; }
+
     /* Sticky Action Bar */
     .action-bar{
       position:sticky; top:52px; z-index:48;
@@ -425,7 +432,7 @@
 
       <div id="weekHdStrip" style="display:none"></div>
       <div id="delInfo" class="delete-hint" style="display:none">Löschmodus aktiv: Tippe auf <b>Person</b> zum Löschen · Tippe auf <b>Spaltenkopf</b> zum Getränk löschen.</div>
-      <div id="adminInfo" class="delete-hint" style="display:none">Admin-Modus aktiv: Tippe auf <b>-1 Buttons</b> zum Abziehen von Strichen.</div>
+      <div id="adminInfo" class="delete-hint" style="display:none">Admin-Modus aktiv: Tippe auf <b>-1 Buttons</b> zum Abziehen von Strichen. Mit <b>🔒</b> neben dem Namen kannst du Personen sperren/entsperren.</div>
     </div>
 
     <!-- Admin: Kernteam verwalten -->
@@ -717,7 +724,11 @@ let monthlyHdCounts = {}; // Hausdienste pro Person im aktuellen Monat
 let hdCarryover = {}; // Kumulativer Saldo aus Vormonaten {person: saldo} (geschrieben von rangliste.html)
 let updates = []; // Updates/Regelungen fürs Kernteam (mit readBy: {person: timestamp})
 let dailyLog = {}; // Datierte Buchungshistorie: {person: {"YYYY-MM-DD": {drink: count}}}
+let blockedPersons = []; // Gesperrte Personen: dürfen keine Striche machen (nur Admin kann korrigieren)
+const blockedKey = "sick_sound_blocked";
 const HD_DEFAULT_REQUIRED = 3; // Standard-Anforderung pro Monat
+
+function isBlocked(person) { return blockedPersons.includes(person); }
 
 // Gibt die Anforderung für eine Person zurück (0 = befreit)
 function getHdRequired(person) {
@@ -946,6 +957,10 @@ async function loadState(){
         if(s.hdRequirements) {
           hdRequirements = s.hdRequirements;
         }
+        // Gesperrte Personen laden
+        if(Array.isArray(s.blockedPersons)) {
+          blockedPersons = s.blockedPersons;
+        }
         // Manuelle Buchungen laden (mit Migration von altem number-Format)
         if(s.manualCharges) {
           const mc = s.manualCharges;
@@ -1039,6 +1054,7 @@ function fallbackLoad(){
     manualCharges = rawMC;
   }
   dailyLog=JSON.parse(localStorage.getItem(dailyLogKey))||dailyLog;
+  blockedPersons=JSON.parse(localStorage.getItem(blockedKey))||[];
 }
 
 async function ensureXpFromExistingStricheAfterLoad(){
@@ -1064,6 +1080,7 @@ function saveAll(){
   localStorage.setItem(xpKey,JSON.stringify(xp));
   localStorage.setItem(manualChargesKey,JSON.stringify(manualCharges));
   localStorage.setItem(dailyLogKey,JSON.stringify(dailyLog));
+  localStorage.setItem(blockedKey,JSON.stringify(blockedPersons));
   // Firebase debounced — bündelt schnelle Mehrfachklicks
   clearTimeout(_fbSaveTimer);
   _fbSaveTimer = setTimeout(_saveToFirebase, 400);
@@ -1072,7 +1089,7 @@ function _saveToFirebase(){
   if(!db) return;
   db.collection(STATE_COLLECTION).doc("global").set(
     {prices,people,data,columnOrder,xp,core:CORE,hdRequirements,guestReferences,
-     manualCharges,monthlyFee,monthlyFeePersons,monthlyFeeLastApplied,dailyLog},
+     manualCharges,monthlyFee,monthlyFeePersons,monthlyFeeLastApplied,dailyLog,blockedPersons},
     {merge:true}
   ).catch(()=>{});
   db.collection(STATE_COLLECTION).doc("bookings").set(
@@ -1105,6 +1122,10 @@ function subscribeRealtime(){
     // HD-Anforderungen laden
     if(s.hdRequirements) {
       hdRequirements = s.hdRequirements;
+    }
+    // Gesperrte Personen laden
+    if(Array.isArray(s.blockedPersons)) {
+      blockedPersons = s.blockedPersons;
     }
     // Datierte Buchungshistorie laden
     if(s.dailyLog) {
@@ -1405,6 +1426,20 @@ function personCellClick(p){
   deletePerson(p);
 }
 
+/* Personen sperren/entsperren (nur im Admin-Modus) */
+function toggleBlockPerson(p){
+  if(!adminMode) return;
+  if(isBlocked(p)){
+    blockedPersons = blockedPersons.filter(n => n !== p);
+    showToast(`${p} ist wieder freigeschaltet.`);
+  } else {
+    blockedPersons.push(p);
+    showToast(`${p} ist jetzt gesperrt.`);
+  }
+  saveAll();
+  buildTable();
+}
+
 /* Tabelle + Level-Ring */
 function buildTable(){
   const core=CORE.filter(n=>people.includes(n));
@@ -1449,6 +1484,7 @@ function buildTable(){
     const hdClass = isHdToday ? (hdTodayCompleted ? "hd-today hd-complete" : "hd-today") : "";
     const personTitle = deleteMode ? ` title="Person löschen"` : '';
     const isGuest = !CORE.includes(p);
+    const blocked = isBlocked(p);
 
     // Offene Hausdienste berechnen (nur für Kernteam mit Anforderung > 0)
     const hdRequired = CORE.includes(p) ? getHdRequired(p) : 0;
@@ -1462,6 +1498,16 @@ function buildTable(){
     // Update-Markierung fürs Kernteam (ungelesene Updates/Regelungen)
     const updateFlag = (!isGuest && hasUnreadUpdates(p))
       ? `<span class="update-flag" title="Neue Updates vorhanden" onclick="event.stopPropagation();location.href='updates.html?person=${encodeURIComponent(p)}'">!</span>`
+      : '';
+
+    // Sperr-Markierung + Admin-Toggle
+    const blockedBadge = blocked
+      ? `<span class="blocked-badge" title="Gesperrt – keine Striche möglich">🔒 gesperrt</span>`
+      : '';
+    const lockBtn = adminMode
+      ? `<button class="btn small lock-btn${blocked ? ' locked' : ''}"
+           title="${blocked ? 'Sperre aufheben' : 'Person sperren (keine Striche mehr)'}"
+           onclick="event.stopPropagation();toggleBlockPerson('${p}')">${blocked ? '🔓' : '🔒'}</button>`
       : '';
 
     // Hausdienst-Status-Icon und Aufgaben-Fortschritt für heute
@@ -1490,11 +1536,12 @@ function buildTable(){
       </select>`;
     }
 
-    let rhtml = `<tr class="${hdClass}"><th style="text-align:left">
+    let rhtml = `<tr class="${hdClass}${blocked ? ' row-blocked' : ''}"><th style="text-align:left">
       <div class="person-cell-wrapper">
         <div class="person-cell"${personTitle} onclick="personCellClick('${p}')">
-          ${ring(xpVal,p)}<div class="p-info"><div class="p-name">${p}${updateFlag}${hdStatusIcon}${hdBadge}</div></div>
+          ${ring(xpVal,p)}<div class="p-info"><div class="p-name">${p}${updateFlag}${hdStatusIcon}${hdBadge}${blockedBadge}</div></div>
         </div>
+        ${lockBtn}
         ${refHtml}
       </div></th>`;
     columnOrder.forEach(dr=>{
@@ -1510,11 +1557,12 @@ function buildTable(){
             ontouchmove="handleTouchMoveBtn(event)"
             ontouchend="handleTouchEndBtn(event, ${decHandler})">-1</button>` : ''}
           <div class="count" id="${id}">${val}</div>
-          <button class="btn small plus-btn"
+          ${(blocked && !adminMode) ? `<button class="btn small plus-btn" disabled title="${p} ist gesperrt">+1</button>`
+          : `<button class="btn small plus-btn"
             onmousedown="startHold(${incHandler})" onmouseup="stopHold()" onmouseleave="stopHold()"
             ontouchstart="handleTouchStartBtn(event, ${incHandler})"
             ontouchmove="handleTouchMoveBtn(event)"
-            ontouchend="handleTouchEndBtn(event, ${incHandler})">+1</button></div></td>`;
+            ontouchend="handleTouchEndBtn(event, ${incHandler})">+1</button>`}</div></td>`;
       }
     });
     const manualTotal = getManualTotal(p);
@@ -1628,7 +1676,12 @@ function dragEnd(e) {
 /* Interactions */
 function headerClick(drink){ if(deleteMode) deleteColumn(drink); }
 function changeCount(id, drink, person, delta){
-  const el=document.getElementById(id); 
+  if (delta > 0 && isBlocked(person) && !adminMode) {
+    sError.play();
+    showToast(`${person} ist gesperrt – keine Striche möglich.`);
+    return;
+  }
+  const el=document.getElementById(id);
   const cur=parseInt(el?.textContent||'0'), next=cur + delta;
   if (next < 0) {
     sError.play();
@@ -1728,6 +1781,7 @@ function deletePerson(p){
     Object.keys(data).forEach(k=>{ if(k.startsWith(p+"_")) delete data[k]; });
     delete xp[p];
     delete dailyLog[p];
+    blockedPersons=blockedPersons.filter(x=>x!==p);
     saveAll(); buildTable(); toggleDeleteMode();
   });
 }
