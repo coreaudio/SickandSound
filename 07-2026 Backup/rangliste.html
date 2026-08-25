@@ -1,0 +1,748 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <title>Sick & Sound – Stats</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#08090f" />
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="stylesheet" href="style.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;800&display=swap" rel="stylesheet" />
+  <style>
+    /* ── Tab-System ───────────────────────────────────────────── */
+    .stat-tabs {
+      display: flex; gap: 6px; padding: 12px 12px 0;
+    }
+    .stat-tab {
+      flex: 1; padding: 10px 6px; border-radius: 999px;
+      background: var(--panel-3); border: 1px solid var(--border);
+      color: var(--muted); font-size: 13px; font-weight: 700;
+      cursor: pointer; transition: all .18s; white-space: nowrap;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .stat-tab.active {
+      background: var(--accent-dim);
+      border-color: rgba(45,212,191,.35); color: var(--accent);
+    }
+    .stat-panel { display: none; }
+    .stat-panel.active { display: block; }
+
+    /* ── Streak-Serien ────────────────────────────────────────── */
+    .streak-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px,1fr)); gap: 8px; }
+    .streak-card {
+      padding: 14px; border-radius: 16px; text-align: center;
+      border: 1px solid var(--border); background: var(--panel-3);
+      box-shadow: 0 4px 16px rgba(0,0,0,.3);
+    }
+    .streak-card.fire  { border-color: rgba(251,146,60,.35); background: rgba(251,146,60,.06); }
+    .streak-card.skull { border-color: rgba(244,63,94,.3);   background: rgba(244,63,94,.06); }
+    .streak-card.ok    { border-color: rgba(16,217,160,.28); background: rgba(16,217,160,.05); }
+    .streak-icon { font-size: 26px; line-height: 1; margin-bottom: 6px; }
+    .streak-name { font-size: 13px; font-weight: 800; margin-bottom: 2px; }
+    .streak-val  { font-size: 11px; opacity: .55; }
+    .streak-card.fire  .streak-name { color: var(--orange); }
+    .streak-card.skull .streak-name { color: var(--danger); }
+    .streak-card.ok    .streak-name { color: var(--green); }
+
+    /* ── Fehlstand-Tabelle ───────────────────────────────────── */
+    .rank-table td,.rank-table th { padding: 10px 8px; }
+
+    /* ── Bewertungen ──────────────────────────────────────────── */
+    .rating-card { padding: 14px; margin-bottom: 8px; background: var(--panel-3); border-radius: 16px; border: 1px solid var(--border); box-shadow: 0 4px 16px rgba(0,0,0,.3); }
+    .rating-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+    .rating-stars { color: var(--gold); letter-spacing: 1px; }
+    .rating-stars .empty { color: rgba(255,255,255,.1); }
+    .rating-meta { font-size: 12px; opacity: .55; }
+    .rating-comment { margin-top: 8px; padding: 10px 12px; background: var(--panel-2); border-radius: 10px; font-style: italic; font-size: 13px; line-height: 1.5; color: var(--subtle); }
+    .rating-person { font-weight: 800; }
+    .filter-row { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; }
+    .filter-row select { padding: 10px 12px; border-radius: 999px; border: 1px solid var(--border2); background: var(--panel-2); color: var(--txt); font-size: 13px; flex: 1; min-width: 120px; font-family: inherit; }
+    .stats-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 8px; margin-bottom: 12px; }
+    .stat-mini { padding: 12px 8px; background: var(--panel-3); border-radius: 14px; text-align: center; border: 1px solid var(--border); }
+    .stat-mini .val { font-size: 22px; font-weight: 800; color: var(--accent); }
+    .stat-mini .lbl { font-size: 10px; color: var(--muted); margin-top: 2px; letter-spacing: .3px; }
+    .avg-list { display: flex; flex-direction: column; gap: 8px; }
+    .avg-item { display: flex; align-items: center; padding: 12px 14px; background: var(--panel-3); border-radius: 14px; gap: 10px; border: 1px solid var(--border); }
+    .avg-rank { font-size: 16px; font-weight: 800; min-width: 26px; color: var(--accent); }
+    .avg-rank.gold{color:var(--gold)}.avg-rank.silver{color:#c0c0c0}.avg-rank.bronze{color:#cd7f32}
+    .avg-pname { flex: 1; font-weight: 800; font-size: 14px; }
+    .avg-count { font-size: 11px; color: var(--muted); }
+    .avg-score { display:flex; align-items:center; gap:6px; }
+    .avg-stars { color:var(--gold); font-size:13px; }
+    .avg-value { font-size: 16px; font-weight: 800; color: var(--accent); }
+    .no-ratings { text-align:center; padding:30px; color: var(--muted); }
+
+    /* ── Summen-Rangliste ────────────────────────────────────── */
+    .lvl-ring{ width:44px;height:44px;position:relative;display:inline-grid;place-items:center; }
+    .lvl-ring .val{ position:absolute;font-size:11px;font-weight:800;line-height:1; }
+
+    /* ── Admin ───────────────────────────────────────────────── */
+    .admin-controls { background:rgba(244,63,94,.06); border:1px solid rgba(244,63,94,.22); border-radius:18px; padding:16px; margin-bottom:8px; }
+    .edit-form { display:flex; gap:8px; align-items:center; margin-top:8px; flex-wrap:wrap; }
+    .edit-form input { padding:8px 12px; border-radius:999px; border:1px solid var(--border2); background:var(--panel-2); color:var(--txt); width:100px; font-family:inherit; }
+    .hd-requirements-form { display:grid; grid-template-columns:repeat(auto-fill,minmax(140px,1fr)); gap:8px; margin-top:10px; }
+    .hd-req-item { display:flex; align-items:center; gap:8px; padding:8px 12px; background:var(--panel-2); border-radius:12px; border:1px solid var(--border); }
+    .hd-req-item label { flex:1; font-size:13px; }
+    .hd-req-item input { width:50px; padding:4px 8px; border-radius:8px; border:1px solid var(--border2); background:var(--panel-3); color:var(--txt); text-align:center; font-family:inherit; }
+
+    /* ── Bewertungs-Bearbeitungs-Modal ───────────────────────── */
+    .modal { position:fixed;inset:0;background:rgba(0,0,0,.75);display:none;place-items:center;z-index:100;padding:20px; backdrop-filter:blur(6px); }
+    .modal.show { display:grid; }
+    .modal-box { background:var(--panel);border-radius:24px;padding:24px;max-width:380px;width:100%;border:1px solid var(--border2); box-shadow:0 40px 80px rgba(0,0,0,.85); }
+    .modal-title { font-size:17px;font-weight:800;margin-bottom:8px; }
+    .modal-stars { display:flex;gap:8px;justify-content:center;margin:18px 0; }
+    .modal-stars .star { font-size:34px;cursor:pointer;color:rgba(255,255,255,.1);transition:all .18s; }
+    .modal-stars .star:hover,.modal-stars .star.active { color:var(--gold);transform:scale(1.12); }
+    .modal-stars .star.hovered { color:var(--gold); }
+    .modal-actions { display:flex;gap:8px;margin-top:14px; }
+    .modal-actions .btn { flex:1; }
+    .edit-comment { width:100%;padding:12px 14px;border-radius:14px;border:1px solid var(--border2);background:var(--panel-2);color:var(--txt);resize:vertical;min-height:60px;margin-top:10px;font-family:inherit;font-size:14px;line-height:1.5; }
+    .edit-info { font-size:12px;color:var(--muted);margin-bottom:10px; }
+    .rating-actions { display:none; margin-top:8px; gap:6px; }
+    .admin-mode .rating-actions { display:flex; }
+  </style>
+</head>
+<body>
+<div class="app">
+  <header class="appbar">
+    <div class="app-title">
+      <div class="brand-dot"></div>
+      <h1>Stats</h1>
+      <span id="adminIndicator" class="admin-indicator" style="display:none;">Admin</span>
+    </div>
+    <div class="appbar-actions">
+      <span class="sub"><span class="statusdot" id="dot"></span><span id="connTxt">…</span></span>
+      <button class="btn small warning" id="adminBtn" onclick="toggleAdminMode()" title="Admin-Modus">🔧</button>
+    </div>
+  </header>
+
+  <main class="content" style="padding-top:0">
+    <div class="stat-tabs">
+      <button class="stat-tab active" id="tab-fehlstand" onclick="showTab('fehlstand')">Fehlstand</button>
+      <button class="stat-tab"        id="tab-bewertungen" onclick="showTab('bewertungen')">Bewertungen</button>
+      <button class="stat-tab"        id="tab-summe" onclick="showTab('summe')">Summe</button>
+    </div>
+
+    <!-- ══ TAB: FEHLSTAND ══════════════════════════════════════ -->
+    <div class="stat-panel active" id="panel-fehlstand">
+
+      <!-- Admin -->
+      <div id="adminControls" class="card admin-controls" style="display:none;margin-top:8px">
+        <div class="section-title">Admin</div>
+        <div class="sub" style="margin-top:6px">Gesamt-XP bearbeiten</div>
+        <div class="edit-form">
+          <select id="xpPersonSelect"><option value="">Person…</option></select>
+          <input type="number" id="xpEditValue" step="0.01" min="0" placeholder="Neue XP">
+          <button class="btn small" onclick="updateXp()">Setzen</button>
+        </div>
+        <div class="sub" style="margin-top:14px">Hausdienst-Anforderungen / Monat (Standard)</div>
+        <div id="hdRequirementsForm" class="hd-requirements-form"></div>
+        <button class="btn small" style="margin-top:10px" onclick="saveHdRequirements()">Speichern</button>
+        <div class="sub" style="margin-top:16px">Monatliche Ausnahmen <span style="opacity:.6;font-weight:400">(überschreibt Standard für einzelne Monate)</span></div>
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:8px">
+          <select id="overridePerson"></select>
+          <input type="month" id="overrideMonth">
+          <input type="number" id="overrideCount" min="0" max="10" placeholder="Anzahl" style="width:80px">
+          <button class="btn small" onclick="addOverride()">Eintragen</button>
+        </div>
+        <div id="overrideList" style="margin-top:8px;display:flex;flex-direction:column;gap:4px"></div>
+      </div>
+
+      <!-- Serien -->
+      <div class="card" style="margin-top:8px">
+        <div class="section-title">Aktuelle Serien</div>
+        <div class="sub" style="margin-bottom:10px">🔥 = in Folge abgeschlossen &nbsp;·&nbsp; 💀 = in Folge verpasst &nbsp;·&nbsp; ✓ = zuletzt ok</div>
+        <div class="streak-grid" id="streakGrid">Lade…</div>
+      </div>
+
+      <!-- Fehlstand-Tabelle -->
+      <div class="card">
+        <div class="section-title">📊 Hausdienst-Fehlstand</div>
+        <div class="sub" style="margin-bottom:8px">Nicht erledigte Hausdienste ab Januar 2026. ✓ = alle erledigt.</div>
+        <div id="fehlstandContent" class="sub">Lade…</div>
+      </div>
+    </div>
+
+    <!-- ══ TAB: BEWERTUNGEN ════════════════════════════════════ -->
+    <div class="stat-panel" id="panel-bewertungen">
+      <div class="card" style="margin-top:8px">
+        <div class="stats-grid" id="statsGrid">
+          <div class="stat-mini"><div class="val" id="totalRatings">—</div><div class="lbl">Bewertungen</div></div>
+          <div class="stat-mini"><div class="val" id="avgRating">—</div><div class="lbl">Durchschnitt</div></div>
+          <div class="stat-mini"><div class="val" id="topPerson">—</div><div class="lbl">Bester</div></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="section-title" style="margin-bottom:10px">Durchschnitt pro Person</div>
+        <div id="personAverages" class="sub">Lade…</div>
+      </div>
+
+      <div class="card">
+        <div class="section-title" style="margin-bottom:10px">Filter</div>
+        <div class="filter-row">
+          <select id="filterPerson" onchange="applyFilters()"><option value="">Alle Personen</option></select>
+          <select id="filterMonth"  onchange="applyFilters()"><option value="">Alle Monate</option></select>
+          <select id="filterRating" onchange="applyFilters()">
+            <option value="">Alle Sterne</option>
+            <option value="5">★★★★★</option><option value="4">★★★★</option>
+            <option value="3">★★★</option><option value="2">★★</option><option value="1">★</option>
+          </select>
+        </div>
+        <div id="ratingsList">Lade…</div>
+      </div>
+    </div>
+
+    <!-- ══ TAB: SUMME ═══════════════════════════════════════════ -->
+    <div class="stat-panel" id="panel-summe">
+      <div class="card" style="margin-top:8px" id="xpRankWrap">
+        <div class="section-title">💰 Gesamtsumme</div>
+        <div class="sub">Lade…</div>
+      </div>
+    </div>
+  </main>
+
+  <nav class="bottomnav" id="bottomNav"></nav>
+</div>
+
+<!-- Bewertungs-Bearbeitungs-Modal -->
+<div class="modal" id="editModal">
+  <div class="modal-box">
+    <div class="modal-title">Bewertung bearbeiten</div>
+    <div class="edit-info" id="editInfo"></div>
+    <div class="modal-stars" id="editStars">
+      <span class="star" onclick="setEditRating(1)" onmouseenter="hoverEditRating(1)" onmouseleave="hoverEditRating(0)">★</span>
+      <span class="star" onclick="setEditRating(2)" onmouseenter="hoverEditRating(2)" onmouseleave="hoverEditRating(0)">★</span>
+      <span class="star" onclick="setEditRating(3)" onmouseenter="hoverEditRating(3)" onmouseleave="hoverEditRating(0)">★</span>
+      <span class="star" onclick="setEditRating(4)" onmouseenter="hoverEditRating(4)" onmouseleave="hoverEditRating(0)">★</span>
+      <span class="star" onclick="setEditRating(5)" onmouseenter="hoverEditRating(5)" onmouseleave="hoverEditRating(0)">★</span>
+    </div>
+    <textarea id="editComment" class="edit-comment" placeholder="Kommentar…"></textarea>
+    <div class="modal-actions">
+      <button class="btn" onclick="saveEditRating()">Speichern</button>
+      <button class="btn danger" onclick="deleteRating()">Löschen</button>
+      <button class="btn ghost" onclick="closeEditModal()">Abbrechen</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast" style="position:fixed;bottom:calc(var(--nav-h,64px)+12px);left:50%;transform:translateX(-50%);background:rgba(17,22,36,.96);border:1px solid rgba(45,212,191,.2);padding:10px 20px;border-radius:999px;font-size:13px;font-weight:700;opacity:0;transition:opacity .25s;pointer-events:none;z-index:200;white-space:nowrap"></div>
+<style>#toast.show{opacity:1}</style>
+
+<script src="https://www.gstatic.com/firebasejs/12.0.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/12.0.0/firebase-firestore-compat.js"></script>
+<script src="shared.js"></script>
+<script>
+  /* ══ State ══════════════════════════════════════════════════ */
+  let prices = {}, data = {}, xp = {}, people = [];
+  let hausdienstByMonth = {};
+  let hdRequirements = {};
+  let hdRequirementsHistory = {}; // { 'Chris': { '2026-01': 2, '2026-02': 2, ... } }
+  let adminMode = false;
+  let allRatings = [];
+  const HD_DEFAULT_REQUIRED = 3;
+  const HD_START = '2026-01-01';
+
+  /* ══ Init ═══════════════════════════════════════════════════ */
+  renderBottomNav('rangliste');
+
+  if (db) {
+    document.getElementById('dot').classList.add('statusok');
+    document.getElementById('connTxt').textContent = 'Online';
+  } else {
+    document.getElementById('connTxt').textContent = 'Offline';
+  }
+
+  // Tab aus Hash laden
+  const hashTab = location.hash.replace('#', '');
+  if (['fehlstand','bewertungen','summe'].includes(hashTab)) showTab(hashTab);
+
+  /* ══ Tab-Navigation ══════════════════════════════════════════ */
+  function showTab(name) {
+    document.querySelectorAll('.stat-tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.stat-panel').forEach(p => p.classList.remove('active'));
+    document.getElementById('tab-' + name)?.classList.add('active');
+    document.getElementById('panel-' + name)?.classList.add('active');
+    history.replaceState(null, '', '#' + name);
+  }
+
+  /* ══ Toast ═══════════════════════════════════════════════════ */
+  function showToast(msg, dur = 2500) {
+    const t = document.getElementById('toast');
+    t.textContent = msg; t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), dur);
+  }
+
+  /* ══ Hilfsfunktionen ═════════════════════════════════════════ */
+  function getHdRequired(person, month) {
+    // Monatliche Ausnahme hat Vorrang
+    if (month && hdRequirementsHistory[person]?.[month] !== undefined) {
+      return hdRequirementsHistory[person][month];
+    }
+    return hdRequirements.hasOwnProperty(person) ? hdRequirements[person] : HD_DEFAULT_REQUIRED;
+  }
+
+  function formatDateDE(dateStr) {
+    if (!dateStr) return '—';
+    const [y, m, d] = dateStr.split('-');
+    return `${d}.${m}.${y}`;
+  }
+
+  function renderStars(rating) {
+    let h = '';
+    for (let i = 1; i <= 5; i++) h += `<span class="${i <= rating ? '' : 'empty'}">★</span>`;
+    return h;
+  }
+
+  /* ══ Hausdienst-Daten laden ══════════════════════════════════ */
+  async function loadHausdienstData() {
+    if (!db) return;
+    const snap = await db.collection('hausdienst')
+      .where(firebase.firestore.FieldPath.documentId(), '>=', HD_START)
+      .get();
+    hausdienstByMonth = {};
+    snap.forEach(doc => {
+      const { person } = doc.data();
+      if (!person) return;
+      const date = new Date(doc.id);
+      const month = doc.id.slice(0, 7);
+      const points = (date.getDay() === 0 || date.getDay() === 6) ? 0.5 : 1;
+      if (!hausdienstByMonth[month]) hausdienstByMonth[month] = {};
+      hausdienstByMonth[month][person] = (hausdienstByMonth[month][person] || 0) + points;
+    });
+  }
+
+  /* ══ Serien berechnen ════════════════════════════════════════ */
+  async function loadStreaks() {
+    if (!db || !CORE.length) return {};
+    const since = new Date(); since.setDate(since.getDate() - 90);
+    const sinceStr = since.toISOString().slice(0, 10);
+    const today   = new Date().toISOString().slice(0, 10);
+    const snap = await db.collection('hausdienst')
+      .where(firebase.firestore.FieldPath.documentId(), '>=', sinceStr)
+      .where(firebase.firestore.FieldPath.documentId(), '<', today)
+      .get();
+    const byPerson = {};
+    snap.forEach(doc => {
+      const { person, completed } = doc.data();
+      if (!person || !CORE.includes(person)) return;
+      if (!byPerson[person]) byPerson[person] = [];
+      byPerson[person].push({ date: doc.id, done: !!completed });
+    });
+    const streaks = {};
+    CORE.forEach(person => {
+      const entries = (byPerson[person] || []).sort((a, b) => b.date.localeCompare(a.date));
+      let fire = 0, skull = 0;
+      for (const e of entries) { if (e.done) fire++; else break; }
+      if (fire === 0) for (const e of entries) { if (!e.done) skull++; else break; }
+      streaks[person] = { fire, skull };
+    });
+    return streaks;
+  }
+
+  function renderStreakGrid(streaks) {
+    const grid = document.getElementById('streakGrid');
+    if (!grid) return;
+    if (!CORE.length) { grid.innerHTML = '<div style="opacity:.5">Keine Daten.</div>'; return; }
+
+    // Sortierung: skull DESC, dann fire DESC
+    const sorted = [...CORE].sort((a, b) => {
+      const sa = streaks[a] || { fire: 0, skull: 0 };
+      const sb = streaks[b] || { fire: 0, skull: 0 };
+      if (sb.skull !== sa.skull) return sb.skull - sa.skull;
+      return sb.fire - sa.fire;
+    });
+
+    grid.innerHTML = sorted.map(person => {
+      const s = streaks[person] || { fire: 0, skull: 0 };
+      if (s.skull > 0) {
+        return `<div class="streak-card skull">
+          <div class="streak-icon">💀</div>
+          <div class="streak-name">${person}</div>
+          <div class="streak-val">${s.skull}× verpasst</div>
+        </div>`;
+      } else if (s.fire > 1) {
+        return `<div class="streak-card fire">
+          <div class="streak-icon">🔥</div>
+          <div class="streak-name">${person}</div>
+          <div class="streak-val">${s.fire}× in Folge</div>
+        </div>`;
+      } else {
+        return `<div class="streak-card ok">
+          <div class="streak-icon">✓</div>
+          <div class="streak-name">${person}</div>
+          <div class="streak-val">${s.fire === 1 ? 'Zuletzt ok' : 'Noch keine Daten'}</div>
+        </div>`;
+      }
+    }).join('');
+  }
+
+  /* ══ Fehlstand ═══════════════════════════════════════════════ */
+  function renderFehlstand() {
+    const container = document.getElementById('fehlstandContent');
+    if (!container) return;
+    const currentMonth = new Date().toISOString().slice(0, 7);
+    const allMonths = Object.keys(hausdienstByMonth).sort();
+    const relevantSet = new Set([...allMonths.filter(m => m >= '2026-01' && m <= currentMonth), currentMonth]);
+    const months = [...relevantSet].filter(m => m >= '2026-01' && m <= currentMonth).sort();
+    const core = CORE.filter(p => getHdRequired(p) > 0).sort();
+    if (!months.length) { container.innerHTML = '<div style="opacity:.55;padding:10px">Noch keine Daten ab Januar 2026.</div>'; return; }
+
+    const fehlstandTotal = {}, fehlstandByMonth = {};
+    core.forEach(p => { fehlstandTotal[p] = 0; });
+    const mnNames = ['Jan','Feb','Mär','Apr','Mai','Jun','Jul','Aug','Sep','Okt','Nov','Dez'];
+    const fmt = m => { const [y,mo] = m.split('-'); return `${mnNames[+mo-1]} ${y}`; };
+
+    months.forEach(m => {
+      fehlstandByMonth[m] = {};
+      const md = hausdienstByMonth[m] || {};
+      core.forEach(p => {
+        const missed = getHdRequired(p, m) - (md[p] || 0); // monatliche Ausnahme berücksichtigen
+        fehlstandByMonth[m][p] = missed;
+        if (m < currentMonth) fehlstandTotal[p] += missed;
+      });
+    });
+
+    let html = `<div style="overflow-x:auto"><table class="rank-table" style="margin-top:4px;width:100%">
+      <thead><tr><th>Monat</th>${core.map(p=>`<th style="text-align:right;font-size:12px">${p}</th>`).join('')}</tr></thead>
+      <tbody>`;
+    months.forEach(m => {
+      const cur = m === currentMonth;
+      html += `<tr${cur?' style="background:rgba(0,224,184,.05)"':''}>
+        <td><b>${fmt(m)}</b>${cur?' <span style="color:#00e0b8;font-size:10px">(läuft)</span>':''}</td>`;
+      core.forEach(p => {
+        const v = fehlstandByMonth[m][p] || 0;
+        const style = v > 0 ? 'color:var(--danger);font-weight:800' : v < 0 ? 'color:var(--accent);font-weight:800' : 'opacity:.4';
+        html += `<td style="text-align:right;${style}">${v > 0 ? v : v < 0 ? v : '✓'}</td>`;
+      });
+      html += '</tr>';
+    });
+    html += `</tbody><tfoot><tr style="background:var(--panel-3)"><td><b>Gesamt</b></td>`;
+    core.forEach(p => {
+      const t = fehlstandTotal[p] || 0;
+      const style = t > 0 ? 'color:var(--danger)' : t < 0 ? 'color:var(--accent)' : 'color:var(--green)';
+      html += `<td style="text-align:right;${style}"><b>${t}</b></td>`;
+    });
+    html += '</tr></tfoot></table></div>';
+    container.innerHTML = html;
+  }
+
+  /* ══ Bewertungen ═════════════════════════════════════════════ */
+  async function loadRatings() {
+    if (!db) { document.getElementById('ratingsList').innerHTML = '<div class="no-ratings">Offline</div>'; return; }
+    const snap = await db.collection('bewertungen').orderBy('createdAt','desc').get();
+    allRatings = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    populateRatingFilters();
+    applyFilters();
+  }
+
+  function populateRatingFilters() {
+    const ps = document.getElementById('filterPerson');
+    const ms = document.getElementById('filterMonth');
+    ps.innerHTML = '<option value="">Alle Personen</option>';
+    ms.innerHTML = '<option value="">Alle Monate</option>';
+    [...new Set(allRatings.map(r => r.bewerteterHausdienst))].sort()
+      .forEach(p => { const o=document.createElement('option'); o.value=p; o.textContent=p; ps.appendChild(o); });
+    [...new Set(allRatings.map(r => r.date?.slice(0,7)))].sort().reverse()
+      .forEach(m => { if(!m) return; const o=document.createElement('option'); o.value=m; const [y,mo]=m.split('-'); o.textContent=`${mo}/${y}`; ms.appendChild(o); });
+  }
+
+  function applyFilters() {
+    const person = document.getElementById('filterPerson').value;
+    const month  = document.getElementById('filterMonth').value;
+    const rating = document.getElementById('filterRating').value;
+    let f = [...allRatings];
+    if (person) f = f.filter(r => r.bewerteterHausdienst === person);
+    if (month)  f = f.filter(r => r.date?.startsWith(month));
+    if (rating) f = f.filter(r => r.rating === +rating);
+    renderRatings(f);
+    renderRatingStats(f);
+    renderPersonAverages(f);
+  }
+
+  function renderRatings(ratings) {
+    const list = document.getElementById('ratingsList');
+    if (!ratings.length) { list.innerHTML = '<div class="no-ratings">Keine Bewertungen gefunden</div>'; return; }
+    list.innerHTML = ratings.map(r => `
+      <div class="rating-card">
+        <div class="rating-header">
+          <div>
+            <span class="rating-person">${r.bewerteterHausdienst}</span>
+            <span class="rating-stars">${renderStars(r.rating)}</span>
+          </div>
+          <span class="badge">${r.rating}/5</span>
+        </div>
+        <div class="rating-meta">${formatDateDE(r.date)} · von ${r.bewertetVon}</div>
+        ${r.comment ? `<div class="rating-comment">"${r.comment}"</div>` : ''}
+        <div class="rating-actions">
+          <button class="btn small" onclick="openEditModal('${r.id}')">✏️ Bearbeiten</button>
+        </div>
+      </div>
+    `).join('');
+  }
+
+  function renderRatingStats(ratings) {
+    document.getElementById('totalRatings').textContent = ratings.length;
+    if (!ratings.length) { document.getElementById('avgRating').textContent = '—'; document.getElementById('topPerson').textContent = '—'; return; }
+    const avg = ratings.reduce((s,r) => s+r.rating, 0) / ratings.length;
+    document.getElementById('avgRating').innerHTML = `${avg.toFixed(1)}<span style="font-size:12px">★</span>`;
+    const ps = {};
+    ratings.forEach(r => {
+      if (!ps[r.bewerteterHausdienst]) ps[r.bewerteterHausdienst] = {t:0,c:0};
+      ps[r.bewerteterHausdienst].t += r.rating; ps[r.bewerteterHausdienst].c++;
+    });
+    let top='—', topAvg=0;
+    Object.entries(ps).forEach(([p,s]) => { if (s.c>=2 && s.t/s.c>topAvg) { topAvg=s.t/s.c; top=p; } });
+    document.getElementById('topPerson').textContent = top;
+  }
+
+  function renderPersonAverages(ratings) {
+    const el = document.getElementById('personAverages');
+    if (!ratings.length) { el.innerHTML = '<div class="no-ratings">Noch keine Bewertungen</div>'; return; }
+    const ps = {};
+    ratings.forEach(r => {
+      if (!ps[r.bewerteterHausdienst]) ps[r.bewerteterHausdienst] = {t:0,c:0};
+      ps[r.bewerteterHausdienst].t += r.rating; ps[r.bewerteterHausdienst].c++;
+    });
+    const sorted = Object.entries(ps).map(([p,s]) => ({p, avg:s.t/s.c, c:s.c})).sort((a,b)=>b.avg-a.avg);
+    const rc = i => i===0?'gold':i===1?'silver':i===2?'bronze':'';
+    el.innerHTML = `<div class="avg-list">${sorted.map((s,i)=>`
+      <div class="avg-item">
+        <span class="avg-rank ${rc(i)}">#${i+1}</span>
+        <div style="flex:1"><div class="avg-pname">${s.p}</div><div class="avg-count">${s.c} Bewertung${s.c!==1?'en':''}</div></div>
+        <div class="avg-score">
+          <span class="avg-stars">${renderStars(Math.round(s.avg))}</span>
+          <span class="avg-value">${s.avg.toFixed(2)}</span>
+        </div>
+      </div>`).join('')}</div>`;
+  }
+
+  /* ══ Summen-Rangliste ════════════════════════════════════════ */
+  function ring(xpVal, label) {
+    const x=+xpVal||0, lvl=levelOf(x);
+    const min=75*(lvl-1)*(lvl-1), max=75*lvl*lvl, p=Math.max(0,Math.min(1,(x-min)/(max-min)));
+    const r=18, c=2*Math.PI*r, off=(1-p)*c, gid='g'+(label||'x')+lvl;
+    return `<div class="lvl-ring" title="Level ${lvl}">
+      <svg viewBox="0 0 44 44" style="transform:rotate(-90deg)" width="100%" height="100%">
+        <defs><linearGradient id="${gid}" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0%" stop-color="var(--ring-a,#2dd4bf)"/><stop offset="100%" stop-color="var(--ring-b,#818cf8)"/></linearGradient></defs>
+        <circle cx="22" cy="22" r="${r}" stroke="rgba(255,255,255,.08)" stroke-width="6" fill="none"/>
+        <circle cx="22" cy="22" r="${r}" stroke="url(#${gid})" stroke-width="6" stroke-linecap="round" fill="none"
+                stroke-dasharray="${c}" stroke-dashoffset="${off}"/>
+      </svg>
+      <div class="val">Lv.${lvl}</div>
+    </div>`;
+  }
+
+  function currentValueOf(person) {
+    return Object.keys(prices||{}).reduce((s,k)=>s+((data[`${person}_${k}`]||0)*(+prices[k]||0)),0);
+  }
+
+  function renderSumme() {
+    const wrap = document.getElementById('xpRankWrap');
+    const names = [...new Set([...(people||[]),...Object.keys(xp||{})])].filter(n=>CORE.includes(n)||!n.startsWith('_'));
+    if (!names.length) { wrap.innerHTML='<div class="section-title">💰 Gesamtsumme</div><div class="sub">Keine Daten.</div>'; return; }
+    const pd = names.map(n=>({ n, total: (+xp[n]||0)+currentValueOf(n) })).sort((a,b)=>b.total-a.total);
+    const rows = pd.map((r,i)=>`<tr><td class="subtle">#${i+1}</td><td>${ring(r.total,r.n)}</td><td><b>${r.n}</b></td><td style="text-align:right"><b>${r.total.toFixed(2)}€</b></td></tr>`).join('');
+    wrap.innerHTML = `<div class="section-title">💰 Gesamtsumme</div>
+      <table class="rank-table"><thead><tr><th></th><th></th><th>Person</th><th style="text-align:right">Gesamt</th></tr></thead>
+      <tbody>${rows}</tbody></table>`;
+    if (adminMode) {
+      const sel = document.getElementById('xpPersonSelect');
+      sel.innerHTML = '<option value="">Person…</option>';
+      pd.forEach(r => { const o=document.createElement('option'); o.value=r.n; o.textContent=r.n; sel.appendChild(o); });
+    }
+  }
+
+  /* ══ Admin ═══════════════════════════════════════════════════ */
+  function toggleAdminMode() {
+    if (adminMode) {
+      adminMode = false;
+      document.body.classList.remove('admin-mode');
+      document.getElementById('adminIndicator').style.display = 'none';
+      document.getElementById('adminControls').style.display = 'none';
+      document.getElementById('adminBtn').textContent = '🔧';
+    } else {
+      const pw = prompt('Admin-Passwort:');
+      if (pw !== ADMIN_PASSWORD) { showToast('Falsches Passwort'); return; }
+      adminMode = true;
+      document.body.classList.add('admin-mode');
+      document.getElementById('adminIndicator').style.display = 'inline-block';
+      document.getElementById('adminControls').style.display = 'block';
+      document.getElementById('adminBtn').textContent = '🔧✓';
+      renderHdRequirementsForm();
+    }
+    renderSumme();
+    renderFehlstand();
+  }
+
+  function renderHdRequirementsForm() {
+    document.getElementById('hdRequirementsForm').innerHTML = CORE.map(p=>`
+      <div class="hd-req-item">
+        <label>${p}</label>
+        <input type="number" min="0" max="10" value="${getHdRequired(p)}" data-person="${p}">
+      </div>`).join('');
+    // Override-Person-Select befüllen
+    const sel = document.getElementById('overridePerson');
+    if (sel) { sel.innerHTML = CORE.map(p=>`<option value="${p}">${p}</option>`).join(''); }
+    renderOverrideList();
+  }
+
+  function renderOverrideList() {
+    const el = document.getElementById('overrideList');
+    if (!el) return;
+    const entries = [];
+    Object.entries(hdRequirementsHistory).forEach(([person, months]) => {
+      Object.entries(months).sort((a,b)=>a[0].localeCompare(b[0])).forEach(([month, count]) => {
+        entries.push({ person, month, count });
+      });
+    });
+    if (!entries.length) { el.innerHTML = '<div style="opacity:.5;font-size:12px">Keine Ausnahmen eingetragen.</div>'; return; }
+    const mnNames = ['Jan','Feb','Mär','Apr','Mai','Jun','Jul','Aug','Sep','Okt','Nov','Dez'];
+    const fmt = m => { const [y,mo] = m.split('-'); return `${mnNames[+mo-1]} ${y}`; };
+    el.innerHTML = entries.map(e => `
+      <div style="display:flex;align-items:center;gap:8px;padding:5px 8px;background:var(--panel-2);border-radius:12px;border:1px solid var(--border);font-size:13px">
+        <span style="font-weight:800;min-width:70px">${e.person}</span>
+        <span style="opacity:.7;min-width:60px">${fmt(e.month)}</span>
+        <span>→ <b>${e.count}</b> HD</span>
+        <button class="btn small warning" style="padding:3px 8px;font-size:11px;margin-left:auto" onclick="removeOverride('${e.person}','${e.month}')">✕</button>
+      </div>`).join('');
+  }
+
+  function addOverride() {
+    const person = document.getElementById('overridePerson').value;
+    const month  = document.getElementById('overrideMonth').value;
+    const count  = parseInt(document.getElementById('overrideCount').value);
+    if (!person || !month || isNaN(count)) { showToast('Bitte alle Felder ausfüllen'); return; }
+    if (!hdRequirementsHistory[person]) hdRequirementsHistory[person] = {};
+    hdRequirementsHistory[person][month] = count;
+    saveOverrides();
+    renderOverrideList();
+    renderFehlstand();
+    document.getElementById('overrideMonth').value = '';
+    document.getElementById('overrideCount').value = '';
+  }
+
+  function removeOverride(person, month) {
+    if (hdRequirementsHistory[person]) {
+      delete hdRequirementsHistory[person][month];
+      if (!Object.keys(hdRequirementsHistory[person]).length) delete hdRequirementsHistory[person];
+    }
+    saveOverrides();
+    renderOverrideList();
+    renderFehlstand();
+  }
+
+  function saveOverrides() {
+    if (db) db.collection(STATE_COLLECTION).doc('global')
+      .set({ hdRequirementsHistory }, { merge: true })
+      .then(() => showToast('Ausnahmen gespeichert ✓'))
+      .catch(() => showToast('Fehler beim Speichern'));
+  }
+
+  function saveHdRequirements() {
+    const newReq = {};
+    document.querySelectorAll('#hdRequirementsForm input[data-person]').forEach(inp => {
+      newReq[inp.dataset.person] = parseInt(inp.value) || 0;
+    });
+    hdRequirements = newReq;
+    if (db) db.collection(STATE_COLLECTION).doc('global').set({ hdRequirements }, { merge: true })
+      .then(() => { showToast('Anforderungen gespeichert ✓'); renderFehlstand(); })
+      .catch(() => showToast('Fehler beim Speichern'));
+  }
+
+  function updateXp() {
+    const person  = document.getElementById('xpPersonSelect').value;
+    const newTotal = parseFloat(document.getElementById('xpEditValue').value);
+    if (!person || isNaN(newTotal)) { showToast('Bitte Werte eingeben'); return; }
+    const newBase = newTotal - currentValueOf(person);
+    xp[person] = newBase;
+    if (db) db.collection(STATE_COLLECTION).doc('global').set({ xp }, { merge: true })
+      .then(() => { showToast(`${person} XP aktualisiert ✓`); renderSumme(); })
+      .catch(() => showToast('Fehler beim Speichern'));
+  }
+
+  /* ══ Bewertungs-Bearbeitung (Admin) ══════════════════════════ */
+  let editRatingId = null, editRatingVal = 0;
+
+  function openEditModal(id) {
+    const r = allRatings.find(x => x.id === id); if (!r) return;
+    editRatingId = id; editRatingVal = r.rating;
+    document.getElementById('editInfo').innerHTML = `<b>${r.bewerteterHausdienst}</b> am ${formatDateDE(r.date)} · von ${r.bewertetVon}`;
+    document.getElementById('editComment').value = r.comment || '';
+    document.querySelectorAll('#editStars .star').forEach((s,i) => s.classList.toggle('active', i < r.rating));
+    document.getElementById('editModal').classList.add('show');
+  }
+  function closeEditModal() { document.getElementById('editModal').classList.remove('show'); editRatingId=null; editRatingVal=0; }
+  function hoverEditRating(v) { document.querySelectorAll('#editStars .star').forEach((s,i)=>s.classList.toggle('hovered',i<v)); }
+  function setEditRating(v) { editRatingVal=v; document.querySelectorAll('#editStars .star').forEach((s,i)=>{ s.classList.toggle('active',i<v); s.classList.remove('hovered'); }); }
+
+  async function saveEditRating() {
+    if (!db || !editRatingId || !editRatingVal) return;
+    const comment = document.getElementById('editComment').value.trim();
+    await db.collection('bewertungen').doc(editRatingId).update({ rating: editRatingVal, comment, updatedAt: Date.now(), updatedByAdmin: true });
+    showToast('Bewertung aktualisiert ✓');
+    closeEditModal();
+  }
+
+  async function deleteRating() {
+    if (!db || !editRatingId) return;
+    if (!confirm('Diese Bewertung wirklich löschen?')) return;
+    await db.collection('bewertungen').doc(editRatingId).delete();
+    showToast('Bewertung gelöscht');
+    closeEditModal();
+  }
+
+  /* ══ Bootstrap ═══════════════════════════════════════════════ */
+  (async function init() {
+    if (!db) {
+      prices = JSON.parse(localStorage.getItem(pricesKey)||'{}');
+      data   = JSON.parse(localStorage.getItem(dataKey)||'{}');
+      xp     = JSON.parse(localStorage.getItem(xpKey)||'{}');
+      people = JSON.parse(localStorage.getItem(peopleKey)||'[]');
+      hdRequirements = JSON.parse(localStorage.getItem(hdRequirementsKey)||'{}');
+      renderSumme(); renderFehlstand();
+      return;
+    }
+
+    // State zuerst laden, damit hdRequirements vor renderFehlstand bekannt sind
+    const globalSnap = await db.collection(STATE_COLLECTION).doc('global').get();
+    if (globalSnap.exists) {
+      const s = globalSnap.data() || {};
+      prices = s.prices || {}; data = s.data || {}; xp = s.xp || {}; people = s.people || [];
+      if (s.core?.length) CORE = s.core;
+      if (s.hdRequirements) hdRequirements = s.hdRequirements;
+      if (s.hdRequirementsHistory) hdRequirementsHistory = s.hdRequirementsHistory;
+    }
+
+    await loadHausdienstData();
+    const [streaks] = await Promise.all([loadStreaks(), loadRatings()]);
+    renderStreakGrid(streaks);
+    renderFehlstand();
+
+    // Echtzeit-Listener für State und Hausdienst
+    db.collection(STATE_COLLECTION).doc('global').onSnapshot(snap => {
+      if (!snap.exists) return;
+      const s = snap.data() || {};
+      prices = s.prices || {}; data = s.data || {}; xp = s.xp || {}; people = s.people || [];
+      if (s.core?.length) CORE = s.core;
+      if (s.hdRequirements) hdRequirements = s.hdRequirements;
+      if (s.hdRequirementsHistory) hdRequirementsHistory = s.hdRequirementsHistory;
+      renderSumme();
+      renderFehlstand();
+    });
+
+    db.collection('hausdienst').onSnapshot(async () => {
+      await loadHausdienstData();
+      const streaks = await loadStreaks();
+      renderStreakGrid(streaks);
+      renderFehlstand();
+    });
+
+    db.collection('bewertungen').onSnapshot(() => loadRatings());
+  })();
+</script>
+</body>
+</html>

@@ -1,0 +1,2198 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <title>Hausdienst</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#08090f" />
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="stylesheet" href="style.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;800&display=swap" rel="stylesheet" />
+  <style>
+    .tabs { display:flex; gap:8px; margin-top:8px; flex-wrap:wrap; }
+    .tabs .tabbtn { padding:8px 16px; border-radius:999px; background:var(--panel-3); color:var(--muted); border:1px solid var(--border); transition:all .18s; }
+    .tabs .tabbtn.active { background:var(--accent-dim); color:var(--accent); border-color:rgba(45,212,191,.32); font-weight:800; }
+    .panel { display:none; }
+    .panel.active { display:block; }
+
+    .people-row { display:flex; gap:8px; overflow-x:auto; padding-bottom:4px; scrollbar-width:none; }
+    .people-row::-webkit-scrollbar { display:none; }
+    .people-row .pill { flex:0 0 auto; padding:8px 16px; border-radius:999px; background:var(--panel-3); border:1px solid var(--border); color:var(--muted); transition:all .18s; }
+    .people-row .pill.active { background:var(--accent-dim); color:var(--accent); border-color:rgba(45,212,191,.32); font-weight:800; }
+
+    .row { display:flex; gap:10px; flex-wrap:wrap; align-items:center; }
+    .badge.big { font-size:14px; padding:6px 10px; }
+    .muted { opacity:.7 }
+
+    .segmented { display:flex; gap:8px; flex-wrap:wrap; }
+    .segmented .tabbtn { padding:8px 16px; border-radius:999px; background:var(--panel-3); color:var(--muted); border:1px solid var(--border); transition:all .18s; }
+    .segmented .tabbtn.active { background:var(--accent-dim); color:var(--accent); border-color:rgba(45,212,191,.32); font-weight:800; }
+
+    .toolbar { display:flex; gap:10px; flex-wrap:wrap; align-items:center; margin-top:10px; }
+    .toolbar input, .toolbar select { flex:1 1 auto; min-width:160px; }
+    .groupTitle { font-weight:800; letter-spacing:.2px; margin:6px 0 6px; }
+
+    /* Neues Checklisten-Design */
+    .status-header-card { padding: 16px; }
+    .status-header { display: flex; justify-content: space-between; align-items: center; }
+    .status-left { flex: 1; }
+    .status-person { font-size: 22px; font-weight: 800; }
+    .status-person.none { opacity: 0.5; font-size: 16px; }
+    .status-date { font-size: 12px; opacity: 0.6; margin-top: 2px; }
+
+    /* Progress Ring */
+    .progress-ring { width: 70px; height: 70px; position: relative; }
+    .progress-ring svg { transform: rotate(-90deg); width: 100%; height: 100%; }
+    .ring-bg { fill: none; stroke: rgba(255,255,255,.08); stroke-width: 3; }
+    .ring-fill { fill: none; stroke: url(#progressGradient); stroke-width: 3; stroke-linecap: round; transition: stroke-dasharray 0.3s; }
+    .progress-text { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 800; }
+    .progress-ring.done .ring-fill { stroke: var(--green); }
+    .progress-ring.done .progress-text { color: var(--green); }
+
+    /* Task-Liste */
+    .task-card { padding: 0; overflow: hidden; }
+    .task-header { padding: 12px 16px; border-bottom: 1px solid var(--border); background: var(--panel-2); }
+    .hide-done-toggle { display: flex; align-items: center; gap: 8px; font-size: 13px; cursor: pointer; opacity: 0.8; }
+    .hide-done-toggle input { width: 18px; height: 18px; cursor: pointer; }
+    .task-list { max-height: calc(100vh - 420px); overflow-y: auto; }
+
+    /* Kategorie-Gruppen */
+    .task-group { margin-bottom: 0; }
+    .task-group-header { padding: 10px 16px 6px; font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; color: var(--accent); background: var(--panel-2); position: sticky; top: 0; z-index: 1; }
+
+    /* Einzelne Task */
+    .task-item { display: flex; align-items: center; padding: 14px 16px; border-bottom: 1px solid var(--border); transition: background 0.2s, transform 0.2s; cursor: grab; }
+    .task-item:active { cursor: grabbing; }
+    .task-item.done { opacity: 0.45; }
+    .task-item.done .task-text { text-decoration: line-through; }
+    .task-item.dragging { opacity: 0.5; background: var(--panel-3); transform: scale(1.02); }
+    .task-item.drag-over { border-top: 2px solid var(--accent); }
+    .task-item.touch-dragging { position: relative; z-index: 100; background: var(--panel-3); box-shadow: 0 8px 24px rgba(0,0,0,.5); }
+    .drag-handle { padding: 8px; margin-right: 4px; opacity: 0.35; cursor: grab; font-size: 16px; touch-action: none; color: var(--muted); }
+    .task-item:hover .drag-handle { opacity: 0.7; }
+    @media (pointer: coarse) { .drag-handle { opacity: 0.5; padding: 10px; } }
+    .task-checkbox { width: 26px; height: 26px; border-radius: 50%; border: 2px solid var(--border2); background: transparent; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: all 0.2s; }
+    .task-checkbox:hover { border-color: var(--accent); }
+    .task-checkbox.checked { background: linear-gradient(135deg, var(--accent), var(--green)); border-color: transparent; }
+    .task-checkbox.checked::after { content: '✓'; color: #04120f; font-weight: 800; font-size: 14px; }
+    .task-content { flex: 1; margin-left: 12px; min-width: 0; cursor: pointer; }
+    .task-text { font-size: 15px; line-height: 1.3; }
+    .task-actions { display: flex; gap: 4px; margin-left: 8px; opacity: 0; transition: opacity 0.2s; }
+    .task-item:hover .task-actions { opacity: 1; }
+    @media (pointer: coarse) { .task-actions { opacity: 1; } }
+    .task-action-btn { width: 32px; height: 32px; border-radius: 8px; border: none; background: transparent; color: var(--accent); cursor: pointer; font-size: 14px; }
+    .task-action-btn:hover { background: var(--accent-dim); }
+
+    /* Aufgabe hinzufügen */
+    .add-task-card { padding: 12px 16px; }
+    .add-task-row { display: flex; gap: 10px; }
+    .add-task-row input { flex: 1; padding: 12px 14px; border-radius: var(--r-sm); border: 1px solid var(--border2); background: var(--panel-2); color: var(--txt); font-size: 15px; font-family: inherit; }
+    .add-task-row input:focus { border-color: var(--accent); outline: none; box-shadow: 0 0 0 3px var(--accent-dim); }
+    .add-btn { width: 46px; height: 46px; border-radius: var(--r-sm); font-size: 24px; font-weight: 400; padding: 0; }
+
+    /* Complete Button */
+    .complete-btn { width: 100%; padding: 14px; font-size: 15px; }
+    .complete-btn:disabled { background: var(--panel-3); color: var(--muted); cursor: not-allowed; border: 1px solid var(--border); }
+    .complete-btn.done { background: rgba(16,217,160,.2); color: var(--green); border: 1px solid rgba(16,217,160,.35); pointer-events: none; }
+
+    /* Edit Task Modal */
+    .edit-task-input { width: 100%; padding: 12px 14px; border-radius: var(--r-sm); border: 1px solid var(--border2); background: var(--panel-2); color: var(--txt); font-size: 15px; margin-bottom: 10px; font-family: inherit; }
+    .edit-task-input:focus { border-color: var(--accent); outline: none; box-shadow: 0 0 0 3px var(--accent-dim); }
+    .edit-task-select { width: 100%; padding: 12px 14px; border-radius: var(--r-sm); border: 1px solid var(--border2); background: var(--panel-2); color: var(--txt); font-size: 14px; margin-bottom: 15px; font-family: inherit; }
+
+    /* Notiz-Karten */
+    .note-card {
+      background: linear-gradient(135deg, rgba(129,140,248,.12), rgba(45,212,191,.08));
+      border: 1px solid rgba(129,140,248,.25);
+    }
+    .note-header { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+    .note-icon { font-size: 20px; }
+    .note-title { font-weight: 800; font-size: 14px; }
+    .note-content {
+      padding: 12px;
+      background: rgba(0, 0, 0, 0.2);
+      border-radius: 8px;
+      font-size: 14px;
+      line-height: 1.5;
+      white-space: pre-wrap;
+    }
+    .note-input-card { }
+    .note-textarea {
+      width: 100%;
+      min-height: 80px;
+      padding: 12px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: var(--panel-2);
+      color: var(--txt);
+      font-size: 14px;
+      resize: vertical;
+      font-family: inherit;
+    }
+    .note-textarea:focus { border-color: var(--accent); outline: none; }
+    .note-actions { display: flex; align-items: center; gap: 10px; margin-top: 8px; }
+    .note-status { font-size: 12px; color: var(--green); }
+
+    /* Notiz-Popup Modal */
+    .note-modal-box {
+      background: linear-gradient(135deg, var(--panel-3), var(--panel-2));
+      border: 2px solid rgba(129,140,248,.35);
+    }
+    .note-modal-icon { font-size: 48px; text-align: center; margin-bottom: 10px; }
+    .note-modal-from { text-align: center; font-size: 13px; opacity: 0.7; margin-bottom: 15px; }
+    .note-modal-content {
+      padding: 16px;
+      background: rgba(0, 0, 0, 0.3);
+      border-radius: 10px;
+      font-size: 15px;
+      line-height: 1.6;
+      white-space: pre-wrap;
+      max-height: 200px;
+      overflow-y: auto;
+    }
+
+    /* 6-Monats-Übersicht */
+    .table-scroll { overflow-x: auto; margin: 0 -16px; padding: 0 16px; }
+    .overview-table { width: 100%; border-collapse: collapse; font-size: 13px; min-width: 600px; }
+    .overview-table th, .overview-table td { padding: 10px 8px; text-align: center; border-bottom: 1px solid var(--border); white-space: nowrap; }
+    .overview-table th { background: var(--panel-2); font-weight: 800; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; position: sticky; top: 0; }
+    .overview-table th:first-child { text-align: left; min-width: 80px; }
+    .overview-table td:first-child { text-align: left; font-weight: 600; }
+    .overview-table tbody tr:hover { background: rgba(45,212,191,.04); }
+    .overview-table .count-cell { font-weight: 800; }
+    .overview-table .count-cell.zero { opacity: 0.3; }
+    .overview-table .count-cell.good { color: var(--green); }
+    .overview-table .count-cell.warn { color: var(--orange); }
+    .overview-table .count-cell.bad { color: var(--danger); }
+    .overview-table tfoot td { font-weight: 800; background: var(--panel-3); border-top: 1px solid var(--border2); }
+
+    .statusdot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px;background:#ffadad}
+    .statusok{background:var(--green)}
+
+    /* Drag & Drop */
+    .task-item { cursor: grab; transition: background 0.2s, transform 0.2s; user-select: none; -webkit-user-select: none; }
+    .task-item:active { cursor: grabbing; }
+    .task-item.dragging { opacity: 0.5; background: var(--panel-3); transform: scale(1.02); }
+    .task-item.drag-over { border-top: 2px solid var(--accent); }
+    .drag-handle {
+      cursor: grab;
+      padding: 8px 12px;
+      opacity: 0.4;
+      touch-action: none;
+      font-size: 18px;
+      border-radius: 6px;
+      transition: opacity 0.2s, background 0.2s;
+    }
+    .drag-handle:hover { opacity: 1; background: var(--accent-dim); }
+    @media (pointer: coarse) {
+      /* Touch-Geräte: größerer Tap-Bereich */
+      .drag-handle {
+        padding: 12px 14px;
+        opacity: 0.6;
+        background: rgba(45,212,191,.04);
+      }
+    }
+    .task-item.touch-dragging { position: relative; z-index: 100; background: var(--panel-3); box-shadow: 0 4px 12px rgba(0,0,0,0.4); }
+
+    /* Bewertungssystem */
+    .rating-section { margin-top: 15px; padding: 15px; background: var(--panel-3); border-radius: 12px; border: 1px solid var(--border); }
+    .star-rating { display: flex; gap: 8px; margin: 10px 0; }
+    .star-rating .star { font-size: 28px; cursor: pointer; color: rgba(255,255,255,.12); transition: color 0.2s, transform 0.2s; }
+    .star-rating .star:hover, .star-rating .star.active { color: var(--gold); transform: scale(1.1); }
+    .star-rating .star.hovered { color: var(--gold); }
+    .rating-comment { width: 100%; padding: 10px; border-radius: 8px; border: 1px solid var(--border); background: var(--panel-2); color: var(--txt); resize: vertical; min-height: 60px; }
+    .rating-info { font-size: 12px; opacity: 0.7; margin-bottom: 8px; }
+    .rating-preview { display: flex; align-items: center; gap: 4px; }
+    .rating-preview .star { color: var(--gold); }
+    .rating-preview .star.empty { color: rgba(255,255,255,.12); }
+
+    /* Hausdienst Status */
+    .hd-status { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 8px; font-size: 12px; }
+    .hd-status.pending { background: rgba(244,63,94,.15); color: var(--danger); }
+    .hd-status.complete { background: rgba(16,217,160,.15); color: var(--green); }
+    .progress-bar { height: 4px; background: var(--panel-3); border-radius: 2px; overflow: hidden; margin-top: 6px; }
+    .progress-bar .fill { height: 100%; background: linear-gradient(90deg, var(--accent), var(--green)); transition: width 0.3s; }
+
+    /* Bewertungs-Prompt - Prominent */
+    .rating-prompt-card {
+      background: linear-gradient(135deg, rgba(255, 215, 0, 0.25), rgba(255, 165, 0, 0.2));
+      border: 2px solid rgba(255, 215, 0, 0.6);
+      animation: ratingPulse 2s ease-in-out infinite;
+      position: relative;
+      overflow: hidden;
+    }
+    .rating-prompt-card::before {
+      content: '';
+      position: absolute;
+      top: -50%;
+      left: -50%;
+      width: 200%;
+      height: 200%;
+      background: linear-gradient(45deg, transparent, rgba(255, 215, 0, 0.1), transparent);
+      animation: ratingShine 3s ease-in-out infinite;
+    }
+    @keyframes ratingPulse {
+      0%, 100% { border-color: rgba(255, 215, 0, 0.6); box-shadow: 0 0 0 0 rgba(255, 215, 0, 0); }
+      50% { border-color: rgba(255, 215, 0, 1); box-shadow: 0 0 20px 4px rgba(255, 215, 0, 0.3); }
+    }
+    @keyframes ratingShine {
+      0% { transform: translateX(-100%) rotate(45deg); }
+      100% { transform: translateX(100%) rotate(45deg); }
+    }
+    .rating-prompt-card.rated {
+      animation: none;
+      border-color: rgba(16,217,160,.5);
+      background: linear-gradient(135deg, rgba(16,217,160,.1), var(--accent-dim));
+    }
+    .rating-prompt-card.rated::before {
+      display: none;
+    }
+    .rating-prompt {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      position: relative;
+      z-index: 1;
+    }
+    .rating-prompt-icon {
+      font-size: 40px;
+      flex-shrink: 0;
+    }
+    .rating-prompt-text {
+      flex: 1;
+      min-width: 0;
+    }
+    .rating-prompt-text strong {
+      display: block;
+      font-size: 15px;
+      margin-bottom: 4px;
+      color: var(--gold);
+    }
+    .rating-prompt-card.rated .rating-prompt-text strong {
+      color: var(--green);
+    }
+    .rating-prompt-text span {
+      font-size: 13px;
+      opacity: 0.9;
+    }
+    .rating-prompt-btn {
+      background: linear-gradient(135deg, #ffd700, #ff9f43) !important;
+      color: #04120f !important;
+      font-weight: 800;
+      padding: 12px 20px;
+      flex-shrink: 0;
+      font-size: 14px;
+      border-radius: 10px;
+    }
+    .rating-prompt-btn:hover {
+      transform: scale(1.05);
+      box-shadow: 0 4px 15px rgba(255, 215, 0, 0.4);
+    }
+    .rating-prompt-card.rated .rating-prompt-btn {
+      background: linear-gradient(135deg, var(--green), var(--accent)) !important;
+    }
+    /* Inline-Schnellbewertung */
+    .quick-rating {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      margin-top: 12px;
+      position: relative;
+      z-index: 1;
+    }
+    .quick-rating-stars {
+      display: flex;
+      gap: 6px;
+      justify-content: center;
+    }
+    .quick-rating-stars .star {
+      font-size: 32px;
+      cursor: pointer;
+      color: #3a4052;
+      transition: all 0.2s;
+      padding: 4px;
+    }
+    .quick-rating-stars .star:hover,
+    .quick-rating-stars .star.active {
+      color: var(--gold);
+      transform: scale(1.15);
+    }
+    .quick-rating-stars .star.hovered {
+      color: var(--gold);
+    }
+    .quick-rating-comment {
+      width: 100%;
+      padding: 10px 12px;
+      border-radius: 8px;
+      border: 1px solid rgba(255, 215, 0, 0.3);
+      background: rgba(0, 0, 0, 0.3);
+      color: var(--txt);
+      font-size: 14px;
+      resize: none;
+    }
+    .quick-rating-comment:focus {
+      border-color: var(--gold);
+      outline: none;
+    }
+    .quick-rating-actions {
+      display: flex;
+      gap: 10px;
+      justify-content: center;
+    }
+
+    /* Inline-Bewertung in Status-Karte */
+    .inline-rating-divider { height:1px; background:rgba(255,255,255,.1); margin:14px 0; }
+    .inline-rating-row { display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+    .inline-rating-name { font-size:12px; font-weight:700; color:var(--muted); flex-shrink:0; white-space:nowrap; }
+    .inline-stars-row { display:flex; gap:2px; }
+    .istar { font-size:26px; color:rgba(255,255,255,.12); cursor:pointer; transition:color .15s, transform .15s; line-height:1; padding:2px; }
+    .istar.active { color:var(--gold); }
+    .istar.ihov { color:var(--gold); transform:scale(1.15); }
+    .inline-stars-row.rated-mode .istar { cursor:default; pointer-events:none; }
+    .inline-stars-row.rated-mode .istar:hover { transform:none; }
+    .inline-comment { width:100%; padding:8px 10px; border-radius:8px; border:1px solid #ff9f43; background:var(--panel-2); color:var(--txt); font-size:13px; resize:none; margin-top:8px; font-family:inherit; }
+    .inline-comment:focus { outline:none; border-color:var(--gold); }
+    .inline-required-hint { font-size:11px; color:var(--orange); margin-top:6px; font-weight:700; }
+    .rating-required {
+      border: 2px solid #ff9f43;
+      border-radius: 10px;
+      padding: 10px 12px;
+      margin-top: 8px;
+      animation: ratingRequiredPulse 1.8s ease-in-out infinite;
+    }
+    @keyframes ratingRequiredPulse {
+      0%, 100% { border-color: var(--orange); box-shadow: 0 0 0 0 rgba(255,159,67,0); }
+      50% { border-color: var(--danger); box-shadow: 0 0 12px 3px rgba(255,159,67,0.35); }
+    }
+    .yesterday-incomplete {
+      display: flex; align-items: flex-start; gap: 12px;
+      padding: 14px 16px; border: 1px solid rgba(244,63,94,.35);
+      border-radius: 14px; background: rgba(244,63,94,.06);
+    }
+    .yesterday-incomplete-icon { font-size: 24px; line-height: 1; flex-shrink: 0; }
+    .yesterday-incomplete-text strong { display: block; color: var(--danger); font-size: 14px; margin-bottom: 3px; }
+    .yesterday-incomplete-text span { font-size: 12px; opacity: 0.8; }
+    .streak-bar { display: flex; align-items: center; gap: 8px; margin-top: 10px; padding: 8px 12px; border-radius: 10px; font-size: 13px; font-weight: 800; }
+    .streak-bar.fire { background: rgba(255,159,67,.12); border: 1px solid rgba(255,159,67,.3); color: var(--orange); }
+    .streak-bar.skull { background: rgba(244,63,94,.06); border: 1px solid rgba(244,63,94,.25); color: var(--danger); }
+    .streak-bar.neutral { background: rgba(255,255,255,.04); border: 1px solid rgba(255,255,255,.08); color: rgba(255,255,255,.45); }
+
+    /* Admin-Modus */
+    .admin-indicator { background: rgba(244,63,94,.15); border: 1px solid rgba(244,63,94,.3); color: var(--danger); padding: 3px 10px; border-radius: 999px; font-size: 11px; font-weight: 800; }
+    .admin-card { background: rgba(244,63,94,.06); border: 1px solid rgba(255, 107, 107, 0.3); }
+    .admin-form { display: flex; flex-direction: column; gap: 10px; margin-top: 10px; }
+    .admin-form .row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+    .admin-form input[type="date"] { padding: 8px 12px; border-radius: 8px; border: 1px solid var(--border); background: var(--panel-2); color: var(--txt); }
+    .admin-form select { padding: 8px 12px; border-radius: 8px; border: 1px solid var(--border); background: var(--panel-2); color: var(--txt); flex: 1; min-width: 120px; }
+
+    /* Bewertungs-Modal */
+    .modal { position: fixed; inset: 0; background: rgba(0,0,0,0.8); display: none; place-items: center; z-index: 100; padding: 20px; }
+    .modal.show { display: grid; }
+    .modal-box { background: var(--panel-2); border-radius: 16px; padding: 24px; max-width: 400px; width: 100%; border: 1px solid var(--border); }
+    .modal-title { font-size: 18px; font-weight: 800; margin-bottom: 8px; }
+    .modal-stars { display: flex; gap: 8px; justify-content: center; margin: 20px 0; }
+    .modal-stars .star { font-size: 36px; cursor: pointer; color: rgba(255,255,255,.12); transition: all 0.2s; }
+    .modal-stars .star:hover, .modal-stars .star.active { color: var(--gold); transform: scale(1.15); }
+    .modal-stars .star.hovered { color: var(--gold); }
+    .modal-actions { display: flex; gap: 10px; margin-top: 15px; }
+    .modal-actions .btn { flex: 1; }
+
+    /* Warnung bei unvollständigen Aufgaben */
+    .incomplete-warning {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      padding: 14px 16px;
+      margin-top: 12px;
+      background: linear-gradient(135deg, rgba(244,63,94,.15), rgba(255, 165, 0, 0.15));
+      border: 1px solid var(--danger);
+      border-radius: 12px;
+      animation: warningPulse 2s ease-in-out infinite;
+    }
+    @keyframes warningPulse {
+      0%, 100% { border-color: var(--danger); box-shadow: 0 0 0 0 rgba(255, 107, 107, 0); }
+      50% { border-color: var(--orange); box-shadow: 0 0 15px 2px rgba(255, 107, 107, 0.3); }
+    }
+    .warning-icon { font-size: 28px; line-height: 1; }
+    .warning-text { flex: 1; }
+    .warning-text strong { display: block; color: var(--danger); font-size: 14px; margin-bottom: 4px; }
+    .warning-text span { font-size: 12px; opacity: 0.9; }
+
+    /* Abschluss-Button */
+    .complete-btn {
+      width: 100%;
+      padding: 14px 20px;
+      font-size: 16px;
+      font-weight: 800;
+      background: linear-gradient(135deg, var(--accent), var(--green));
+      color: #0b0e14;
+      border: none;
+      border-radius: 12px;
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+    .complete-btn:disabled {
+      background: var(--panel-3);
+      color: #666;
+      cursor: not-allowed;
+      opacity: 0.6;
+    }
+    .complete-btn:not(:disabled):hover {
+      transform: scale(1.02);
+      box-shadow: 0 4px 20px rgba(110, 231, 255, 0.4);
+    }
+    .complete-btn.completed {
+      background: var(--green);
+      pointer-events: none;
+    }
+
+    /* Vorrats-Warnung */
+    .inventory-alert-card {
+      background: linear-gradient(135deg, rgba(244,63,94,.15), rgba(255, 159, 67, 0.15));
+      border: 1px solid var(--danger);
+    }
+    .inventory-alert-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+    .inventory-alert-title {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-weight: 800;
+      color: var(--danger);
+    }
+    .inventory-alert-title .icon { font-size: 20px; }
+    .inventory-alert-list {
+      margin-top: 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .inventory-alert-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 8px 12px;
+      background: rgba(0, 0, 0, 0.2);
+      border-radius: 8px;
+      font-size: 14px;
+    }
+    .inventory-alert-item .item-name { font-weight: 600; }
+    .inventory-alert-item .item-stock {
+      font-weight: 800;
+      color: var(--danger);
+      padding: 2px 8px;
+      background: rgba(244,63,94,.15);
+      border-radius: 4px;
+    }
+    .inventory-alert-item.empty .item-stock {
+      background: var(--danger);
+      color: #fff;
+    }
+  </style>
+</head>
+<body>
+<div class="app">
+  <header class="appbar">
+    <div class="app-title">
+      <div class="brand-dot"></div>
+      <h1>Hausdienst</h1>
+      <span id="adminIndicator" class="admin-indicator" style="display:none;">Admin</span>
+    </div>
+    <div class="appbar-actions">
+      <a class="btn small dark" href="kalender.html" title="Google Kalender Sync">📅</a>
+      <button class="btn small warning" id="adminBtn" onclick="toggleAdminMode()" title="Admin-Modus">🔧</button>
+      <a class="btn small dark" href="index.html" title="Zur Liste">🧾</a>
+    </div>
+  </header>
+
+  <main class="content">
+    <div class="card">
+      <div class="section-title">Heute</div>
+      <div id="todayInfo" class="sub">Lade…</div>
+      <div class="tabs" style="margin-top:10px">
+        <button id="tabCheck" class="tabbtn active" onclick="showTab('check')">Checkliste</button>
+        <button id="tabPlan" class="tabbtn" onclick="showTab('plan')">Planen</button>
+        <button id="tabHist" class="tabbtn" onclick="showTab('history')">Historie</button>
+      </div>
+      <div class="sub" id="connInfo" style="margin-top:6px"><span class="statusdot" id="dot"></span><span id="connTxt">Verbinde…</span></div>
+    </div>
+
+    <!-- Panel: Planen -->
+    <div id="panelPlan" class="panel">
+      <!-- Admin: Rückwirkend eintragen -->
+      <div class="card admin-card" id="adminPanel" style="display:none">
+        <div class="section-title">Admin: Rückwirkend eintragen</div>
+        <div class="sub">Hausdienst für beliebiges Datum eintragen oder ändern</div>
+        <div class="admin-form">
+          <div class="row">
+            <input type="date" id="adminDate" />
+            <select id="adminPerson">
+              <option value="">Person auswählen...</option>
+            </select>
+          </div>
+          <div class="row">
+            <button class="btn small" onclick="adminSetHausdienst()">Eintragen</button>
+            <button class="btn small warning" onclick="adminClearHausdienst()">Löschen</button>
+            <label style="display:flex;align-items:center;gap:6px;font-size:12px">
+              <input type="checkbox" id="adminMarkComplete" /> Als abgeschlossen markieren
+            </label>
+          </div>
+        </div>
+        <div id="adminStatus" class="sub" style="margin-top:8px"></div>
+      </div>
+
+      <div class="card">
+        <div class="section-title">Hausdienst planen</div>
+        <div class="row" style="margin-top:6px">
+          <button id="btnToday" class="btn small" onclick="setFor('today')" disabled>Heute belegen</button>
+          <button id="btnTomorrow" class="btn small" onclick="setFor('tomorrow')" disabled>Morgen belegen</button>
+          <span id="selBadge" class="badge big">Auswahl: –</span>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="section-title">Person auswählen</div>
+        <div id="peopleRow" class="people-row" style="margin-top:8px"></div>
+        <div class="sub muted" style="margin-top:6px">
+          Tipp: Person wählen, dann „Heute/Morgen“ oder unten in der Liste „Belegen“ tippen.
+        </div>
+      </div>
+
+      <div class="card table-wrap">
+        <div class="section-title">Geplante Hausdienste (nächste 14 Tage)</div>
+        <div id="nextList" class="sub">Lade…</div>
+      </div>
+    </div>
+
+    <!-- Panel: Checkliste -->
+    <div id="panelCheck" class="panel active">
+      <!-- Status-Header mit integrierter Bewertung -->
+      <div class="card status-header-card">
+        <div class="status-header">
+          <div class="status-left">
+            <div class="status-person" id="hdPersonName">—</div>
+            <div class="status-date" id="hdDate"></div>
+          </div>
+          <div class="status-right">
+            <div class="progress-ring" id="progressRing">
+              <svg viewBox="0 0 36 36">
+                <defs>
+                  <linearGradient id="progressGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stop-color="var(--accent,#2dd4bf)"/>
+                    <stop offset="100%" stop-color="var(--accent-2,#818cf8)"/>
+                  </linearGradient>
+                </defs>
+                <path class="ring-bg" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"/>
+                <path class="ring-fill" id="ringFill" stroke-dasharray="0, 100" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"/>
+              </svg>
+              <div class="progress-text" id="progressText">0/0</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Inline-Bewertung -->
+        <div id="inlineRatingWrap" style="display:none">
+          <div class="inline-rating-divider"></div>
+          <div class="inline-rating-row">
+            <span class="inline-rating-name" id="inlineRatingName">Gestern bewerten:</span>
+            <div class="inline-stars-row" id="inlineStarsRow">
+              <span class="istar" onmouseenter="hoverInline(1)" onmouseleave="hoverInline(0)" onclick="setInlineRating(1)">★</span>
+              <span class="istar" onmouseenter="hoverInline(2)" onmouseleave="hoverInline(0)" onclick="setInlineRating(2)">★</span>
+              <span class="istar" onmouseenter="hoverInline(3)" onmouseleave="hoverInline(0)" onclick="setInlineRating(3)">★</span>
+              <span class="istar" onmouseenter="hoverInline(4)" onmouseleave="hoverInline(0)" onclick="setInlineRating(4)">★</span>
+              <span class="istar" onmouseenter="hoverInline(5)" onmouseleave="hoverInline(0)" onclick="setInlineRating(5)">★</span>
+            </div>
+            <button id="inlineEditBtn" class="btn small ghost" onclick="editInlineRating()" style="display:none">✏️ ändern</button>
+          </div>
+          <textarea id="inlineComment" class="inline-comment" placeholder="Begründung erforderlich bei < 5 Sternen…" rows="2" style="display:none" oninput="checkInlineReady()"></textarea>
+          <div id="inlineActionRow" style="display:none;margin-top:8px">
+            <button class="btn small" id="inlineSubmitBtn" onclick="submitInlineRating()" disabled>Abschicken</button>
+          </div>
+          <div id="inlineRequiredHint" class="inline-required-hint" style="display:none">⚠️ Bewertung erforderlich zum Abschließen</div>
+        </div>
+
+        <div id="streakBar" style="display:none"></div>
+
+        <button class="btn complete-btn" id="completeHdBtn" onclick="completeHausdienst()" disabled style="margin-top:12px">
+          ✓ Hausdienst abschließen
+        </button>
+      </div>
+
+      <!-- Warnung: Gestriger Hausdienst nicht abgeschlossen -->
+      <div class="card" id="yesterdayIncompleteCard" style="display:none">
+        <div class="yesterday-incomplete">
+          <div class="yesterday-incomplete-icon">⚠️</div>
+          <div class="yesterday-incomplete-text">
+            <strong id="yesterdayIncompleteTitle"></strong>
+            <span id="yesterdayIncompleteDetail"></span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Notiz vom Vortag -->
+      <div class="card note-card" id="yesterdayNoteCard" style="display:none">
+        <div class="note-header">
+          <span class="note-icon">📝</span>
+          <span class="note-title">Notiz von <span id="noteFromPerson">—</span></span>
+        </div>
+        <div class="note-content" id="yesterdayNoteContent"></div>
+        <button class="btn small ghost" onclick="dismissNote()" style="margin-top:8px">Verstanden</button>
+      </div>
+
+      <!-- Notiz für morgen hinterlassen -->
+      <div class="card note-input-card" id="noteInputCard" style="display:none">
+        <div class="section-title">💬 Notiz für morgen</div>
+        <div class="sub" style="margin-bottom:8px">Hinterlasse eine Nachricht für den nächsten Hausdienst</div>
+        <textarea id="noteForTomorrow" class="note-textarea" placeholder="z.B. Müll wurde nicht abgeholt, bitte morgen rausstellen..."></textarea>
+        <div class="note-actions">
+          <button class="btn small" onclick="saveNoteForTomorrow()">Speichern</button>
+          <span class="note-status" id="noteStatus"></span>
+        </div>
+      </div>
+
+      <!-- Task-Liste -->
+      <div class="card task-card">
+        <div class="task-header">
+          <label class="hide-done-toggle">
+            <input type="checkbox" id="hideDone" onchange="toggleHideDone()">
+            <span>Erledigte ausblenden</span>
+          </label>
+        </div>
+        <div id="taskList" class="task-list">Lade Aufgaben…</div>
+      </div>
+
+      <!-- Aufgabe hinzufügen -->
+      <div class="card add-task-card">
+        <div class="add-task-row">
+          <input id="newTask" placeholder="Neue Aufgabe…" onkeypress="if(event.key==='Enter')addTask()">
+          <button class="btn add-btn" onclick="addTask()">+</button>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Panel: Historie -->
+    <div id="panelHist" class="panel">
+      <div class="card">
+        <div class="row" style="justify-content:space-between;align-items:center">
+          <div class="section-title" style="margin:0">Hausdienst – Historie</div>
+          <a href="rangliste.html" class="btn small">Stats →</a>
+        </div>
+      </div>
+
+      <div class="card table-wrap">
+        <div class="section-title">Letzte 30 Tage</div>
+        <div id="histList" class="sub">Lade…</div>
+      </div>
+    </div>
+  </main>
+
+  <nav class="bottomnav" id="bottomNav"></nav>
+</div>
+
+<!-- Notiz-Popup-Modal -->
+<div class="modal" id="noteModal">
+  <div class="modal-box note-modal-box">
+    <div class="note-modal-icon">📝</div>
+    <div class="modal-title" style="text-align:center">Nachricht vom Vortag</div>
+    <div class="note-modal-from" id="noteModalFrom"></div>
+    <div class="note-modal-content" id="noteModalContent"></div>
+    <div class="modal-actions" style="margin-top:15px">
+      <button class="btn" onclick="closeNoteModal()">Verstanden</button>
+    </div>
+  </div>
+</div>
+
+<!-- Task-Bearbeiten-Modal -->
+<div class="modal" id="editTaskModal">
+  <div class="modal-box">
+    <div class="modal-title">Aufgabe bearbeiten</div>
+    <input type="text" id="editTaskText" class="edit-task-input" placeholder="Aufgabentext...">
+    <select id="editTaskCat" class="edit-task-select">
+      <option value="morgens">Morgens</option>
+      <option value="tag">Im Laufe des Tages</option>
+      <option value="abend">Bevor man geht</option>
+    </select>
+    <div class="modal-actions">
+      <button class="btn" onclick="saveTaskEdit()">Speichern</button>
+      <button class="btn danger" onclick="deleteTaskFromModal()">Löschen</button>
+      <button class="btn ghost" onclick="closeEditTaskModal()">Abbrechen</button>
+    </div>
+  </div>
+</div>
+
+<!-- Abschluss-Modal -->
+<div class="modal" id="completionModal">
+  <div class="modal-box">
+    <div class="modal-title">🎉 Alle Aufgaben erledigt!</div>
+    <div class="sub" style="margin:15px 0">Du hast alle Hausdienst-Aufgaben für heute erledigt. Möchtest du den Hausdienst jetzt abschließen?</div>
+    <div class="modal-actions">
+      <button class="btn" onclick="confirmCompletion()">✓ Hausdienst abschließen</button>
+      <button class="btn ghost" onclick="closeCompletionModal()">Später</button>
+    </div>
+  </div>
+</div>
+
+<!-- Planungs-Modal für nächsten Tag -->
+<div class="modal" id="planNextModal">
+  <div class="modal-box">
+    <div class="modal-title">📅 Hausdienst für morgen planen</div>
+    <div class="sub" style="margin:10px 0" id="planNextInfo">Wähle eine Person für den Hausdienst morgen:</div>
+    <div id="planNextPeopleList" style="display:flex;flex-wrap:wrap;gap:8px;margin:15px 0"></div>
+    <div class="modal-actions">
+      <button class="btn ghost" onclick="closePlanNextModal()">Überspringen</button>
+    </div>
+  </div>
+</div>
+
+<!-- Bewertungs-Modal -->
+<div class="modal" id="ratingModal">
+  <div class="modal-box">
+    <div class="modal-title">Hausdienst bewerten</div>
+    <div id="modalRatingInfo" class="sub"></div>
+    <div class="modal-stars" id="modalStars">
+      <span class="star" data-value="1" onclick="setModalRating(1)" onmouseenter="hoverModalRating(1)" onmouseleave="hoverModalRating(0)">★</span>
+      <span class="star" data-value="2" onclick="setModalRating(2)" onmouseenter="hoverModalRating(2)" onmouseleave="hoverModalRating(0)">★</span>
+      <span class="star" data-value="3" onclick="setModalRating(3)" onmouseenter="hoverModalRating(3)" onmouseleave="hoverModalRating(0)">★</span>
+      <span class="star" data-value="4" onclick="setModalRating(4)" onmouseenter="hoverModalRating(4)" onmouseleave="hoverModalRating(0)">★</span>
+      <span class="star" data-value="5" onclick="setModalRating(5)" onmouseenter="hoverModalRating(5)" onmouseleave="hoverModalRating(0)">★</span>
+    </div>
+    <textarea id="modalComment" class="rating-comment" placeholder="Optionaler Kommentar..." oninput="updateModalSubmitButton()"></textarea>
+    <div class="modal-actions">
+      <button class="btn" id="modalSubmitBtn" onclick="submitModalRating()" disabled>Bewerten</button>
+      <button class="btn ghost" onclick="closeRatingModal()">Später</button>
+    </div>
+  </div>
+</div>
+
+<!-- Firebase -->
+<script src="https://www.gstatic.com/firebasejs/12.0.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/12.0.0/firebase-analytics-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/12.0.0/firebase-firestore-compat.js"></script>
+<script src="shared.js"></script>
+<script>
+  let adminMode = false;
+
+  const TONNEN_KW = ['tonne','tonnen','müll','biomüll','restmüll','papiertonne','gelber sack','wertstoff','altpapier'];
+  const isTonnenEvent = t => TONNEN_KW.some(kw => (t || '').toLowerCase().includes(kw));
+
+  if (db) {
+    document.getElementById('dot').classList.add('statusok');
+    document.getElementById('connTxt').textContent='Online (Firestore verbunden)';
+  } else {
+    document.getElementById('connTxt').textContent='Offline – Firebase konnte nicht initialisiert werden.';
+  }
+
+  renderBottomNav('hausdienst');
+
+  /* 🔎 Diagnose – zeigt sofort Projekt & Zugriff */
+  async function diagFirestore(){
+    const el = document.getElementById('todayInfo');
+    el.textContent = 'Teste Firestore… (Project: ' + (firebase.app()?.options?.projectId||'?') + ')';
+    try {
+      const test = await db.collection('hausdienst').limit(1).get();
+      el.textContent = 'Firestore OK (' + test.size + ' Docs gefunden) – Project: ' + firebase.app().options.projectId;
+    } catch(e) {
+      el.textContent = 'Firestore-Fehler: ' + (e.code || e.message) + ' – Project: ' + (firebase.app()?.options?.projectId||'?');
+      console.error('Diag:', e);
+    }
+  }
+  diagFirestore();
+
+  /* Tabs */
+  function showTab(key){
+    const map={plan:'panelPlan', check:'panelCheck', history:'panelHist'};
+    ['plan','check','history'].forEach(k=>{
+      document.getElementById(map[k]).classList.toggle('active', k===key);
+      document.getElementById('tab'+(k==='history'?'Hist':k.charAt(0).toUpperCase()+k.slice(1))).classList.toggle('active', k===key);
+    });
+    // Hash synchronisieren (check = leerer Hash, da Checkliste der Standard ist)
+    if(history.pushState){
+      const h = key==='check' ? '' : '#'+key;
+      history.replaceState(null,'', location.pathname + (h? h : ''));
+    }
+
+    // Bei Wechsel zur Checkliste: Bewertungs-Erinnerung zurücksetzen und prüfen
+    if (key === 'check') {
+      resetRatingReminderFlag();
+      checkAndShowRatingModal();
+      showNoteModalIfNeeded();
+    }
+  }
+
+  // Nur Query/Hash – KEIN localStorage
+  function pickTabFromQuery(){
+    let t = new URLSearchParams(location.search).get('tab');
+    if(!t){
+      const hash=(location.hash||'').replace('#','');
+      if(['check','history','plan'].includes(hash)) t = hash;
+    }
+    showTab(t || 'check');
+  }
+  window.addEventListener('hashchange', pickTabFromQuery);
+
+  /* Datum & Refresh */
+  function scheduleMidnightRefresh(cb){
+    const now=new Date();
+    const mid=new Date(now.getFullYear(),now.getMonth(),now.getDate()+1,0,0,2);
+    setTimeout(()=>{ cb(); scheduleMidnightRefresh(cb); }, mid-now);
+  }
+
+  /* Admin-Modus */
+  function toggleAdminMode() {
+    if (adminMode) {
+      adminMode = false;
+      document.getElementById('adminIndicator').style.display = 'none';
+      document.getElementById('adminPanel').style.display = 'none';
+      document.getElementById('adminBtn').textContent = '🔧';
+      return;
+    }
+
+    const password = prompt("Admin-Passwort eingeben:");
+    if (password === ADMIN_PASSWORD) {
+      adminMode = true;
+      document.getElementById('adminIndicator').style.display = 'inline-block';
+      document.getElementById('adminPanel').style.display = 'block';
+      document.getElementById('adminBtn').textContent = '🔧✓';
+      initAdminPanel();
+    } else {
+      alert("Falsches Passwort");
+    }
+  }
+
+  function initAdminPanel() {
+    // Datum auf heute setzen
+    document.getElementById('adminDate').value = todayStr();
+
+    // Personen-Dropdown füllen
+    const select = document.getElementById('adminPerson');
+    select.innerHTML = '<option value="">Person auswählen...</option>';
+    CORE.forEach(p => {
+      const opt = document.createElement('option');
+      opt.value = p;
+      opt.textContent = p;
+      select.appendChild(opt);
+    });
+  }
+
+  async function adminSetHausdienst() {
+    if (!adminMode || !db) return;
+
+    const date = document.getElementById('adminDate').value;
+    const person = document.getElementById('adminPerson').value;
+    const markComplete = document.getElementById('adminMarkComplete').checked;
+    const statusEl = document.getElementById('adminStatus');
+
+    if (!date || !person) {
+      statusEl.innerHTML = '<span class="badge" style="background:var(--danger);color:#fff">Bitte Datum und Person auswählen</span>';
+      return;
+    }
+
+    try {
+      const data = {
+        person: person,
+        updatedAt: Date.now(),
+        setByAdmin: true
+      };
+
+      if (markComplete) {
+        data.completed = true;
+        data.completedAt = Date.now();
+      }
+
+      await db.collection("hausdienst").doc(date).set(data, { merge: true });
+      statusEl.innerHTML = `<span class="badge ok">✓ ${person} für ${date} eingetragen${markComplete ? ' (abgeschlossen)' : ''}</span>`;
+
+      // Listen aktualisieren
+      if (date === todayStr()) await updateTodayInfo();
+      await renderNextDays();
+      await renderHistory();
+    } catch (e) {
+      statusEl.innerHTML = `<span class="badge" style="background:var(--danger);color:#fff">Fehler: ${e.message}</span>`;
+    }
+  }
+
+  async function adminClearHausdienst() {
+    if (!adminMode || !db) return;
+
+    const date = document.getElementById('adminDate').value;
+    const statusEl = document.getElementById('adminStatus');
+
+    if (!date) {
+      statusEl.innerHTML = '<span class="badge" style="background:var(--danger);color:#fff">Bitte Datum auswählen</span>';
+      return;
+    }
+
+    if (!confirm(`Hausdienst für ${date} wirklich löschen?`)) return;
+
+    try {
+      await db.collection("hausdienst").doc(date).delete();
+      statusEl.innerHTML = `<span class="badge ok">✓ Hausdienst für ${date} gelöscht</span>`;
+
+      // Listen aktualisieren
+      if (date === todayStr()) await updateTodayInfo();
+      await renderNextDays();
+      await renderHistory();
+    } catch (e) {
+      statusEl.innerHTML = `<span class="badge" style="background:var(--danger);color:#fff">Fehler: ${e.message}</span>`;
+    }
+  }
+
+  /* Auswahl */
+  let selectedPerson=null;
+
+  function renderPeopleRow(){
+    const wrap=document.getElementById('peopleRow');
+    wrap.innerHTML = CORE.map(p=>`<button class="pill ${selectedPerson===p?'active':''}" onclick="selectPerson('${p}')">${p}</button>`).join("");
+  }
+  function updateSelectionUI(){
+    const badge=document.getElementById('selBadge');
+    const has=!!selectedPerson;
+    badge.innerHTML = has ? `Auswahl: <b>${selectedPerson}</b>` : "Auswahl: –";
+    document.getElementById('btnToday').disabled = !has;
+    document.getElementById('btnTomorrow').disabled = !has;
+  }
+  function selectPerson(name){
+    if(!CORE.includes(name)) return;
+    selectedPerson = (selectedPerson===name ? null : name);
+    renderPeopleRow(); updateSelectionUI(); renderNextDays();
+  }
+
+  /* Setzen/Löschen */
+  async function setFor(day){
+    if(!selectedPerson) return alert("Bitte zuerst eine Person auswählen.");
+    if(!db) return alert("Offline – kann nicht speichern.");
+    const dt=new Date(); if(day==='tomorrow') dt.setDate(dt.getDate()+1);
+    const id=dt.toISOString().slice(0,10);
+    const ex=await db.collection("hausdienst").doc(id).get();
+    if(ex.exists && ex.data().person){ alert(`Bereits belegt: ${ex.data().person}. Bitte in der Übersicht austragen.`); return; }
+    await db.collection("hausdienst").doc(id).set({person:selectedPerson, updatedAt:Date.now()});
+    if(id===todayStr()) await updateTodayInfo();
+    await renderNextDays(); await renderHistory();
+  }
+  async function setForDate(date, person){
+    if(!db) return alert("Offline – kann nicht speichern.");
+    const ex=await db.collection("hausdienst").doc(date).get();
+    if(exists(ex)){ alert(`Bereits belegt: ${ex.data().person}`); return; }
+    await db.collection("hausdienst").doc(date).set({person, updatedAt:Date.now()});
+    if(date===todayStr()) await updateTodayInfo();
+    await renderNextDays(); await renderHistory();
+  }
+  function exists(d){ return d && d.exists; }
+  async function clearSpecific(date){
+    if(!db) return alert("Offline – kann nicht löschen.");
+    await db.collection("hausdienst").doc(date).delete();
+    if(date===todayStr()) await updateTodayInfo();
+    await renderNextDays(); await renderHistory();
+  }
+
+  /* Heute + Liste */
+  async function updateTodayInfo(){
+    if(!db){ document.getElementById('todayInfo').textContent="Heute: (offline)"; return; }
+    const d=await db.collection("hausdienst").doc(todayStr()).get();
+    const person = exists(d) ? d.data().person : null;
+    document.getElementById('todayInfo').innerHTML = person
+      ? `Heute eingetragener Hausdienst: <span class="badge ok">${person}</span>`
+      : `Heute: <span class="badge none">Noch niemand eingetragen</span>`;
+  }
+
+  async function renderNextDays(){
+    if(!db){ document.getElementById('nextList').textContent="Offline – keine Vorschau."; return; }
+    const out=[];
+    for(let i=0;i<14;i++){
+      const dt=new Date(); dt.setDate(dt.getDate()+i);
+      const id=dt.toISOString().slice(0,10);
+      const doc=await db.collection("hausdienst").doc(id).get();
+      out.push([id, exists(doc) ? (doc.data().person||null) : null, i===0]);
+    }
+    const rows = out.map(([d,p,isToday])=>{
+      const action = p
+        ? `<button class="btn small danger" onclick="clearSpecific('${d}')">Austragen</button>`
+        : (selectedPerson ? `<button class="btn small" onclick="setForDate('${d}','${selectedPerson}')">Belegen mit Auswahl</button>` : `<span class="sub muted">frei</span>`);
+      return `<tr><td>${isToday?d+" (heute)":d}</td><td>${p ? p : (selectedPerson ? `<span class="muted">–</span>` : "—")}</td><td style="text-align:right">${action}</td></tr>`;
+    }).join("");
+    document.getElementById('nextList').innerHTML = `<table><thead><tr><th>Datum</th><th>Person</th><th>Aktion</th></tr></thead><tbody>${rows}</tbody></table>`;
+  }
+
+  /* Checkliste */
+  const CATS = [
+    {key:"all",    label:"Übersicht"},
+    {key:"morgens",label:"Morgens"},
+    {key:"tag",    label:"Im Laufe des Tages"},
+    {key:"abend",  label:"Bevor man geht"},
+  ];
+  let showCat = localStorage.getItem("hausdienst_cat") || "all";
+  let showMode= localStorage.getItem("hausdienst_filter_mode") || "open";
+
+  const CHECKED_KEY="hausdienst_checked_"+todayStr();
+  let checked = {};
+  try { checked = JSON.parse(localStorage.getItem(CHECKED_KEY) || "{}"); } catch(_) { checked = {}; }
+
+  let hideDone = localStorage.getItem("hausdienst_hideDone") === "true";
+
+  function toggleHideDone() {
+    hideDone = document.getElementById('hideDone').checked;
+    localStorage.setItem("hausdienst_hideDone", hideDone);
+    renderTasks();
+  }
+
+  // Legacy Funktionen (für Kompatibilität)
+  function setMode(m){ showMode = m; renderTasks(); }
+  function setCat(cat){ showCat = cat; renderTasks(); }
+  function renderCatTabs(){}
+
+  function toggleCheck(id){
+    const nowChecked = !checked[id];
+    checked[id] = nowChecked;
+    localStorage.setItem(CHECKED_KEY, JSON.stringify(checked));
+    renderTasks(); // re-render für Filter
+    saveProgressToFirebase();
+    checkAllTasksCompleted();
+    // Wenn eine Auto-Bestellaufgabe abgehakt wird: Bestand erhöhen + Task löschen
+    if (nowChecked && db) {
+      const task = _tasks.find(t => t.id === id);
+      if (task && task.autoCreated && task.itemId) {
+        db.collection('vorraete').doc(task.itemId).get().then(doc => {
+          if (!doc.exists) return;
+          const item = doc.data();
+          const addQty = Math.max(1, (item.orderStock ?? 20) - (item.stock ?? 0));
+          if (addQty > 0) {
+            db.collection('vorraete').doc(task.itemId).update({
+              stock: (item.stock ?? 0) + addQty,
+              updatedAt: Date.now()
+            });
+          }
+          // Task direkt aus Firestore löschen (entfernt ihn auch aus Einkaufsliste)
+          db.collection('hausdienst_tasks').doc(id).delete().catch(() => {});
+          delete checked[id];
+          localStorage.setItem(CHECKED_KEY, JSON.stringify(checked));
+        }).catch(() => {});
+      }
+    }
+  }
+
+  // Fortschritt in Firebase speichern für Anzeige in Strichliste
+  async function saveProgressToFirebase() {
+    if (!db || !todayPerson) return;
+    const tasks      = todayTasks();
+    const totalTasks = tasks.length;
+    const doneTasks  = tasks.filter(t => checked[t.id]).length;
+
+    try {
+      await db.collection("hausdienst").doc(todayStr()).set({
+        taskProgress: { done: doneTasks, total: totalTasks }
+      }, { merge: true });
+    } catch(e) {
+      console.error('Fehler beim Speichern des Fortschritts:', e);
+    }
+  }
+
+  // Prüfen ob alle Aufgaben erledigt und Pop-up anzeigen
+  let completionPopupShown = false;
+  function checkAllTasksCompleted() {
+    if (completionPopupShown || hdTodayCompleted || !todayPerson) return;
+
+    const tasks      = todayTasks();
+    const totalTasks = tasks.length;
+    const doneTasks  = tasks.filter(t => checked[t.id]).length;
+
+    if (doneTasks === totalTasks && totalTasks > 0) {
+      completionPopupShown = true;
+      showCompletionModal();
+    }
+  }
+
+  async function addTask(){
+    if(!db) return alert("Offline – kann nicht speichern.");
+    const inp=document.getElementById('newTask');
+    const txt=inp.value.trim();
+    if(!txt) return;
+
+    // Höchsten sortOrder finden und +1 für neue Aufgabe
+    const maxSortOrder = _tasks.length > 0 ? Math.max(..._tasks.map(t => t.sortOrder ?? 0)) : -1;
+
+    await db.collection('hausdienst_tasks').add({
+      text: txt,
+      cat: 'tag',
+      createdAt: Date.now(),
+      sortOrder: maxSortOrder + 1
+    });
+    inp.value='';
+    await renderTasks(true);
+  }
+
+  // Task bearbeiten
+  let editingTaskId = null;
+
+  function openEditTaskModal(taskId) {
+    const task = _tasks.find(t => t.id === taskId);
+    if (!task) return;
+
+    editingTaskId = taskId;
+    document.getElementById('editTaskText').value = task.text;
+    document.getElementById('editTaskCat').value = task.cat || 'tag';
+    document.getElementById('editTaskModal').classList.add('show');
+  }
+
+  function closeEditTaskModal() {
+    document.getElementById('editTaskModal').classList.remove('show');
+    editingTaskId = null;
+  }
+
+  async function saveTaskEdit() {
+    if (!db || !editingTaskId) return;
+
+    const text = document.getElementById('editTaskText').value.trim();
+    const cat = document.getElementById('editTaskCat').value;
+
+    if (!text) {
+      alert('Bitte einen Text eingeben');
+      return;
+    }
+
+    try {
+      await db.collection('hausdienst_tasks').doc(editingTaskId).update({
+        text: text,
+        cat: cat,
+        updatedAt: Date.now()
+      });
+      closeEditTaskModal();
+      await renderTasks(true);
+    } catch(e) {
+      console.error('Fehler beim Speichern:', e);
+      alert('Fehler beim Speichern');
+    }
+  }
+
+  async function deleteTaskFromModal() {
+    if (!editingTaskId) return;
+    if (!confirm('Aufgabe wirklich löschen?')) return;
+
+    try {
+      await db.collection('hausdienst_tasks').doc(editingTaskId).delete();
+      closeEditTaskModal();
+      await renderTasks(true);
+    } catch(e) {
+      console.error('Fehler beim Löschen:', e);
+      alert('Fehler beim Löschen');
+    }
+  }
+
+  async function deleteTask(id){
+    if(!db) return alert("Offline – kann nicht löschen.");
+    if(!confirm("Willst du diese Aufgabe wirklich löschen?")) return;
+    await db.collection('hausdienst_tasks').doc(id).delete();
+    await renderTasks(true);
+  }
+
+  let _tasks = [];
+  let draggedTaskId = null;
+  let _tasksListener = null;
+
+  async function loadTasks(){
+    if(!db){ _tasks=[]; renderTasks(); return; }
+
+    // Prüfen, ob bereits Standardaufgaben vorhanden sind
+    const snap = await db.collection('hausdienst_tasks').orderBy('sortOrder','asc').get();
+    _tasks = snap.docs.map(d=>({id:d.id, ...d.data()}));
+
+    // Fallback: sortieren nach createdAt wenn kein sortOrder vorhanden
+    if (_tasks.length > 0 && _tasks[0].sortOrder === undefined) {
+      const oldSnap = await db.collection('hausdienst_tasks').orderBy('createdAt','asc').get();
+      _tasks = oldSnap.docs.map(d=>({id:d.id, ...d.data()}));
+    }
+
+    // Standardaufgaben nur hinzufügen, wenn noch keine Aufgaben vorhanden sind
+    if (_tasks.length === 0) {
+      // Standardaufgaben hinzufügen
+      const defaultTasks = [
+        { text: "Briefkasten leeren", cat: "morgens", createdAt: Date.now(), sortOrder: 0 },
+        { text: "Spülmaschine ausräumen", cat: "morgens", createdAt: Date.now(), sortOrder: 1 },
+        { text: "Toilettenpapier & Zewa auffüllen", cat: "morgens", createdAt: Date.now(), sortOrder: 2 },
+        { text: "Getränke auffüllen & Pfandkiste wechseln wenn voll", cat: "morgens", createdAt: Date.now(), sortOrder: 3 },
+        { text: "Staubsauger Wasser checken", cat: "morgens", createdAt: Date.now(), sortOrder: 4 },
+        { text: "Handtücher im Bad wechseln", cat: "morgens", createdAt: Date.now(), sortOrder: 5 },
+        { text: "Wäsche an machen & aufhängen", cat: "tag", createdAt: Date.now(), sortOrder: 6 },
+        { text: "Pakete entgegennehmen", cat: "tag", createdAt: Date.now(), sortOrder: 7 },
+        { text: "Für Grundordnung in Gemeinschaftsräumen sorgen", cat: "tag", createdAt: Date.now(), sortOrder: 8 },
+        { text: "Oberflächen in der Küche + Geräte wischen", cat: "abend", createdAt: Date.now(), sortOrder: 9 },
+        { text: "Mikro & Backofen durchwischen", cat: "abend", createdAt: Date.now(), sortOrder: 10 },
+        { text: "Haus- & Toiletten Müll rausbringen & mitnehmen", cat: "abend", createdAt: Date.now(), sortOrder: 11 }
+      ];
+
+      // Standardaufgaben zur Datenbank hinzufügen
+      for (const task of defaultTasks) {
+        await db.collection('hausdienst_tasks').add(task);
+      }
+
+      // Aufgaben neu laden
+      const newSnap = await db.collection('hausdienst_tasks').orderBy('sortOrder','asc').get();
+      _tasks = newSnap.docs.map(d=>({id:d.id, ...d.data()}));
+    }
+  }
+
+  // Drag & Drop Funktionen (Desktop)
+  function handleDragStart(e, taskId) {
+    draggedTaskId = taskId;
+    e.target.classList.add('dragging');
+    e.dataTransfer.effectAllowed = 'move';
+  }
+
+  function handleDragEnd(e) {
+    e.target.classList.remove('dragging');
+    document.querySelectorAll('.task-item').forEach(row => row.classList.remove('drag-over'));
+    draggedTaskId = null;
+  }
+
+  function handleDragOver(e) {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    const row = e.target.closest('.task-item');
+    if (row && !row.classList.contains('dragging')) {
+      document.querySelectorAll('.task-item').forEach(r => r.classList.remove('drag-over'));
+      row.classList.add('drag-over');
+    }
+  }
+
+  function handleDragLeave(e) {
+    const row = e.target.closest('.task-item');
+    if (row) row.classList.remove('drag-over');
+  }
+
+  async function handleDrop(e, targetTaskId) {
+    e.preventDefault();
+    if (!draggedTaskId || draggedTaskId === targetTaskId) return;
+    await reorderTasks(draggedTaskId, targetTaskId);
+  }
+
+  // Touch Drag & Drop (Mobile/Tablet)
+  let touchDraggedRow = null;
+  let touchDraggedTaskId = null;
+  let touchStartX = 0;
+  let touchStartY = 0;
+  let touchCurrentY = 0;
+  let longPressTimer = null;
+  let isDragging = false;
+  let scrollDetected = false;
+  const LONG_PRESS_DURATION = 600; // 600ms für Long-Press (vorher 300ms)
+  const SCROLL_THRESHOLD = 10; // Pixel Bewegung bevor als Scroll erkannt
+
+  function handleTouchStart(e, taskId) {
+    // Nur auf Drag-Handle reagieren für Touch-Drag
+    const isDragHandle = e.target.closest('.drag-handle');
+    if (!isDragHandle) return; // Normales Scrollen erlauben wenn nicht auf Handle
+
+    const touch = e.touches[0];
+    touchStartX = touch.clientX;
+    touchStartY = touch.clientY;
+    touchDraggedTaskId = taskId;
+    touchDraggedRow = e.target.closest('.task-item');
+    scrollDetected = false;
+
+    // Long-press zum Starten des Drag
+    longPressTimer = setTimeout(() => {
+      if (touchDraggedRow && !scrollDetected) {
+        isDragging = true;
+        touchDraggedRow.classList.add('touch-dragging');
+        // Vibration für Feedback (falls unterstützt)
+        if (navigator.vibrate) navigator.vibrate(50);
+      }
+    }, LONG_PRESS_DURATION);
+  }
+
+  function handleTouchMove(e) {
+    // Wenn noch nicht im Drag-Modus, prüfen ob gescrollt wird
+    if (!isDragging) {
+      if (touchDraggedRow && longPressTimer) {
+        const touch = e.touches[0];
+        const deltaX = Math.abs(touch.clientX - touchStartX);
+        const deltaY = Math.abs(touch.clientY - touchStartY);
+
+        // Wenn Bewegung erkannt, Long-Press abbrechen (User scrollt)
+        if (deltaX > SCROLL_THRESHOLD || deltaY > SCROLL_THRESHOLD) {
+          clearTimeout(longPressTimer);
+          longPressTimer = null;
+          scrollDetected = true;
+          touchDraggedRow = null;
+          touchDraggedTaskId = null;
+        }
+      }
+      return; // Normales Scrollen erlauben
+    }
+
+    // Im Drag-Modus: Scrollen verhindern
+    e.preventDefault();
+    const touch = e.touches[0];
+    touchCurrentY = touch.clientY;
+
+    // Finde das Element unter dem Finger
+    const elementBelow = document.elementFromPoint(touch.clientX, touch.clientY);
+    const rowBelow = elementBelow?.closest('.task-item');
+
+    // Highlight des Ziel-Elements
+    document.querySelectorAll('.task-item').forEach(r => r.classList.remove('drag-over'));
+    if (rowBelow && rowBelow !== touchDraggedRow) {
+      rowBelow.classList.add('drag-over');
+    }
+  }
+
+  async function handleTouchEnd(e) {
+    clearTimeout(longPressTimer);
+    longPressTimer = null;
+
+    if (!isDragging) {
+      touchDraggedRow = null;
+      touchDraggedTaskId = null;
+      scrollDetected = false;
+      return;
+    }
+
+    // Finde das Ziel-Element
+    const touch = e.changedTouches[0];
+    const elementBelow = document.elementFromPoint(touch.clientX, touch.clientY);
+    const rowBelow = elementBelow?.closest('.task-item');
+    const targetTaskId = rowBelow?.dataset?.taskid;
+
+    // Aufräumen
+    if (touchDraggedRow) touchDraggedRow.classList.remove('touch-dragging');
+    document.querySelectorAll('.task-item').forEach(r => r.classList.remove('drag-over'));
+
+    // Neu ordnen wenn gültiges Ziel
+    if (targetTaskId && targetTaskId !== touchDraggedTaskId) {
+      await reorderTasks(touchDraggedTaskId, targetTaskId);
+    }
+
+    touchDraggedRow = null;
+    touchDraggedTaskId = null;
+    isDragging = false;
+    scrollDetected = false;
+  }
+
+  // Gemeinsame Funktion zum Neuordnen
+  async function reorderTasks(fromTaskId, toTaskId) {
+    const draggedIndex = _tasks.findIndex(t => t.id === fromTaskId);
+    const targetIndex = _tasks.findIndex(t => t.id === toTaskId);
+    if (draggedIndex === -1 || targetIndex === -1) return;
+
+    // Array neu ordnen
+    const [moved] = _tasks.splice(draggedIndex, 1);
+    _tasks.splice(targetIndex, 0, moved);
+
+    // sortOrder in Firebase aktualisieren
+    const batch = db.batch();
+    _tasks.forEach((task, index) => {
+      const ref = db.collection('hausdienst_tasks').doc(task.id);
+      batch.update(ref, { sortOrder: index });
+      task.sortOrder = index;
+    });
+    await batch.commit();
+
+    renderTasks();
+  }
+
+  function todayTasks(){
+    const today = todayStr();
+    return _tasks.filter(t => {
+      // Tonnen-Tasks (haben calendarEventId): nur heute fällige
+      if (t.calendarEventId) return t.dueDate === today;
+      // Normale Tasks: immer anzeigen (es sei denn explizit auf anderen Tag gesetzt)
+      return !t.dueDate || t.dueDate === today;
+    });
+  }
+
+  function filteredTasks(){
+    let arr = todayTasks();
+    if (hideDone) arr = arr.filter(t => !checked[t.id]);
+    return arr;
+  }
+
+  const catLabels = { morgens: '☀️ Morgens', tag: '📋 Im Laufe des Tages', abend: '🌙 Bevor man geht' };
+  const catOrder = ['morgens', 'tag', 'abend'];
+
+  async function renderTasks(reload=false){
+    if(reload) await loadTasks();
+    const list = document.getElementById('taskList');
+    const arr = filteredTasks();
+
+    // Checkbox-Status setzen
+    const hideCheckbox = document.getElementById('hideDone');
+    if (hideCheckbox) hideCheckbox.checked = hideDone;
+
+    if(!arr.length){
+      list.innerHTML = `<div style="padding:30px;text-align:center;opacity:0.5">${hideDone ? 'Alle Aufgaben erledigt!' : 'Keine Aufgaben vorhanden'}</div>`;
+      updateStatusHeader();
+      saveProgressToFirebase();
+      return;
+    }
+
+    // Nach Kategorie gruppieren
+    const grouped = {};
+    catOrder.forEach(cat => grouped[cat] = []);
+    arr.forEach(t => {
+      const cat = t.cat || 'tag';
+      if (!grouped[cat]) grouped[cat] = [];
+      grouped[cat].push(t);
+    });
+
+    let html = '';
+    catOrder.forEach(cat => {
+      const tasks = grouped[cat];
+      if (tasks.length === 0) return;
+
+      html += `<div class="task-group" data-cat="${cat}">`;
+      html += `<div class="task-group-header">${catLabels[cat]}</div>`;
+
+      tasks.forEach(t => {
+        const isDone = !!checked[t.id];
+        html += `
+          <div class="task-item ${isDone ? 'done' : ''}" data-taskid="${t.id}" draggable="true">
+            <span class="drag-handle">⠿</span>
+            <div class="task-checkbox ${isDone ? 'checked' : ''}"></div>
+            <div class="task-content">
+              <div class="task-text">${t.text}</div>
+            </div>
+            <div class="task-actions">
+              <button class="task-action-btn" title="Bearbeiten">✏️</button>
+            </div>
+          </div>
+        `;
+      });
+
+      html += `</div>`;
+    });
+
+    list.innerHTML = html;
+    updateStatusHeader();
+    saveProgressToFirebase();
+  }
+
+  function updateStatusHeader() {
+    const tasks      = todayTasks();
+    const totalTasks = tasks.length;
+    const doneTasks  = tasks.filter(t => checked[t.id]).length;
+    const progress = totalTasks > 0 ? Math.round((doneTasks / totalTasks) * 100) : 0;
+    const allDone = doneTasks === totalTasks && totalTasks > 0;
+
+    // Person und Datum
+    const personEl = document.getElementById('hdPersonName');
+    const dateEl = document.getElementById('hdDate');
+    if (personEl) {
+      if (todayPerson) {
+        personEl.textContent = todayPerson;
+        personEl.classList.remove('none');
+      } else {
+        personEl.textContent = 'Kein Hausdienst eingetragen';
+        personEl.classList.add('none');
+      }
+    }
+    if (dateEl) {
+      const today = new Date();
+      dateEl.textContent = today.toLocaleDateString('de-DE', { weekday: 'long', day: 'numeric', month: 'long' });
+    }
+
+    // Progress Ring
+    const ringFill = document.getElementById('ringFill');
+    const progressText = document.getElementById('progressText');
+    const progressRing = document.getElementById('progressRing');
+    if (ringFill) ringFill.setAttribute('stroke-dasharray', `${progress}, 100`);
+    if (progressText) progressText.textContent = `${doneTasks}/${totalTasks}`;
+    if (progressRing) progressRing.classList.toggle('done', allDone || hdTodayCompleted);
+
+    // Complete Button
+    const completeBtn = document.getElementById('completeHdBtn');
+    if (completeBtn) {
+      const ratingNeeded = !!(yesterdayPerson && todayPerson && !existingRatingData);
+      if (hdTodayCompleted) {
+        completeBtn.textContent = '✓ Abgeschlossen';
+        completeBtn.disabled = true;
+        completeBtn.classList.add('done');
+      } else if (allDone && todayPerson && ratingNeeded) {
+        completeBtn.textContent = '⭐ Bewertung ausstehend';
+        completeBtn.disabled = true;
+        completeBtn.classList.remove('done');
+      } else if (allDone && todayPerson) {
+        completeBtn.textContent = '✓ Hausdienst abschließen';
+        completeBtn.disabled = false;
+        completeBtn.classList.remove('done');
+      } else {
+        completeBtn.textContent = `Noch ${totalTasks - doneTasks} Aufgaben offen`;
+        completeBtn.disabled = true;
+        completeBtn.classList.remove('done');
+      }
+      completeBtn.style.display = todayPerson ? 'block' : 'none';
+    }
+
+    // Inline-Bewertung aktualisieren
+    const hasRating = !!(existingRatingData && existingRatingData.rating > 0);
+    updateRatingCardUI(hasRating);
+
+    // Notiz-Eingabe aktualisieren
+    updateNoteCards();
+  }
+
+  /* Bewertungssystem */
+  let inlineRatingVal = 0;
+  let yesterdayPerson = null;
+  let todayPerson = null;
+  let hdTodayCompleted = false;
+  let existingRatingId = null;
+  let existingRatingData = null;
+
+  function getYesterdayStr() {
+    const d = new Date();
+    d.setDate(d.getDate() - 1);
+    return d.toISOString().slice(0, 10);
+  }
+
+  function hoverInline(val) {
+    document.querySelectorAll('.istar').forEach((s, i) => {
+      s.classList.toggle('ihov', val > 0 && i < val);
+    });
+  }
+
+  function setInlineRating(val) {
+    inlineRatingVal = val;
+    document.querySelectorAll('.istar').forEach((s, i) => {
+      s.classList.toggle('active', i < val);
+      s.classList.remove('ihov');
+    });
+    const commentEl = document.getElementById('inlineComment');
+    const actionRow = document.getElementById('inlineActionRow');
+    const btn       = document.getElementById('inlineSubmitBtn');
+    if (val > 0 && val < 5) {
+      commentEl.style.display = 'block';
+      actionRow.style.display = 'block';
+      checkInlineReady();
+    } else if (val === 5) {
+      commentEl.style.display = 'none';
+      actionRow.style.display = 'block';
+      btn.disabled = false;
+      btn.textContent = 'Abschicken';
+    }
+  }
+
+  function checkInlineReady() {
+    const comment = (document.getElementById('inlineComment').value || '').trim();
+    const btn = document.getElementById('inlineSubmitBtn');
+    btn.disabled = inlineRatingVal === 0 || (inlineRatingVal < 5 && !comment);
+  }
+
+  async function submitInlineRating() {
+    if (!db || inlineRatingVal === 0 || !yesterdayPerson || !todayPerson) return;
+    const comment = (document.getElementById('inlineComment').value || '').trim();
+    if (inlineRatingVal < 5 && !comment) return;
+
+    const btn = document.getElementById('inlineSubmitBtn');
+    btn.disabled = true;
+    btn.textContent = 'Speichert…';
+
+    try {
+      if (existingRatingId && existingRatingId !== '_cache') {
+        await db.collection('bewertungen').doc(existingRatingId).update({
+          rating: inlineRatingVal, comment, updatedAt: Date.now()
+        });
+      } else {
+        const ref = await db.collection('bewertungen').add({
+          date: getYesterdayStr(),
+          bewerteterHausdienst: yesterdayPerson,
+          bewertetVon: todayPerson,
+          rating: inlineRatingVal, comment,
+          createdAt: Date.now()
+        });
+        existingRatingId = ref.id;
+      }
+      existingRatingData = { rating: inlineRatingVal, comment };
+      // Cache sofort speichern → nächster Seitenaufruf zeigt sofort richtigen Status
+      localStorage.setItem('hd_rating_' + getYesterdayStr(), JSON.stringify({
+        rating: inlineRatingVal, comment, bewertetVon: todayPerson
+      }));
+      updateRatingCardUI(true);
+      updateStatusHeader();
+      showToast('Bewertung gespeichert ✓');
+    } catch(e) {
+      console.error(e);
+      btn.disabled = false;
+      btn.textContent = 'Abschicken';
+      showToast('Fehler beim Speichern');
+    }
+  }
+
+  function editInlineRating() {
+    const starsRow = document.getElementById('inlineStarsRow');
+    starsRow.classList.remove('rated-mode');
+    document.getElementById('inlineEditBtn').style.display = 'none';
+    if (existingRatingData) {
+      inlineRatingVal = existingRatingData.rating;
+      document.querySelectorAll('.istar').forEach((s, i) => s.classList.toggle('active', i < inlineRatingVal));
+      const commentEl = document.getElementById('inlineComment');
+      commentEl.value = existingRatingData.comment || '';
+      commentEl.style.display = inlineRatingVal < 5 ? 'block' : 'none';
+      const actionRow = document.getElementById('inlineActionRow');
+      actionRow.style.display = 'block';
+      const btn = document.getElementById('inlineSubmitBtn');
+      btn.disabled = false;
+      btn.textContent = 'Aktualisieren';
+    }
+  }
+
+  function updateRatingCardUI(hasRating) {
+    const wrap     = document.getElementById('inlineRatingWrap');
+    const nameEl   = document.getElementById('inlineRatingName');
+    const starsRow = document.getElementById('inlineStarsRow');
+    const editBtn  = document.getElementById('inlineEditBtn');
+    const commentEl= document.getElementById('inlineComment');
+    const actionRow= document.getElementById('inlineActionRow');
+    const hint     = document.getElementById('inlineRequiredHint');
+    if (!wrap) return;
+
+    const show = !!(yesterdayPerson && todayPerson);
+    wrap.style.display = show ? 'block' : 'none';
+    if (!show) return;
+
+    if (hasRating && existingRatingData) {
+      nameEl.textContent = yesterdayPerson + ':';
+      starsRow.classList.add('rated-mode');
+      document.querySelectorAll('.istar').forEach((s, i) => {
+        s.classList.toggle('active', i < existingRatingData.rating);
+        s.classList.remove('ihov');
+      });
+      editBtn.style.display   = 'inline-flex';
+      commentEl.style.display = 'none';
+      actionRow.style.display = 'none';
+      hint.style.display      = 'none';
+      inlineRatingVal = existingRatingData.rating;
+      wrap.classList.remove('rating-required');
+    } else {
+      nameEl.textContent = yesterdayPerson + ' bewerten:';
+      starsRow.classList.remove('rated-mode');
+      document.querySelectorAll('.istar').forEach(s => s.classList.remove('active', 'ihov'));
+      inlineRatingVal = 0;
+      editBtn.style.display   = 'none';
+      commentEl.style.display = 'none';
+      actionRow.style.display = 'none';
+      hint.style.display      = 'block';
+      wrap.classList.add('rating-required');
+    }
+  }
+
+  let ratingUnsubscribe = null;
+  let ratingReminderShownThisVisit = false;
+
+  async function checkAndShowRatingModal() {
+    if (!db) return;
+
+    const todayDoc     = await db.collection('hausdienst').doc(todayStr()).get();
+    const yesterdayDoc = await db.collection('hausdienst').doc(getYesterdayStr()).get();
+
+    todayPerson       = todayDoc.exists  ? todayDoc.data().person    : null;
+    hdTodayCompleted  = todayDoc.exists  ? (todayDoc.data().completed || false) : false;
+    yesterdayPerson   = yesterdayDoc.exists ? yesterdayDoc.data().person : null;
+
+    // Warnung wenn gestriger Hausdienst nicht abgeschlossen
+    const incompleteCard = document.getElementById('yesterdayIncompleteCard');
+    if (incompleteCard) {
+      const yd = yesterdayDoc.exists ? yesterdayDoc.data() : null;
+      const wasCompleted = yd?.completed || false;
+      if (yesterdayPerson && !wasCompleted) {
+        const prog = yd?.taskProgress;
+        document.getElementById('yesterdayIncompleteTitle').textContent =
+          `${yesterdayPerson} hat den Hausdienst nicht abgeschlossen!`;
+        document.getElementById('yesterdayIncompleteDetail').textContent =
+          prog ? `${prog.done} von ${prog.total} Aufgaben erledigt` : 'Kein Fortschritt gespeichert';
+        incompleteCard.style.display = 'block';
+      } else {
+        incompleteCard.style.display = 'none';
+      }
+    }
+
+    if (!todayPerson || !yesterdayPerson) { updateHdStatus(); return; }
+
+    // Sofort aus localStorage-Cache anzeigen (kein Flackern)
+    const cached = JSON.parse(localStorage.getItem('hd_rating_' + getYesterdayStr()) || 'null');
+    if (cached && cached.bewertetVon === todayPerson) {
+      existingRatingData = cached;
+      existingRatingId   = '_cache';
+      updateRatingCardUI(true);
+    } else {
+      updateRatingCardUI(false);
+    }
+    updateStatusHeader();
+
+    // Echtzeit-Listener für Sync
+    if (ratingUnsubscribe) ratingUnsubscribe();
+    ratingUnsubscribe = db.collection('bewertungen')
+      .where('date', '==', getYesterdayStr())
+      .where('bewertetVon', '==', todayPerson)
+      .onSnapshot(snap => {
+        if (!snap.empty) {
+          existingRatingId   = snap.docs[0].id;
+          existingRatingData = snap.docs[0].data();
+        } else {
+          existingRatingId   = null;
+          existingRatingData = null;
+        }
+        updateHdStatus();
+      });
+  }
+
+  function resetRatingReminderFlag() { ratingReminderShownThisVisit = false; }
+  function updateHdStatus() { updateStatusHeader(); }
+
+  // Modal-Stubs (bleiben für Kompatibilität, werden nicht mehr aktiv genutzt)
+  let modalRating = 0;
+  function hoverModalRating(){}
+  function setModalRating(){}
+  function updateModalSubmitButton(){}
+  function openRatingModal(){ submitInlineRating && document.getElementById('inlineRatingWrap')?.scrollIntoView({behavior:'smooth',block:'center'}); }
+  function closeRatingModal(){}
+  function submitModalRating(){}
+  function hoverQuickRating(){}
+  function setQuickRating(){}
+  function updateQuickSubmitButton(){}
+  function submitQuickRating(){}
+  function showRatingReminder(){ document.getElementById('inlineRatingWrap')?.scrollIntoView({behavior:'smooth',block:'center'}); }
+
+  // Hausdienst als abgeschlossen markieren
+  async function completeHausdienst() {
+    if (!db || !todayPerson) return;
+
+    const tasks      = todayTasks();
+    const totalTasks = tasks.length;
+    const doneTasks  = tasks.filter(t => checked[t.id]).length;
+
+    if (doneTasks < totalTasks) {
+      showToast('Noch nicht alle Aufgaben erledigt!');
+      return;
+    }
+
+    // Bewertung ist Pflicht wenn gestern jemand Hausdienst hatte
+    if (yesterdayPerson && !existingRatingData) {
+      showToast('Bitte zuerst den gestrigen Hausdienst bewerten!');
+      const wrap = document.getElementById('inlineRatingWrap');
+      if (wrap) {
+        wrap.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        wrap.style.transition = 'box-shadow .2s';
+        wrap.style.boxShadow = '0 0 0 2px #ff9f43';
+        setTimeout(() => { wrap.style.boxShadow = ''; }, 1500);
+      }
+      return;
+    }
+
+    if (!confirm(`Hausdienst als abgeschlossen markieren?\n\nAlle ${totalTasks} Aufgaben wurden erledigt.`)) return;
+
+    await markHausdienstComplete();
+  }
+
+  // Gemeinsame Funktion zum Abschließen
+  async function markHausdienstComplete() {
+    try {
+      await db.collection("hausdienst").doc(todayStr()).set({
+        completed: true,
+        completedAt: Date.now()
+      }, { merge: true });
+
+      hdTodayCompleted = true;
+      updateHdStatus();
+      showPlanNextModal();
+    } catch (e) {
+      console.error('Fehler beim Abschließen:', e);
+      alert('Fehler beim Abschließen des Hausdienstes.');
+    }
+  }
+
+  // Abschluss-Modal Funktionen
+  function showCompletionModal() {
+    document.getElementById('completionModal').classList.add('show');
+  }
+
+  function closeCompletionModal() {
+    document.getElementById('completionModal').classList.remove('show');
+  }
+
+  async function confirmCompletion() {
+    closeCompletionModal();
+    await markHausdienstComplete();
+  }
+
+  // Planungs-Modal für nächsten Tag
+  function getTomorrowStr() {
+    const d = new Date();
+    d.setDate(d.getDate() + 1);
+    return d.toISOString().slice(0, 10);
+  }
+
+  async function showPlanNextModal() {
+    // Prüfen ob morgen schon jemand eingetragen ist
+    const tomorrowDoc = await db.collection('hausdienst').doc(getTomorrowStr()).get();
+    if (tomorrowDoc.exists && tomorrowDoc.data().person) {
+      const person = tomorrowDoc.data().person;
+      alert(`✓ Hausdienst abgeschlossen!\n\nMorgen ist bereits ${person} eingetragen.`);
+      return;
+    }
+
+    // Personen-Auswahl rendern
+    const container = document.getElementById('planNextPeopleList');
+    container.innerHTML = CORE.map(p => `
+      <button class="pill" onclick="planNextPerson('${p}')">${p}</button>
+    `).join('');
+
+    document.getElementById('planNextModal').classList.add('show');
+  }
+
+  function closePlanNextModal() {
+    document.getElementById('planNextModal').classList.remove('show');
+    alert('✓ Hausdienst erfolgreich abgeschlossen!');
+  }
+
+  async function planNextPerson(person) {
+    try {
+      await db.collection("hausdienst").doc(getTomorrowStr()).set({
+        person: person,
+        updatedAt: Date.now()
+      });
+      document.getElementById('planNextModal').classList.remove('show');
+      alert(`✓ Hausdienst abgeschlossen!\n\n${person} ist jetzt für morgen eingetragen.`);
+      await renderNextDays();
+    } catch(e) {
+      console.error('Fehler beim Planen:', e);
+      alert('Fehler beim Eintragen für morgen.');
+    }
+  }
+
+  /* Historie (letzte 30 Tage) */
+  async function renderHistory(){
+    const el = document.getElementById('histList');
+    if(!db){ el.textContent="Offline – keine Historie."; return; }
+
+    // Bewertungen laden
+    const bewertungenSnap = await db.collection('bewertungen').get();
+    const bewertungen = {};
+    bewertungenSnap.forEach(doc => {
+      const data = doc.data();
+      bewertungen[data.date] = data;
+    });
+
+    const rows=[];
+    for(let i=0;i<30;i++){
+      const dt=new Date(); dt.setDate(dt.getDate()-i);
+      const id=dt.toISOString().slice(0,10);
+      const doc=await db.collection("hausdienst").doc(id).get();
+      const data = exists(doc) ? doc.data() : null;
+      const person = data ? (data.person||'—') : '—';
+      const completed = data?.completed || false;
+      const bewertung = bewertungen[id];
+
+      let statusBadge = '';
+      if (person !== '—') {
+        statusBadge = completed
+          ? '<span class="badge ok">✓</span>'
+          : '<span class="badge" style="background:var(--danger);color:#fff">○</span>';
+      }
+
+      let ratingHtml = '—';
+      if (bewertung) {
+        const stars = '★'.repeat(bewertung.rating) + '<span style="opacity:0.3">' + '★'.repeat(5 - bewertung.rating) + '</span>';
+        ratingHtml = `<span style="color:var(--gold)">${stars}</span>`;
+      }
+
+      rows.push(`<tr><td>${id}</td><td>${person} ${statusBadge}</td><td>${ratingHtml}</td></tr>`);
+    }
+    el.innerHTML = `<table><thead><tr><th>Datum</th><th>Person</th><th>Bewertung</th></tr></thead><tbody>${rows.join('')}</tbody></table>`;
+  }
+
+  /* Streak-Anzeige */
+  async function updateStreakBar() {
+    const bar = document.getElementById('streakBar');
+    if (!bar || !db || !todayPerson) { if (bar) bar.style.display = 'none'; return; }
+    try {
+      const since = new Date(); since.setDate(since.getDate() - 60);
+      const sinceStr = since.toISOString().slice(0, 10);
+      const today   = todayStr();
+      const snap = await db.collection('hausdienst')
+        .where(firebase.firestore.FieldPath.documentId(), '>=', sinceStr)
+        .where(firebase.firestore.FieldPath.documentId(), '<', today)
+        .get();
+      const entries = snap.docs
+        .filter(d => d.data().person === todayPerson)
+        .map(d => ({ date: d.id, done: !!d.data().completed }))
+        .sort((a, b) => b.date.localeCompare(a.date));
+      let fire = 0, skull = 0;
+      for (const e of entries) { if (e.done) fire++; else break; }
+      if (fire === 0) for (const e of entries) { if (!e.done) skull++; else break; }
+      if (fire > 0) {
+        bar.className = 'streak-bar fire';
+        bar.innerHTML = `🔥 ${fire}× in Folge abgeschlossen`;
+        bar.style.display = 'flex';
+      } else if (skull > 0) {
+        bar.className = 'streak-bar skull';
+        bar.innerHTML = `💀 ${skull}× nicht abgeschlossen`;
+        bar.style.display = 'flex';
+      } else {
+        bar.className = 'streak-bar neutral';
+        bar.innerHTML = `○ Noch kein Streak`;
+        bar.style.display = 'flex';
+      }
+    } catch(e) { console.error(e); bar.style.display = 'none'; }
+  }
+
+  /* Notiz-System */
+  let noteShownThisSession = false;
+  let cachedNoteFrom = null;
+  let cachedNoteText = null;
+  const NOTE_DISMISSED_KEY = 'hausdienst_note_dismissed_' + todayStr();
+
+  async function saveNoteForTomorrow() {
+    if (!db || !todayPerson) return;
+
+    const noteText = document.getElementById('noteForTomorrow').value.trim();
+    const statusEl = document.getElementById('noteStatus');
+
+    try {
+      // Notiz im heutigen Hausdienst-Dokument speichern (wird dann für morgen angezeigt)
+      await db.collection("hausdienst").doc(todayStr()).set({
+        noteForTomorrow: noteText,
+        noteFromPerson: todayPerson,
+        noteCreatedAt: Date.now()
+      }, { merge: true });
+
+      if (noteText) {
+        statusEl.textContent = '✓ Gespeichert';
+        setTimeout(() => { statusEl.textContent = ''; }, 2000);
+      } else {
+        statusEl.textContent = '✓ Notiz gelöscht';
+        setTimeout(() => { statusEl.textContent = ''; }, 2000);
+      }
+    } catch (e) {
+      console.error('Fehler beim Speichern der Notiz:', e);
+      statusEl.textContent = 'Fehler beim Speichern';
+    }
+  }
+
+  async function loadYesterdayNote() {
+    if (!db) return;
+
+    // Notiz vom gestrigen Hausdienst laden
+    const yesterdayDoc = await db.collection('hausdienst').doc(getYesterdayStr()).get();
+    if (!yesterdayDoc.exists) return;
+
+    const data = yesterdayDoc.data();
+    const noteText = data.noteForTomorrow;
+    const noteFrom = data.noteFromPerson || yesterdayPerson;
+
+    if (!noteText || !noteText.trim()) return;
+
+    // Notiz-Karte anzeigen
+    document.getElementById('noteFromPerson').textContent = noteFrom;
+    document.getElementById('yesterdayNoteContent').textContent = noteText;
+    document.getElementById('yesterdayNoteCard').style.display = 'block';
+
+    // Daten cachen – Modal wird bei jedem Wechsel zur Checkliste angezeigt
+    cachedNoteFrom = noteFrom;
+    cachedNoteText = noteText;
+  }
+
+  // Zeigt das Notiz-Modal, sofern noch nicht mit "Verstanden" bestätigt
+  function showNoteModalIfNeeded() {
+    if (!cachedNoteText) return;
+    if (localStorage.getItem(NOTE_DISMISSED_KEY)) return;
+    showNoteModal(cachedNoteFrom, cachedNoteText);
+  }
+
+  function showNoteModal(from, content) {
+    document.getElementById('noteModalFrom').textContent = `Von: ${from}`;
+    document.getElementById('noteModalContent').textContent = content;
+    document.getElementById('noteModal').classList.add('show');
+  }
+
+  function closeNoteModal() {
+    document.getElementById('noteModal').classList.remove('show');
+    // Als dismissed markieren für heute
+    localStorage.setItem(NOTE_DISMISSED_KEY, 'true');
+  }
+
+  function dismissNote() {
+    document.getElementById('yesterdayNoteCard').style.display = 'none';
+    localStorage.setItem(NOTE_DISMISSED_KEY, 'true');
+  }
+
+  async function loadMyNote() {
+    if (!db || !todayPerson) return;
+
+    // Meine bereits gespeicherte Notiz laden
+    const todayDoc = await db.collection('hausdienst').doc(todayStr()).get();
+    if (todayDoc.exists && todayDoc.data().noteForTomorrow) {
+      document.getElementById('noteForTomorrow').value = todayDoc.data().noteForTomorrow;
+    }
+  }
+
+  function updateNoteCards() {
+    // Notiz-Eingabe nur anzeigen wenn man der heutige Hausdienst ist
+    const noteInputCard = document.getElementById('noteInputCard');
+    if (noteInputCard) {
+      noteInputCard.style.display = todayPerson ? 'block' : 'none';
+    }
+  }
+
+
+  /* Tonnen Reinstellen – Auto-Task wenn heute Abholung */
+  async function ensureTonnenReinstellen() {
+    if (!db) return;
+    const today    = todayStr();
+    const monthKey = today.slice(0, 7);
+    try {
+      const doc    = await db.collection('calendar_cache').doc(monthKey).get();
+      const events = doc.exists ? (doc.data().events || []) : [];
+      const tonnenHeute = events.filter(e => (e.start || '').startsWith(today) && isTonnenEvent(e.title));
+      if (!tonnenHeute.length) return;
+
+      const taskId   = 'tonnen_reinstellen_' + today;
+      const existing = await db.collection('hausdienst_tasks').doc(taskId).get();
+      if (existing.exists) return;
+
+      const maxOrder = _tasks.length > 0 ? Math.max(..._tasks.map(t => t.sortOrder ?? 0)) : -1;
+      await db.collection('hausdienst_tasks').doc(taskId).set({
+        text:            'Tonnen Reinstellen',
+        cat:             'abend',
+        calendarEventId: taskId,
+        dueDate:         today,
+        createdAt:       Date.now(),
+        sortOrder:       maxOrder + 1
+      });
+    } catch(e) {
+      console.error('Fehler beim Erstellen der Tonnen-Aufgabe:', e);
+    }
+  }
+
+  /* Initialisierung */
+  function setupTaskListDelegation() {
+    const list = document.getElementById('taskList');
+    if (!list) return;
+
+    list.addEventListener('click', (e) => {
+      const item = e.target.closest('.task-item');
+      if (!item) return;
+      const taskId = item.dataset.taskid;
+      if (e.target.closest('.task-action-btn')) {
+        e.stopPropagation();
+        openEditTaskModal(taskId);
+      } else if (e.target.closest('.task-checkbox') || e.target.closest('.task-content')) {
+        e.stopPropagation();
+        toggleCheck(taskId);
+      }
+    });
+
+    list.addEventListener('dragstart', (e) => {
+      const item = e.target.closest('.task-item[data-taskid]');
+      if (item) handleDragStart(e, item.dataset.taskid);
+    });
+    list.addEventListener('dragend', (e) => handleDragEnd(e));
+    list.addEventListener('dragover', (e) => handleDragOver(e));
+    list.addEventListener('dragleave', (e) => handleDragLeave(e));
+    list.addEventListener('drop', (e) => {
+      const item = e.target.closest('.task-item[data-taskid]');
+      if (item) handleDrop(e, item.dataset.taskid);
+    });
+
+    list.addEventListener('touchstart', (e) => {
+      const item = e.target.closest('.task-item[data-taskid]');
+      if (item) handleTouchStart(e, item.dataset.taskid);
+    }, { passive: false });
+    list.addEventListener('touchmove', (e) => handleTouchMove(e), { passive: false });
+    list.addEventListener('touchend', (e) => handleTouchEnd(e));
+  }
+
+  async function init(){
+    // Kernteam aus Firebase laden
+    if(db) {
+      try {
+        const snap = await db.collection(STATE_COLLECTION).doc("global").get();
+        if(snap.exists && snap.data().core && Array.isArray(snap.data().core)) {
+          CORE = snap.data().core;
+        }
+      } catch(e) { console.error('Fehler beim Laden des Kernteams:', e); }
+    }
+
+    // Hausdienst-Daten ZUERST laden (vor renderTasks)
+    if (db) {
+      const todayDoc = await db.collection('hausdienst').doc(todayStr()).get();
+      const yesterdayDoc = await db.collection('hausdienst').doc(getYesterdayStr()).get();
+      todayPerson = todayDoc.exists ? todayDoc.data().person : null;
+      hdTodayCompleted = todayDoc.exists ? (todayDoc.data().completed || false) : false;
+      yesterdayPerson = yesterdayDoc.exists ? yesterdayDoc.data().person : null;
+    }
+
+    setupTaskListDelegation();
+    renderPeopleRow();
+    updateSelectionUI();
+    setMode(showMode);
+    renderCatTabs();
+    await loadTasks();
+    await ensureTonnenReinstellen();
+    // Real-time listener für Aufgaben (reagiert auf externe Löschungen/Änderungen)
+    if (db && !_tasksListener) {
+      _tasksListener = db.collection('hausdienst_tasks').orderBy('sortOrder','asc').onSnapshot(snap => {
+        _tasks = snap.docs.map(d => ({id: d.id, ...d.data()}));
+        renderTasks();
+      });
+    }
+    await Promise.all([updateTodayInfo(), renderNextDays(), renderTasks(), renderHistory()]);
+    updateStreakBar();
+
+    // Notiz-System initialisieren
+    updateNoteCards();
+    await loadYesterdayNote();
+    await loadMyNote();
+
+    // Bewertungsdaten laden
+    if (db) {
+      if (todayPerson && yesterdayPerson) {
+        const existingRating = await db.collection('bewertungen')
+          .where('date', '==', getYesterdayStr())
+          .where('bewertetVon', '==', todayPerson)
+          .get();
+        if (!existingRating.empty) {
+          existingRatingId = existingRating.docs[0].id;
+          existingRatingData = existingRating.docs[0].data();
+        }
+      }
+      updateHdStatus();
+    }
+
+    // Tab auswählen (nach dem Laden der Daten)
+    pickTabFromQuery();
+
+    scheduleMidnightRefresh(async ()=>{
+      localStorage.removeItem(CHECKED_KEY);
+      // Alte Notiz-Dismissed-Keys bereinigen (alle außer heute)
+      Object.keys(localStorage).filter(k => k.startsWith('hausdienst_note_dismissed_') && k !== NOTE_DISMISSED_KEY).forEach(k => localStorage.removeItem(k));
+      checked={};
+      modalRating = 0;
+      existingRatingId = null;
+      existingRatingData = null;
+      todayPerson = null;
+      hdTodayCompleted = false;
+      yesterdayPerson = null;
+      noteShownThisSession = false;
+      cachedNoteFrom = null;
+      cachedNoteText = null;
+      await updateTodayInfo();
+      await renderTasks(true);
+      await renderNextDays();
+      renderHistory();
+      updateHdStatus();
+      // Notiz-System neu laden
+      await loadYesterdayNote();
+      await loadMyNote();
+    });
+  }
+  init();
+</script>
+
+</body>
+</html>

@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <title>Updates – Sick & Sound</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#08090f" />
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="stylesheet" href="style.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;800&display=swap" rel="stylesheet" />
+  <style>
+    .people-row { display:flex; gap:8px; overflow-x:auto; padding-bottom:4px; scrollbar-width:none; }
+    .people-row::-webkit-scrollbar { display:none; }
+    .people-row .pill { flex:0 0 auto; padding:8px 16px; border-radius:999px; background:var(--panel-3); border:1px solid var(--border); color:var(--muted); transition:all .18s; }
+    .people-row .pill.active { background:var(--accent-dim); color:var(--accent); border-color:rgba(45,212,191,.32); font-weight:800; }
+    .who-card { padding:14px 16px; margin-bottom:12px; }
+    .who-label { font-size:12px; font-weight:700; color:var(--muted); margin-bottom:8px; }
+
+    .add-card { padding:16px; margin-bottom:14px; }
+    .add-card input, .add-card textarea {
+      width:100%; padding:12px 14px; margin-bottom:10px;
+      border-radius: var(--r-sm); border:1px solid var(--border2);
+      background: var(--panel-2); color: var(--txt); font-size:14px; font-weight:600;
+      font-family: inherit;
+    }
+    .add-card textarea { resize: vertical; min-height:70px; font-weight:400; }
+    .add-card input:focus, .add-card textarea:focus { border-color: var(--accent); outline:none; box-shadow:0 0 0 3px var(--accent-dim); }
+
+    .update-card { padding:16px; margin-bottom:12px; }
+    .update-title { font-size:16px; font-weight:800; margin-bottom:4px; }
+    .update-date  { font-size:11px; color:var(--muted); margin-bottom:10px; }
+    .update-text  { font-size:14px; line-height:1.5; white-space:pre-wrap; margin-bottom:14px; }
+
+    .read-status { display:flex; flex-wrap:wrap; gap:6px; margin-bottom:14px; }
+    .read-pill {
+      font-size:11px; font-weight:700; padding:4px 9px; border-radius:999px;
+      background: rgba(244,63,94,.1); color: var(--danger); border:1px solid rgba(244,63,94,.25);
+    }
+    .read-pill.done { background: rgba(16,217,160,.1); color: var(--green); border-color: rgba(16,217,160,.28); }
+
+    .confirm-row { display:flex; gap:10px; align-items:center; }
+    .confirm-row .btn { flex:1; }
+    .already-read { font-size:13px; color: var(--green); font-weight:700; display:flex; align-items:center; gap:6px; }
+
+    .update-actions-top { display:flex; justify-content:flex-end; margin-bottom:6px; }
+    .del-update-btn { font-size:16px; opacity:.5; cursor:pointer; padding:2px 6px; }
+    .del-update-btn:active { opacity:.8; }
+
+    .empty-state { text-align: center; padding: 40px 20px; }
+    .empty-icon  { font-size: 56px; margin-bottom: 12px; }
+    .empty-title { font-size: 18px; font-weight: 800; margin-bottom: 8px; }
+    .empty-sub   { font-size: 14px; color: var(--muted); max-width: 260px; margin: 0 auto; }
+  </style>
+</head>
+<body>
+<div class="app">
+  <header class="appbar">
+    <div class="app-title">
+      <div class="brand-dot"></div>
+      <h1>Updates</h1>
+    </div>
+  </header>
+
+  <main class="content">
+    <div class="card who-card">
+      <div class="who-label">Wer bist du?</div>
+      <div class="people-row" id="peopleRow"></div>
+    </div>
+
+    <div class="card add-card">
+      <input type="text" id="newTitle" placeholder="Titel (z.B. Neue Regelung)">
+      <textarea id="newText" placeholder="Was gibt es Neues?"></textarea>
+      <button class="btn" style="width:100%" onclick="addUpdate()">📢 Update veröffentlichen</button>
+    </div>
+
+    <div id="updatesList"></div>
+  </main>
+
+  <nav class="bottomnav" id="bottomNav"></nav>
+</div>
+
+<div id="toast" style="
+  position:fixed;bottom:calc(var(--nav-h,64px) + 12px);left:50%;transform:translateX(-50%);
+  background:rgba(17,22,36,.96);border:1px solid rgba(45,212,191,.2);padding:10px 20px;
+  border-radius:999px;font-size:13px;font-weight:700;color:var(--txt);
+  opacity:0;transition:opacity .25s;pointer-events:none;z-index:200;white-space:nowrap;
+  box-shadow:0 8px 32px rgba(0,0,0,.6)
+"></div>
+<style>#toast.show { opacity: 1; }</style>
+
+<script src="https://www.gstatic.com/firebasejs/12.0.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/12.0.0/firebase-firestore-compat.js"></script>
+<script src="shared.js"></script>
+<script>
+  renderBottomNav('updates');
+
+  let updates = [];
+  let selectedPerson = null;
+
+  const params = new URLSearchParams(location.search);
+  const preselect = params.get('person');
+  if (preselect) selectedPerson = preselect;
+
+  function renderPeopleRow() {
+    const wrap = document.getElementById('peopleRow');
+    wrap.innerHTML = CORE.map(p =>
+      `<button class="pill ${selectedPerson === p ? 'active' : ''}" onclick="selectPerson('${p}')">${p}</button>`
+    ).join('');
+  }
+
+  function selectPerson(name) {
+    if (!CORE.includes(name)) return;
+    selectedPerson = (selectedPerson === name ? null : name);
+    renderPeopleRow();
+    renderUpdates();
+  }
+
+  function escapeHtml(s) {
+    return String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  }
+
+  function getSortedUpdates() {
+    return [...updates].sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+  }
+
+  function renderUpdates() {
+    const list = document.getElementById('updatesList');
+    const sorted = getSortedUpdates();
+
+    if (!sorted.length) {
+      list.innerHTML = `
+        <div class="card empty-state">
+          <div class="empty-icon">📢</div>
+          <div class="empty-title">Noch keine Updates</div>
+          <div class="empty-sub">Hier erscheinen neue Regelungen und Ankündigungen fürs Kernteam.</div>
+        </div>`;
+      return;
+    }
+
+    list.innerHTML = sorted.map(u => {
+      const readBy = u.readBy || {};
+      const readPills = CORE.map(p =>
+        `<span class="read-pill ${readBy[p] ? 'done' : ''}">${readBy[p] ? '✓' : '○'} ${p}</span>`
+      ).join('');
+
+      let confirmHtml;
+      if (!selectedPerson) {
+        confirmHtml = `<div class="muted" style="font-size:13px">Wähle oben aus, wer du bist, um zu bestätigen.</div>`;
+      } else if (readBy[selectedPerson]) {
+        confirmHtml = `<div class="already-read">✓ Von dir gelesen am ${formatDate(new Date(readBy[selectedPerson]).toISOString().slice(0,10))}</div>`;
+      } else {
+        confirmHtml = `<div class="confirm-row">
+          <button class="btn" onclick="confirmRead('${u.id}')">✓ Gelesen – als ${selectedPerson} bestätigen</button>
+        </div>`;
+      }
+
+      return `
+        <div class="card update-card">
+          <div class="update-actions-top">
+            <span class="del-update-btn" title="Update löschen" onclick="deleteUpdate('${u.id}')">🗑</span>
+          </div>
+          <div class="update-title">${escapeHtml(u.title) || '(ohne Titel)'}</div>
+          <div class="update-date">${formatDate(new Date(u.createdAt || 0).toISOString().slice(0,10))}</div>
+          <div class="update-text">${escapeHtml(u.text)}</div>
+          <div class="read-status">${readPills}</div>
+          ${confirmHtml}
+        </div>`;
+    }).join('');
+  }
+
+  async function addUpdate() {
+    const titleEl = document.getElementById('newTitle');
+    const textEl  = document.getElementById('newText');
+    const title = titleEl.value.trim();
+    const text  = textEl.value.trim();
+    if (!title && !text) return;
+    if (!db) { alert('Offline – keine Verbindung'); return; }
+    await db.collection('updates').add({
+      title, text, createdAt: Date.now(), readBy: {}
+    });
+    titleEl.value = '';
+    textEl.value  = '';
+    showToast('Update veröffentlicht 📢');
+  }
+
+  async function confirmRead(id) {
+    if (!selectedPerson || !db) return;
+    await db.collection('updates').doc(id).update({
+      [`readBy.${selectedPerson}`]: Date.now()
+    });
+    showToast(`✓ Als ${selectedPerson} bestätigt`);
+  }
+
+  async function deleteUpdate(id) {
+    if (!db) return;
+    if (!confirm('Dieses Update wirklich löschen?')) return;
+    await db.collection('updates').doc(id).delete();
+    showToast('Update gelöscht');
+  }
+
+  async function init() {
+    if (db) {
+      try {
+        const snap = await db.collection(STATE_COLLECTION).doc('global').get();
+        if (snap.exists && Array.isArray(snap.data().core) && snap.data().core.length > 0) {
+          CORE = snap.data().core;
+        }
+      } catch (e) { console.error('Fehler beim Laden des Kernteams:', e); }
+    }
+    renderPeopleRow();
+
+    if (db) {
+      db.collection('updates').onSnapshot(snap => {
+        updates = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+        renderUpdates();
+      });
+    } else {
+      document.getElementById('updatesList').innerHTML =
+        '<div class="sub" style="text-align:center;padding:20px">Offline – keine Verbindung</div>';
+    }
+  }
+
+  init();
+</script>
+</body>
+</html>
